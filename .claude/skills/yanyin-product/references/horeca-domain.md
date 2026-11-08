@@ -112,3 +112,12 @@ Rules:
 4. Knowing what's happening when they are not in the venue
 5. Tax compliance without pain
 6. More repeat guests
+
+## 7. Vietnam country pack (first launch: Da Nang pilots, see `docs/05-pilot-vietnam.md`)
+
+- **Pilots:** Samarkand (Central Asian restaurant) and Zabey (shisha lounge), mostly foreign guests.
+- **Guest languages:** en, ru, ko, zh, vi. **Currency:** VND (no minor units in practice), with an optional "≈" display in the guest's currency.
+- **E-invoice:** cash-register (POS) e-invoices to the GDT are mandatory for F&B (Decree 70/2025; possibly superseded by Decree 254/2026 and Circular 91/2026, to be verified). Integrate through a licensed e-invoice provider via `packages/fiscal`.
+- **Payments:** VietQR (NAPAS) dynamic QR first, then MoMo, ZaloPay, VNPay, plus card terminals and cash.
+- **Shisha lounge specifics:** a hookah is a menu item with modifiers (tobacco, mix, strength, bowl); a "change coals" guest call; timed sessions; 18+ confirmation; dark night-mode UI.
+- **Hardware (ADR-012):** ESC/POS printers (LAN/USB/BT), built-in printers on Sunmi/iMin Android POS, a cash drawer through the printer, KDS tablets. Access goes through the Capacitor app or yanyin Bridge, behind `packages/devices`.

@@ -14,4 +14,5 @@ Status: **Phase 0, discovery and foundation.** No application code yet.
 | [docs/02-architecture.md](docs/02-architecture.md) | System tree, process chains, tech stack, repo layout |
 | [docs/03-roadmap.md](docs/03-roadmap.md) | Phased roadmap and plans |
 | [docs/04-decisions.md](docs/04-decisions.md) | Decision log and open questions |
+| [docs/05-pilot-vietnam.md](docs/05-pilot-vietnam.md) | Pilot: Da Nang, Vietnam |
 | [.claude/skills/yanyin-product](.claude/skills/yanyin-product/SKILL.md) | Product-team skill: domain, SaaS, engineering, UX, game and AI |
