@@ -72,4 +72,6 @@ Context: time of day, weather, group size, what's already in the cart. Later thi
 - Per-organization monthly AI budget (entitlement) with graceful degradation: Yan says it's unavailable rather than failing.
 - Log every conversation's token usage to `ai_usage` for yanyin.core.
 
+**AI menu-item creation (ADR-007)**: input is a photo plus a short text or voice note. Claude vision returns a structured draft (Zod-validated JSON): name, category, description, ingredients, weight, allergen *suggestions*, diet tags, kcal/protein/fat/carbs with `estimated: true`, translations (ru/uz/tg/en), and a modifiers suggestion. The photo is enhanced (crop, light, colour, optional background swap) and never replaced by a generated image, except as a labelled placeholder. Allergens need explicit manager confirmation before publishing. Once a recipe card exists, nutrition is recomputed from ingredients and `estimated` becomes false.
+
 **Daily report (manager mode)**: every morning in the venue's timezone, built from yesterday's aggregates. Structure: headline (one sentence), three numbers vs the same weekday last week, what's off (variance, voids, late tickets), one recommended action, quest highlights. Delivered in hq and by Telegram.

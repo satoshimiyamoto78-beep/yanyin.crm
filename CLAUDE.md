@@ -47,6 +47,16 @@ something like `yanyin.app` (not decided yet, see `docs/04-decisions.md`).
 - `docs/04-decisions.md`: decision log (ADR) and open questions for the founder
 - Interactive architecture scheme: https://claude.ai/artifact/SG8DvbBNPCJQNdibfwJ7WQ
 
+## Where the project lives outside the repo
+
+- **Notion** (task tracking, the founder's view of progress): project page
+  https://app.notion.com/p/412e2f5cf96881a693cbcff41402d2ac with the «Задачи» database
+  (data source `collection://6d0a817b-c956-49a0-b4f9-e2ffb25ef39b`). When you finish or
+  start a roadmap task, update its status there. New tasks go into the same database.
+- **Google Drive** folder `yanyin.crm` (id `1-TiMYVOR4wqbfOeQDRL0cHrOMLTt9Irn`): files,
+  mockups, contracts and copies of key docs for the founder.
+- The repo stays the source of truth for docs; Notion and Drive mirror it.
+
 ## Default tech stack (decided, see ADR-001)
 
 TypeScript everywhere · Next.js (App Router) + Tailwind + shadcn/ui · Supabase
