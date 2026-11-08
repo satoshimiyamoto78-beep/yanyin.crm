@@ -16,5 +16,5 @@ Status: **Phase 0, discovery and foundation.** No application code yet.
 | [docs/04-decisions.md](docs/04-decisions.md) | Decision log and open questions |
 | [docs/05-pilot-vietnam.md](docs/05-pilot-vietnam.md) | Pilot: Da Nang, Vietnam |
 | [docs/06-design-direction.md](docs/06-design-direction.md) | Design direction from founder references |
-| [data/seed](data/seed) | Pilot menus (Samarkand, Zabey) as seed data |
+| [packages/seed/src](packages/seed/src) | Pilot menus (Samarkand, Zabey) as seed data |
 | [.claude/skills/yanyin-product](.claude/skills/yanyin-product/SKILL.md) | Product-team skill: domain, SaaS, engineering, UX, game and AI |

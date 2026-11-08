@@ -2,7 +2,7 @@
 
 ## 1. Brand feel
 
-> **Read `docs/06-design-direction.md` first.** It is derived from the founder's 47 references and **overrides the palette below**: the guest side is warm, light and photo-first with an orange CTA (#FF6A1A); the staff, HQ and core side is a dark bento with a neon lime accent (#B8F35A) and violet for rewards, plus a light SaaS theme for HQ and core. Glassy 3D neon icons are for sections and rewards, Lucide line icons for actions. The per-surface colours below remain only as identification accents (charts, chips, navigation).
+> **Read `docs/06-design-direction.md` first.** The guest app follows the founder's own guest-order design: one yanyin platform look (light #F1F2F5 background, white grouped cards, Inter, one accent per venue, floating pill bottom nav, home/menu/detail/cart/orders/about screens), white-labelled only by accent, mark, copy and photos — like every store on Grab or Yandex Eda. Earlier note, kept for staff/HQ: the guest side is warm, light and photo-first with an orange CTA (#FF6A1A); the staff, HQ and core side is a dark bento with a neon lime accent (#B8F35A) and violet for rewards, plus a light SaaS theme for HQ and core. Glassy 3D neon icons are for sections and rewards, Lucide line icons for actions. The per-surface colours below remain only as identification accents (charts, chips, navigation).
 
 Playful but professional: "a game studio that understands restaurants". The architecture artifact sets the visual language: dark, high-contrast boards, one colour per surface, display font **Unbounded**, body **Manrope**, numbers and code in **JetBrains Mono**.
 

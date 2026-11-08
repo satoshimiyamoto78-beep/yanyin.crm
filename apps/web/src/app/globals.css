@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (docs/06-design-direction.md).
+ * Guest side: warm, light, photo-first, orange CTA. Venues override --venue-*.
+ * Staff / HQ side: dark bento with neon lime and violet for rewards.
+ */
+:root {
+  /* yanyin guest design system (light, iOS-native, one accent per venue) */
+  --guest-bg: #f1f2f5;
+  --guest-surface: #ffffff;
+  --guest-surface-2: #f6f7f9;
+  --guest-ink: #14161a;
+  --guest-muted: #8b909a;
+  --guest-muted-2: #b4b8c0;
+  --guest-line: #ebedf1;
+  --guest-cta: #2e5bff;
+  --guest-cta-ink: #ffffff;
+  --guest-green: #17a768;
+  --guest-amber: #f0a426;
+  --guest-red: #e5484d;
+  --shadow-sm: 0 1px 2px rgba(20, 22, 26, 0.04), 0 8px 20px -14px rgba(20, 22, 26, 0.12);
+  --shadow-md: 0 12px 32px -16px rgba(20, 22, 26, 0.22);
+
+  --crew-bg: #0b0d0c;
+  --crew-surface: #16191a;
+  --crew-surface-2: #1e2223;
+  --crew-ink: #f2f5f3;
+  --crew-muted: #8a938f;
+  --crew-lime: #b8f35a;
+  --crew-violet: #7c5cff;
+  --crew-orange: #ff8a3d;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", "Manrope Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
+  --font-display: "Unbounded Variable", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: "Cormorant Garamond Variable", "Times New Roman", Georgia, serif;
+  --font-brush: "Permanent Marker", "Unbounded Variable", cursive;
+
+  --color-guest-bg: var(--guest-bg);
+  --color-guest-surface: var(--guest-surface);
+  --color-guest-surface-2: var(--guest-surface-2);
+  --color-guest-ink: var(--guest-ink);
+  --color-guest-muted: var(--guest-muted);
+  --color-guest-line: var(--guest-line);
+  --color-guest-muted-2: var(--guest-muted-2);
+  --color-guest-green: var(--guest-green);
+  --color-guest-amber: var(--guest-amber);
+  --color-guest-red: var(--guest-red);
+  --color-guest-cta: var(--guest-cta);
+  --color-guest-cta-ink: var(--guest-cta-ink);
+
+  --color-crew-bg: var(--crew-bg);
+  --color-crew-surface: var(--crew-surface);
+  --color-crew-surface-2: var(--crew-surface-2);
+  --color-crew-ink: var(--crew-ink);
+  --color-crew-muted: var(--crew-muted);
+  --color-crew-lime: var(--crew-lime);
+  --color-crew-violet: var(--crew-violet);
+  --color-crew-orange: var(--crew-orange);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--guest-bg);
+  color: var(--guest-ink);
+}
+
+/* Soft accent wash and tactile press, from the guest-order design. */
+.accent-soft {
+  background: color-mix(in srgb, var(--guest-cta) 10%, transparent);
+}
+.media-dots {
+  background-color: var(--guest-surface-2);
+  background-image: radial-gradient(rgba(20, 22, 26, 0.08) 1.4px, transparent 1.4px);
+  background-size: 15px 15px;
+}
+.press {
+  transition: transform 0.13s ease;
+}
+.press:active {
+  transform: scale(0.95);
+}
+.drop-3d {
+  filter: drop-shadow(0 10px 14px rgba(20, 22, 26, 0.18));
+}
+.mask-fade-r {
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 18px), transparent 100%);
+}
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-screen {
+  animation: screen-in 0.32s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+@keyframes glow-drift {
+  0% {
+    transform: translate(-6%, -3%) scale(1);
+  }
+  50% {
+    transform: translate(4%, 3%) scale(1.08);
+  }
+  100% {
+    transform: translate(9%, -2%) scale(1);
+  }
+}
+.animate-glow {
+  animation: glow-drift 16s ease-in-out infinite alternate;
+}
+@keyframes underline-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.animate-underline {
+  transform-origin: left;
+  animation: underline-grow 0.4s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+@keyframes cta-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.15);
+    opacity: 0;
+  }
+}
+.animate-cta-pulse {
+  animation: cta-pulse 3.6s cubic-bezier(0.4, 0, 0.3, 1) infinite;
+}
+@keyframes dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-dot {
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-sheet {
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.animate-fade {
+  animation: fade-in 0.2s ease-out;
+}
+.animate-pop {
+  animation: pop 0.35s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet,
+  .animate-fade,
+  .animate-pop,
+  .animate-float,
+  .animate-screen,
+  .animate-glow,
+  .animate-cta-pulse {
+    animation: none;
+  }
+}
