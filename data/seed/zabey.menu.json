@@ -16,8 +16,207 @@
     ],
     "age_restricted": true
   },
-  "source": "Founder-provided bar menu photo (Instagram story), 2026-11-08. Prices in VND. Hookah menu not provided yet.",
+  "source": "Founder-provided bar menu photo (Instagram story), 2026-11-08. Prices in VND. Hookah menu not provided yet. Items with status=suggested were added by Claude (hookah menu, shots, coffee, snacks, local beer); venue must confirm.",
   "categories": [
+    {
+      "name": {
+        "en": "Hookah",
+        "vi": "Shisha",
+        "ru": "Кальян"
+      },
+      "status": "suggested",
+      "group": "Hookah",
+      "age_restricted": true,
+      "modifier_groups": [
+        {
+          "id": "strength",
+          "name": {
+            "en": "Strength",
+            "vi": "Độ mạnh",
+            "ru": "Крепость"
+          },
+          "required": true,
+          "options": [
+            {
+              "name": {
+                "en": "Light",
+                "vi": "Nhẹ",
+                "ru": "Лёгкий"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Medium",
+                "vi": "Vừa",
+                "ru": "Средний"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strong",
+                "vi": "Mạnh",
+                "ru": "Крепкий"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "flavor",
+          "name": {
+            "en": "Flavor / mix",
+            "vi": "Hương vị",
+            "ru": "Вкус / микс"
+          },
+          "required": true,
+          "max": 1,
+          "options": [
+            {
+              "name": {
+                "en": "Mint–Lime",
+                "vi": "Bạc hà–Chanh",
+                "ru": "Мята–лайм"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Berry mix",
+                "vi": "Mix quả mọng",
+                "ru": "Ягодный микс"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Watermelon–Mint",
+                "vi": "Dưa hấu–Bạc hà",
+                "ru": "Арбуз–мята"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Grape–Mint",
+                "vi": "Nho–Bạc hà",
+                "ru": "Виноград–мята"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Mango–Passion fruit",
+                "vi": "Xoài–Chanh dây",
+                "ru": "Манго–маракуйя"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Double apple",
+                "vi": "Táo đôi",
+                "ru": "Двойное яблоко"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Peach ice",
+                "vi": "Đào lạnh",
+                "ru": "Персик-лёд"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Hookah master's choice",
+                "vi": "Theo gợi ý của thợ shisha",
+                "ru": "На выбор кальянщика"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": {
+            "en": "Extras",
+            "vi": "Thêm",
+            "ru": "Дополнительно"
+          },
+          "required": false,
+          "options": [
+            {
+              "name": {
+                "en": "Ice hose",
+                "vi": "Ống lạnh",
+                "ru": "Ледяной шланг"
+              },
+              "price": 50000
+            },
+            {
+              "name": {
+                "en": "Milk / juice in the flask",
+                "vi": "Sữa / nước ép trong bình",
+                "ru": "Молоко или сок в колбе"
+              },
+              "price": 50000
+            }
+          ]
+        }
+      ],
+      "service_calls": [
+        {
+          "id": "change_coals",
+          "name": {
+            "en": "Change coals",
+            "vi": "Thay than",
+            "ru": "Поменять угли"
+          }
+        }
+      ],
+      "items": [
+        {
+          "name": {
+            "en": "Classic hookah",
+            "vi": "Shisha cổ điển",
+            "ru": "Классический кальян"
+          },
+          "price": 350000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Premium hookah",
+            "vi": "Shisha cao cấp",
+            "ru": "Премиум-кальян"
+          },
+          "price": 450000,
+          "status": "suggested",
+          "note": "Premium tobacco brands; venue to specify"
+        },
+        {
+          "name": {
+            "en": "Fruit bowl hookah (pineapple / grapefruit)",
+            "vi": "Shisha bát trái cây (dứa / bưởi)",
+            "ru": "Кальян на фрукте (ананас / грейпфрут)"
+          },
+          "price": 550000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Bowl refill",
+            "vi": "Thay bát mới",
+            "ru": "Замена чаши"
+          },
+          "price": 250000,
+          "status": "suggested"
+        }
+      ]
+    },
     {
       "name": {
         "en": "Gin"
@@ -28,15 +227,18 @@
           "name": {
             "en": "Gordon's"
           },
-          "price": 99000
+          "price": 99000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Bombay"
           },
-          "price": 109000
+          "price": 109000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -48,21 +250,25 @@
           "name": {
             "en": "Bacardi Carta Blanca"
           },
-          "price": 109000
+          "price": 109000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Bacardi Carta Oro"
           },
-          "price": 109000
+          "price": 109000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Bacardi Carta Negra"
           },
-          "price": 109000
+          "price": 109000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -74,39 +280,46 @@
           "name": {
             "en": "Martini Bianco"
           },
-          "price": 109000
+          "price": 109000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Martini Rosso"
           },
-          "price": 109000
+          "price": 109000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Campari"
           },
-          "price": 119000
+          "price": 119000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Kahlua"
           },
-          "price": 119000
+          "price": 119000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Baileys"
           },
-          "price": 119000
+          "price": 119000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Jägermeister"
           },
-          "price": 129000
+          "price": 129000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -118,15 +331,18 @@
           "name": {
             "en": "Jose Cuervo Reposado"
           },
-          "price": 99000
+          "price": 99000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Jose Cuervo Silver"
           },
-          "price": 99000
+          "price": 99000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -138,27 +354,32 @@
           "name": {
             "en": "Jameson Original"
           },
-          "price": 119000
+          "price": 119000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Johnnie Walker Black Label"
           },
-          "price": 159000
+          "price": 159000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Chivas 12 YO"
           },
-          "price": 139000
+          "price": 139000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Ballantine's Finest"
           },
-          "price": 99000
+          "price": 99000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -170,9 +391,11 @@
           "name": {
             "en": "St-Rémy XO"
           },
-          "price": 139000
+          "price": 139000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -183,51 +406,60 @@
           "name": {
             "en": "Aperol Spritz"
           },
-          "price": 229000
+          "price": 229000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Negroni"
           },
-          "price": 199000
+          "price": 199000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Mai Tai"
           },
-          "price": 199000
+          "price": 199000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Long Island Iced Tea"
           },
-          "price": 229000
+          "price": 229000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Whiskey Sour"
           },
-          "price": 199000
+          "price": 199000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Porn Star Martini"
           },
-          "price": 209000
+          "price": 209000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Mojito"
           },
-          "price": 199000
+          "price": 199000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Margarita"
           },
-          "price": 199000
+          "price": 199000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -238,19 +470,63 @@
           "name": {
             "en": "Cuba Libre"
           },
-          "price": 149000
+          "price": 149000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Gin Tonic"
           },
-          "price": 159000
+          "price": 159000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Jäger Bull"
           },
-          "price": 169000
+          "price": 169000,
+          "status": "confirmed"
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "en": "Shots",
+        "vi": "Shot",
+        "ru": "Шоты"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "en": "B-52",
+            "vi": "B-52",
+            "ru": "Б-52"
+          },
+          "price": 109000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Tequila boom",
+            "vi": "Tequila boom",
+            "ru": "Текила-бум"
+          },
+          "price": 109000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Shot set ×5 (house choice)",
+            "vi": "Set 5 shot",
+            "ru": "Сет из 5 шотов"
+          },
+          "price": 399000,
+          "status": "suggested",
+          "tags": [
+            "sharing"
+          ]
         }
       ]
     },
@@ -265,7 +541,8 @@
             "vi": "Nước suối LaVie",
             "ru": "Вода LaVie"
           },
-          "price": 69000
+          "price": 69000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -273,28 +550,33 @@
             "vi": "Soda",
             "ru": "Содовая"
           },
-          "price": 49000
+          "price": 49000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Schweppes"
           },
-          "price": 49000
+          "price": 49000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Red Bull"
           },
-          "price": 79000
+          "price": 79000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Coca-Cola / Fanta / Sprite"
           },
           "price": 49000,
-          "note": "Split into 3 items with shared price"
+          "note": "Split into 3 items with shared price",
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -305,19 +587,22 @@
           "name": {
             "en": "Corona Extra"
           },
-          "price": 109000
+          "price": 109000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Strongbow Cider"
           },
-          "price": 69000
+          "price": 69000,
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Blanc 1664"
           },
-          "price": 89000
+          "price": 89000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -326,9 +611,29 @@
           "price": 59000,
           "tags": [
             "non_alcoholic"
-          ]
+          ],
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "en": "Saigon Special",
+            "vi": "Bia Saigon Special",
+            "ru": "Saigon Special"
+          },
+          "price": 59000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Tiger",
+            "vi": "Bia Tiger",
+            "ru": "Tiger"
+          },
+          "price": 69000,
+          "status": "suggested"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -354,23 +659,27 @@
             "en": "Mango–Passion Fruit",
             "vi": "Xoài–Chanh dây",
             "ru": "Манго–маракуйя"
-          }
+          },
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Lychee–Strawberry",
             "vi": "Vải–Dâu tây",
             "ru": "Личи–клубника"
-          }
+          },
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Pineapple–Kiwi",
             "vi": "Dứa–Kiwi",
             "ru": "Ананас–киви"
-          }
+          },
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -383,23 +692,27 @@
             "en": "Black tea",
             "vi": "Trà đen",
             "ru": "Чёрный чай"
-          }
+          },
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Green tea",
             "vi": "Trà xanh",
             "ru": "Зелёный чай"
-          }
+          },
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Jasmine tea",
             "vi": "Trà nhài",
             "ru": "Жасминовый чай"
-          }
+          },
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -412,16 +725,19 @@
             "en": "Blueberry–Mint",
             "vi": "Việt quất–Bạc hà",
             "ru": "Черника–мята"
-          }
+          },
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Lemongrass–Lime",
             "vi": "Sả–Chanh",
             "ru": "Лемонграсс–лайм"
-          }
+          },
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -436,23 +752,27 @@
             "en": "Pan-Asian",
             "vi": "Pan-Asian",
             "ru": "Паназиатский"
-          }
+          },
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Strawberry–Basil",
             "vi": "Dâu tây–Húng quế",
             "ru": "Клубника–базилик"
-          }
+          },
+          "status": "confirmed"
         },
         {
           "name": {
             "en": "Moroccan",
             "vi": "Moroccan",
             "ru": "Марокканский"
-          }
+          },
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -465,7 +785,8 @@
             "vi": "Rượu vang đỏ",
             "ru": "Красное вино"
           },
-          "price": 139000
+          "price": 139000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -473,7 +794,123 @@
             "vi": "Rượu vang trắng",
             "ru": "Белое вино"
           },
-          "price": 139000
+          "price": 139000,
+          "status": "confirmed"
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "en": "Coffee",
+        "vi": "Cà phê",
+        "ru": "Кофе"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "en": "Espresso",
+            "vi": "Cà phê Espresso",
+            "ru": "Эспрессо"
+          },
+          "price": 49000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Americano",
+            "vi": "Americano",
+            "ru": "Американо"
+          },
+          "price": 59000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Cappuccino",
+            "vi": "Cappuccino",
+            "ru": "Капучино"
+          },
+          "price": 69000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Vietnamese iced milk coffee",
+            "vi": "Cà phê sữa đá",
+            "ru": "Вьетнамский кофе со льдом и молоком"
+          },
+          "price": 59000,
+          "status": "suggested"
+        }
+      ]
+    },
+    {
+      "name": {
+        "en": "Snacks",
+        "vi": "Đồ ăn vặt",
+        "ru": "Закуски"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "en": "Nachos with cheese sauce",
+            "vi": "Nachos sốt phô mai",
+            "ru": "Начос с сырным соусом"
+          },
+          "price": 129000,
+          "status": "suggested",
+          "tags": [
+            "vegetarian"
+          ]
+        },
+        {
+          "name": {
+            "en": "French fries",
+            "vi": "Khoai tây chiên",
+            "ru": "Картофель фри"
+          },
+          "price": 79000,
+          "status": "suggested",
+          "tags": [
+            "vegetarian"
+          ]
+        },
+        {
+          "name": {
+            "en": "Chicken wings",
+            "vi": "Cánh gà",
+            "ru": "Куриные крылышки"
+          },
+          "price": 149000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "en": "Mixed nuts",
+            "vi": "Hạt thập cẩm",
+            "ru": "Ассорти орехов"
+          },
+          "price": 79000,
+          "status": "suggested",
+          "tags": [
+            "vegan"
+          ]
+        },
+        {
+          "name": {
+            "en": "Fruit platter",
+            "vi": "Đĩa trái cây",
+            "ru": "Фруктовая тарелка"
+          },
+          "price": 189000,
+          "status": "suggested",
+          "tags": [
+            "vegan",
+            "sharing"
+          ]
         }
       ]
     }

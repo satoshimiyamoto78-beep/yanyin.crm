@@ -15,7 +15,7 @@
       "zh"
     ]
   },
-  "source": "Founder-provided menu photos, 2026-11-08. Prices in VND. Partial menu: more pages may exist.",
+  "source": "Founder-provided menu photos, 2026-11-08. Prices in VND. Partial menu: more pages may exist. Items with status=suggested were added by Claude to fill gaps; venue must confirm names, recipes and prices.",
   "categories": [
     {
       "name": {
@@ -30,7 +30,8 @@
             "en": "Tom Yum",
             "vi": "Súp Tom Yum"
           },
-          "price": 180000
+          "price": 180000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -38,7 +39,8 @@
             "en": "Fish soup",
             "vi": "Súp cá"
           },
-          "price": 180000
+          "price": 180000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -46,7 +48,8 @@
             "en": "Creamy mushroom soup",
             "vi": "Súp kem nấm"
           },
-          "price": 130000
+          "price": 130000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -54,7 +57,158 @@
             "en": "Fatir Shurpa",
             "vi": "Súp Fatir Shurpa"
           },
-          "price": 250000
+          "price": 250000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Лагман-суп",
+            "en": "Lagman soup",
+            "vi": "Súp mì Lagman"
+          },
+          "price": 180000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Мастава",
+            "en": "Mastava rice soup",
+            "vi": "Súp cơm Mastava"
+          },
+          "price": 170000,
+          "status": "suggested"
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "ru": "Салаты",
+        "en": "Salads",
+        "vi": "Xà lách"
+      },
+      "items": [
+        {
+          "name": {
+            "ru": "Салат Цезарь с курицей",
+            "en": "Caesar salad with chicken",
+            "vi": "Salad Caesar với thịt gà"
+          },
+          "price": 160000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Салат Цезарь с креветками",
+            "en": "Caesar salad with shrimps",
+            "vi": "Salad Caesar với tôm"
+          },
+          "price": 200000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Греческий салат",
+            "en": "Greek salad",
+            "vi": "Salad Hy Lạp"
+          },
+          "price": 160000,
+          "tags": [
+            "vegetarian"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Руккола с креветками",
+            "en": "Arugula shrimp salad",
+            "vi": "Salad rau rocket tôm"
+          },
+          "price": 200000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Салат из морепродуктов",
+            "en": "Seafood salad",
+            "vi": "Salad hải sản"
+          },
+          "price": 200000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Битые огурцы",
+            "en": "Smashed cucumber salad",
+            "vi": "Dưa leo đập"
+          },
+          "price": 90000,
+          "tags": [
+            "vegetarian"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Хрустящие баклажаны",
+            "en": "Crispy eggplant",
+            "vi": "Cà tím chiên giòn"
+          },
+          "price": 180000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Оливье",
+            "en": "Olivier salad",
+            "vi": "Salad Nga"
+          },
+          "price": 150000,
+          "status": "confirmed"
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "ru": "Плов",
+        "en": "Plov",
+        "vi": "Cơm Plov"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "ru": "Плов самаркандский",
+            "en": "Samarkand plov",
+            "vi": "Cơm Plov Samarkand"
+          },
+          "price": 240000,
+          "status": "suggested",
+          "tags": [
+            "signature"
+          ]
+        },
+        {
+          "name": {
+            "ru": "Плов чайханский",
+            "en": "Chaikhana plov",
+            "vi": "Cơm Plov kiểu Chaikhana"
+          },
+          "price": 220000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Плов на компанию (на 4 персоны)",
+            "en": "Plov for the table (serves 4)",
+            "vi": "Cơm Plov cho bàn (4 người)"
+          },
+          "price": 800000,
+          "status": "suggested",
+          "tags": [
+            "sharing"
+          ]
         }
       ]
     },
@@ -71,7 +225,8 @@
             "en": "Chicken wings",
             "vi": "Cánh gà nướng"
           },
-          "price": 180000
+          "price": 180000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -79,7 +234,8 @@
             "en": "Chicken breast",
             "vi": "Ức gà nướng"
           },
-          "price": 190000
+          "price": 190000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -87,7 +243,8 @@
             "en": "Lamb loin shashlik",
             "vi": "Xiên thịt thăn cừu nướng"
           },
-          "price": 300000
+          "price": 300000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -98,7 +255,8 @@
           "price": 120000,
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "status": "confirmed"
         },
         {
           "name": {
@@ -106,7 +264,8 @@
             "en": "Beef shashlik",
             "vi": "Xiên thịt bò nướng"
           },
-          "price": 260000
+          "price": 260000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -114,7 +273,8 @@
             "en": "Lamb shashlik",
             "vi": "Xiên thịt cừu nướng"
           },
-          "price": 260000
+          "price": 260000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -122,7 +282,8 @@
             "en": "Beef lyulya kebab",
             "vi": "Thịt bò băm nướng xiên"
           },
-          "price": 220000
+          "price": 220000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -130,132 +291,11 @@
             "en": "Lamb lyulya kebab",
             "vi": "Thịt cừu băm nướng xiên"
           },
-          "price": 220000
+          "price": 220000,
+          "status": "confirmed"
         }
-      ]
-    },
-    {
-      "name": {
-        "ru": "Салаты",
-        "en": "Salads",
-        "vi": "Xà lách"
-      },
-      "items": [
-        {
-          "name": {
-            "ru": "Салат Цезарь с курицей",
-            "en": "Caesar salad with chicken",
-            "vi": "Salad Caesar với thịt gà"
-          },
-          "price": 160000
-        },
-        {
-          "name": {
-            "ru": "Салат Цезарь с креветками",
-            "en": "Caesar salad with shrimps",
-            "vi": "Salad Caesar với tôm"
-          },
-          "price": 200000
-        },
-        {
-          "name": {
-            "ru": "Греческий салат",
-            "en": "Greek salad",
-            "vi": "Salad Hy Lạp"
-          },
-          "price": 160000,
-          "tags": [
-            "vegetarian"
-          ]
-        },
-        {
-          "name": {
-            "ru": "Руккола с креветками",
-            "en": "Arugula shrimp salad",
-            "vi": "Salad rau rocket tôm"
-          },
-          "price": 200000
-        },
-        {
-          "name": {
-            "ru": "Салат из морепродуктов",
-            "en": "Seafood salad",
-            "vi": "Salad hải sản"
-          },
-          "price": 200000
-        },
-        {
-          "name": {
-            "ru": "Битые огурцы",
-            "en": "Smashed cucumber salad",
-            "vi": "Dưa leo đập"
-          },
-          "price": 90000,
-          "tags": [
-            "vegetarian"
-          ]
-        },
-        {
-          "name": {
-            "ru": "Хрустящие баклажаны",
-            "en": "Crispy eggplant",
-            "vi": "Cà tím chiên giòn"
-          },
-          "price": 180000
-        },
-        {
-          "name": {
-            "ru": "Оливье",
-            "en": "Olivier salad",
-            "vi": "Salad Nga"
-          },
-          "price": 150000
-        }
-      ]
-    },
-    {
-      "name": {
-        "ru": "Блюда от шефа",
-        "en": "Chef's specials",
-        "vi": "Món đặc biệt của bếp trưởng"
-      },
-      "items": [
-        {
-          "name": {
-            "ru": "Салат от шефа",
-            "en": "Chef's salad",
-            "vi": "Salad đặc biệt của bếp trưởng"
-          },
-          "price": 210000
-        },
-        {
-          "name": {
-            "ru": "Горячее блюдо от шефа",
-            "en": "Chef's hot dish",
-            "vi": "Món nóng đặc biệt của bếp trưởng"
-          },
-          "price": 280000
-        },
-        {
-          "name": {
-            "ru": "Помидор в соку",
-            "en": "Tomatoes in Their Own Juice",
-            "vi": "Cà chua trong nước ép của chính nó"
-          },
-          "price": 130000,
-          "tags": [
-            "vegetarian"
-          ]
-        },
-        {
-          "name": {
-            "ru": "Шашлык от шефа",
-            "en": "Chef's shashlik",
-            "vi": "Xiên nướng đặc biệt của bếp trưởng"
-          },
-          "price": 270000
-        }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -270,7 +310,8 @@
             "en": "Beef stew",
             "vi": "Bò hầm"
           },
-          "price": 180000
+          "price": 180000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -278,7 +319,8 @@
             "en": "Fried Lagman",
             "vi": "Mì Lagman xào"
           },
-          "price": 200000
+          "price": 200000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -286,7 +328,8 @@
             "en": "Beef cutlets",
             "vi": "Chả bò"
           },
-          "price": 180000
+          "price": 180000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -294,7 +337,171 @@
             "en": "Chicken cutlets",
             "vi": "Chả gà"
           },
-          "price": 160000
+          "price": 160000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Казан-кабоб",
+            "en": "Kazan kabob (lamb with potatoes)",
+            "vi": "Thịt cừu chiên khoai tây Kazan-kabob"
+          },
+          "price": 260000,
+          "status": "suggested"
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "ru": "Блюда от шефа",
+        "en": "Chef's specials",
+        "vi": "Món đặc biệt của bếp trưởng"
+      },
+      "items": [
+        {
+          "name": {
+            "ru": "Салат от шефа",
+            "en": "Chef's salad",
+            "vi": "Salad đặc biệt của bếp trưởng"
+          },
+          "price": 210000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Горячее блюдо от шефа",
+            "en": "Chef's hot dish",
+            "vi": "Món nóng đặc biệt của bếp trưởng"
+          },
+          "price": 280000,
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Помидор в соку",
+            "en": "Tomatoes in Their Own Juice",
+            "vi": "Cà chua trong nước ép của chính nó"
+          },
+          "price": 130000,
+          "tags": [
+            "vegetarian"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "name": {
+            "ru": "Шашлык от шефа",
+            "en": "Chef's shashlik",
+            "vi": "Xiên nướng đặc biệt của bếp trưởng"
+          },
+          "price": 270000,
+          "status": "confirmed"
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "ru": "Выпечка и тандыр",
+        "en": "Pastries & Tandoor",
+        "vi": "Bánh nướng & Lò Tandyr"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "ru": "Самса с говядиной",
+            "en": "Beef samsa",
+            "vi": "Bánh Samsa nhân bò"
+          },
+          "price": 60000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Самса с бараниной",
+            "en": "Lamb samsa",
+            "vi": "Bánh Samsa nhân cừu"
+          },
+          "price": 65000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Манты (5 шт.)",
+            "en": "Manty dumplings (5 pcs)",
+            "vi": "Bánh bao hấp Manty (5 cái)"
+          },
+          "price": 180000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Чучвара",
+            "en": "Chuchvara dumplings",
+            "vi": "Há cảo Chuchvara"
+          },
+          "price": 160000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Тандырная лепёшка",
+            "en": "Tandoor flatbread",
+            "vi": "Bánh mì nướng lò Tandyr"
+          },
+          "price": 30000,
+          "status": "suggested",
+          "tags": [
+            "vegetarian"
+          ]
+        }
+      ]
+    },
+    {
+      "name": {
+        "ru": "Закуски",
+        "en": "Starters",
+        "vi": "Món khai vị"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "ru": "Ачичук",
+            "en": "Achichuk tomato & onion salad",
+            "vi": "Salad cà chua hành Achichuk"
+          },
+          "price": 70000,
+          "status": "suggested",
+          "tags": [
+            "vegan"
+          ]
+        },
+        {
+          "name": {
+            "ru": "Соленья ассорти",
+            "en": "Assorted pickles",
+            "vi": "Rau củ muối thập cẩm"
+          },
+          "price": 90000,
+          "status": "suggested",
+          "tags": [
+            "vegan"
+          ]
+        },
+        {
+          "name": {
+            "ru": "Сюзьма с зеленью",
+            "en": "Suzma yogurt with herbs",
+            "vi": "Sữa chua đặc Suzma với rau thơm"
+          },
+          "price": 70000,
+          "status": "suggested",
+          "tags": [
+            "vegetarian"
+          ]
         }
       ]
     },
@@ -311,7 +518,8 @@
             "en": "Shrimp pasta",
             "vi": "Mì Ý tôm"
           },
-          "price": 180000
+          "price": 180000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -319,7 +527,8 @@
             "en": "Pasta Bolognese",
             "vi": "Mì Ý Bolognese"
           },
-          "price": 180000
+          "price": 180000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -330,7 +539,8 @@
           "price": 160000,
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "status": "confirmed"
         },
         {
           "name": {
@@ -338,9 +548,11 @@
             "en": "Salmon pasta",
             "vi": "Mì Ý cá hồi"
           },
-          "price": 210000
+          "price": 210000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -358,7 +570,8 @@
           "price": 40000,
           "tags": [
             "vegan"
-          ]
+          ],
+          "status": "confirmed"
         },
         {
           "name": {
@@ -369,7 +582,8 @@
           "price": 80000,
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "status": "confirmed"
         },
         {
           "name": {
@@ -380,7 +594,8 @@
           "price": 110000,
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "status": "confirmed"
         },
         {
           "name": {
@@ -391,7 +606,147 @@
           "price": 70000,
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "status": "confirmed"
+        }
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "ru": "Десерты",
+        "en": "Desserts",
+        "vi": "Tráng miệng"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "ru": "Чак-чак",
+            "en": "Chak-chak",
+            "vi": "Bánh mật ong Chak-chak"
+          },
+          "price": 80000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Пахлава",
+            "en": "Baklava",
+            "vi": "Bánh Baklava"
+          },
+          "price": 90000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Медовик",
+            "en": "Medovik honey cake",
+            "vi": "Bánh mật ong Medovik"
+          },
+          "price": 90000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Наполеон",
+            "en": "Napoleon cake",
+            "vi": "Bánh Napoleon"
+          },
+          "price": 90000,
+          "status": "suggested"
+        }
+      ]
+    },
+    {
+      "name": {
+        "ru": "Чай",
+        "en": "Tea",
+        "vi": "Trà"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "ru": "Зелёный чай (чайник)",
+            "en": "Green tea (pot)",
+            "vi": "Trà xanh (ấm)"
+          },
+          "price": 50000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Чёрный чай (чайник)",
+            "en": "Black tea (pot)",
+            "vi": "Trà đen (ấm)"
+          },
+          "price": 50000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Чай с лимоном и мятой (чайник)",
+            "en": "Lemon & mint tea (pot)",
+            "vi": "Trà chanh bạc hà (ấm)"
+          },
+          "price": 60000,
+          "status": "suggested"
+        }
+      ]
+    },
+    {
+      "name": {
+        "ru": "Кофе",
+        "en": "Coffee",
+        "vi": "Cà phê"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "ru": "Эспрессо",
+            "en": "Espresso",
+            "vi": "Cà phê Espresso"
+          },
+          "price": 40000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Американо",
+            "en": "Americano",
+            "vi": "Americano"
+          },
+          "price": 45000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Капучино",
+            "en": "Cappuccino",
+            "vi": "Cappuccino"
+          },
+          "price": 55000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Латте",
+            "en": "Latte",
+            "vi": "Latte"
+          },
+          "price": 60000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Вьетнамский кофе со льдом и молоком",
+            "en": "Vietnamese iced milk coffee",
+            "vi": "Cà phê sữa đá"
+          },
+          "price": 45000,
+          "status": "suggested"
         }
       ]
     },
@@ -408,7 +763,8 @@
             "en": "Banana smoothie",
             "vi": "Sinh tố chuối"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -416,7 +772,8 @@
             "en": "Avocado smoothie",
             "vi": "Sinh tố bơ"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -424,7 +781,8 @@
             "en": "Dragon fruit smoothie",
             "vi": "Sinh tố thanh long"
           },
-          "price": 60000
+          "price": 60000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -432,7 +790,8 @@
             "en": "Mango smoothie",
             "vi": "Sinh tố xoài"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -440,9 +799,11 @@
             "en": "Mixed smoothie",
             "vi": "Sinh tố thập cẩm"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -457,7 +818,8 @@
             "en": "Orange juice",
             "vi": "Nước ép cam"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -465,7 +827,8 @@
             "en": "Apple juice",
             "vi": "Nước ép táo"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -473,7 +836,8 @@
             "en": "Watermelon juice",
             "vi": "Nước ép dưa hấu"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -481,7 +845,8 @@
             "en": "Passion fruit juice",
             "vi": "Nước chanh dây"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -489,7 +854,8 @@
             "en": "Pineapple juice",
             "vi": "Nước ép dứa"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -497,9 +863,11 @@
             "en": "Fresh juice mix",
             "vi": "Nước ép trái cây tổng hợp"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -514,7 +882,8 @@
             "en": "Coca-Cola",
             "vi": "Coca-Cola"
           },
-          "price": 30000
+          "price": 30000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -522,7 +891,8 @@
             "en": "Pepsi",
             "vi": "Pepsi"
           },
-          "price": 30000
+          "price": 30000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -530,7 +900,8 @@
             "en": "Coca-Cola Zero",
             "vi": "Coca-Cola Zero"
           },
-          "price": 30000
+          "price": 30000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -538,7 +909,8 @@
             "en": "Sprite",
             "vi": "Sprite"
           },
-          "price": 30000
+          "price": 30000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -546,7 +918,8 @@
             "en": "Fanta",
             "vi": "Fanta"
           },
-          "price": 30000
+          "price": 30000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -554,7 +927,8 @@
             "en": "Soda",
             "vi": "Soda"
           },
-          "price": 30000
+          "price": 30000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -562,9 +936,11 @@
             "en": "Water",
             "vi": "Nước"
           },
-          "price": 20000
+          "price": 20000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
     },
     {
       "name": {
@@ -579,7 +955,8 @@
             "en": "Ayran",
             "vi": "Ayran"
           },
-          "price": 80000
+          "price": 80000,
+          "status": "confirmed"
         },
         {
           "name": {
@@ -606,7 +983,8 @@
               "price": 160000
             }
           ],
-          "note": "Menu shows 80 000/160 000; sizes to confirm"
+          "note": "Menu shows 80 000/160 000; sizes to confirm",
+          "status": "confirmed"
         },
         {
           "name": {
@@ -614,9 +992,49 @@
             "en": "Fresh coconut",
             "vi": "Dừa tươi"
           },
-          "price": 50000
+          "price": 50000,
+          "status": "confirmed"
         }
-      ]
+      ],
+      "status": "confirmed"
+    },
+    {
+      "name": {
+        "ru": "Пиво",
+        "en": "Beer",
+        "vi": "Bia"
+      },
+      "status": "suggested",
+      "items": [
+        {
+          "name": {
+            "ru": "Saigon Special",
+            "en": "Saigon Special",
+            "vi": "Bia Saigon Special"
+          },
+          "price": 45000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Larue",
+            "en": "Larue",
+            "vi": "Bia Larue"
+          },
+          "price": 40000,
+          "status": "suggested"
+        },
+        {
+          "name": {
+            "ru": "Heineken",
+            "en": "Heineken",
+            "vi": "Bia Heineken"
+          },
+          "price": 55000,
+          "status": "suggested"
+        }
+      ],
+      "note": "Confirm whether the venue serves alcohol"
     }
   ]
 }
