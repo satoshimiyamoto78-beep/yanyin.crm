@@ -1,0 +1,59 @@
+# yanyin.crm — project memory
+
+yanyin.crm is a SaaS platform for HoReCa (restaurants, cafés, bars, hotels). It
+combines POS, digital menu, stock, finance, staff and loyalty, and sets itself
+apart with **fun**: game mechanics for staff (quests, XP, bonuses), playful
+ordering for guests (Food Roulette and similar), and one AI assistant, **Yan**,
+that runs through every role.
+
+Pitch: *"The restaurant operating system your staff actually want to open."*
+
+## Communication rules
+
+- **Reply to the owner in Russian**, even when they write in English. Code,
+  identifiers, commit messages and code comments stay in English.
+- Product docs in `docs/` are written in Russian, keeping English technical terms
+  where they are standard (MRR, KDS, food cost, RLS…).
+- The owner is the founder and platform owner (the `yanyin.core` role). Give
+  recommendations, not long lists of options.
+
+## Before working on anything product-related
+
+Load the project skill **`yanyin-product`** (`.claude/skills/yanyin-product/`).
+It holds the HoReCa domain knowledge, SaaS rules, UX standards and engineering
+conventions that every task in this repo follows.
+
+## Product map (one platform, six surfaces)
+
+| Surface | Who uses it | Form |
+|---|---|---|
+| `yanyin.core` | Platform owner (the founder) | Web super-admin |
+| `yanyin.hq` | Venue owner and managers | Web console, mobile-first |
+| `yanyin.crew` | Waiters, cooks, bartenders | PWA on a phone |
+| `yanyin.kitchen` | Kitchen and bar | KDS on a wall tablet |
+| `yanyin.menu` | Guests | PWA opened from a QR code, no install |
+| `yanyin.engine` | Shared core | AI Yan, recommendations, realtime, payments |
+
+Sub-brands: `yanyin.quest` (staff quests), `yanyin.club` (guest loyalty).
+"yanyin.crm" is the wordmark; `.crm` is not a real TLD, so domains will be
+something like `yanyin.app` (not decided yet, see `docs/04-decisions.md`).
+
+## Key documents
+
+- `docs/00-vision-brainstorm.md`: the founder's original feature list and the full brainstorm
+- `docs/01-market-research.md`: competitors, Central Asia market, fiscal rules, payments, benchmarks
+- `docs/02-architecture.md`: system tree, process chains, access levels, tech stack
+- `docs/03-roadmap.md`: MVP scope and phased backlog
+- `docs/04-decisions.md`: decision log (ADR) and open questions for the founder
+- Interactive architecture scheme: https://claude.ai/artifact/SG8DvbBNPCJQNdibfwJ7WQ
+
+## Default tech stack (decided, see ADR-001)
+
+TypeScript everywhere · Next.js (App Router) + Tailwind + shadcn/ui · Supabase
+(Postgres, Auth, Realtime, Storage) with Row Level Security for multi-tenancy ·
+Claude API for Yan · pgvector · Vercel hosting · Sentry · GitHub Actions.
+Monorepo layout is planned in `docs/02-architecture.md`.
+
+## Git
+
+Work on the branch the session gives you. Never push to `main` directly.
