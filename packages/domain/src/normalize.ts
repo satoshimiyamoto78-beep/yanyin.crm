@@ -29,7 +29,7 @@ export type RawMenu = {
 };
 
 type RawVariant = { name: I18nText; price: number };
-type RawOption = { name: I18nText; price: number; note?: I18nText; logo?: string; color?: string; glyph?: string };
+type RawOption = { name: I18nText; price: number; note?: I18nText; logo?: string; color?: string; glyph?: string; photo?: string };
 
 type RawCategory = {
   name: I18nText;
@@ -63,7 +63,7 @@ type RawItem = {
   note?: string;
   /** Ids of the category's modifier groups this item uses; all of them when omitted. */
   modifier_groups?: string[];
-  builder?: "pizza" | "drink";
+  builder?: "pizza" | "drink" | "halves";
   cover?: string;
 };
 
@@ -129,6 +129,7 @@ export function normalizeMenu(raw: RawMenu): Menu {
         ...(o.logo ? { logo: o.logo } : {}),
         ...(o.color ? { color: o.color } : {}),
         ...(o.glyph ? { glyph: o.glyph } : {}),
+        ...(o.photo ? { photo: o.photo } : {}),
       }));
       return {
         id: g.id,

@@ -20,7 +20,7 @@ import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { DrinkPreview, OptionTiles, PizzaPreview } from "./builders";
+import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview } from "./builders";
 import { DishTile, HalalIcon, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
 
 /* ---------------------------------------------------------------- Item */
@@ -41,6 +41,7 @@ export function ItemSheet({
   onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number) => void;
 }) {
   if (!item || !category) return null;
+  if (item.builder === "halves") return <HalvesPicker key={item.id} item={item} lang={lang} currency={currency} onClose={onClose} onAdd={onAdd} />;
   return <ItemSheetBody key={item.id} item={item} category={category} lang={lang} currency={currency} onClose={onClose} onAdd={onAdd} />;
 }
 

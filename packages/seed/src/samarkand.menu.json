@@ -1029,6 +1029,140 @@
               "glyph": "basil"
             }
           ]
+        },
+        {
+          "id": "left",
+          "name": {
+            "en": "Left half",
+            "ru": "Левая половинка",
+            "vi": "Nửa trái"
+          },
+          "required": true,
+          "max": 1,
+          "default": 0,
+          "options": [
+            {
+              "name": {
+                "en": "Mushroom",
+                "ru": "Грибная",
+                "vi": "Pizza nấm"
+              },
+              "price": 84000,
+              "photo": "/dishes/pizza/mushroom.webp"
+            },
+            {
+              "name": {
+                "en": "Chicken & vegetables",
+                "ru": "Курица с овощами",
+                "vi": "Gà và rau"
+              },
+              "price": 100000,
+              "photo": "/dishes/pizza/chicken-veggie.webp"
+            },
+            {
+              "name": {
+                "en": "BBQ chicken",
+                "ru": "Курица барбекю",
+                "vi": "Gà BBQ"
+              },
+              "price": 104000,
+              "photo": "/dishes/pizza/bbq-chicken.webp"
+            },
+            {
+              "name": {
+                "en": "Chicken tikka",
+                "ru": "Курица тикка",
+                "vi": "Gà tikka"
+              },
+              "price": 104000,
+              "photo": "/dishes/pizza/chicken-tikka.webp"
+            },
+            {
+              "name": {
+                "en": "Chicken supreme",
+                "ru": "Куриная супрем",
+                "vi": "Gà supreme"
+              },
+              "price": 110000,
+              "photo": "/dishes/pizza/chicken-supreme.webp"
+            },
+            {
+              "name": {
+                "en": "Beef salami & olives",
+                "ru": "Говяжья салями с оливками",
+                "vi": "Salami bò và ô liu"
+              },
+              "price": 110000,
+              "photo": "/dishes/pizza/salami-olive.webp"
+            }
+          ]
+        },
+        {
+          "id": "right",
+          "name": {
+            "en": "Right half",
+            "ru": "Правая половинка",
+            "vi": "Nửa phải"
+          },
+          "required": true,
+          "max": 1,
+          "default": 2,
+          "options": [
+            {
+              "name": {
+                "en": "Mushroom",
+                "ru": "Грибная",
+                "vi": "Pizza nấm"
+              },
+              "price": 84000,
+              "photo": "/dishes/pizza/mushroom.webp"
+            },
+            {
+              "name": {
+                "en": "Chicken & vegetables",
+                "ru": "Курица с овощами",
+                "vi": "Gà và rau"
+              },
+              "price": 100000,
+              "photo": "/dishes/pizza/chicken-veggie.webp"
+            },
+            {
+              "name": {
+                "en": "BBQ chicken",
+                "ru": "Курица барбекю",
+                "vi": "Gà BBQ"
+              },
+              "price": 104000,
+              "photo": "/dishes/pizza/bbq-chicken.webp"
+            },
+            {
+              "name": {
+                "en": "Chicken tikka",
+                "ru": "Курица тикка",
+                "vi": "Gà tikka"
+              },
+              "price": 104000,
+              "photo": "/dishes/pizza/chicken-tikka.webp"
+            },
+            {
+              "name": {
+                "en": "Chicken supreme",
+                "ru": "Куриная супрем",
+                "vi": "Gà supreme"
+              },
+              "price": 110000,
+              "photo": "/dishes/pizza/chicken-supreme.webp"
+            },
+            {
+              "name": {
+                "en": "Beef salami & olives",
+                "ru": "Говяжья салями с оливками",
+                "vi": "Salami bò và ô liu"
+              },
+              "price": 110000,
+              "photo": "/dishes/pizza/salami-olive.webp"
+            }
+          ]
         }
       ],
       "items": [
@@ -1070,6 +1204,54 @@
             "en": "Size, dough, sauce, cheese and up to six toppings",
             "ru": "Размер, тесто, соус, сыр и до шести начинок",
             "vi": "Cỡ, đế, sốt, phô mai và tối đa sáu topping"
+          },
+          "modifier_groups": [
+            "dough",
+            "sauce",
+            "cheese",
+            "toppings"
+          ]
+        },
+        {
+          "name": {
+            "en": "Pizza from halves",
+            "ru": "Пицца из половинок",
+            "vi": "Pizza hai nửa"
+          },
+          "status": "suggested",
+          "builder": "halves",
+          "price": 168000,
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 40000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 90000
+            }
+          ],
+          "modifier_groups": [
+            "left",
+            "right"
+          ],
+          "description": {
+            "en": "Two pizzas in one: pick a different half on each side",
+            "ru": "Две пиццы в одной: выберите разные половинки",
+            "vi": "Hai pizza trong một: chọn mỗi nửa một vị"
           }
         },
         {

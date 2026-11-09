@@ -1,8 +1,10 @@
 "use client";
 
 import { formatMoney, t, type Currency, type Lang, type MenuItem, type ModifierGroup, type ModifierOption } from "@yanyin/domain";
-import { Check } from "lucide-react";
-import type { ReactNode } from "react";
+import { Check, Dices } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { haptic } from "@/lib/haptics";
+import { Sheet } from "./ui";
 
 /* ---------------------------------------------------------------- Glyphs */
 
@@ -273,5 +275,185 @@ export function DrinkPreview({ item, ids, variantId }: { item: MenuItem; ids: st
       <path d={`M${lx} ${top} L${rx} ${top} L${rx - 8} ${bottom} Q100 ${bottom + 6} ${lx + 8} ${bottom} Z`} fill="none" stroke="#c9d4ff" strokeWidth={3} strokeLinejoin="round" />
       <path d={`M${lx + 10} ${top + 12} L${lx + 16} ${bottom - 18}`} stroke="#fff" strokeWidth={4} strokeLinecap="round" opacity={0.7} />
     </svg>
+  );
+}
+
+/* ---------------------------------------------------------------- Pizza from halves */
+
+const HALF = 150; // radius of the chosen half, px
+
+/** One half of a round cut-out pizza photo: the left or the right semicircle. */
+function HalfPizza({ src, side, r }: { src?: string; side: "left" | "right"; r: number }) {
+  return (
+    <span className="relative block overflow-hidden" style={{ width: r, height: r * 2 }}>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" draggable={false} className="absolute top-0 max-w-none select-none" style={{ width: r * 2, height: r * 2, left: side === "left" ? 0 : -r }} />
+      ) : (
+        <span className="absolute top-0 rounded-full bg-g-fill-2" style={{ width: r * 2, height: r * 2, left: side === "left" ? 0 : -r }} />
+      )}
+    </span>
+  );
+}
+
+/**
+ * One side of the halves stage: a vertical reel. The picked half sits large at
+ * the centre line; its neighbours peek above and below, smaller and faded.
+ * Swipe up/down (or tap a neighbour) to change.
+ */
+function HalfReel({ side, options, index, onChange }: { side: "left" | "right"; options: ModifierOption[]; index: number; onChange: (i: number) => void }) {
+  const n = options.length;
+  const at = (k: number) => (k + n) % n;
+  const startY = useRef(0);
+  const step = (d: number) => {
+    haptic("tick");
+    onChange(at(index + d));
+  };
+  const inner = side === "left" ? "right" : "left";
+  return (
+    <div
+      className="relative h-full touch-none select-none"
+      style={{ width: HALF + 8 }}
+      onPointerDown={(e) => {
+        startY.current = e.clientY;
+      }}
+      onPointerUp={(e) => {
+        const dy = e.clientY - startY.current;
+        if (Math.abs(dy) > 36) step(dy < 0 ? 1 : -1);
+      }}
+    >
+      {[-1, 0, 1].map((d) => {
+        const o = options[at(index + d)]!;
+        const main = d === 0;
+        return (
+          <button
+            key={`${o.id}-${d}`}
+            onClick={() => !main && step(d)}
+            aria-label={main ? t(o.name, "en") : `${d < 0 ? "Previous" : "Next"}: ${t(o.name, "en")}`}
+            className="absolute top-1/2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{
+              [inner]: 0,
+              transform: `translateY(calc(-50% + ${d * (HALF * 1.32)}px)) scale(${main ? 1 : 0.42})`,
+              transformOrigin: `${inner} center`,
+              opacity: main ? 1 : 0.45,
+              zIndex: main ? 2 : 1,
+            }}
+          >
+            <HalfPizza src={o.photo} side={side} r={HALF} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function HalvesPicker({
+  item,
+  lang,
+  currency,
+  onClose,
+  onAdd,
+}: {
+  item: MenuItem;
+  lang: Lang;
+  currency: Currency;
+  onClose: () => void;
+  onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number) => void;
+}) {
+  const leftG = item.modifierGroups.find((g) => g.id === "left")!;
+  const rightG = item.modifierGroups.find((g) => g.id === "right")!;
+  const opts = leftG.options;
+  const [l, setL] = useState(Math.max(0, opts.findIndex((o) => o.id === leftG.defaultOptionId)));
+  const [r, setR] = useState(Math.max(0, rightG.options.findIndex((o) => o.id === rightG.defaultOptionId)));
+  const [variantId, setVariantId] = useState(item.variants[0]?.id);
+  const [rolling, setRolling] = useState(false);
+  const size = item.variants.find((v) => v.id === variantId)?.price ?? 0;
+  const left = opts[l]!;
+  const right = rightG.options[r]!;
+  const price = size + left.price + right.price;
+  const side = (o: ModifierOption) => size / 2 + o.price; // this half's share; the two shares add up to the price
+  const dice = () => {
+    if (rolling) return;
+    setRolling(true);
+    let k = 0;
+    const id = setInterval(() => {
+      haptic("tick");
+      setL((v) => (v + 1) % opts.length);
+      setR((v) => (v + 2) % opts.length);
+      if (++k >= 7) {
+        clearInterval(id);
+        setL(Math.floor(Math.random() * opts.length));
+        setR(Math.floor(Math.random() * opts.length));
+        haptic("success");
+        setRolling(false);
+      }
+    }, 110);
+  };
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      label={t(item.name, lang)}
+      footer={
+        <button
+          onClick={() => {
+            haptic("success");
+            onAdd(item, variantId, [leftG.options[l]!.id, right.id], 1);
+          }}
+          className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums"
+        >
+          {t({ en: "Combine halves", ru: "Объединить половинки", vi: "Ghép hai nửa" }, lang)} · {formatMoney(price, currency, lang)}
+        </button>
+      }
+    >
+      <div className="px-5 pt-1 pb-6">
+        <div className="flex rounded-full bg-g-fill p-1">
+          {item.variants.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => {
+                haptic("tick");
+                setVariantId(v.id);
+              }}
+              aria-pressed={v.id === variantId}
+              className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${v.id === variantId ? "bg-white text-g-ink" : "text-g-muted"}`}
+            >
+              {t(v.name, lang)}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 flex items-start justify-between gap-3">
+          {[
+            [left, "text-left"],
+            [right, "text-right"],
+          ].map(([o, align]) => (
+            <div key={align as string} className={`min-w-0 flex-1 ${align as string}`}>
+              <p key={(o as ModifierOption).id} className="animate-pop truncate text-[17px] leading-tight font-semibold">
+                {t((o as ModifierOption).name, lang)}
+              </p>
+              <p className="mt-0.5 text-[13px] text-g-muted tabular-nums">{formatMoney(side(o as ModifierOption), currency, lang)}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* The stage: two reels meet at the centre line. */}
+        <div className="relative mt-2 flex h-[440px] items-center justify-center overflow-hidden">
+          <HalfReel side="left" options={opts} index={l} onChange={setL} />
+          <span aria-hidden className="z-10 h-[330px] w-1 shrink-0 rounded-full bg-white" />
+          <HalfReel side="right" options={rightG.options} index={r} onChange={setR} />
+          <button
+            onClick={dice}
+            aria-label="Random halves"
+            className={`press absolute right-1 bottom-2 z-20 grid size-12 place-items-center rounded-full bg-white text-g-blue ring-1 ring-g-line ${rolling ? "animate-spin" : ""}`}
+          >
+            <Dices size={22} strokeWidth={1.9} />
+          </button>
+        </div>
+        <p className="mt-1 text-center text-[13px] text-g-muted">
+          {t({ en: "Swipe each half up or down", ru: "Листайте каждую половинку вверх или вниз", vi: "Vuốt từng nửa lên hoặc xuống" }, lang)}
+        </p>
+      </div>
+    </Sheet>
   );
 }

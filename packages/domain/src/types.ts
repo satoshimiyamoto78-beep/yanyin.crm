@@ -41,6 +41,8 @@ export type ModifierOption = {
   color?: string;
   /** Drawn glyph key for tiles and builder previews (pepperoni, mushroom…). */
   glyph?: string;
+  /** Round cut-out photo (pizza halves). */
+  photo?: string;
 };
 
 export type ModifierGroup = {
@@ -78,7 +80,7 @@ export type MenuItem = {
   /** Full-bleed photo with its own background, for the dish page header. */
   cover?: string;
   /** A constructor item: the page shows a live preview that follows the picks. */
-  builder?: "pizza" | "drink";
+  builder?: "pizza" | "drink" | "halves";
 };
 
 export type ServiceCall = { id: string; name: I18nText };
