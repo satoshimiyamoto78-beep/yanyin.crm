@@ -2001,33 +2001,31 @@
         },
         {
           "name": {
-            "en": "Margherita",
-            "ru": "Маргарита",
-            "vi": "Margherita"
+            "en": "Mushroom",
+            "ru": "Грибная",
+            "vi": "Pizza nấm"
           },
           "status": "suggested",
+          "photo": "/dishes/pizza/mushroom.webp",
           "variants": [
             {
               "name": {
                 "en": "25 cm",
-                "ru": "25 см",
-                "vi": "25 cm"
+                "ru": "25 см"
               },
               "price": 169000
             },
             {
               "name": {
                 "en": "30 cm",
-                "ru": "30 см",
-                "vi": "30 cm"
+                "ru": "30 см"
               },
               "price": 209000
             },
             {
               "name": {
                 "en": "35 cm",
-                "ru": "35 см",
-                "vi": "35 cm"
+                "ru": "35 см"
               },
               "price": 259000
             }
@@ -2039,51 +2037,50 @@
             "dough"
           ],
           "description": {
-            "en": "Tomato, mozzarella, basil",
-            "ru": "Томаты, моцарелла, базилик",
-            "vi": "Cà chua, mozzarella, húng quế"
+            "en": "Mozzarella and lots of fresh champignons on a light tomato base",
+            "ru": "Моцарелла и много свежих шампиньонов на лёгком томатном соусе"
           }
         },
         {
           "name": {
-            "en": "Pepperoni",
-            "ru": "Пепперони",
-            "vi": "Pepperoni"
+            "en": "Chicken & vegetables",
+            "ru": "Курица с овощами",
+            "vi": "Gà và rau"
           },
           "status": "suggested",
+          "photo": "/dishes/pizza/chicken-veggie.webp",
           "variants": [
             {
               "name": {
                 "en": "25 cm",
-                "ru": "25 см",
-                "vi": "25 cm"
+                "ru": "25 см"
               },
               "price": 199000
             },
             {
               "name": {
                 "en": "30 cm",
-                "ru": "30 см",
-                "vi": "30 cm"
+                "ru": "30 см"
               },
-              "price": 249000
+              "price": 239000
             },
             {
               "name": {
                 "en": "35 cm",
-                "ru": "35 см",
-                "vi": "35 cm"
+                "ru": "35 см"
               },
-              "price": 299000
+              "price": 289000
             }
+          ],
+          "tags": [
+            "halal"
           ],
           "modifier_groups": [
             "dough"
           ],
           "description": {
-            "en": "Tomato sauce, mozzarella, lots of pepperoni",
-            "ru": "Томатный соус, моцарелла, много пепперони",
-            "vi": "Sốt cà chua, mozzarella, nhiều pepperoni"
+            "en": "Grilled chicken, mushrooms, bell pepper and red onion",
+            "ru": "Курица гриль, шампиньоны, сладкий перец и красный лук"
           }
         },
         {
@@ -2093,39 +2090,163 @@
             "vi": "Gà BBQ"
           },
           "status": "suggested",
+          "photo": "/dishes/pizza/bbq-chicken.webp",
           "variants": [
             {
               "name": {
                 "en": "25 cm",
-                "ru": "25 см",
-                "vi": "25 cm"
+                "ru": "25 см"
               },
-              "price": 199000
+              "price": 209000
             },
             {
               "name": {
                 "en": "30 cm",
-                "ru": "30 см",
-                "vi": "30 cm"
+                "ru": "30 см"
               },
               "price": 249000
             },
             {
               "name": {
                 "en": "35 cm",
-                "ru": "35 см",
-                "vi": "35 cm"
+                "ru": "35 см"
               },
               "price": 299000
             }
+          ],
+          "tags": [
+            "halal"
           ],
           "modifier_groups": [
             "dough"
           ],
           "description": {
-            "en": "BBQ sauce, chicken, red onion, mozzarella",
-            "ru": "Соус барбекю, курица, красный лук, моцарелла",
-            "vi": "Sốt BBQ, gà, hành tím, mozzarella"
+            "en": "Roast chicken, red onion and coriander under a BBQ drizzle",
+            "ru": "Запечённая курица, красный лук и кинза с соусом барбекю"
+          }
+        },
+        {
+          "name": {
+            "en": "Chicken tikka",
+            "ru": "Курица тикка",
+            "vi": "Gà tikka"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/chicken-tikka.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 209000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 249000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 299000
+            }
+          ],
+          "tags": [
+            "halal"
+          ],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Spiced tikka chicken, creamy mozzarella and fresh herbs",
+            "ru": "Пряная курица тикка, сливочная моцарелла и свежая зелень"
+          }
+        },
+        {
+          "name": {
+            "en": "Chicken supreme",
+            "ru": "Куриная супрем",
+            "vi": "Gà supreme"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/chicken-supreme.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 219000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 259000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 309000
+            }
+          ],
+          "tags": [
+            "halal"
+          ],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Chicken, black olives, mushrooms and two kinds of pepper",
+            "ru": "Курица, чёрные оливки, шампиньоны и два вида перца"
+          }
+        },
+        {
+          "name": {
+            "en": "Beef salami & olives",
+            "ru": "Говяжья салями с оливками",
+            "vi": "Salami bò và ô liu"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/salami-olive.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 219000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 259000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 309000
+            }
+          ],
+          "tags": [],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Beef salami, cherry tomatoes, olives and basil",
+            "ru": "Говяжья салями, черри, оливки и базилик"
           }
         }
       ]

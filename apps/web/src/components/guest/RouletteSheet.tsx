@@ -5,7 +5,7 @@ import { Compass, Dices, Flame, Leaf, Minus, Plus, Wind, type LucideIcon } from 
 import { useMemo, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { ui, type UiKey } from "@/lib/ui-strings";
-import { Reveal, RouletteWheel, startLoading, useWheelSpin } from "./motion";
+import { CountMoney, RouletteWheel, useWheelSpin } from "./motion";
 import { ChoiceChip, DishTile, Sheet, StepHead, TrackSlider } from "./ui";
 
 const MOODS: Record<Mood, { key: UiKey; icon: LucideIcon }> = {
@@ -57,7 +57,6 @@ export function RouletteSheet({
     const r = spinRoulette({ menu, budget: value, guests, mood, includeAlcohol: alcohol, requireTags: veg ? ["vegetarian"] : undefined });
     setResult(undefined);
     wheel.spin(() => {
-      startLoading(420); // the picked set pulls into focus
       setResult(r);
       setRound((n) => n + 1);
     });
@@ -102,23 +101,29 @@ export function RouletteSheet({
 
         {result === null && <p className="mt-6 text-center text-[15px] text-g-muted">{ui(lang, "nothingFits")}</p>}
         {result && (
-          <Reveal key={round} className="mt-7">
-            <div className="divide-y divide-g-line">
-              {result.items.map((it) => (
-                <div key={it.id} className="flex items-center gap-3.5 py-3">
+          // The picked set flies out of the wheel one by one, then the total counts up.
+          <div key={round} className="mt-7">
+            <p className="result-in text-[13px] font-semibold tracking-[0.06em] text-g-blue uppercase" style={{ animationDelay: "0ms" }}>
+              {ui(lang, "rouletteYourSet")}
+            </p>
+            <div className="mt-1 divide-y divide-g-line">
+              {result.items.map((it, i) => (
+                <div key={it.id} className="result-in flex items-center gap-3.5 py-3" style={{ animationDelay: `${140 + i * 170}ms` }}>
                   <DishTile item={it} role={roleOf.get(it.id) ?? "main"} photoScale={0.9} glyph={0.5} className="size-14 shrink-0 rounded-[16px]" />
                   <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{t(it.name, lang)}</span>
                   <span className="shrink-0 text-[15px] text-g-muted tabular-nums">{formatMoney(it.price, currency, lang)}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-1 flex items-baseline justify-between border-t border-g-line pt-3.5">
+            <div className="result-in mt-1 flex items-baseline justify-between border-t border-g-line pt-3.5" style={{ animationDelay: `${140 + result.items.length * 170}ms` }}>
               <span className="text-[13px] text-g-muted">
                 {formatMoney(result.perGuest, currency, lang)} {ui(lang, "perGuest")} × {guests}
               </span>
-              <span className="text-[24px] font-semibold tracking-[-0.02em] tabular-nums">{formatMoney(result.total, currency, lang)}</span>
+              <span className="text-[24px] font-semibold tracking-[-0.02em] tabular-nums">
+                <CountMoney to={result.total} delay={140 + result.items.length * 170} format={(n) => formatMoney(n, currency, lang)} />
+              </span>
             </div>
-          </Reveal>
+          </div>
         )}
 
         <section className="mt-10">

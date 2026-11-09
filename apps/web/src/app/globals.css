@@ -316,6 +316,16 @@ body {
   animation: drink-bubble 2.2s ease-in infinite;
 }
 
+/* Roulette result: each dish flies out of the wheel, unblurs and settles with a small overshoot. */
+@keyframes result-in {
+  0% { opacity: 0; transform: translateY(-70px) scale(0.6); filter: blur(10px); }
+  65% { opacity: 1; transform: translateY(4px) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+.result-in {
+  animation: result-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 /* Win ring around the hub when the wheel lands. */
 @keyframes wheel-ring {
   from { box-shadow: 0 0 0 0 rgba(47, 107, 255, 0.55); }
@@ -371,6 +381,7 @@ body {
   .aurora::after,
   .wheel-idle,
   .yan-orb,
+  .result-in,
   .drink-wave,
   .drink-float,
   .drink-bubble,

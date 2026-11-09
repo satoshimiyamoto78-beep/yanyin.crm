@@ -199,14 +199,11 @@ export function GuestApp({ menu }: { menu: Menu }) {
             onClick={() => setSheet("about")}
             className="press flex min-w-0 flex-1 items-center gap-3 text-left"
           >
-            <span className="ink-grad grid size-11 shrink-0 place-items-center rounded-[14px] text-[18px] font-bold">
+            <span className="ink-grad grid size-[52px] shrink-0 place-items-center rounded-[18px] text-[20px] font-bold">
               {brand.mark}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[18px] leading-tight font-bold tracking-[-0.02em]">
-                {menu.venue.name}
-              </span>
-              <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[13px]">
+              <span className="flex min-w-0 items-center gap-1.5 text-[13px]">
                 {table && (
                   <>
                     <span className="size-1.5 shrink-0 rounded-full bg-g-blue" />
@@ -219,6 +216,9 @@ export function GuestApp({ menu }: { menu: Menu }) {
                 <span className="truncate text-g-muted">
                   {brand.cuisine[lang as "en"] ?? brand.cuisine.en}
                 </span>
+              </span>
+              <span className="block truncate text-[22px] leading-tight font-bold tracking-[-0.02em]">
+                {menu.venue.name}
               </span>
             </span>
           </button>
@@ -284,28 +284,36 @@ export function GuestApp({ menu }: { menu: Menu }) {
         </Reveal>
 
         {/* Quick actions */}
-        <div className="mt-4 grid grid-cols-3 gap-3 px-5">
+        {/* Quick actions: the same hot-button tiles as the waiter app; venues add their own service calls. */}
+        <div className="no-scrollbar mt-5 flex gap-2.5 overflow-x-auto px-5">
           <QuickAction
-            icon={<BellRing size={20} strokeWidth={1.75} />}
-            label={ui(lang, "callStaff")}
+            icon={<BellRing size={17} strokeWidth={2} />}
+            label={ui(lang, "qaWaiter")}
+            action={ui(lang, "qaWaiterDo")}
+            sub={ui(lang, "qaWaiterSub")}
             onClick={() => say("waiterCalled")}
           />
-          {hasCoals ? (
+          {hasCoals && (
             <QuickAction
-              icon={<Flame size={20} strokeWidth={1.75} />}
-              label={ui(lang, "changeCoals")}
+              icon={<Flame size={17} strokeWidth={2} />}
+              label={ui(lang, "qaCoals")}
+              action={ui(lang, "qaCoalsDo")}
+              sub={ui(lang, "qaCoalsSub")}
               onClick={() => say("coalsCalled", <Flame size={18} strokeWidth={2} />)}
-            />
-          ) : (
-            <QuickAction
-              icon={<ReceiptText size={20} strokeWidth={1.75} />}
-              label={ui(lang, "askBill")}
-              onClick={() => say("billAsked", <ReceiptText size={18} strokeWidth={2} />)}
             />
           )}
           <QuickAction
-            icon={<Dices size={20} strokeWidth={1.75} />}
-            label={ui(lang, "quickRoulette")}
+            icon={<ReceiptText size={17} strokeWidth={2} />}
+            label={ui(lang, "qaBill")}
+            action={ui(lang, "qaBillDo")}
+            sub={ui(lang, "qaBillSub")}
+            onClick={() => say("billAsked", <ReceiptText size={18} strokeWidth={2} />)}
+          />
+          <QuickAction
+            icon={<Dices size={17} strokeWidth={2} />}
+            label={ui(lang, "qaRoulette")}
+            action={ui(lang, "qaRouletteDo")}
+            sub={ui(lang, "qaRouletteSub")}
             onClick={() => setSheet("roulette")}
             accent
           />
@@ -577,11 +585,15 @@ export function GuestApp({ menu }: { menu: Menu }) {
 function QuickAction({
   icon,
   label,
+  action,
+  sub,
   onClick,
   accent,
 }: {
   icon: React.ReactNode;
   label: string;
+  action: string;
+  sub: string;
   onClick: () => void;
   accent?: boolean;
 }) {
@@ -591,20 +603,21 @@ function QuickAction({
         haptic("light");
         onClick();
       }}
-      className={`press relative flex h-[104px] flex-col justify-between overflow-hidden rounded-[24px] p-3.5 text-left ${accent ? "mesh-blue" : "card"}`}
+      className={`press relative flex h-[112px] w-[132px] shrink-0 flex-col justify-between overflow-hidden rounded-[22px] p-3.5 text-left ${accent ? "mesh-blue" : "bg-g-fill"}`}
     >
-      {accent ? (
+      {accent && (
         // Illustration: a corner of the roulette wheel, turning slowly.
-        <span aria-hidden className="absolute -top-9 -right-9">
-          <RouletteWheel size={104} />
-        </span>
-      ) : (
-        <span className="chip-blue grid size-10 place-items-center rounded-full">
-          {icon}
+        <span aria-hidden className="absolute -right-9 -bottom-9 opacity-90">
+          <RouletteWheel size={96} />
         </span>
       )}
-      <span className="relative mt-auto text-[13px] leading-[1.25] font-semibold text-g-ink">
-        {label}
+      <span className="relative flex items-center justify-between">
+        <span className="text-[12px] font-medium text-g-muted">{label}</span>
+        {!accent && <span className="text-g-blue">{icon}</span>}
+      </span>
+      <span className="relative">
+        <span className="block text-[18px] leading-tight font-semibold tracking-[-0.02em]">{action}</span>
+        <span className="mt-0.5 block truncate text-[12px] text-g-muted">{sub}</span>
       </span>
     </button>
   );
@@ -686,7 +699,7 @@ function Hero({
                 tabIndex={0}
                 onClick={onRoulette}
                 onKeyDown={(e) => e.key === "Enter" && onRoulette()}
-                className="aurora block h-[440px] w-full cursor-pointer rounded-[30px] text-left"
+                className="aurora block h-[372px] w-full cursor-pointer rounded-[30px] text-left"
                 aria-label={ui(lang, "roulette")}
               >
                 <span className="absolute -top-14 -right-20">
@@ -713,7 +726,7 @@ function Hero({
                     tabIndex={0}
                     onClick={() => onOpen(it)}
                     onKeyDown={(e) => e.key === "Enter" && onOpen(it)}
-                    className="relative block h-[440px] w-full cursor-pointer overflow-hidden rounded-[30px] bg-[#0b1636] text-left text-white"
+                    className="relative block h-[372px] w-full cursor-pointer overflow-hidden rounded-[30px] bg-[#0b1636] text-left text-white"
                     aria-label={t(it.name, lang)}
                   >
                     {/* Full-bleed photo, a soft scrim for the text, nothing else on top of the food. */}
@@ -734,10 +747,10 @@ function Hero({
                       {s.kicker[lang as "en"] ?? s.kicker.en}
                     </span>
                     <span className="absolute inset-x-0 bottom-0 block px-5 pb-5">
-                      <span className="live block text-[28px] leading-[1.08] font-bold tracking-[-0.025em]">
+                      <span className="live block text-[24px] leading-[1.1] font-bold tracking-[-0.025em]">
                         {t(it.name, lang)}
                       </span>
-                      <span className="live mt-2 line-clamp-2 text-[14px] leading-[1.45] text-white/80">
+                      <span className="live mt-1.5 line-clamp-2 text-[14px] leading-[1.4] text-white/80">
                         {s.blurb[lang as "en"] ?? s.blurb.en}
                       </span>
                       <span className="mt-3 flex flex-wrap gap-1.5">
@@ -750,7 +763,7 @@ function Hero({
                           </span>
                         ))}
                       </span>
-                      <span className="mt-4 flex h-12 items-center justify-between gap-3 border-t border-white/15 pt-4 box-content">
+                      <span className="mt-3 flex h-12 items-center justify-between gap-3 border-t border-white/15 pt-3 box-content">
                         <span className="live text-[24px] font-semibold tracking-[-0.02em] tabular-nums">
                           {builder && it.variants.length === 0 && (
                             <span className="mr-1 text-[14px] font-medium text-white/70">

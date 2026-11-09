@@ -81,6 +81,23 @@ export function venueBrand(venue: Venue): VenueBrand {
           cta: { en: "Build", ru: "Собрать", vi: "Tự chọn" },
         },
         { kind: "roulette" },
+        {
+          kind: "dish",
+          itemId: "bbq-chicken",
+          image: "/dishes/pizza/bbq-chicken.webp",
+          kicker: { en: "New: pizza", ru: "Новинка: пицца", vi: "Mới: pizza" },
+          blurb: {
+            en: "Roast chicken, red onion and coriander under a BBQ drizzle. Or build your own.",
+            ru: "Курица, красный лук и кинза с соусом барбекю. Или соберите свою.",
+            vi: "Gà nướng, hành tím và ngò với sốt BBQ. Hoặc tự làm pizza.",
+          },
+          facts: [
+            { en: "Halal", ru: "Халяль", vi: "Halal" },
+            { en: "25–35 cm", ru: "25–35 см", vi: "25–35 cm" },
+            { en: "20 min", ru: "20 мин", vi: "20 phút" },
+          ],
+          cta: { en: "Choose", ru: "Выбрать", vi: "Chọn" },
+        },
       ],
       ageRestricted: true,
     };

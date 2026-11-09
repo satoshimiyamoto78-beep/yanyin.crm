@@ -1,12 +1,12 @@
 "use client";
 
-import { CalendarPlus, Phone, StickyNote, Users } from "lucide-react";
+import { CalendarDays, CalendarPlus, Check, Clock, Hourglass, Phone, StickyNote, Users } from "lucide-react";
 import { useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { Reveal, startLoading } from "@/components/guest/motion";
+import { loadOnce, Reveal } from "@/components/guest/motion";
 import { ChoiceChip, Sheet, StepHead } from "@/components/guest/ui";
-import { Counter, PageHead } from "./CrewApp";
+import { Counter, Dash, PageHead } from "./CrewApp";
 
 const DAY_NAMES = ["Today", "Tomorrow"];
 const dayLabel = (d: number) => {
@@ -22,13 +22,102 @@ const STATE: Record<Booking["status"], { label: string; chip: string }> = {
   seated: { label: "Seated", chip: "chip-green" },
 };
 
+const mins = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+};
+/** "in 45 min", "in 2 h", "now", "15 min late" — relative to the demo clock (12:45). */
+const NOW = mins("12:45");
+const relative = (time: string) => {
+  const d = mins(time) - NOW;
+  if (d < -5) return `${-d} min late`;
+  if (d <= 5) return "now";
+  return d < 60 ? `in ${d} min` : `in ${Math.floor(d / 60)}h${d % 60 ? ` ${d % 60}m` : ""}`;
+};
+
 export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[]; onNew: () => void; onSeat: (b: Booking) => void }) {
   const [day, setDay] = useState(0);
   const list = bookings.filter((b) => b.day === day).sort((a, b) => a.time.localeCompare(b.time));
   const guests = list.reduce((s, b) => s + b.guests, 0);
+  const upcoming = list.filter((b) => b.status !== "seated");
+  const next = day === 0 ? upcoming.find((b) => mins(b.time) >= NOW - 5) : upcoming[0];
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead title="Bookings" sub={`${list.length} bookings · ${guests} guests`} />
+      <PageHead title="Bookings" sub={dayLabel(day)} />
+      <Dash
+        items={[
+          { label: "Next", value: next?.time ?? "—", sub: next ? `${next.name.split(" ")[0]} · ${next.guests} guests${day === 0 ? ` · ${relative(next.time)}` : ""}` : "nothing planned", icon: Clock, hot: Boolean(next) },
+          { label: "Bookings", value: String(list.length), sub: `${list.filter((b) => b.status === "seated").length} seated`, icon: CalendarDays },
+          { label: "Guests", value: String(guests), sub: "expected", icon: Users, tone: "green" },
+          { label: "Waiting list", value: String(list.filter((b) => b.status === "waiting").length), sub: "need a table", icon: Hourglass, tone: "orange" },
+        ]}
+      />
+      <div className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
+        {[0, 1, 2, 3, 4, 5, 6].map((d) => (
+          <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); loadOnce(`bookings:${d}`, 450); }} icon={<span />}>
+            {dayLabel(d)}
+          </ChoiceChip>
+        ))}
+      </div>
+
+      <Reveal className="mt-3 divide-y divide-g-line pb-20">
+        {list.map((b) => {
+          const seated = b.status === "seated";
+          return (
+            <article key={b.id} className={`flex gap-4 py-5 ${seated ? "opacity-55" : ""}`}>
+              {/* Time column: the time is the anchor of a booking. */}
+              <div className="w-[62px] shrink-0">
+                <p className="live text-[22px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{b.time}</p>
+                {day === 0 && !seated && <p className="live mt-1.5 text-[12px] font-medium text-g-blue">{relative(b.time)}</p>}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="live min-w-0 truncate text-[17px] font-semibold">{b.name}</p>
+                  <span className={`${STATE[b.status].chip} inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-[11px] font-semibold`}>{STATE[b.status].label}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex h-7 items-center gap-1 rounded-full bg-g-fill px-2.5 text-[13px] font-medium">
+                    <Users size={13} strokeWidth={2} /> <span className="live">{b.guests}</span>
+                  </span>
+                  <span className={`inline-flex h-7 items-center rounded-full px-2.5 text-[13px] font-medium ${b.table ? "bg-g-fill" : "chip-orange"}`}>
+                    <span className="live">{b.table ? `Table ${b.table}` : "No table"}</span>
+                  </span>
+                </div>
+                {b.note && (
+                  <p className="mt-2.5 flex items-start gap-1.5 rounded-[14px] bg-[#fff6ec] px-3 py-2 text-[13px] leading-snug text-g-ink-2">
+                    <StickyNote size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-g-orange" /> <span className="live">{b.note}</span>
+                  </p>
+                )}
+                {!seated && (
+                  <div className="mt-3 flex items-center justify-end gap-2">
+                    <a
+                      href={`tel:${b.phone.replace(/\s/g, "")}`}
+                      onClick={() => haptic("light")}
+                      aria-label={`Call ${b.name}`}
+                      className="press grid size-10 place-items-center rounded-full bg-g-fill text-g-ink"
+                    >
+                      <Phone size={17} strokeWidth={2} />
+                    </a>
+                    {day === 0 && (
+                      <button
+                        onClick={() => {
+                          haptic("success");
+                          onSeat(b);
+                        }}
+                        className="press flex h-10 items-center gap-1.5 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white"
+                      >
+                        <Check size={16} strokeWidth={2.5} /> Seat
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </article>
+          );
+        })}
+        {!list.length && <p className="py-12 text-center text-[15px] text-g-muted">No bookings for this day</p>}
+      </Reveal>
+
       {/* Primary action sits where the thumb is: above the tab bar. */}
       <button
         onClick={() => {
@@ -39,43 +128,6 @@ export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[];
       >
         <CalendarPlus size={18} strokeWidth={2} /> New booking
       </button>
-      <div className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
-        {[0, 1, 2, 3, 4, 5, 6].map((d) => (
-          <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); startLoading(450); }} icon={<span />}>
-            {dayLabel(d)}
-          </ChoiceChip>
-        ))}
-      </div>
-      <Reveal className="mt-3 divide-y divide-g-line pb-16">
-        {list.map((b) => (
-          <div key={b.id} className="flex gap-4 py-4">
-            <span className="live w-14 shrink-0 pt-0.5 text-[20px] font-semibold tracking-[-0.02em] tabular-nums">{b.time}</span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <p className="live min-w-0 truncate text-[16px] font-semibold">{b.name}</p>
-                <span className={`${STATE[b.status].chip} inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-[12px] font-semibold`}>{STATE[b.status].label}</span>
-              </div>
-              <p className="live mt-0.5 flex items-center gap-1.5 text-[13px] text-g-muted">
-                <Users size={13} strokeWidth={2} /> {b.guests} · {b.table ? `Table ${b.table}` : "No table yet"}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-g-muted">
-                <Phone size={13} strokeWidth={2} /> <span className="live">{b.phone}</span>
-              </p>
-              {b.note && (
-                <p className="mt-1.5 flex items-start gap-1.5 text-[13px] text-g-ink-2">
-                  <StickyNote size={13} strokeWidth={2} className="mt-0.5 shrink-0 text-g-orange" /> <span className="live">{b.note}</span>
-                </p>
-              )}
-              {day === 0 && b.status !== "seated" && (
-                <button onClick={() => { haptic("success"); onSeat(b); }} className="press mt-3 h-9 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white">
-                  Guests arrived
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-        {!list.length && <p className="py-12 text-center text-[15px] text-g-muted">No bookings for this day</p>}
-      </Reveal>
     </div>
   );
 }

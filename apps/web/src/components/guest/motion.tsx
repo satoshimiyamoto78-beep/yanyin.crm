@@ -13,6 +13,22 @@ import { haptic } from "@/lib/haptics";
 let loadingUntil = 0;
 const listeners = new Set<() => void>();
 
+const freshUntil = new Map<string, number>();
+
+/**
+ * Like startLoading, but cached per data key: switching back to a section seen
+ * less than `ttl` ago shows it at once (no blur). Stale data loads again.
+ */
+export function loadOnce(key: string, ms = 600, ttl = 60_000) {
+  const now = performance.now();
+  if ((freshUntil.get(key) ?? 0) > now) {
+    loadingUntil = 0.0001; // a past window: new Reveals mount sharp
+    return;
+  }
+  freshUntil.set(key, now + ttl);
+  startLoading(ms);
+}
+
 /** Starts a loading window: every mounted Reveal blurs its data, then pulls it into focus. */
 export function startLoading(ms = 600) {
   loadingUntil = performance.now() + ms;
@@ -265,4 +281,21 @@ export function useWheelSpin() {
   }, []);
 
   return { ref, pointer, spin, spinning, won };
+}
+
+/** Counts a money value up from zero after `delay` ms (ease-out), for result totals. */
+export function CountMoney({ to, delay = 0, ms = 700, format }: { to: number; delay?: number; ms?: number; format: (n: number) => string }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const t0 = performance.now() + delay;
+    const tick = (now: number) => {
+      const k = Math.min(1, Math.max(0, (now - t0) / ms));
+      setV(Math.round((to * (1 - Math.pow(1 - k, 3))) / 1000) * 1000);
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to, delay, ms]);
+  return <>{format(v)}</>;
 }

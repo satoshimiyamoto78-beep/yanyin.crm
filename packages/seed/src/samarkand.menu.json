@@ -15,7 +15,7 @@
       "zh"
     ]
   },
-  "source": "Founder-provided menu photos, 2026-11-08. Prices in VND. Partial menu: more pages may exist. Items with status=suggested were added by Claude to fill gaps; venue must confirm names, recipes and prices. Halal tags on meat dishes are a yanyin draft; the venue must confirm certification.",
+  "source": "Founder-provided menu photos, 2026-11-08. Prices in VND. Partial menu: more pages may exist. Items with status=suggested were added by Claude to fill gaps; venue must confirm names, recipes and prices. Halal tags on meat dishes are a yanyin draft; the venue must confirm certification. Pizza and lemonades (with builders) are yanyin drafts so both pilots share one menu structure; the venue decides.",
   "categories": [
     {
       "name": {
@@ -760,6 +760,572 @@
     },
     {
       "name": {
+        "en": "Pizza",
+        "ru": "Пицца",
+        "vi": "Pizza"
+      },
+      "status": "suggested",
+      "group": "Kitchen",
+      "modifier_groups": [
+        {
+          "id": "dough",
+          "name": {
+            "en": "Dough",
+            "ru": "Тесто",
+            "vi": "Đế"
+          },
+          "required": true,
+          "max": 1,
+          "display": "chips",
+          "default": 0,
+          "options": [
+            {
+              "name": {
+                "en": "Classic",
+                "ru": "Классическое",
+                "vi": "Truyền thống"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Thin",
+                "ru": "Тонкое",
+                "vi": "Mỏng"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Wholegrain",
+                "ru": "Цельнозерновое",
+                "vi": "Nguyên cám"
+              },
+              "price": 20000
+            }
+          ]
+        },
+        {
+          "id": "sauce",
+          "name": {
+            "en": "Sauce",
+            "ru": "Соус",
+            "vi": "Sốt"
+          },
+          "required": true,
+          "max": 1,
+          "display": "tiles",
+          "default": 0,
+          "options": [
+            {
+              "name": {
+                "en": "Tomato",
+                "ru": "Томатный",
+                "vi": "Cà chua"
+              },
+              "price": 0,
+              "color": "#e2462f",
+              "glyph": "sauce"
+            },
+            {
+              "name": {
+                "en": "Cream",
+                "ru": "Сливочный",
+                "vi": "Kem"
+              },
+              "price": 0,
+              "color": "#f6ecd2",
+              "glyph": "sauce"
+            },
+            {
+              "name": {
+                "en": "BBQ",
+                "ru": "Барбекю",
+                "vi": "BBQ"
+              },
+              "price": 0,
+              "color": "#7a3a22",
+              "glyph": "sauce"
+            },
+            {
+              "name": {
+                "en": "Pesto",
+                "ru": "Песто",
+                "vi": "Pesto"
+              },
+              "price": 15000,
+              "color": "#6aa84f",
+              "glyph": "sauce"
+            }
+          ]
+        },
+        {
+          "id": "cheese",
+          "name": {
+            "en": "Cheese",
+            "ru": "Сыр",
+            "vi": "Phô mai"
+          },
+          "required": true,
+          "max": 1,
+          "display": "chips",
+          "default": 0,
+          "options": [
+            {
+              "name": {
+                "en": "Mozzarella",
+                "ru": "Моцарелла",
+                "vi": "Mozzarella"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Extra mozzarella",
+                "ru": "Двойная моцарелла",
+                "vi": "Thêm mozzarella"
+              },
+              "price": 30000
+            },
+            {
+              "name": {
+                "en": "No cheese",
+                "ru": "Без сыра",
+                "vi": "Không phô mai"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "toppings",
+          "name": {
+            "en": "Toppings",
+            "ru": "Начинки",
+            "vi": "Topping"
+          },
+          "required": false,
+          "max": 6,
+          "display": "tiles",
+          "options": [
+            {
+              "name": {
+                "en": "Pepperoni",
+                "ru": "Пепперони",
+                "vi": "Pepperoni"
+              },
+              "price": 30000,
+              "color": "#c8322b",
+              "glyph": "pepperoni"
+            },
+            {
+              "name": {
+                "en": "Chicken",
+                "ru": "Курица",
+                "vi": "Gà"
+              },
+              "price": 30000,
+              "color": "#e8c48a",
+              "glyph": "chicken"
+            },
+            {
+              "name": {
+                "en": "Beef",
+                "ru": "Говядина",
+                "vi": "Bò"
+              },
+              "price": 35000,
+              "color": "#6d3b2a",
+              "glyph": "beef"
+            },
+            {
+              "name": {
+                "en": "Mushrooms",
+                "ru": "Грибы",
+                "vi": "Nấm"
+              },
+              "price": 20000,
+              "color": "#c9b39a",
+              "glyph": "mushroom"
+            },
+            {
+              "name": {
+                "en": "Olives",
+                "ru": "Оливки",
+                "vi": "Ô liu"
+              },
+              "price": 20000,
+              "color": "#2d2d2d",
+              "glyph": "olive"
+            },
+            {
+              "name": {
+                "en": "Bell pepper",
+                "ru": "Перец",
+                "vi": "Ớt chuông"
+              },
+              "price": 15000,
+              "color": "#3fa34d",
+              "glyph": "pepper"
+            },
+            {
+              "name": {
+                "en": "Red onion",
+                "ru": "Красный лук",
+                "vi": "Hành tím"
+              },
+              "price": 10000,
+              "color": "#9b4f96",
+              "glyph": "onion"
+            },
+            {
+              "name": {
+                "en": "Pineapple",
+                "ru": "Ананас",
+                "vi": "Dứa"
+              },
+              "price": 20000,
+              "color": "#f6c445",
+              "glyph": "pineapple"
+            },
+            {
+              "name": {
+                "en": "Jalapeño",
+                "ru": "Халапеньо",
+                "vi": "Jalapeño"
+              },
+              "price": 15000,
+              "color": "#4c9a2a",
+              "glyph": "jalapeno"
+            },
+            {
+              "name": {
+                "en": "Corn",
+                "ru": "Кукуруза",
+                "vi": "Bắp"
+              },
+              "price": 10000,
+              "color": "#f4d03f",
+              "glyph": "corn"
+            },
+            {
+              "name": {
+                "en": "Cherry tomato",
+                "ru": "Черри",
+                "vi": "Cà chua bi"
+              },
+              "price": 15000,
+              "color": "#e74c3c",
+              "glyph": "tomato"
+            },
+            {
+              "name": {
+                "en": "Basil",
+                "ru": "Базилик",
+                "vi": "Húng quế"
+              },
+              "price": 10000,
+              "color": "#27ae60",
+              "glyph": "basil"
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "name": {
+            "en": "Build your pizza",
+            "ru": "Собери свою пиццу",
+            "vi": "Tự làm pizza"
+          },
+          "status": "suggested",
+          "builder": "pizza",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см",
+                "vi": "25 cm"
+              },
+              "price": 149000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см",
+                "vi": "30 cm"
+              },
+              "price": 189000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см",
+                "vi": "35 cm"
+              },
+              "price": 239000
+            }
+          ],
+          "description": {
+            "en": "Size, dough, sauce, cheese and up to six toppings",
+            "ru": "Размер, тесто, соус, сыр и до шести начинок",
+            "vi": "Cỡ, đế, sốt, phô mai và tối đa sáu topping"
+          }
+        },
+        {
+          "name": {
+            "en": "Mushroom",
+            "ru": "Грибная",
+            "vi": "Pizza nấm"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/mushroom.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 169000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 209000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 259000
+            }
+          ],
+          "tags": [
+            "vegetarian"
+          ],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Mozzarella and lots of fresh champignons on a light tomato base",
+            "ru": "Моцарелла и много свежих шампиньонов на лёгком томатном соусе"
+          }
+        },
+        {
+          "name": {
+            "en": "Chicken & vegetables",
+            "ru": "Курица с овощами",
+            "vi": "Gà và rau"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/chicken-veggie.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 199000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 239000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 289000
+            }
+          ],
+          "tags": [
+            "halal"
+          ],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Grilled chicken, mushrooms, bell pepper and red onion",
+            "ru": "Курица гриль, шампиньоны, сладкий перец и красный лук"
+          }
+        },
+        {
+          "name": {
+            "en": "BBQ chicken",
+            "ru": "Курица барбекю",
+            "vi": "Gà BBQ"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/bbq-chicken.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 209000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 249000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 299000
+            }
+          ],
+          "tags": [
+            "halal"
+          ],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Roast chicken, red onion and coriander under a BBQ drizzle",
+            "ru": "Запечённая курица, красный лук и кинза с соусом барбекю"
+          }
+        },
+        {
+          "name": {
+            "en": "Chicken tikka",
+            "ru": "Курица тикка",
+            "vi": "Gà tikka"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/chicken-tikka.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 209000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 249000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 299000
+            }
+          ],
+          "tags": [
+            "halal"
+          ],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Spiced tikka chicken, creamy mozzarella and fresh herbs",
+            "ru": "Пряная курица тикка, сливочная моцарелла и свежая зелень"
+          }
+        },
+        {
+          "name": {
+            "en": "Chicken supreme",
+            "ru": "Куриная супрем",
+            "vi": "Gà supreme"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/chicken-supreme.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 219000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 259000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 309000
+            }
+          ],
+          "tags": [
+            "halal"
+          ],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Chicken, black olives, mushrooms and two kinds of pepper",
+            "ru": "Курица, чёрные оливки, шампиньоны и два вида перца"
+          }
+        },
+        {
+          "name": {
+            "en": "Beef salami & olives",
+            "ru": "Говяжья салями с оливками",
+            "vi": "Salami bò và ô liu"
+          },
+          "status": "suggested",
+          "photo": "/dishes/pizza/salami-olive.webp",
+          "variants": [
+            {
+              "name": {
+                "en": "25 cm",
+                "ru": "25 см"
+              },
+              "price": 219000
+            },
+            {
+              "name": {
+                "en": "30 cm",
+                "ru": "30 см"
+              },
+              "price": 259000
+            },
+            {
+              "name": {
+                "en": "35 cm",
+                "ru": "35 см"
+              },
+              "price": 309000
+            }
+          ],
+          "tags": [],
+          "modifier_groups": [
+            "dough"
+          ],
+          "description": {
+            "en": "Beef salami, cherry tomatoes, olives and basil",
+            "ru": "Говяжья салями, черри, оливки и базилик"
+          }
+        }
+      ]
+    },
+    {
+      "name": {
         "ru": "Паста",
         "en": "Pasta",
         "vi": "Mì Ý"
@@ -1248,6 +1814,354 @@
         }
       ],
       "status": "confirmed"
+    },
+    {
+      "name": {
+        "en": "Lemonades",
+        "ru": "Лимонады",
+        "vi": "Nước chanh"
+      },
+      "variants_shared": [
+        {
+          "name": {
+            "en": "0.4 L"
+          },
+          "price": 79000
+        },
+        {
+          "name": {
+            "en": "1 L"
+          },
+          "price": 169000
+        }
+      ],
+      "items": [
+        {
+          "name": {
+            "en": "Build your lemonade",
+            "ru": "Собери свой лимонад",
+            "vi": "Tự pha nước chanh"
+          },
+          "status": "suggested",
+          "builder": "drink",
+          "description": {
+            "en": "Base, up to two flavours, sweetness and ice your way",
+            "ru": "Основа, до двух вкусов, сладость и лёд по вкусу",
+            "vi": "Chọn nền, tối đa hai vị, độ ngọt và đá"
+          }
+        },
+        {
+          "name": {
+            "en": "Tarragon lemonade",
+            "ru": "Тархун",
+            "vi": "Nước chanh ngải giấm"
+          },
+          "status": "suggested",
+          "modifier_groups": [],
+          "description": {
+            "en": "House tarragon lemonade, a Central Asian classic",
+            "ru": "Домашний тархун, классика Средней Азии"
+          }
+        },
+        {
+          "name": {
+            "en": "Pomegranate lemonade",
+            "ru": "Гранатовый лимонад",
+            "vi": "Nước chanh lựu"
+          },
+          "status": "suggested",
+          "modifier_groups": [],
+          "description": {
+            "en": "Fresh pomegranate with lime and mint",
+            "ru": "Свежий гранат с лаймом и мятой"
+          }
+        },
+        {
+          "name": {
+            "en": "Sea buckthorn lemonade",
+            "ru": "Облепиховый лимонад",
+            "vi": "Nước chanh hắc mai biển"
+          },
+          "status": "suggested",
+          "modifier_groups": [],
+          "description": {
+            "en": "Bright sea buckthorn with honey",
+            "ru": "Яркая облепиха с мёдом"
+          }
+        }
+      ],
+      "status": "suggested",
+      "modifier_groups": [
+        {
+          "id": "base",
+          "name": {
+            "en": "Base",
+            "ru": "Основа",
+            "vi": "Nền"
+          },
+          "required": true,
+          "max": 1,
+          "display": "tiles",
+          "default": 0,
+          "options": [
+            {
+              "name": {
+                "en": "Still lemon",
+                "ru": "Лимонад",
+                "vi": "Chanh"
+              },
+              "price": 0,
+              "color": "#f5e27a",
+              "glyph": "lemon"
+            },
+            {
+              "name": {
+                "en": "Sparkling",
+                "ru": "Газированный",
+                "vi": "Có ga"
+              },
+              "price": 0,
+              "color": "#cfe9ff",
+              "glyph": "bubbles"
+            },
+            {
+              "name": {
+                "en": "Iced tea",
+                "ru": "Холодный чай",
+                "vi": "Trà lạnh"
+              },
+              "price": 0,
+              "color": "#d9934a",
+              "glyph": "leaf"
+            },
+            {
+              "name": {
+                "en": "Coconut water",
+                "ru": "Кокосовая вода",
+                "vi": "Nước dừa"
+              },
+              "price": 20000,
+              "color": "#f4f1e6",
+              "glyph": "coconut"
+            }
+          ]
+        },
+        {
+          "id": "flavour",
+          "name": {
+            "en": "Flavours",
+            "ru": "Вкусы",
+            "vi": "Hương vị"
+          },
+          "required": true,
+          "max": 2,
+          "display": "tiles",
+          "options": [
+            {
+              "name": {
+                "en": "Passion fruit",
+                "ru": "Маракуйя",
+                "vi": "Chanh dây"
+              },
+              "price": 0,
+              "color": "#f2b62b",
+              "glyph": "passion"
+            },
+            {
+              "name": {
+                "en": "Mango",
+                "ru": "Манго",
+                "vi": "Xoài"
+              },
+              "price": 0,
+              "color": "#ffa62b",
+              "glyph": "mango"
+            },
+            {
+              "name": {
+                "en": "Strawberry",
+                "ru": "Клубника",
+                "vi": "Dâu"
+              },
+              "price": 0,
+              "color": "#ef4f6a",
+              "glyph": "strawberry"
+            },
+            {
+              "name": {
+                "en": "Lychee",
+                "ru": "Личи",
+                "vi": "Vải"
+              },
+              "price": 0,
+              "color": "#f7d6dc",
+              "glyph": "lychee"
+            },
+            {
+              "name": {
+                "en": "Mint–lime",
+                "ru": "Мята–лайм",
+                "vi": "Bạc hà–chanh"
+              },
+              "price": 0,
+              "color": "#7fd48a",
+              "glyph": "mint"
+            },
+            {
+              "name": {
+                "en": "Blue lagoon",
+                "ru": "Голубая лагуна",
+                "vi": "Blue lagoon"
+              },
+              "price": 10000,
+              "color": "#3d8bff",
+              "glyph": "wave"
+            }
+          ]
+        },
+        {
+          "id": "sweet",
+          "name": {
+            "en": "Sweetness",
+            "ru": "Сладость",
+            "vi": "Độ ngọt"
+          },
+          "required": true,
+          "display": "scale",
+          "default": 2,
+          "options": [
+            {
+              "name": {
+                "en": "No sugar",
+                "ru": "Без сахара",
+                "vi": "Không đường"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Less sweet",
+                "ru": "Менее сладкий",
+                "vi": "Ít ngọt"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Normal",
+                "ru": "Обычный",
+                "vi": "Vừa"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Sweet",
+                "ru": "Сладкий",
+                "vi": "Ngọt"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Extra sweet",
+                "ru": "Очень сладкий",
+                "vi": "Rất ngọt"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "ice",
+          "name": {
+            "en": "Ice",
+            "ru": "Лёд",
+            "vi": "Đá"
+          },
+          "required": true,
+          "display": "scale",
+          "default": 2,
+          "options": [
+            {
+              "name": {
+                "en": "No ice",
+                "ru": "Без льда",
+                "vi": "Không đá"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Light ice",
+                "ru": "Мало льда",
+                "vi": "Ít đá"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Normal ice",
+                "ru": "Обычно",
+                "vi": "Đá vừa"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Extra ice",
+                "ru": "Много льда",
+                "vi": "Nhiều đá"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "drinkextras",
+          "name": {
+            "en": "Extras",
+            "ru": "Добавки",
+            "vi": "Thêm"
+          },
+          "required": false,
+          "display": "chips",
+          "options": [
+            {
+              "name": {
+                "en": "Fresh mint",
+                "ru": "Свежая мята",
+                "vi": "Bạc hà tươi"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Chia seeds",
+                "ru": "Семена чиа",
+                "vi": "Hạt chia"
+              },
+              "price": 15000
+            },
+            {
+              "name": {
+                "en": "Popping boba",
+                "ru": "Шарики-бобы",
+                "vi": "Trân châu nổ"
+              },
+              "price": 20000
+            },
+            {
+              "name": {
+                "en": "Aloe vera",
+                "ru": "Алоэ вера",
+                "vi": "Nha đam"
+              },
+              "price": 15000
+            }
+          ]
+        }
+      ]
     },
     {
       "name": {

@@ -22,11 +22,11 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { Reveal, startLoading } from "@/components/guest/motion";
+import { loadOnce, Reveal } from "@/components/guest/motion";
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
@@ -87,7 +87,7 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
     haptic("tick");
     setTab(t);
     window.scrollTo({ top: 0 });
-    startLoading(550); // new section = fresh data: blur, then pull into focus
+    loadOnce(`tab:${t}`, 550); // fresh data blurs then pulls into focus; a section seen <60 s ago shows at once
   };
   const todays = bookings.filter((b) => b.day === 0 && b.status !== "seated").sort((a, b) => a.time.localeCompare(b.time));
   const hot = {
@@ -103,7 +103,37 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   return (
     <div className="min-h-dvh bg-white text-g-ink">
       <div className="mx-auto max-w-[480px] pb-28">
-        {tab === "tables" && <TablesView tables={tables} money={money} onOpen={setOpen} />}
+        {tab === "tables" && (
+          <TablesView
+            tables={tables}
+            money={money}
+            itemById={itemById}
+            actions={{
+              open: setOpen,
+              addItems: (no) => {
+                setOpen(no);
+                setPage("picker");
+              },
+              check: (no) => {
+                const x = tables.find((t) => t.no === no);
+                if (x && x.status !== "bill") notify({ title: `Check opened · Table ${no}`, text: "Show the QR or take payment" });
+                patch(no, (t) => ({ ...t, status: "bill" }));
+                setOpen(no);
+                setPage("check");
+              },
+              serveAll: (no) => {
+                patch(no, (t) => ({ ...t, lines: t.lines.map((l) => ({ ...l, state: "served" as const })) }));
+                notify({ title: `Table ${no}: all served`, text: "Kitchen tickets closed" });
+              },
+              seat: (no) => {
+                const x = tables.find((t) => t.no === no);
+                const g = Math.min(2, x?.seats ?? 2);
+                patch(no, (t) => ({ ...t, status: "seated", guests: g, since: now(), booking: undefined }));
+                notify({ title: `Table ${no} seated`, text: `${g} guests · ${now()}` });
+              },
+            }}
+          />
+        )}
         {tab === "orders" && <OrdersView tables={tables} history={history} money={money} itemById={itemById} onOpenTable={setOpen} onReceipt={setReceipt} />}
         {tab === "bookings" && (
           <BookingsView
@@ -258,15 +288,146 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   );
 }
 
+/* ---------------------------------------------------------------- Dashboard strip */
+
+export type DashItem = { label: string; value: string; sub?: string; icon: LucideIcon; tone?: "blue" | "orange" | "green" | "plain"; bar?: number; hot?: boolean };
+
+/** The stats at the top of every waiter page: two by two, big numbers, one optional progress bar. */
+export function Dash({ items }: { items: DashItem[] }) {
+  const tone = { blue: "text-g-blue", orange: "text-g-orange", green: "text-g-green", plain: "text-g-muted" };
+  return (
+    <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+      {items.map((d) => (
+        <div key={d.label} className={`flex h-[104px] flex-col justify-between rounded-[22px] p-3.5 ${d.hot ? "blue-grad" : "bg-g-fill"}`}>
+          <span className="flex items-center justify-between gap-2">
+            <span className={`truncate text-[12px] font-medium ${d.hot ? "text-white/80" : "text-g-muted"}`}>{d.label}</span>
+            <d.icon size={16} strokeWidth={2} className={d.hot ? "text-white/80" : tone[d.tone ?? "blue"]} />
+          </span>
+          <span>
+            <span className="live block truncate text-[24px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{d.value}</span>
+            {d.bar !== undefined ? (
+              <span className={`mt-2 block h-1.5 overflow-hidden rounded-full ${d.hot ? "bg-white/25" : "bg-white"}`}>
+                <span className={`live block h-full rounded-full ${d.hot ? "bg-white" : "bar-grad"}`} style={{ width: `${Math.round(d.bar * 100)}%` }} />
+              </span>
+            ) : (
+              d.sub && <span className={`live mt-1.5 block truncate text-[12px] ${d.hot ? "text-white/80" : "text-g-muted"}`}>{d.sub}</span>
+            )}
+          </span>
+        </div>
+      ))}
+    </Reveal>
+  );
+}
+
+/* ---------------------------------------------------------------- Long press */
+
+/** Long press (≈0.45 s) with a haptic tick, like the iOS / One UI context menu; a short tap stays a tap. */
+function useLongPress(onLong: () => void, onTap: () => void) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fired = useRef(false);
+  const start = useRef<[number, number]>([0, 0]);
+  const clear = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      fired.current = false;
+      start.current = [e.clientX, e.clientY];
+      clear();
+      timer.current = setTimeout(() => {
+        fired.current = true;
+        haptic("success");
+        onLong();
+      }, 450);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (Math.hypot(e.clientX - start.current[0], e.clientY - start.current[1]) > 8) clear();
+    },
+    onPointerUp: clear,
+    onPointerLeave: clear,
+    onPointerCancel: clear,
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    onClick: () => {
+      if (fired.current) return;
+      haptic("light");
+      onTap();
+    },
+  };
+}
+
 /* ---------------------------------------------------------------- Tables */
 
-function TablesView({ tables, money, onOpen }: { tables: FloorTable[]; money: (n: number) => string; onOpen: (no: number) => void }) {
+export type TableActions = {
+  open: (no: number) => void;
+  addItems: (no: number) => void;
+  check: (no: number) => void;
+  serveAll: (no: number) => void;
+  seat: (no: number) => void;
+};
+
+function tableState(x: FloorTable) {
+  const cooking = x.lines.filter((l) => l.state !== "served").length;
+  if (x.status === "bill") return { text: "Bill asked", dot: "bg-white" };
+  if (x.status === "seated") return { text: "Waiting to order", dot: "bg-[#8fb2ff]" };
+  if (cooking) return { text: `${cooking} cooking`, dot: "bg-g-orange" };
+  return { text: "All served", dot: "bg-[#5ce0a0]" };
+}
+
+function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: number) => string; onTap: () => void; onLong: () => void }) {
+  const press = useLongPress(onLong, onTap);
+  const total = ticketTotal(x.lines);
+  const busy = x.status === "seated" || x.status === "ordered";
+  const st = tableState(x);
+  const look = x.status === "bill" ? "blue-grad" : busy ? "bg-g-ink text-white" : x.status === "reserved" ? "border-[1.5px] border-dashed border-g-fill-2" : "bg-g-fill";
+  return (
+    <button {...press} style={{ WebkitTouchCallout: "none" }} className={`press flex aspect-[0.9] flex-col justify-between rounded-[22px] p-3 text-left select-none ${look}`}>
+      <span className="flex items-start justify-between">
+        <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{x.no}</span>
+        <span className={`flex items-center gap-0.5 text-[12px] font-medium ${busy || x.status === "bill" ? "text-white/70" : "text-g-muted"}`}>
+          <Users size={12} strokeWidth={2} /> {busy || x.status === "bill" ? x.guests : x.seats}
+        </span>
+      </span>
+      {x.status === "free" ? (
+        <span className="text-[12px] font-medium text-g-faint">Free</span>
+      ) : x.status === "reserved" ? (
+        <span>
+          <span className="live block text-[14px] font-semibold tabular-nums">{x.booking?.time}</span>
+          <span className="live block truncate text-[12px] font-medium text-g-purple">{x.booking?.name}</span>
+        </span>
+      ) : (
+        <span>
+          <span className="live block truncate text-[13px] font-semibold tabular-nums">{total ? money(total) : `since ${x.since}`}</span>
+          <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-white/75">
+            <span className={`size-1.5 shrink-0 rounded-full ${st.dot}`} />
+            <span className="live truncate">{st.text}</span>
+          </span>
+        </span>
+      )}
+    </button>
+  );
+}
+
+function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]; money: (n: number) => string; actions: TableActions; itemById: Map<string, MenuItem> }) {
   const [zone, setZone] = useState<"All" | FloorTable["zone"]>("All");
+  const [peek, setPeek] = useState<number | null>(null);
   const shown = tables.filter((x) => zone === "All" || x.zone === zone);
   const busy = tables.filter((x) => x.status !== "free" && x.status !== "reserved").length;
+  const bills = tables.filter((x) => x.status === "bill");
+  const reserved = tables.filter((x) => x.status === "reserved").sort((a, b) => (a.booking?.time ?? "").localeCompare(b.booking?.time ?? ""));
+  const seats = tables.reduce((n, x) => n + (x.status === "free" ? x.seats : 0), 0);
+  const peeked = tables.find((x) => x.no === peek) ?? null;
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead title="Tables" sub={`${busy} of ${tables.length} busy · Samarkand`} />
+      <PageHead title="Tables" sub="Samarkand · lunch" />
+      <Dash
+        items={[
+          { label: "Busy", value: `${busy}/${tables.length}`, icon: Users, bar: busy / tables.length },
+          { label: "Bill asked", value: String(bills.length), sub: bills.length ? `Table ${bills.map((b) => b.no).join(", ")}` : "none", icon: ReceiptText, tone: "orange", hot: bills.length > 0 },
+          { label: "Free now", value: String(tables.filter((x) => x.status === "free").length), sub: `${seats} seats`, icon: Armchair, tone: "green" },
+          { label: "Reserved", value: String(reserved.length), sub: reserved[0] ? `next ${reserved[0].booking?.time}` : "none today", icon: CalendarDays, tone: "plain" },
+        ]}
+      />
       <div className="mt-5 flex rounded-full bg-g-fill p-1">
         {(["All", "Hall", "Terrace"] as const).map((z) => (
           <button
@@ -282,48 +443,81 @@ function TablesView({ tables, money, onOpen }: { tables: FloorTable[]; money: (n
           </button>
         ))}
       </div>
-      <Reveal className="mt-5 grid grid-cols-3 gap-2.5">
-        {shown.map((x) => {
-          const total = ticketTotal(x.lines);
-          const bill = x.status === "bill";
-          return (
-            <button
-              key={x.no}
-              onClick={() => {
-                haptic("light");
-                onOpen(x.no);
-              }}
-              className={`press flex aspect-[0.92] flex-col justify-between rounded-[22px] p-3 text-left ${bill ? "blue-grad" : x.status === "reserved" ? "border-[1.5px] border-dashed border-g-fill-2" : x.status === "free" ? "bg-g-fill" : "bg-g-blue-soft"}`}
-            >
-              <span className="flex items-start justify-between">
-                <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{x.no}</span>
-                <span className={`flex items-center gap-0.5 text-[12px] font-medium ${bill ? "text-white/75" : "text-g-muted"}`}>
-                  <Users size={12} strokeWidth={2} /> {x.status === "free" || x.status === "reserved" ? x.seats : x.guests}
-                </span>
-              </span>
-              <span>
-                <span className={`live block text-[13px] font-semibold tabular-nums ${bill ? "text-white" : ""}`}>
-                  {x.status === "reserved" ? x.booking?.time : total ? money(total) : x.status === "free" ? "" : x.since}
-                </span>
-                <span className={`mt-0.5 block text-[12px] font-medium ${bill ? "text-white/75" : x.status === "free" ? "text-g-faint" : x.status === "reserved" ? "text-g-purple" : "text-g-blue"}`}>
-                  {x.status === "reserved" ? x.booking?.name : STATUS[x.status].label}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </Reveal>
-      <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[12px] font-medium text-g-muted">
-        {[
-          ["bg-g-fill", "Free"],
-          ["bg-g-blue-soft", "Busy"],
-          ["blue-grad", "Bill asked"],
-          ["border-[1.5px] border-dashed border-g-fill-2", "Reserved"],
-        ].map(([c, l]) => (
-          <span key={l} className="flex items-center gap-1.5">
-            <span className={`size-3 rounded-[4px] ${c}`} /> {l}
-          </span>
+      <Reveal className="mt-4 grid grid-cols-3 gap-2.5">
+        {shown.map((x) => (
+          <TableTile key={x.no} x={x} money={money} onTap={() => actions.open(x.no)} onLong={() => setPeek(x.no)} />
         ))}
+      </Reveal>
+      <p className="mt-4 text-center text-[12px] text-g-faint">Hold a table for quick actions</p>
+      {peeked && <TablePeek x={peeked} money={money} actions={actions} itemById={itemById} onClose={() => setPeek(null)} />}
+    </div>
+  );
+}
+
+/** Long-press preview: the table's short story and quick actions, without opening the full page. */
+function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; money: (n: number) => string; actions: TableActions; itemById: Map<string, MenuItem>; onClose: () => void }) {
+  const total = ticketTotal(x.lines);
+  const empty = x.status === "free" || x.status === "reserved";
+  const run = (f: (no: number) => void) => () => {
+    haptic("light");
+    onClose();
+    f(x.no);
+  };
+  const items: [string, LucideIcon, () => void][] = empty
+    ? [
+        ["Seat guests", Users, run(actions.seat)],
+        ["Open table", LayoutGrid, run(actions.open)],
+      ]
+    : [
+        ["Add items", Plus, run(actions.addItems)],
+        [x.status === "bill" ? "Open check" : "Bill", ReceiptText, run(actions.check)],
+        ...(x.lines.some((l) => l.state !== "served") ? [["Mark all served", ChefHat, run(actions.serveAll)] as [string, LucideIcon, () => void]] : []),
+        ["Open table", LayoutGrid, run(actions.open)],
+      ];
+  return (
+    <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-6" role="dialog" aria-label={`Table ${x.no} quick actions`}>
+      <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
+      <div className="animate-pop relative w-full max-w-[340px]">
+        <div className="rounded-[28px] bg-white p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[28px] leading-none font-bold tracking-[-0.03em]">Table {x.no}</p>
+              <p className="mt-1.5 text-[13px] text-g-muted">
+                {x.zone} · {empty ? `${x.seats} seats` : `${x.guests} guests · since ${x.since}`}
+              </p>
+            </div>
+            <span className={`${STATUS[x.status].chip} inline-flex h-7 items-center rounded-full px-3 text-[12px] font-semibold`}>{STATUS[x.status].label}</span>
+          </div>
+          {!empty && x.lines.length > 0 && (
+            <div className="mt-4 grid gap-1.5 border-t border-g-line pt-3.5">
+              {x.lines.slice(0, 4).map((l) => (
+                <p key={l.id} className="flex items-center gap-2 text-[14px]">
+                  <span className="w-6 text-g-muted tabular-nums">{l.qty}×</span>
+                  <span className="min-w-0 flex-1 truncate">{itemById.get(l.itemId)?.name.en ?? l.itemId}</span>
+                  <span className={`${LINE[l.state].chip} inline-flex h-5 items-center rounded-full px-2 text-[11px] font-semibold`}>{LINE[l.state].label}</span>
+                </p>
+              ))}
+              {x.lines.length > 4 && <p className="text-[13px] text-g-muted">+{x.lines.length - 4} more</p>}
+              <p className="mt-1 flex items-baseline justify-between border-t border-g-line pt-2.5">
+                <span className="text-[13px] text-g-muted">Total</span>
+                <span className="text-[20px] font-semibold tabular-nums">{money(total)}</span>
+              </p>
+            </div>
+          )}
+          {x.status === "reserved" && x.booking && (
+            <p className="mt-4 rounded-[16px] bg-g-fill px-3.5 py-2.5 text-[14px]">
+              Booked by <b className="font-semibold">{x.booking.name}</b> for {x.booking.time}
+            </p>
+          )}
+        </div>
+        <div className="mt-2.5 divide-y divide-g-line overflow-hidden rounded-[22px] bg-white">
+          {items.map(([label, Icon, f]) => (
+            <button key={label} onClick={f} className="press flex h-[52px] w-full items-center justify-between px-5 text-[16px] font-medium">
+              {label}
+              <Icon size={19} strokeWidth={1.9} className="text-g-blue" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -964,19 +1158,15 @@ function OrdersView({
   };
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead title="Orders" />
-      <Reveal className="mt-5 grid grid-cols-3 divide-x divide-g-line rounded-[22px] bg-g-fill py-3.5">
-        {[
-          ["Taken today", money(takings)],
-          ["Tips", money(tips)],
-          ["Closed", String(history.length)],
-        ].map(([l, v]) => (
-          <div key={l} className="min-w-0 px-3.5">
-            <p className="text-[12px] font-medium text-g-muted">{l}</p>
-            <p className="live mt-1 truncate text-[15px] font-semibold tabular-nums">{v}</p>
-          </div>
-        ))}
-      </Reveal>
+      <PageHead title="Orders" sub="Today" />
+      <Dash
+        items={[
+          { label: "Taken today", value: money(takings), sub: `${history.length} bills closed`, icon: Wallet, hot: true },
+          { label: "Tips", value: money(tips), sub: "team pool", icon: Banknote, tone: "green" },
+          { label: "Open now", value: String(open.length), sub: `${open.reduce((n, x) => n + x.lines.filter((l) => l.state !== "served").length, 0)} dishes in kitchen`, icon: ChefHat, tone: "orange" },
+          { label: "Avg check", value: money(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0), sub: "today", icon: ReceiptText, tone: "plain" },
+        ]}
+      />
       <div className="mt-4 flex rounded-full bg-g-fill p-1">
         {(
           [
@@ -989,7 +1179,7 @@ function OrdersView({
             onClick={() => {
               haptic("tick");
               setView(id);
-              startLoading(450);
+              loadOnce(`orders:${id}`, 450);
             }}
             aria-pressed={view === id}
             className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${view === id ? "bg-white text-g-ink" : "text-g-muted"}`}
