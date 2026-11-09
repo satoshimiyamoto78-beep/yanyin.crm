@@ -16,7 +16,7 @@
     ],
     "age_restricted": true
   },
-  "source": "Founder-provided bar menu photo (Instagram story), 2026-11-08. Prices in VND. Hookah menu not provided yet. Items with status=suggested were added by Claude (hookah menu, shots, coffee, snacks, local beer); venue must confirm.",
+  "source": "Founder-provided bar menu photo (Instagram story), 2026-11-08. Prices in VND. Hookah menu not provided yet: tobacco brands, prices and flavours are a draft. Items with status=suggested were added by Claude (hookah menu, shots, coffee, snacks, local beer); venue must confirm.",
   "categories": [
     {
       "name": {
@@ -36,28 +36,86 @@
             "ru": "Крепость"
           },
           "required": true,
+          "display": "scale",
+          "default": 4,
           "options": [
             {
               "name": {
-                "en": "Light",
-                "vi": "Nhẹ",
-                "ru": "Лёгкий"
+                "en": "Strength 1/10",
+                "ru": "Крепость 1/10",
+                "vi": "Độ mạnh 1/10"
               },
               "price": 0
             },
             {
               "name": {
-                "en": "Medium",
-                "vi": "Vừa",
-                "ru": "Средний"
+                "en": "Strength 2/10",
+                "ru": "Крепость 2/10",
+                "vi": "Độ mạnh 2/10"
               },
               "price": 0
             },
             {
               "name": {
-                "en": "Strong",
-                "vi": "Mạnh",
-                "ru": "Крепкий"
+                "en": "Strength 3/10",
+                "ru": "Крепость 3/10",
+                "vi": "Độ mạnh 3/10"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strength 4/10",
+                "ru": "Крепость 4/10",
+                "vi": "Độ mạnh 4/10"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strength 5/10",
+                "ru": "Крепость 5/10",
+                "vi": "Độ mạnh 5/10"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strength 6/10",
+                "ru": "Крепость 6/10",
+                "vi": "Độ mạnh 6/10"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strength 7/10",
+                "ru": "Крепость 7/10",
+                "vi": "Độ mạnh 7/10"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strength 8/10",
+                "ru": "Крепость 8/10",
+                "vi": "Độ mạnh 8/10"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strength 9/10",
+                "ru": "Крепость 9/10",
+                "vi": "Độ mạnh 9/10"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Strength 10/10",
+                "ru": "Крепость 10/10",
+                "vi": "Độ mạnh 10/10"
               },
               "price": 0
             }
@@ -66,13 +124,21 @@
         {
           "id": "flavor",
           "name": {
-            "en": "Flavor / mix",
+            "en": "Flavour",
             "vi": "Hương vị",
-            "ru": "Вкус / микс"
+            "ru": "Вкус"
           },
           "required": true,
-          "max": 1,
+          "max": 3,
           "options": [
+            {
+              "name": {
+                "en": "Hookah master's choice",
+                "vi": "Theo gợi ý của thợ shisha",
+                "ru": "На выбор кальянщика"
+              },
+              "price": 0
+            },
             {
               "name": {
                 "en": "Mint–Lime",
@@ -131,20 +197,45 @@
             },
             {
               "name": {
-                "en": "Hookah master's choice",
-                "vi": "Theo gợi ý của thợ shisha",
-                "ru": "На выбор кальянщика"
+                "en": "Blueberry",
+                "vi": "Việt quất",
+                "ru": "Черника"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Pineapple",
+                "vi": "Dứa",
+                "ru": "Ананас"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Cola–Lime",
+                "vi": "Cola–Chanh",
+                "ru": "Кола–лайм"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Lychee",
+                "vi": "Vải",
+                "ru": "Личи"
               },
               "price": 0
             }
-          ]
+          ],
+          "default": 0
         },
         {
           "id": "extras",
           "name": {
             "en": "Extras",
             "vi": "Thêm",
-            "ru": "Дополнительно"
+            "ru": "Экстрас"
           },
           "required": false,
           "options": [
@@ -163,6 +254,22 @@
                 "ru": "Молоко или сок в колбе"
               },
               "price": 50000
+            },
+            {
+              "name": {
+                "en": "Fruit bowl (pineapple / grapefruit)",
+                "vi": "Bát trái cây (dứa / bưởi)",
+                "ru": "Чаша на фрукте (ананас / грейпфрут)"
+              },
+              "price": 150000
+            },
+            {
+              "name": {
+                "en": "Ice and mint in the flask",
+                "vi": "Đá và bạc hà trong bình",
+                "ru": "Лёд и мята в колбе"
+              },
+              "price": 30000
             }
           ]
         }
@@ -180,42 +287,80 @@
       "items": [
         {
           "name": {
-            "en": "Classic hookah",
-            "vi": "Shisha cổ điển",
-            "ru": "Классический кальян"
+            "en": "Al Fakher",
+            "ru": "Al Fakher",
+            "vi": "Al Fakher"
           },
           "price": 350000,
           "status": "suggested",
           "description": {
-            "en": "Pick a flavour and strength, served with fresh coals",
-            "ru": "Выберите вкус и крепость, подаём со свежими углями"
+            "en": "Classic Arabian tobacco, soft and smooth",
+            "ru": "Классический арабский табак, мягкий и ровный"
           }
         },
         {
           "name": {
-            "en": "Premium hookah",
-            "vi": "Shisha cao cấp",
-            "ru": "Премиум-кальян"
+            "en": "Element",
+            "ru": "Element",
+            "vi": "Element"
+          },
+          "price": 400000,
+          "status": "suggested",
+          "description": {
+            "en": "Bright, clean flavours, from light to medium",
+            "ru": "Яркие чистые вкусы, от лёгкого до среднего"
+          }
+        },
+        {
+          "name": {
+            "en": "Musthave",
+            "ru": "Musthave",
+            "vi": "Musthave"
+          },
+          "price": 400000,
+          "status": "suggested",
+          "description": {
+            "en": "Juicy flavour lines, medium strength",
+            "ru": "Сочные вкусы, средняя крепость"
+          }
+        },
+        {
+          "name": {
+            "en": "Darkside",
+            "ru": "Darkside",
+            "vi": "Darkside"
           },
           "price": 450000,
           "status": "suggested",
-          "note": "Premium tobacco brands; venue to specify",
           "description": {
-            "en": "Premium tobacco, mixed by our hookah master",
-            "ru": "Премиальный табак, микс от кальянщика"
+            "en": "Dark leaf, rich taste, medium to strong",
+            "ru": "Тёмный лист, насыщенный вкус, от средней до высокой крепости"
           }
         },
         {
           "name": {
-            "en": "Fruit bowl hookah (pineapple / grapefruit)",
-            "vi": "Shisha bát trái cây (dứa / bưởi)",
-            "ru": "Кальян на фрукте (ананас / грейпфрут)"
+            "en": "Black Burn",
+            "ru": "Black Burn",
+            "vi": "Black Burn"
           },
-          "price": 550000,
+          "price": 450000,
           "status": "suggested",
           "description": {
-            "en": "Hookah bowl carved from a fresh pineapple or grapefruit",
-            "ru": "Чаша из свежего ананаса или грейпфрута"
+            "en": "Strong dark leaf with bold flavours",
+            "ru": "Крепкий тёмный лист с яркими вкусами"
+          }
+        },
+        {
+          "name": {
+            "en": "Tangiers",
+            "ru": "Tangiers",
+            "vi": "Tangiers"
+          },
+          "price": 500000,
+          "status": "suggested",
+          "description": {
+            "en": "Cult American tobacco for strong-smoke fans",
+            "ru": "Культовый американский табак для любителей крепкого"
           }
         },
         {

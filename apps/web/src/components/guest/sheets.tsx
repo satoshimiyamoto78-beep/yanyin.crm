@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  defaultOptionIds,
   formatMoney,
   missingRequired,
   t,
@@ -11,6 +12,7 @@ import {
   type Lang,
   type Menu,
   type MenuItem,
+  type ModifierGroup,
 } from "@yanyin/domain";
 import { Check, Clock, MapPin, Search, Send } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -55,7 +57,7 @@ function ItemSheetBody({
   onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number) => void;
 }) {
   const [variantId, setVariantId] = useState<string | undefined>(item.variants[0]?.id);
-  const [optionIds, setOptionIds] = useState<string[]>([]);
+  const [optionIds, setOptionIds] = useState<string[]>(() => defaultOptionIds(item));
   const [qty, setQty] = useState(1);
   const missing = missingRequired(item, optionIds);
   const price = unitPrice(item, variantId, optionIds);
@@ -68,6 +70,10 @@ function ItemSheetBody({
       if (prev.includes(optionId)) return prev.filter((id) => id !== optionId);
       const mine = prev.filter((id) => ids.includes(id));
       if (group.max === 1) return [...prev.filter((id) => !ids.includes(id)), optionId];
+      // In a multi-pick group the preselected option ("master's choice") excludes the rest.
+      const auto = group.defaultOptionId;
+      if (auto && optionId === auto) return [...prev.filter((id) => !ids.includes(id)), optionId];
+      if (auto && mine.includes(auto)) return [...prev.filter((id) => id !== auto), optionId];
       return mine.length >= group.max ? prev : [...prev, optionId];
     });
   };
@@ -125,7 +131,7 @@ function ItemSheetBody({
                   key={v.id}
                   onClick={() => setVariantId(v.id)}
                   aria-pressed={on}
-                  className={`flex h-11 flex-1 flex-col items-center justify-center rounded-full transition-all ${on ? "bg-white shadow-[0_2px_8px_-2px_rgba(11,11,15,0.16)]" : "text-g-muted"}`}
+                  className={`flex h-11 flex-1 flex-col items-center justify-center rounded-full transition-all ${on ? "bg-white" : "text-g-muted"}`}
                 >
                   <span className="text-[14px] font-semibold">{t(v.name, lang)}</span>
                   <span className="text-[11px] tabular-nums">{formatMoney(v.price, currency, lang)}</span>
@@ -135,35 +141,103 @@ function ItemSheetBody({
           </div>
         )}
 
-        {item.modifierGroups.map((g) => (
-          <section key={g.id} className="mt-7">
-            <div className="mb-3 flex items-baseline justify-between">
-              <h3 className="text-[17px] font-semibold">{t(g.name, lang)}</h3>
-              <span className={`text-[13px] font-medium ${g.required && missing.includes(g.id) ? "text-g-blue" : "text-g-faint"}`}>
-                {ui(lang, g.required ? "required" : "optional")}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {g.options.map((o) => {
-                const on = optionIds.includes(o.id);
-                return (
-                  <button
-                    key={o.id}
-                    onClick={() => toggle(g.id, o.id)}
-                    aria-pressed={on}
-                    className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
-                  >
-                    {on && <Check size={15} strokeWidth={2.5} />}
-                    {t(o.name, lang)}
-                    {o.price > 0 && <span className={on ? "text-white/60" : "text-g-muted"}>+{formatMoney(o.price, currency, lang)}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+        {item.modifierGroups.map((g, gi) => {
+          const steps = item.modifierGroups.length > 1;
+          return (
+            <section key={g.id} className="mt-9">
+              <div className="mb-4 flex items-baseline gap-2.5">
+                {steps && <span className="text-[13px] font-semibold text-g-blue tabular-nums">{String(gi + 1).padStart(2, "0")}</span>}
+                <h3 className="text-[17px] font-semibold">{t(g.name, lang)}</h3>
+                <span className={`ml-auto text-[13px] font-medium ${g.required && missing.includes(g.id) ? "text-g-blue" : "text-g-faint"}`}>
+                  {g.display === "chips" && g.max > 1 && g.max < g.options.length ? `${ui(lang, "pickUpTo")} ${g.max} · ` : ""}
+                  {ui(lang, g.required ? "required" : "optional")}
+                </span>
+              </div>
+              {g.display === "scale" ? (
+                <StrengthScale
+                  group={g}
+                  lang={lang}
+                  value={g.options.findIndex((o) => optionIds.includes(o.id))}
+                  onChange={(i) => {
+                    const ids = g.options.map((o) => o.id);
+                    setOptionIds((prev) => [...prev.filter((id) => !ids.includes(id)), g.options[i]!.id]);
+                  }}
+                />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {g.options.map((o) => {
+                    const on = optionIds.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        onClick={() => toggle(g.id, o.id)}
+                        aria-pressed={on}
+                        className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
+                      >
+                        {on && <Check size={15} strokeWidth={2.5} />}
+                        {t(o.name, lang)}
+                        {o.price > 0 && <span className={on ? "text-white/60" : "text-g-muted"}>+{formatMoney(o.price, currency, lang)}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
     </Sheet>
+  );
+}
+
+/* ---------------------------------------------------------------- Strength scale */
+
+const STRENGTH_KEYS = ["strength1", "strength2", "strength3", "strength4"] as const;
+
+/** Hookah strength 1–10: a big number, a word for it and a flat slider with ten notches. */
+function StrengthScale({ group, lang, value, onChange }: { group: ModifierGroup; lang: Lang; value: number; onChange: (i: number) => void }) {
+  const n = group.options.length;
+  const v = Math.max(0, value);
+  const pct = n > 1 ? (v / (n - 1)) * 100 : 0;
+  const word = ui(lang, STRENGTH_KEYS[Math.min(3, Math.floor((v / n) * 4))]!);
+  return (
+    <div>
+      <div className="flex items-end gap-3">
+        <span className="text-[56px] leading-[0.9] font-semibold tracking-[-0.04em] tabular-nums">{v + 1}</span>
+        <span className="pb-1 text-[15px] text-g-muted">
+          / {n} · <span className="font-medium text-g-ink">{word}</span>
+        </span>
+      </div>
+      <div className="relative mt-6 h-11">
+        <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-g-fill-2" />
+        <div className="bar-grad absolute top-1/2 left-0 h-2 -translate-y-1/2 rounded-full transition-[width] duration-150" style={{ width: `${pct}%` }} />
+        <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-[3px]" aria-hidden>
+          {group.options.map((o, i) => (
+            <span key={o.id} className={`size-1.5 rounded-full ${i <= v ? "bg-white/80" : "bg-g-faint/50"}`} />
+          ))}
+        </div>
+        <span
+          aria-hidden
+          className="blue-grad pointer-events-none absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-white transition-[left] duration-150"
+          style={{ left: `clamp(16px, ${pct}%, calc(100% - 16px))` }}
+        />
+        <input
+          type="range"
+          min={0}
+          max={n - 1}
+          step={1}
+          value={v}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={t(group.name, lang)}
+          aria-valuetext={`${v + 1} / ${n}, ${word}`}
+          className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
+        />
+      </div>
+      <div className="mt-1 flex justify-between text-[12px] font-medium text-g-faint tabular-nums">
+        <span>1 · {ui(lang, "strength1")}</span>
+        <span>{n} · {ui(lang, "strength4")}</span>
+      </div>
+    </div>
   );
 }
 
@@ -425,7 +499,7 @@ export function SearchSheet({
             className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint"
           />
         </label>
-        <div className="mt-4 grid gap-3">
+        <div className="mt-2 divide-y divide-g-line">
           {results.map(([item, c]) => (
             <ItemCard
               key={item.id}

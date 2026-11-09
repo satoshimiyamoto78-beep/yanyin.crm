@@ -29,6 +29,11 @@ export function missingRequired(item: MenuItem, optionIds: string[]): string[] {
     .map((g) => g.id);
 }
 
+/** Preselected options (e.g. hookah strength 5, master's choice flavour). */
+export function defaultOptionIds(item: MenuItem): string[] {
+  return item.modifierGroups.flatMap((g) => (g.defaultOptionId ? [g.defaultOptionId] : []));
+}
+
 export function addLine(lines: CartLine[], line: Omit<CartLine, "key">): CartLine[] {
   const key = lineKey(line.itemId, line.variantId, line.optionIds);
   const existing = lines.find((l) => l.key === key);

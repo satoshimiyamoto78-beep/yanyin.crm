@@ -69,7 +69,7 @@ function Gauge({ percent }: { percent: number }) {
             y2={y2}
             strokeWidth={9}
             strokeLinecap="round"
-            stroke={on ? `rgb(${Math.round(91 + (141 - 91) * (i / segs))},${Math.round(124 - (124 - 92) * (i / segs))},255)` : "rgba(47,91,255,0.12)"}
+            stroke={on ? `rgb(${Math.round(142 - (142 - 47) * (i / segs))},${Math.round(168 - (168 - 91) * (i / segs))},255)` : "rgba(47,91,255,0.12)"}
             style={{ transition: `stroke 0.4s ${i * 40}ms` }}
           />
         );
@@ -284,7 +284,7 @@ function SectionTitle({ title, count }: { title: string; count?: number }) {
 function Stat({ label, value, trend }: { label: string; value: number; trend: number }) {
   const v = useCountUp(value);
   return (
-    <div className="mesh-sky min-w-0 rounded-[22px] p-3.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+    <div className="mesh-sky min-w-0 rounded-[22px] p-3.5">
       <p className="truncate text-[12px] text-g-muted">{label}</p>
       <p className="mt-1 text-[24px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">{short(v)}</p>
       <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${trend >= 0 ? "chip-green" : "chip-orange"}`}>

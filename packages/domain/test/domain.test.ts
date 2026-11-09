@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  addLine, cartTotal, formatMoney, levelFromXp, missingRequired, moodsFor, normalizeMenu,
+  addLine, cartTotal, defaultOptionIds, formatMoney, levelFromXp, missingRequired, moodsFor, normalizeMenu,
   questPercent, questProgress, roleFor, spinRoulette, t, unitPrice, xpForLevel,
   type DomainEvent, type Quest, type RawMenu,
 } from "../src";
@@ -51,6 +51,18 @@ describe("cart", () => {
     const ice = hookah.modifierGroups[1]!.options[0]!.id;
     expect(unitPrice(hookah, undefined, [ice])).toBe(400000);
     expect(missingRequired(hookah, [ice])).toEqual(["flavor"]);
+  });
+  it("builds a 1–10 strength scale with a preselected step", () => {
+    const scaled = normalizeMenu({
+      ...raw,
+      categories: [{ name: { en: "Hookah" }, modifier_groups: [{ id: "strength", name: { en: "Strength" }, required: true, display: "scale", default: 4, options: Array.from({ length: 10 }, (_, i) => ({ name: { en: `${i + 1}/10` }, price: 0 })) }], items: [{ name: { en: "Darkside" }, price: 450000 }] }],
+    }).categories[0]!.items[0]!;
+    const g = scaled.modifierGroups[0]!;
+    expect(g.display).toBe("scale");
+    expect(g.max).toBe(1);
+    expect(g.options.map((o) => o.id).slice(0, 3)).toEqual(["strength-1", "strength-2", "strength-3"]);
+    expect(defaultOptionIds(scaled)).toEqual(["strength-5"]);
+    expect(missingRequired(scaled, defaultOptionIds(scaled))).toEqual([]);
   });
   it("merges identical lines", () => {
     let lines = addLine([], { itemId: "a", optionIds: ["x"], qty: 1, unitPrice: 10 });

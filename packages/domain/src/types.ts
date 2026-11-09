@@ -37,6 +37,10 @@ export type ModifierGroup = {
   required: boolean;
   /** Maximum options a guest may pick; 1 means single choice. */
   max: number;
+  /** "scale": options are ordered steps picked with a slider (e.g. hookah strength 1–10). */
+  display: "chips" | "scale";
+  /** Option preselected when the guest opens the item (also used by quick add). */
+  defaultOptionId?: string;
   options: ModifierOption[];
 };
 

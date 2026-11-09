@@ -43,6 +43,9 @@ type RawCategory = {
     name: I18nText;
     required?: boolean;
     max?: number;
+    display?: "chips" | "scale";
+    /** Index of the preselected option. */
+    default?: number;
     options: RawOption[];
   }[];
   service_calls?: { id: string; name: I18nText }[];
@@ -112,17 +115,23 @@ export function normalizeMenu(raw: RawMenu): Menu {
     const nameEn = rc.name.en ?? Object.values(rc.name)[0] ?? "category";
     const categoryId = uniqueId(slugify(nameEn), catIds);
 
-    const modifierGroups: ModifierGroup[] = (rc.modifier_groups ?? []).map((g) => ({
-      id: g.id,
-      name: g.name,
-      required: Boolean(g.required),
-      max: g.max ?? (g.required ? 1 : g.options.length),
-      options: g.options.map((o, i) => ({
-        id: `${g.id}-${slugify(o.name.en ?? String(i)) || i}`,
+    const modifierGroups: ModifierGroup[] = (rc.modifier_groups ?? []).map((g) => {
+      const display = g.display ?? "chips";
+      const options = g.options.map((o, i) => ({
+        id: display === "scale" ? `${g.id}-${i + 1}` : `${g.id}-${slugify(o.name.en ?? String(i)) || i}`,
         name: o.name,
         price: o.price,
-      })),
-    }));
+      }));
+      return {
+        id: g.id,
+        name: g.name,
+        required: Boolean(g.required),
+        max: display === "scale" ? 1 : g.max ?? (g.required ? 1 : g.options.length),
+        display,
+        defaultOptionId: g.default !== undefined ? options[g.default]?.id : undefined,
+        options,
+      };
+    });
 
     const items: MenuItem[] = rc.items.map((ri) => {
       const rawVariants = ri.variants ?? rc.variants_shared ?? [];

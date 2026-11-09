@@ -118,7 +118,7 @@ export function DishTile({ item, role, className = "", photoScale = 0.88, glyph 
         <Image src={item.photo} alt="" width={360} height={240} className="dish-shadow h-auto object-contain" style={{ width: `${photoScale * 100}%` }} />
       ) : (
         <span
-          className="grid aspect-square place-items-center rounded-full bg-white text-g-blue shadow-[0_10px_24px_-10px_rgba(47,91,255,0.55),inset_0_-2px_6px_rgba(47,91,255,0.08)]"
+          className="grid aspect-square place-items-center rounded-full bg-white text-g-blue"
           style={{ width: `${glyph * 100}%` }}
         >
           <RoleIcon role={role} name={item.name.en} size={22} />
@@ -193,11 +193,11 @@ export function ItemCard({
   const plain = !needsChoice(item);
   const desc = describe(item, lang);
   return (
-    <div className="card flex gap-4 rounded-[26px] p-2.5">
+    <div className="flex gap-4 py-4">
       <button onClick={onOpen} aria-label={t(item.name, lang)} className="press shrink-0">
-        <DishTile item={item} role={role} className="size-[112px] rounded-[20px]" />
+        <DishTile item={item} role={role} className="size-[108px] rounded-[22px]" />
       </button>
-      <div className="flex min-w-0 flex-1 flex-col py-1.5 pr-1.5">
+      <div className="flex min-w-0 flex-1 flex-col py-0.5">
         <button onClick={onOpen} className="text-left">
           <span className="line-clamp-2 text-[16px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
           {desc && <span className="mt-1 line-clamp-2 text-[13px] leading-[1.35] text-g-muted">{desc}</span>}
@@ -250,7 +250,7 @@ export function Sheet({ open, onClose, children, footer, label, full }: { open: 
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        className={`animate-sheet relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-t-[32px] bg-white text-g-ink shadow-[0_-12px_48px_-12px_rgba(11,11,15,0.3)] ${full ? "h-[94dvh]" : "max-h-[92dvh]"}`}
+        className={`animate-sheet relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-t-[32px] bg-white text-g-ink ${full ? "h-[94dvh]" : "max-h-[92dvh]"}`}
       >
         <span aria-hidden className="absolute top-2 left-1/2 z-10 h-1 w-9 -translate-x-1/2 rounded-full bg-g-fill-2" />
         <button onClick={onClose} aria-label="Close" className="card press absolute top-4 right-4 z-10 grid size-9 place-items-center rounded-full">
