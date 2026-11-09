@@ -5,7 +5,7 @@
  * Guest (yanyin.menu): one platform system — white canvas, black ink, one blue
  * for the primary action (docs/07-design-audit.md). Venues add logo, name,
  * photos and copy, never their own colours.
- * Staff (yanyin.crew): dark bento with neon lime.
+ * Staff (yanyin.crew) uses the same system.
  */
 :root {
   --g-bg: #ffffff;
@@ -21,20 +21,10 @@
   --g-blue-soft: #eaf0ff;
   --g-green: #12a150;
 
-  --crew-bg: #0b0d0c;
-  --crew-surface: #16191a;
-  --crew-surface-2: #1e2223;
-  --crew-ink: #f2f5f3;
-  --crew-muted: #8a938f;
-  --crew-lime: #b8f35a;
-  --crew-violet: #7c5cff;
-  --crew-orange: #ff8a3d;
 }
 
 @theme inline {
   --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Unbounded Variable", "Onest Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --color-g-bg: var(--g-bg);
   --color-g-fill: var(--g-fill);
@@ -49,14 +39,6 @@
   --color-g-blue-soft: var(--g-blue-soft);
   --color-g-green: var(--g-green);
 
-  --color-crew-bg: var(--crew-bg);
-  --color-crew-surface: var(--crew-surface);
-  --color-crew-surface-2: var(--crew-surface-2);
-  --color-crew-ink: var(--crew-ink);
-  --color-crew-muted: var(--crew-muted);
-  --color-crew-lime: var(--crew-lime);
-  --color-crew-violet: var(--crew-violet);
-  --color-crew-orange: var(--crew-orange);
 }
 
 html {

@@ -1,6 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource-variable/unbounded";
-import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/onest";
 import "./globals.css";
 

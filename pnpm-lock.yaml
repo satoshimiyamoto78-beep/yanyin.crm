@@ -10,15 +10,9 @@ importers:
 
   apps/web:
     dependencies:
-      '@fontsource-variable/jetbrains-mono':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@fontsource-variable/onest':
         specifier: ^5.3.1
         version: 5.3.1
-      '@fontsource-variable/unbounded':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@yanyin/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -358,14 +352,8 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@fontsource-variable/jetbrains-mono@5.3.0':
-    resolution: {integrity: sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw==}
-
   '@fontsource-variable/onest@5.3.1':
     resolution: {integrity: sha512-xaaw6G4HDB2/RczsWLD/2bnib4ykmQlTlBUN3GOEOiyErilZukQWVJG95h9zwAy0i8KY+QzDa+COPfqhI72Acw==}
-
-  '@fontsource-variable/unbounded@5.3.0':
-    resolution: {integrity: sha512-ea565Ncn4r7gPdBEHcmaF31V11hDfkL7b/JCklLobQbMfbu2ZZQrVWNgdeEFWFLqNh36yhieZWOgxdAnMTzrLg==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2726,11 +2714,7 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@fontsource-variable/jetbrains-mono@5.3.0': {}
-
   '@fontsource-variable/onest@5.3.1': {}
-
-  '@fontsource-variable/unbounded@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

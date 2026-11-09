@@ -46,7 +46,7 @@ something like `yanyin.app` (not decided yet, see `docs/04-decisions.md`).
 - `docs/03-roadmap.md`: MVP scope and phased backlog
 - `docs/04-decisions.md`: decision log (ADR) and open questions for the founder
 - `docs/07-design-audit.md`: current guest design rules (v3): white, black, one blue #2F5BFF, Onest, no emoji, text category tabs, photo cards vs list rows (ADR-013)
-- `docs/06-design-direction.md`: earlier design directions (history); staff and HQ dark bento with neon lime
+- `docs/06-design-direction.md`: earlier design directions (history only)
 - `packages/seed/src/*.menu.json`: real pilot menus (Samarkand, Zabey), used as demo and seed data
 - `docs/05-pilot-vietnam.md`: first launch country (Vietnam, Da Nang), pilot venues Samarkand and Zabey, e-invoice and payments
 - Interactive architecture scheme: https://claude.ai/artifact/SG8DvbBNPCJQNdibfwJ7WQ
