@@ -69,7 +69,7 @@ function Gauge({ percent }: { percent: number }) {
             y2={y2}
             strokeWidth={9}
             strokeLinecap="round"
-            stroke={on ? `rgba(255,255,255,${0.55 + (0.45 * i) / segs})` : "rgba(255,255,255,0.16)"}
+            stroke={on ? `rgb(${Math.round(91 + (141 - 91) * (i / segs))},${Math.round(124 - (124 - 92) * (i / segs))},255)` : "rgba(47,91,255,0.12)"}
             style={{ transition: `stroke 0.4s ${i * 40}ms` }}
           />
         );
@@ -117,18 +117,18 @@ export function CrewBoard({ data }: { data: CrewData }) {
         </header>
 
         {/* Level */}
-        <section className="card mt-6 rounded-[28px] p-5">
+        <section className="mesh-lilac mt-6 rounded-[28px] p-5">
           <div className="flex items-baseline justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[13px] font-medium text-g-muted">Level {level.level}</p>
-              <p className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{level.title}</p>
+              <p className="text-[30px] leading-tight font-semibold tracking-[-0.02em]">{level.title}</p>
             </div>
             <p className="shrink-0 text-[15px] font-semibold tabular-nums">
               <CountUp to={level.xpIntoLevel} />
               <span className="text-g-muted"> / {level.xpForNext} XP</span>
             </p>
           </div>
-          <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-g-fill">
+          <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/70">
             <div className="bar-grad animate-grow h-full rounded-full" style={{ width: `${pct}%` }} />
           </div>
         </section>
@@ -167,28 +167,28 @@ export function CrewBoard({ data }: { data: CrewData }) {
         </section>
 
         {/* Team goal */}
-        <section className="blue-grad mt-3 overflow-hidden rounded-[28px] p-5">
-          <p className="flex items-center gap-2 text-[13px] font-medium text-white/75">
+        <section className="mesh-blue mt-3 overflow-hidden rounded-[28px] p-5">
+          <p className="flex items-center gap-2 text-[13px] font-medium text-g-ink-2">
             <Users size={16} strokeWidth={1.75} /> Team goal this week
           </p>
           <div className="relative mt-3 flex justify-center">
             <Gauge percent={boss} />
             <div className="absolute inset-x-0 bottom-0 text-center">
-              <p className="text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+              <p className="text-[36px] leading-none font-semibold tracking-[-0.03em] tabular-nums">
                 <CountUp to={boss} />%
               </p>
-              <p className="mt-1 text-[13px] text-white/75">
+              <p className="mt-1 text-[13px] text-g-muted">
                 {short(data.boss.progress)} of {short(data.boss.target)} ₫
               </p>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2.5">
-            <div className="rounded-[18px] bg-white/15 p-3.5">
-              <p className="text-[12px] text-white/70">Reward</p>
+            <div className="rounded-[18px] bg-white/75 p-3.5 backdrop-blur">
+              <p className="text-[12px] text-g-muted">Reward</p>
               <p className="text-[15px] font-semibold">{data.boss.reward}</p>
             </div>
-            <div className="rounded-[18px] bg-white/15 p-3.5">
-              <p className="text-[12px] text-white/70">Time left</p>
+            <div className="rounded-[18px] bg-white/75 p-3.5 backdrop-blur">
+              <p className="text-[12px] text-g-muted">Time left</p>
               <p className="text-[15px] font-semibold">{data.boss.endsIn}</p>
             </div>
           </div>
@@ -284,9 +284,9 @@ function SectionTitle({ title, count }: { title: string; count?: number }) {
 function Stat({ label, value, trend }: { label: string; value: number; trend: number }) {
   const v = useCountUp(value);
   return (
-    <div className="card min-w-0 rounded-[22px] p-3.5">
+    <div className="mesh-sky min-w-0 rounded-[22px] p-3.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <p className="truncate text-[12px] text-g-muted">{label}</p>
-      <p className="mt-1 text-[22px] leading-tight font-bold tracking-[-0.02em] tabular-nums">{short(v)}</p>
+      <p className="mt-1 text-[24px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">{short(v)}</p>
       <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${trend >= 0 ? "chip-green" : "chip-orange"}`}>
         <TrendingUp size={12} strokeWidth={2.25} />
         {trend >= 0 ? "+" : ""}

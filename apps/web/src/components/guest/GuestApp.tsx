@@ -336,9 +336,9 @@ export function GuestApp({ menu }: { menu: Menu }) {
 
 function QuickAction({ icon, label, onClick, accent }: { icon: React.ReactNode; label: string; onClick: () => void; accent?: boolean }) {
   return (
-    <button onClick={onClick} className={`press flex h-[104px] flex-col justify-between rounded-[24px] p-3.5 text-left ${accent ? "blue-grad" : "card"}`}>
-      <span className={`grid size-10 place-items-center rounded-full ${accent ? "bg-white/20 text-white" : "chip-blue"}`}>{icon}</span>
-      <span className={`text-[13px] leading-[1.25] font-semibold ${accent ? "text-white" : "text-g-ink"}`}>{label}</span>
+    <button onClick={onClick} className={`press flex h-[104px] flex-col justify-between rounded-[24px] p-3.5 text-left ${accent ? "mesh-blue" : "card"}`}>
+      <span className={`grid size-10 place-items-center rounded-full ${accent ? "bg-white text-g-blue shadow-[0_6px_14px_-8px_rgba(47,91,255,0.5)]" : "chip-blue"}`}>{icon}</span>
+      <span className="text-[13px] leading-[1.25] font-semibold text-g-ink">{label}</span>
     </button>
   );
 }
@@ -383,13 +383,12 @@ function Hero({
           <div key={i} className="w-full shrink-0 snap-start px-5">
             {s.kind === "roulette" ? (
               <div className="card-float overflow-hidden rounded-[32px]">
-                <button onClick={onRoulette} className="blue-grad relative block h-[200px] w-full overflow-hidden">
-                  <span aria-hidden className="absolute inset-0 bg-[radial-gradient(80%_70%_at_50%_0%,rgba(255,255,255,0.35),transparent_70%)]" />
+                <button onClick={onRoulette} className="mesh-blue relative block h-[200px] w-full overflow-hidden">
                   <span className="absolute inset-x-6 top-1/2 flex -translate-y-1/2 justify-center gap-2.5">
                     {[0, 1, 2].map((k) => {
                       const it = reelItems[k];
                       return (
-                        <span key={k} className="grid h-[112px] w-[88px] place-items-center rounded-[20px] bg-white/95 shadow-[inset_0_-6px_12px_rgba(47,91,255,0.12),0_12px_24px_-12px_rgba(0,0,0,0.35)]">
+                        <span key={k} className="grid h-[112px] w-[88px] place-items-center rounded-[20px] bg-white shadow-[0_12px_28px_-14px_rgba(47,91,255,0.45)]">
                           {it ? <DishTile item={it} role={categoryOf.get(it.id)?.role ?? "main"} photoScale={0.9} glyph={0.62} className="size-full rounded-[20px] !bg-none" /> : <Dices size={28} strokeWidth={1.75} className="text-g-blue" />}
                         </span>
                       );
@@ -423,7 +422,7 @@ function Hero({
                       <h3 className="mt-2.5 text-[24px] leading-[1.15] font-bold tracking-[-0.02em]">{t(it.name, lang)}</h3>
                       <p className="mt-1.5 line-clamp-2 text-[14px] leading-snug text-g-muted">{describe(it, lang)}</p>
                       <div className="mt-4 flex items-center justify-between gap-3">
-                        <span className="text-[22px] font-bold tracking-[-0.02em] tabular-nums">{formatMoney(it.price, currency, lang)}</span>
+                        <span className="text-[24px] font-semibold tracking-[-0.02em] tabular-nums">{formatMoney(it.price, currency, lang)}</span>
                         <button onClick={() => onAdd(it)} className="blue-grad press flex h-12 items-center gap-2 rounded-full px-5 text-[15px] font-semibold">
                           <Plus size={18} strokeWidth={2.25} /> {ui(lang, "add")}
                         </button>

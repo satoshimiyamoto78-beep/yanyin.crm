@@ -282,7 +282,7 @@ export function CartSheet({
             />
             <div className="mt-6 flex items-baseline justify-between">
               <span className="text-[15px] text-g-muted">{ui(lang, "total")}</span>
-              <span className="text-[24px] font-bold tracking-[-0.02em] tabular-nums">{formatMoney(total, currency, lang)}</span>
+              <span className="text-[26px] font-semibold tracking-[-0.02em] tabular-nums">{formatMoney(total, currency, lang)}</span>
             </div>
             <p className="mt-1 text-[13px] text-g-faint">{ui(lang, "serviceNote")}</p>
           </>
@@ -342,7 +342,7 @@ export function OrdersSheet({
           const stage = orderStage(o, now);
           const minsLeft = Math.max(1, Math.ceil(15 - ((now - o.placedAt) / 1000 / 45) * 15));
           return (
-            <article key={o.id} className={`mt-4 rounded-[28px] p-5 ${i === 0 ? "blue-grad-soft" : "border border-g-line"}`}>
+            <article key={o.id} className={`mt-4 rounded-[28px] p-5 ${i === 0 ? "mesh-blue" : "border border-g-line"}`}>
               <p className="text-[13px] font-medium text-g-muted">
                 {ui(lang, "order")} №{String(o.id).padStart(3, "0")}
               </p>

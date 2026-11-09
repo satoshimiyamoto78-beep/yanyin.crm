@@ -206,7 +206,7 @@ export function ItemCard({
           <ItemChips item={item} lang={lang} />
         </span>
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <span className="min-w-0 truncate text-[17px] font-bold tracking-[-0.01em] tabular-nums">
+          <span className="min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em] tabular-nums">
             {item.variants.length > 1 && <span className="mr-1 text-[13px] font-medium text-g-muted">{ui(lang, "from")}</span>}
             {formatMoney(item.price, currency, lang)}
           </span>

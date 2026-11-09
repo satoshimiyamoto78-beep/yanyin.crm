@@ -114,20 +114,20 @@ export function RouletteSheet({
 
         {/* Slot machine */}
         <div className="relative mt-6 pr-9">
-          <div className="blue-grad rounded-[32px] p-3 pt-2.5">
+          <div className="mesh-blue rounded-[32px] p-3 pt-2.5 shadow-[0_18px_40px_-20px_rgba(47,91,255,0.45)]">
             <div className="flex items-center justify-between px-2 pb-2.5">
-              <span className="text-[11px] font-bold tracking-[0.18em] text-white/90 uppercase">Food Roulette</span>
+              <span className="text-[11px] font-bold tracking-[0.18em] text-g-blue uppercase">Food Roulette</span>
               <span className="flex gap-1.5" aria-hidden>
                 {Array.from({ length: 6 }, (_, i) => (
                   <span
                     key={i}
-                    className={`size-1.5 rounded-full bg-white ${spinning ? "animate-pulse" : ""}`}
+                    className={`size-1.5 rounded-full bg-g-blue ${spinning ? "animate-pulse" : ""}`}
                     style={{ opacity: spinning ? 1 : i % 2 ? 0.45 : 0.9, animationDelay: `${i * 120}ms` }}
                   />
                 ))}
               </span>
             </div>
-            <div className="relative rounded-[24px] bg-white p-2 shadow-[inset_0_2px_10px_rgba(16,24,40,0.12)]">
+            <div className="relative rounded-[24px] bg-white p-2 shadow-[inset_0_2px_8px_rgba(16,24,40,0.08)]">
               <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${reels}, minmax(0, 1fr))` }}>
                 {strips.map((strip, r) => {
                   const offset = phase === "run" || phase === "done" ? -(strip.length - 1) * TILE : 0;
@@ -161,7 +161,7 @@ export function RouletteSheet({
           {/* Lever */}
           <button onClick={spin} disabled={spinning} aria-label={ui(lang, "spin")} className="absolute top-6 right-0 flex h-[150px] w-8 flex-col items-center">
             <span key={pull} className={`flex flex-col items-center ${pull ? "animate-lever" : ""}`}>
-              <span className="blue-grad size-8 rounded-full" />
+              <span className="size-8 rounded-full bg-[radial-gradient(circle_at_35%_30%,#8aa6ff,#2f5bff_70%)] shadow-[0_6px_14px_-6px_rgba(47,91,255,0.7)]" />
               <span className="h-[86px] w-2 rounded-full bg-gradient-to-b from-[#c9cdd6] to-[#8d929e]" />
             </span>
             <span className="-mt-1 h-7 w-5 rounded-lg bg-gradient-to-b from-[#9aa0ad] to-[#6b707c]" />
@@ -181,7 +181,7 @@ export function RouletteSheet({
               <span className="text-[13px] text-g-muted">
                 {formatMoney(result.perGuest, currency, lang)} {ui(lang, "perGuest")} × {guests}
               </span>
-              <span className="text-[20px] font-bold tabular-nums">{formatMoney(result.total, currency, lang)}</span>
+              <span className="text-[22px] font-semibold tabular-nums">{formatMoney(result.total, currency, lang)}</span>
             </div>
           </div>
         )}
