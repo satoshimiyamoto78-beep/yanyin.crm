@@ -22,11 +22,11 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { loadOnce, Reveal } from "@/components/guest/motion";
+import { loadIfChanged, markShown, Reveal } from "@/components/guest/motion";
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
@@ -83,13 +83,27 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));
   const now = () => new Date().toTimeString().slice(0, 5);
   const billCount = tables.filter((x) => x.status === "bill").length;
+  useEffect(() => {
+    markShown("tab:me", JSON.stringify([floor.history.length])); // the first screen already played its load
+  }, [floor.history.length]);
   const go = (t: Tab) => {
     haptic("tick");
     setTab(t);
     window.scrollTo({ top: 0 });
-    loadOnce(`tab:${t}`, 550); // fresh data blurs then pulls into focus; a section seen <60 s ago shows at once
+    loadIfChanged(`tab:${t}`, signatureOf(t)); // only new or changed data blurs and pulls into focus
   };
   const todays = bookings.filter((b) => b.day === 0 && b.status !== "seated").sort((a, b) => a.time.localeCompare(b.time));
+  // Fingerprint of what each section shows: same data means no loading animation.
+  const signatureOf = (t: Tab) =>
+    t === "tables"
+      ? JSON.stringify(tables.map((x) => [x.no, x.status, x.guests, x.lines.length, x.lines.map((l) => l.state).join("")]))
+      : t === "orders"
+        ? JSON.stringify([history.length, tables.map((x) => [x.no, x.status, x.lines.map((l) => l.qty + l.state).join("")])])
+        : t === "bookings"
+          ? JSON.stringify(bookings.map((b) => [b.id, b.status, b.table]))
+          : t === "me"
+            ? JSON.stringify([history.length])
+            : "settings";
   const hot = {
     busy: tables.filter((x) => x.status !== "free" && x.status !== "reserved").length,
     tables: tables.length,
@@ -1179,7 +1193,7 @@ function OrdersView({
             onClick={() => {
               haptic("tick");
               setView(id);
-              loadOnce(`orders:${id}`, 450);
+              loadIfChanged(`orders:${id}`, `${id}:${open.length}:${history.length}`, 450);
             }}
             aria-pressed={view === id}
             className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${view === id ? "bg-white text-g-ink" : "text-g-muted"}`}

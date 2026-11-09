@@ -13,20 +13,27 @@ import { haptic } from "@/lib/haptics";
 let loadingUntil = 0;
 const listeners = new Set<() => void>();
 
-const freshUntil = new Map<string, number>();
+const shown = new Map<string, string>();
 
 /**
- * Like startLoading, but cached per data key: switching back to a section seen
- * less than `ttl` ago shows it at once (no blur). Stale data loads again.
+ * Loads only when needed. `signature` is a fingerprint of the data a section
+ * shows. First visit (nothing cached) or changed data: blur, then pull into
+ * focus. Same data as last time: show at once, however long ago that was.
+ * In production the same rule sits on the data cache (stale-while-revalidate):
+ * cached data renders instantly; the focus pull runs only for new data.
  */
-export function loadOnce(key: string, ms = 600, ttl = 60_000) {
-  const now = performance.now();
-  if ((freshUntil.get(key) ?? 0) > now) {
-    loadingUntil = 0.0001; // a past window: new Reveals mount sharp
+export function loadIfChanged(key: string, signature: string, ms = 550) {
+  if (shown.get(key) === signature) {
+    loadingUntil = 0.0001; // a past window: Reveals mount sharp
     return;
   }
-  freshUntil.set(key, now + ttl);
+  shown.set(key, signature);
   startLoading(ms);
+}
+
+/** Marks data as already shown (e.g. the first screen), so returning to it is instant. */
+export function markShown(key: string, signature: string) {
+  shown.set(key, signature);
 }
 
 /** Starts a loading window: every mounted Reveal blurs its data, then pulls it into focus. */

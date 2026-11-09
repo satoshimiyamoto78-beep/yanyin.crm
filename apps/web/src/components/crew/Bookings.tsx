@@ -4,7 +4,7 @@ import { CalendarDays, CalendarPlus, Check, Clock, Hourglass, Phone, StickyNote,
 import { useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { loadOnce, Reveal } from "@/components/guest/motion";
+import { loadIfChanged, Reveal } from "@/components/guest/motion";
 import { ChoiceChip, Sheet, StepHead } from "@/components/guest/ui";
 import { Counter, Dash, PageHead } from "./CrewApp";
 
@@ -54,7 +54,7 @@ export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[];
       />
       <div className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
         {[0, 1, 2, 3, 4, 5, 6].map((d) => (
-          <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); loadOnce(`bookings:${d}`, 450); }} icon={<span />}>
+          <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); loadIfChanged(`bookings:${d}`, JSON.stringify(bookings.filter((b) => b.day === d).map((b) => [b.id, b.status])), 450); }} icon={<span />}>
             {dayLabel(d)}
           </ChoiceChip>
         ))}
