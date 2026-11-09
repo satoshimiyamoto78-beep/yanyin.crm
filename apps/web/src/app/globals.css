@@ -286,7 +286,40 @@ body {
   animation: wheel-idle 40s linear infinite;
 }
 
+/*
+ * Spinning gradient ring for the picked tobacco tile: the Nomad blue gradient
+ * runs around the border. Masked so only a 2px ring shows.
+ */
+@property --ring-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.spin-ring {
+  position: relative;
+  isolation: isolate;
+}
+.spin-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from var(--ring-a), #6c96ff, #2f6bff, #2530b0, #2f6bff 60%, #6c96ff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: ring-spin 2.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes ring-spin {
+  to {
+    --ring-a: 360deg;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .spin-ring::before,
   .aurora::before,
   .aurora::after,
   .wheel-idle,

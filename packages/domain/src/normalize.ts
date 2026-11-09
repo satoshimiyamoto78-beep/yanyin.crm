@@ -29,7 +29,7 @@ export type RawMenu = {
 };
 
 type RawVariant = { name: I18nText; price: number };
-type RawOption = { name: I18nText; price: number };
+type RawOption = { name: I18nText; price: number; note?: I18nText; logo?: string };
 
 type RawCategory = {
   name: I18nText;
@@ -43,7 +43,7 @@ type RawCategory = {
     name: I18nText;
     required?: boolean;
     max?: number;
-    display?: "chips" | "scale";
+    display?: "chips" | "scale" | "brands";
     /** Index of the preselected option. */
     default?: number;
     options: RawOption[];
@@ -61,6 +61,8 @@ type RawItem = {
   status?: string;
   photo?: string;
   note?: string;
+  /** Ids of the category's modifier groups this item uses; all of them when omitted. */
+  modifier_groups?: string[];
 };
 
 const ROLE_RULES: [RegExp, CategoryRole][] = [
@@ -121,6 +123,8 @@ export function normalizeMenu(raw: RawMenu): Menu {
         id: display === "scale" ? `${g.id}-${i + 1}` : `${g.id}-${slugify(o.name.en ?? String(i)) || i}`,
         name: o.name,
         price: o.price,
+        ...(o.note ? { note: o.note } : {}),
+        ...(o.logo ? { logo: o.logo } : {}),
       }));
       return {
         id: g.id,
@@ -152,7 +156,7 @@ export function normalizeMenu(raw: RawMenu): Menu {
         ...(ri.description ? { description: ri.description } : {}),
         price,
         variants,
-        modifierGroups,
+        modifierGroups: ri.modifier_groups ? modifierGroups.filter((g) => ri.modifier_groups!.includes(g.id)) : modifierGroups,
         tags: ri.tags ?? [],
         status: status(ri.status),
         ...(ri.photo ? { photo: ri.photo } : {}),

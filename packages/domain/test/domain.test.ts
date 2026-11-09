@@ -64,6 +64,32 @@ describe("cart", () => {
     expect(defaultOptionIds(scaled)).toEqual(["strength-5"]);
     expect(missingRequired(scaled, defaultOptionIds(scaled))).toEqual([]);
   });
+  it("builds one hookah constructor with tobacco tiles and lets combos use a subset of groups", () => {
+    const cat = normalizeMenu({
+      ...raw,
+      categories: [
+        {
+          name: { en: "Hookah" },
+          modifier_groups: [
+            { id: "tobacco", name: { en: "Tobacco" }, required: true, max: 1, display: "brands", options: [{ name: { en: "Al Fakher" }, price: 0, note: { en: "Soft" } }, { name: { en: "Tangiers" }, price: 150000 }] },
+            { id: "extras", name: { en: "Extras" }, options: [{ name: { en: "Ice hose" }, price: 50000 }] },
+          ],
+          items: [
+            { name: { en: "Build your hookah" }, price: 350000 },
+            { name: { en: "Zabey Signature" }, price: 450000, modifier_groups: ["extras"] },
+          ],
+        },
+      ],
+    }).categories[0]!;
+    const [builder, combo] = cat.items;
+    const tobacco = builder!.modifierGroups[0]!;
+    expect(tobacco.display).toBe("brands");
+    expect(tobacco.options[0]!.note).toEqual({ en: "Soft" });
+    expect(missingRequired(builder!, [])).toEqual(["tobacco"]);
+    expect(unitPrice(builder!, undefined, [tobacco.options[1]!.id])).toBe(500000);
+    expect(combo!.modifierGroups.map((g) => g.id)).toEqual(["extras"]);
+    expect(missingRequired(combo!, [])).toEqual([]);
+  });
   it("merges identical lines", () => {
     let lines = addLine([], { itemId: "a", optionIds: ["x"], qty: 1, unitPrice: 10 });
     lines = addLine(lines, { itemId: "a", optionIds: ["x"], qty: 2, unitPrice: 10 });

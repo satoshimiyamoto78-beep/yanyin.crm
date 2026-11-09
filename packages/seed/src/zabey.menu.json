@@ -16,7 +16,7 @@
     ],
     "age_restricted": true
   },
-  "source": "Founder-provided bar menu photo (Instagram story), 2026-11-08. Prices in VND. Hookah menu not provided yet: tobacco brands, prices and flavours are a draft. Items with status=suggested were added by Claude (hookah menu, shots, coffee, snacks, local beer); venue must confirm.",
+  "source": "Founder-provided bar menu photo (Instagram story), 2026-11-08. Prices in VND. Hookah menu not provided yet: one constructor (tobacco, strength, flavours, extras) plus combos; tobacco brands, prices, combos and flavours are a draft. Items with status=suggested were added by Claude (hookah menu, shots, coffee, snacks, local beer); venue must confirm.",
   "categories": [
     {
       "name": {
@@ -28,6 +28,149 @@
       "group": "Hookah",
       "age_restricted": true,
       "modifier_groups": [
+        {
+          "id": "tobacco",
+          "name": {
+            "en": "Tobacco",
+            "vi": "Thuốc",
+            "ru": "Табак"
+          },
+          "required": true,
+          "max": 1,
+          "display": "brands",
+          "options": [
+            {
+              "name": {
+                "en": "Al Fakher",
+                "ru": "Al Fakher",
+                "vi": "Al Fakher"
+              },
+              "price": 0,
+              "note": {
+                "en": "Soft · Arabian classic",
+                "ru": "Мягкий · арабская классика",
+                "vi": "Nhẹ · cổ điển Ả Rập"
+              }
+            },
+            {
+              "name": {
+                "en": "Adalya",
+                "ru": "Adalya",
+                "vi": "Adalya"
+              },
+              "price": 30000,
+              "note": {
+                "en": "Light · Turkish, huge range",
+                "ru": "Лёгкий · турецкий, много вкусов",
+                "vi": "Nhẹ · Thổ Nhĩ Kỳ"
+              }
+            },
+            {
+              "name": {
+                "en": "Element",
+                "ru": "Element",
+                "vi": "Element"
+              },
+              "price": 50000,
+              "note": {
+                "en": "Light to medium · clean",
+                "ru": "Лёгкий–средний · чистый вкус",
+                "vi": "Nhẹ–vừa · vị trong"
+              }
+            },
+            {
+              "name": {
+                "en": "Musthave",
+                "ru": "Musthave",
+                "vi": "Musthave"
+              },
+              "price": 50000,
+              "note": {
+                "en": "Medium · juicy",
+                "ru": "Средний · сочный",
+                "vi": "Vừa · mọng nước"
+              }
+            },
+            {
+              "name": {
+                "en": "Starbuzz",
+                "ru": "Starbuzz",
+                "vi": "Starbuzz"
+              },
+              "price": 50000,
+              "note": {
+                "en": "Medium · thick smoke",
+                "ru": "Средний · густой дым",
+                "vi": "Vừa · khói dày"
+              }
+            },
+            {
+              "name": {
+                "en": "Sebero",
+                "ru": "Sebero",
+                "vi": "Sebero"
+              },
+              "price": 50000,
+              "note": {
+                "en": "Medium · fresh blends",
+                "ru": "Средний · свежие миксы",
+                "vi": "Vừa · tươi mát"
+              }
+            },
+            {
+              "name": {
+                "en": "Duft",
+                "ru": "Duft",
+                "vi": "Duft"
+              },
+              "price": 70000,
+              "note": {
+                "en": "Medium · blond leaf",
+                "ru": "Средний · светлый лист",
+                "vi": "Vừa · lá vàng"
+              }
+            },
+            {
+              "name": {
+                "en": "Darkside",
+                "ru": "Darkside",
+                "vi": "Darkside"
+              },
+              "price": 100000,
+              "note": {
+                "en": "Strong · dark leaf",
+                "ru": "Крепкий · тёмный лист",
+                "vi": "Mạnh · lá sẫm"
+              }
+            },
+            {
+              "name": {
+                "en": "Black Burn",
+                "ru": "Black Burn",
+                "vi": "Black Burn"
+              },
+              "price": 100000,
+              "note": {
+                "en": "Strong · bold",
+                "ru": "Крепкий · яркий",
+                "vi": "Mạnh · đậm"
+              }
+            },
+            {
+              "name": {
+                "en": "Tangiers",
+                "ru": "Tangiers",
+                "vi": "Tangiers"
+              },
+              "price": 150000,
+              "note": {
+                "en": "Very strong · cult",
+                "ru": "Очень крепкий · культовый",
+                "vi": "Rất mạnh · huyền thoại"
+              }
+            }
+          ]
+        },
         {
           "id": "strength",
           "name": {
@@ -287,132 +430,83 @@
       "items": [
         {
           "name": {
-            "en": "Al Fakher",
-            "ru": "Al Fakher",
-            "vi": "Al Fakher"
+            "en": "Build your hookah",
+            "ru": "Собрать кальян",
+            "vi": "Tự chọn shisha"
           },
           "price": 350000,
           "status": "suggested",
           "description": {
-            "en": "Classic Arabian tobacco, soft and smooth",
-            "ru": "Классический арабский табак, мягкий и ровный"
+            "en": "Pick a tobacco, strength, up to three flavours and extras",
+            "ru": "Выберите табак, крепость, до трёх вкусов и экстрас"
           }
         },
         {
           "name": {
-            "en": "Element",
-            "ru": "Element",
-            "vi": "Element"
-          },
-          "price": 400000,
-          "status": "suggested",
-          "description": {
-            "en": "Bright, clean flavours, from light to medium",
-            "ru": "Яркие чистые вкусы, от лёгкого до среднего"
-          }
-        },
-        {
-          "name": {
-            "en": "Musthave",
-            "ru": "Musthave",
-            "vi": "Musthave"
-          },
-          "price": 400000,
-          "status": "suggested",
-          "description": {
-            "en": "Juicy flavour lines, medium strength",
-            "ru": "Сочные вкусы, средняя крепость"
-          }
-        },
-        {
-          "name": {
-            "en": "Darkside",
-            "ru": "Darkside",
-            "vi": "Darkside"
+            "en": "Zabey Signature",
+            "ru": "Zabey Signature",
+            "vi": "Zabey Signature"
           },
           "price": 450000,
           "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
           "description": {
-            "en": "Dark leaf, rich taste, medium to strong",
-            "ru": "Тёмный лист, насыщенный вкус, от средней до высокой крепости"
+            "en": "Darkside · blackcurrant, grape, mint",
+            "ru": "Darkside · чёрная смородина, виноград, мята"
           }
         },
         {
           "name": {
-            "en": "Black Burn",
-            "ru": "Black Burn",
-            "vi": "Black Burn"
-          },
-          "price": 450000,
-          "status": "suggested",
-          "description": {
-            "en": "Strong dark leaf with bold flavours",
-            "ru": "Крепкий тёмный лист с яркими вкусами"
-          }
-        },
-        {
-          "name": {
-            "en": "Tangiers",
-            "ru": "Tangiers",
-            "vi": "Tangiers"
-          },
-          "price": 500000,
-          "status": "suggested",
-          "description": {
-            "en": "Cult American tobacco for strong-smoke fans",
-            "ru": "Культовый американский табак для любителей крепкого"
-          }
-        },
-        {
-          "name": {
-            "en": "Adalya",
-            "ru": "Adalya",
-            "vi": "Adalya"
-          },
-          "price": 380000,
-          "status": "suggested",
-          "description": {
-            "en": "Turkish tobacco with a huge flavour range, light to medium",
-            "ru": "Турецкий табак с огромной линейкой вкусов, от лёгкого до среднего"
-          }
-        },
-        {
-          "name": {
-            "en": "Starbuzz",
-            "ru": "Starbuzz",
-            "vi": "Starbuzz"
+            "en": "Ice Tropic",
+            "ru": "Ледяной тропик",
+            "vi": "Nhiệt đới băng"
           },
           "price": 400000,
           "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
           "description": {
-            "en": "American classic, thick smoke and sweet flavours",
-            "ru": "Американская классика, густой дым и сладкие вкусы"
+            "en": "Musthave · mango, passion fruit, ice",
+            "ru": "Musthave · манго, маракуйя, лёд"
           }
         },
         {
           "name": {
-            "en": "Sebero",
-            "ru": "Sebero",
-            "vi": "Sebero"
+            "en": "Berry Cooler",
+            "ru": "Ягодный холодок",
+            "vi": "Mát quả mọng"
           },
           "price": 400000,
           "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
           "description": {
-            "en": "Fresh, juicy blends, medium strength",
-            "ru": "Свежие сочные миксы, средняя крепость"
+            "en": "Element · berry mix, mint",
+            "ru": "Element · ягодный микс, мята"
           }
         },
         {
           "name": {
-            "en": "Duft",
-            "ru": "Duft",
-            "vi": "Duft"
+            "en": "Double Apple Classic",
+            "ru": "Двойное яблоко",
+            "vi": "Táo đôi cổ điển"
           },
-          "price": 420000,
+          "price": 350000,
           "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
           "description": {
-            "en": "Russian blond leaf, clear flavours, medium",
-            "ru": "Российский светлый лист, чистые вкусы, средняя крепость"
+            "en": "Al Fakher · the classic double apple",
+            "ru": "Al Fakher · классическое двойное яблоко"
           }
         },
         {
@@ -426,7 +520,8 @@
           "description": {
             "en": "A fresh bowl for your hookah",
             "ru": "Новая чаша для вашего кальяна"
-          }
+          },
+          "modifier_groups": []
         }
       ]
     },

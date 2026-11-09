@@ -158,7 +158,19 @@ function ItemSheetBody({
                   {ui(lang, g.required ? "required" : "optional")}
                 </span>
               </div>
-              {g.display === "scale" ? (
+              {g.display === "brands" ? (
+                <TobaccoTiles
+                  group={g}
+                  lang={lang}
+                  currency={currency}
+                  basePrice={item.price}
+                  value={optionIds}
+                  onPick={(id) => {
+                    haptic("light");
+                    toggle(g.id, id);
+                  }}
+                />
+              ) : g.display === "scale" ? (
                 <StrengthScale
                   group={g}
                   lang={lang}
@@ -195,6 +207,64 @@ function ItemSheetBody({
         })}
       </div>
     </Sheet>
+  );
+}
+
+/* ---------------------------------------------------------------- Tobacco tiles */
+
+/**
+ * Hookah tobacco as big brand tiles, two per row. The picked one gets the
+ * spinning blue ring. A venue logo replaces the wordmark once uploaded.
+ */
+function TobaccoTiles({
+  group,
+  lang,
+  currency,
+  basePrice,
+  value,
+  onPick,
+}: {
+  group: ModifierGroup;
+  lang: Lang;
+  currency: Currency;
+  basePrice: number;
+  value: string[];
+  onPick: (optionId: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {group.options.map((o) => {
+        const on = value.includes(o.id);
+        return (
+          <button
+            key={o.id}
+            onClick={() => onPick(o.id)}
+            aria-pressed={on}
+            className={`press flex min-h-[92px] flex-col items-start justify-between rounded-[20px] p-3.5 text-left transition-colors ${on ? "spin-ring bg-g-blue-soft" : "bg-g-fill"}`}
+          >
+            <span className="flex w-full items-start justify-between gap-2">
+              {o.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={o.logo} alt={t(o.name, lang)} className="h-7 w-auto max-w-[80%] object-contain object-left" />
+              ) : (
+                <span className="text-[18px] leading-[1.1] font-bold tracking-[-0.02em]">{t(o.name, lang)}</span>
+              )}
+              <span
+                className={`grid size-5 shrink-0 place-items-center rounded-full transition-colors ${on ? "bg-g-blue text-white" : "border-[1.5px] border-g-faint/50"}`}
+              >
+                {on && <Check size={13} strokeWidth={3} />}
+              </span>
+            </span>
+            <span className="mt-2 flex w-full flex-col gap-0.5">
+              {o.note && <span className="text-[12px] leading-[1.3] text-g-muted">{t(o.note, lang)}</span>}
+              <span className={`text-[13px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-ink-2"}`}>
+                {formatMoney(basePrice + o.price, currency, lang)}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -401,7 +471,7 @@ export function OrdersSheet({
           const stage = orderStage(o, now);
           const minsLeft = Math.max(1, Math.ceil(15 - ((now - o.placedAt) / 1000 / 45) * 15));
           return (
-            <article key={o.id} className={`mt-4 rounded-[28px] p-5 ${i === 0 ? "mesh-blue" : "border border-g-line"}`}>
+            <article key={o.id} className={`mt-4 rounded-[28px] p-5 ${i === 0 ? "mesh-blue" : "border-[1.5px] border-g-faint/50"}`}>
               <p className="text-[13px] font-medium text-g-muted">
                 {ui(lang, "order")} №{String(o.id).padStart(3, "0")}
               </p>

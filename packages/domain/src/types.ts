@@ -29,7 +29,15 @@ export type CategoryRole =
 
 export type Variant = { id: string; name: I18nText; price: number };
 
-export type ModifierOption = { id: string; name: I18nText; price: number };
+export type ModifierOption = {
+  id: string;
+  name: I18nText;
+  price: number;
+  /** Short line under the name, e.g. a tobacco's character ("Soft · Arabian"). */
+  note?: I18nText;
+  /** Brand logo path, shown instead of the name when present. */
+  logo?: string;
+};
 
 export type ModifierGroup = {
   id: string;
@@ -37,8 +45,11 @@ export type ModifierGroup = {
   required: boolean;
   /** Maximum options a guest may pick; 1 means single choice. */
   max: number;
-  /** "scale": options are ordered steps picked with a slider (e.g. hookah strength 1–10). */
-  display: "chips" | "scale";
+  /**
+   * "scale": ordered steps picked with a slider (hookah strength 1–10).
+   * "brands": large brand tiles (hookah tobacco).
+   */
+  display: "chips" | "scale" | "brands";
   /** Option preselected when the guest opens the item (also used by quick add). */
   defaultOptionId?: string;
   options: ModifierOption[];
