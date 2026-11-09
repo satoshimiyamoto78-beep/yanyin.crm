@@ -1,6 +1,6 @@
 "use client";
 
-import { CakeSlice, Coffee, CupSoda, Dices, Flame, Salad, Soup, UtensilsCrossed, type LucideIcon } from "lucide-react";
+import { Dices } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 
@@ -11,9 +11,9 @@ let bootAt = 0;
 const BOOT_MS = 650;
 
 /**
- * Focus-pull reveal: the block renders blurred and breathing while data is
- * loading, then pulls into focus once it is on screen. Remount it (change its
- * `key`) to replay the effect after the data changes.
+ * Loading boundary for one block of data. While loading, only its `.live`
+ * children (the data itself) are blurred; static labels, icons and buttons stay
+ * sharp. Remount it (change its `key`) to replay after the data changes.
  */
 export function Reveal({
   as: Tag = "div",
@@ -52,7 +52,7 @@ export function Reveal({
   }, [delay]);
 
   return (
-    <Tag ref={ref} aria-busy={!ready} className={`fx ${ready ? "fx-in" : "fx-load"} ${className}`}>
+    <Tag ref={ref} aria-busy={!ready} data-loading={ready ? undefined : "true"} className={className || undefined}>
       {children}
     </Tag>
   );
@@ -62,11 +62,34 @@ export function Reveal({
 
 const SEGMENTS = 12;
 const SEG = 360 / SEGMENTS;
-const GLYPHS: LucideIcon[] = [UtensilsCrossed, Coffee, Soup, CakeSlice, Flame, CupSoda, Salad, Coffee, UtensilsCrossed, CakeSlice, Soup, CupSoda];
+type FaceKind = "smile" | "laugh" | "wink" | "love" | "cool" | "tongue" | "wow" | "yum";
+const FACES: FaceKind[] = ["smile", "love", "laugh", "cool", "wink", "yum", "wow", "tongue", "smile", "love", "laugh", "cool"];
+
+/**
+ * yanyin emoji: flat round faces drawn in our line style (no system emoji).
+ * Drawn in a 20×20 box; `face` is the disc colour, `ink` the features.
+ */
+function Face({ kind, x, y, face, ink }: { kind: FaceKind; x: number; y: number; face: string; ink: string }) {
+  const st = { stroke: ink, strokeWidth: 1.5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+  const dot = (cx: number) => <circle cx={cx} cy={8} r={1.3} fill={ink} />;
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <circle cx={10} cy={10} r={9.2} fill={face} />
+      {kind === "smile" && (<>{dot(7)}{dot(13)}<path d="M6.3 12.2q3.7 3.6 7.4 0" {...st} /></>)}
+      {kind === "laugh" && (<><path d="M5.6 8.6l1.6-1.4 1.6 1.4M11.2 8.6l1.6-1.4 1.6 1.4" {...st} /><path d="M5.8 11.4h8.4q-.6 4.2-4.2 4.2t-4.2-4.2Z" fill={ink} /></>)}
+      {kind === "wink" && (<>{dot(7)}<path d="M11.6 8h3" {...st} /><path d="M6.3 12.2q3.7 3.6 7.4 0" {...st} /></>)}
+      {kind === "love" && (<><path d="M7 10.1 5.3 8.5a1 1 0 0 1 1.7-1.2 1 1 0 0 1 1.7 1.2Zm6 0-1.7-1.6a1 1 0 0 1 1.7-1.2 1 1 0 0 1 1.7 1.2Z" fill={ink} /><path d="M6.6 12.6q3.4 3 6.8 0" {...st} /></>)}
+      {kind === "cool" && (<><path d="M4.3 7.2h11.4l-.6 2.6a1.6 1.6 0 0 1-1.6 1.2h-1.4a1.6 1.6 0 0 1-1.5-1.1L10 9.2l-.6.7A1.6 1.6 0 0 1 7.9 11H6.5a1.6 1.6 0 0 1-1.6-1.2Z" fill={ink} /><path d="M7 13.6q3 1.8 6 0" {...st} /></>)}
+      {kind === "tongue" && (<>{dot(7)}{dot(13)}<path d="M6.2 11.8h7.6" {...st} /><path d="M8.6 11.9v1.6a1.4 1.4 0 0 0 2.8 0v-1.6" fill={ink} /></>)}
+      {kind === "wow" && (<>{dot(7)}{dot(13)}<ellipse cx={10} cy={13.2} rx={1.9} ry={2.3} fill={ink} /></>)}
+      {kind === "yum" && (<><path d="M5.6 8.4q1.4-1.4 2.8 0M11.6 8.4q1.4-1.4 2.8 0" {...st} /><path d="M6.4 12q3.6 3.4 7.2 0" {...st} /><path d="M12.4 13.1q1.3.9 1.9-.4" fill={ink} stroke={ink} strokeWidth={1} /></>)}
+    </g>
+  );
+}
 
 /**
  * A generic roulette wheel, the same for every venue: twelve segments with
- * food glyphs, a rim of lights and a hub. It turns slowly when idle; `useWheelSpin`
+ * yanyin emoji faces, a rim of lights and a hub. It turns slowly when idle; `useWheelSpin`
  * spins it with motion blur and a haptic tick per segment.
  */
 export function RouletteWheel({
@@ -109,11 +132,14 @@ export function RouletteWheel({
               strokeWidth={0.6}
             />
           ))}
-          {GLYPHS.map((Icon, i) => (
-            <g key={i} transform={`rotate(${i * SEG} ${r} ${r})`}>
-              <Icon x={r - 7} y={22} width={14} height={14} strokeWidth={2} color={dark ? "#ffffff" : i % 2 ? "#2f6bff" : "#ffffff"} />
-            </g>
-          ))}
+          {FACES.map((kind, i) => {
+            const onBlue = !dark && i % 2 === 0;
+            return (
+              <g key={i} transform={`rotate(${i * SEG} ${r} ${r})`}>
+                <Face kind={kind} x={r - 10} y={19} face={dark || onBlue ? "#ffffff" : "#2f6bff"} ink={dark || onBlue ? "#2f6bff" : "#ffffff"} />
+              </g>
+            );
+          })}
           {Array.from({ length: SEGMENTS * 2 }, (_, i) => {
             const a = ((i * SEG) / 2 - 90) * (Math.PI / 180);
             return <circle key={i} cx={r + 96 * Math.cos(a)} cy={r + 96 * Math.sin(a)} r={1.6} fill={dark ? "#ffffff" : i % 2 ? "#8fb2ff" : "#2f6bff"} opacity={i % 2 ? 0.6 : 1} />;

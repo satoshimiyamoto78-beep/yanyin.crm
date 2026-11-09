@@ -18,7 +18,6 @@ import {
 } from "@yanyin/domain";
 import {
   BellRing,
-  Check,
   ChefHat,
   Dices,
   Flame,
@@ -43,7 +42,8 @@ import {
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
 import { Reveal, RouletteWheel } from "./motion";
-import { Chip, ItemCard, RoundButton, describe } from "./ui";
+import { ItemCard, describe } from "./ui";
+import { YanOrb, YanSheet } from "./YanSheet";
 
 function initialLang(): Lang {
   const code = navigator.language.slice(0, 2);
@@ -57,7 +57,10 @@ type SheetName =
   | "about"
   | "lang"
   | "roulette"
+  | "yan"
   | null;
+
+type Notice = { title: string; text?: string; icon: React.ReactNode };
 
 /**
  * yanyin.menu — the guest app opened from a table QR code. One scrolling menu
@@ -83,7 +86,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
   const [now, setNow] = useState(0);
   const [sheet, setSheet] = useState<SheetName>(null);
   const [item, setItem] = useState<MenuItem | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [active, setActive] = useState(menu.categories[0]!.id);
   const [age, setAge] = useState<"unknown" | "ok" | "blocked">(
     brand.ageRestricted ? "unknown" : "ok",
@@ -134,11 +137,14 @@ export function GuestApp({ menu }: { menu: Menu }) {
       bar.scrollTo({ left: tab.offsetLeft - 20, behavior: "smooth" });
   }, [active]);
 
-  const flash = useCallback((text: string) => {
-    setToast(text);
-    setTimeout(() => setToast((cur) => (cur === text ? null : cur)), 2000);
+  const flash = useCallback((n: Notice) => {
+    haptic("success");
+    setNotice(n);
+    setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), 2600);
   }, []);
-  const say = (key: UiKey) => flash(ui(lang, key));
+  /** Every action answers with a notification: a title and what happens next. */
+  const say = (key: UiKey, icon: React.ReactNode = <BellRing size={18} strokeWidth={2} />) =>
+    flash({ title: ui(lang, key), text: ui(lang, `${key}Hint` as UiKey), icon });
 
   const addToCart = (
     it: MenuItem,
@@ -186,51 +192,73 @@ export function GuestApp({ menu }: { menu: Menu }) {
   return (
     <div className="min-h-dvh bg-g-bg text-g-ink">
       <div className="mx-auto max-w-[480px] pb-32">
-        {/* Header */}
-        <header className="flex items-center gap-3.5 px-5 pt-[max(18px,env(safe-area-inset-top))]">
+        {/* Header: venue on the left, one grouped control pill on the right */}
+        <header className="flex items-center gap-3 px-5 pt-[max(16px,env(safe-area-inset-top))]">
           <button
             onClick={() => setSheet("about")}
-            className="press flex min-w-0 flex-1 items-center gap-3.5 text-left"
+            className="press flex min-w-0 flex-1 items-center gap-3 text-left"
           >
-            <span className="ink-grad grid size-[52px] shrink-0 place-items-center rounded-[18px] text-[20px] font-bold">
+            <span className="ink-grad grid size-11 shrink-0 place-items-center rounded-[14px] text-[18px] font-bold">
               {brand.mark}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[20px] leading-tight font-bold tracking-[-0.02em]">
+              <span className="block truncate text-[18px] leading-tight font-bold tracking-[-0.02em]">
                 {menu.venue.name}
               </span>
-              <span className="mt-1 flex min-w-0 items-center gap-2">
+              <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[13px]">
                 {table && (
-                  <Chip tone="blue">{`${ui(lang, "table")} ${table.padStart(2, "0")}`}</Chip>
+                  <>
+                    <span className="size-1.5 shrink-0 rounded-full bg-g-blue" />
+                    <span className="shrink-0 font-semibold text-g-blue">
+                      {`${ui(lang, "table")} ${table.padStart(2, "0")}`}
+                    </span>
+                    <span className="text-g-faint">·</span>
+                  </>
                 )}
-                <span className="truncate text-[13px] text-g-muted">
+                <span className="truncate text-g-muted">
                   {brand.cuisine[lang as "en"] ?? brand.cuisine.en}
                 </span>
               </span>
             </span>
           </button>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex h-11 shrink-0 items-center rounded-full bg-g-fill px-1">
+            <button
+              aria-label={ui(lang, "yanAsk")}
+              onClick={() => {
+                haptic("light");
+                setSheet("yan");
+              }}
+              className="press grid size-9 place-items-center rounded-full"
+            >
+              <YanOrb size={30} />
+            </button>
             {orders.length > 0 && (
-              <RoundButton
-                label={ui(lang, "orders")}
+              <button
+                aria-label={ui(lang, "orders")}
                 onClick={() => setSheet("orders")}
-                dot={live}
+                className="press relative grid size-9 place-items-center rounded-full"
               >
                 <ReceiptText size={19} strokeWidth={1.75} />
-              </RoundButton>
+                {live && (
+                  <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-g-fill bg-g-blue" />
+                )}
+              </button>
             )}
-            <RoundButton
-              label={ui(lang, "language")}
+            <button
+              aria-label={ui(lang, "language")}
               onClick={() => setSheet("lang")}
+              className="press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-[13px] font-bold uppercase"
             >
-              <span className="text-[13px] font-bold uppercase">{lang}</span>
-            </RoundButton>
-            <RoundButton
-              label={ui(lang, "search")}
+              {lang}
+            </button>
+            <span className="mx-0.5 h-5 w-px bg-g-fill-2" aria-hidden />
+            <button
+              aria-label={ui(lang, "search")}
               onClick={() => setSheet("search")}
+              className="press grid size-9 place-items-center rounded-full"
             >
               <Search size={19} strokeWidth={1.75} />
-            </RoundButton>
+            </button>
           </div>
         </header>
 
@@ -248,18 +276,14 @@ export function GuestApp({ menu }: { menu: Menu }) {
                 !it.variants.length &&
                 !it.modifierGroups.some((g) => g.required)
               )
-                say("added");
+                say("added", <Plus size={18} strokeWidth={2.25} />);
             }}
             onRoulette={() => setSheet("roulette")}
           />
         </Reveal>
 
         {/* Quick actions */}
-        <Reveal
-          key={`quick-${lang}`}
-          delay={80}
-          className="mt-4 grid grid-cols-3 gap-3 px-5"
-        >
+        <div className="mt-4 grid grid-cols-3 gap-3 px-5">
           <QuickAction
             icon={<BellRing size={20} strokeWidth={1.75} />}
             label={ui(lang, "callStaff")}
@@ -269,13 +293,13 @@ export function GuestApp({ menu }: { menu: Menu }) {
             <QuickAction
               icon={<Flame size={20} strokeWidth={1.75} />}
               label={ui(lang, "changeCoals")}
-              onClick={() => say("coalsCalled")}
+              onClick={() => say("coalsCalled", <Flame size={18} strokeWidth={2} />)}
             />
           ) : (
             <QuickAction
               icon={<ReceiptText size={20} strokeWidth={1.75} />}
               label={ui(lang, "askBill")}
-              onClick={() => say("billAsked")}
+              onClick={() => say("billAsked", <ReceiptText size={18} strokeWidth={2} />)}
             />
           )}
           <QuickAction
@@ -284,7 +308,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             onClick={() => setSheet("roulette")}
             accent
           />
-        </Reveal>
+        </div>
 
         {/* Category tabs */}
         <nav
@@ -368,15 +392,27 @@ export function GuestApp({ menu }: { menu: Menu }) {
         </div>
       )}
 
-      {toast && (
-        <div
-          role="status"
-          className={`animate-pop fixed inset-x-0 z-[80] mx-auto ${count > 0 ? "bottom-[calc(max(16px,env(safe-area-inset-bottom))+72px)]" : "bottom-[max(20px,env(safe-area-inset-bottom))]"} flex w-fit max-w-[90vw] items-center gap-2 rounded-full bg-g-ink px-4 py-3 text-[14px] font-medium text-white`}
-        >
-          <span className="blue-grad grid size-5 place-items-center rounded-full">
-            <Check size={12} strokeWidth={3} />
-          </span>
-          {toast}
+      {notice && (
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center px-4 pt-[max(12px,env(safe-area-inset-top))]">
+          <div
+            key={notice.title}
+            role="status"
+            className="animate-notice pointer-events-auto flex w-full max-w-[440px] items-center gap-3 rounded-[22px] bg-g-ink px-4 py-3.5 text-white"
+          >
+            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full">
+              {notice.icon}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[15px] leading-tight font-semibold">
+                {notice.title}
+              </span>
+              {notice.text && (
+                <span className="mt-0.5 block text-[13px] text-white/60">
+                  {notice.text}
+                </span>
+              )}
+            </span>
+          </div>
         </div>
       )}
 
@@ -389,7 +425,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         onAdd={(it, v, o, q) => {
           addToCart(it, v, o, q);
           setItem(null);
-          say("added");
+          say("added", <Plus size={18} strokeWidth={2.25} />);
         }}
       />
       <CartSheet
@@ -409,6 +445,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
           setNow(Date.now());
           setLines([]);
           setSheet("orders");
+          say("orderSent", <ChefHat size={18} strokeWidth={2} />);
         }}
       />
       <OrdersSheet
@@ -447,6 +484,18 @@ export function GuestApp({ menu }: { menu: Menu }) {
           setSheet(null);
         }}
       />
+      <YanSheet
+        open={sheet === "yan"}
+        onClose={() => setSheet(null)}
+        menu={menu}
+        lang={lang}
+        onOpen={(it) => setItem(it)}
+        onAdd={(it) => {
+          quickAdd(it);
+          if (!it.variants.length && !it.modifierGroups.some((g) => g.required))
+            say("added", <Plus size={18} strokeWidth={2.25} />);
+        }}
+      />
       <RouletteSheet
         open={sheet === "roulette"}
         onClose={() => setSheet(null)}
@@ -465,7 +514,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             }, prev),
           );
           setSheet(null);
-          say("added");
+          say("added", <Plus size={18} strokeWidth={2.25} />);
         }}
       />
 
@@ -537,46 +586,56 @@ function QuickAction({
         haptic("light");
         onClick();
       }}
-      className={`press flex h-[104px] flex-col justify-between rounded-[24px] p-3.5 text-left ${accent ? "mesh-blue" : "card"}`}
+      className={`press relative flex h-[104px] flex-col justify-between overflow-hidden rounded-[24px] p-3.5 text-left ${accent ? "mesh-blue" : "card"}`}
     >
-      <span
-        className={`grid size-10 place-items-center rounded-full ${accent ? "bg-white text-g-blue" : "chip-blue"}`}
-      >
-        {icon}
-      </span>
-      <span className="text-[13px] leading-[1.25] font-semibold text-g-ink">
+      {accent ? (
+        // Illustration: a corner of the roulette wheel, turning slowly.
+        <span aria-hidden className="absolute -top-9 -right-9">
+          <RouletteWheel size={104} />
+        </span>
+      ) : (
+        <span className="chip-blue grid size-10 place-items-center rounded-full">
+          {icon}
+        </span>
+      )}
+      <span className="relative mt-auto text-[13px] leading-[1.25] font-semibold text-g-ink">
         {label}
       </span>
     </button>
   );
 }
 
-/** Label, name and description laid over the hero image. */
+/** Label, name, description and the action row, all laid over the hero image. */
 function HeroCaption({
   chip,
   icon,
   title,
   text,
+  children,
 }: {
   chip: string;
   icon: React.ReactNode;
   title: string;
   text?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <span className="absolute inset-x-0 bottom-0 block bg-gradient-to-t from-[#0b1636]/90 via-[#0b1636]/55 to-transparent px-5 pt-20 pb-5">
+    <span className="absolute inset-x-0 bottom-0 block bg-gradient-to-t from-[#0b1636] via-[#0b1636]/70 to-transparent px-5 pt-24 pb-5">
       <span className="inline-flex h-6 items-center gap-1 rounded-full bg-white/15 px-2.5 text-[12px] font-semibold text-white backdrop-blur-md">
         {icon}
         {chip}
       </span>
-      <span className="mt-2.5 block text-[26px] leading-[1.1] font-bold tracking-[-0.02em] text-white">
+      <span className="live mt-2.5 block text-[26px] leading-[1.1] font-bold tracking-[-0.02em] text-white">
         {title}
       </span>
       {text && (
-        <span className="mt-1.5 line-clamp-2 block text-[14px] leading-snug text-white/75">
+        <span className="live mt-1.5 line-clamp-2 block text-[14px] leading-snug text-white/75">
           {text}
         </span>
       )}
+      <span className="mt-4 flex h-12 items-center justify-between gap-3">
+        {children}
+      </span>
     </span>
   );
 }
@@ -617,75 +676,72 @@ function Hero({
         {slides.map((s, i) => (
           <div key={i} className="w-full shrink-0 snap-start px-5">
             {s.kind === "roulette" ? (
-              <div>
-                <button
-                  onClick={onRoulette}
-                  className="aurora block h-[340px] w-full rounded-[30px] text-left"
-                  aria-label={ui(lang, "roulette")}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={onRoulette}
+                onKeyDown={(e) => e.key === "Enter" && onRoulette()}
+                className="aurora block h-[400px] w-full cursor-pointer rounded-[30px] text-left"
+                aria-label={ui(lang, "roulette")}
+              >
+                <span className="absolute -top-14 -right-20">
+                  <RouletteWheel tone="dark" size={330} />
+                </span>
+                <HeroCaption
+                  chip={ui(lang, "roulette")}
+                  icon={<Dices size={12} strokeWidth={2.25} />}
+                  title={ui(lang, "rouletteTitle")}
+                  text={ui(lang, "rouletteHint")}
                 >
-                  <span className="absolute -top-12 -right-20">
-                    <RouletteWheel tone="dark" size={330} />
+                  <span className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-[16px] font-semibold text-[#1d3fd6]">
+                    <Dices size={18} strokeWidth={2} /> {ui(lang, "rouletteCta")}
                   </span>
-                  <HeroCaption
-                    chip={ui(lang, "roulette")}
-                    icon={<Dices size={12} strokeWidth={2.25} />}
-                    title={ui(lang, "rouletteTitle")}
-                    text={ui(lang, "rouletteHint")}
-                  />
-                </button>
-                <button
-                  onClick={() => {
-                    haptic("light");
-                    onRoulette();
-                  }}
-                  className="blue-grad press mt-3.5 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold"
-                >
-                  <Dices size={18} strokeWidth={2} /> {ui(lang, "rouletteCta")}
-                </button>
+                </HeroCaption>
               </div>
             ) : (
               (() => {
                 const it = itemById.get(s.itemId)!;
                 return (
-                  <div>
-                    <button
-                      onClick={() => onOpen(it)}
-                      className="aurora block h-[340px] w-full rounded-[30px] text-left"
-                      aria-label={t(it.name, lang)}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onOpen(it)}
+                    onKeyDown={(e) => e.key === "Enter" && onOpen(it)}
+                    className="aurora block h-[400px] w-full cursor-pointer rounded-[30px] text-left"
+                    aria-label={t(it.name, lang)}
+                  >
+                    <span className="absolute inset-x-0 top-4 flex justify-center">
+                      {it.photo && (
+                        <Image
+                          src={it.photo}
+                          alt=""
+                          width={360}
+                          height={240}
+                          priority={i === 0}
+                          className="live h-auto w-[80%] object-contain"
+                        />
+                      )}
+                    </span>
+                    <HeroCaption
+                      chip={s.kicker[lang as "en"] ?? s.kicker.en}
+                      icon={<ChefHat size={12} strokeWidth={2.25} />}
+                      title={t(it.name, lang)}
+                      text={describe(it, lang)}
                     >
-                      <span className="absolute inset-x-0 top-5 flex justify-center">
-                        {it.photo && (
-                          <Image
-                            src={it.photo}
-                            alt=""
-                            width={360}
-                            height={240}
-                            priority={i === 0}
-                            className="h-auto w-[80%] object-contain"
-                          />
-                        )}
-                      </span>
-                      <HeroCaption
-                        chip={s.kicker[lang as "en"] ?? s.kicker.en}
-                        icon={<ChefHat size={12} strokeWidth={2.25} />}
-                        title={t(it.name, lang)}
-                        text={describe(it, lang)}
-                      />
-                    </button>
-                    <div className="mt-3.5 flex h-12 items-center justify-between gap-3 pl-1">
-                      <span className="text-[24px] font-semibold tracking-[-0.02em] tabular-nums">
+                      <span className="live text-[24px] font-semibold tracking-[-0.02em] text-white tabular-nums">
                         {formatMoney(it.price, currency, lang)}
                       </span>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           haptic("success");
                           onAdd(it);
                         }}
-                        className="blue-grad press flex h-12 items-center gap-2 rounded-full px-6 text-[15px] font-semibold"
+                        className="press flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#1d3fd6]"
                       >
                         <Plus size={18} strokeWidth={2.25} /> {ui(lang, "add")}
                       </button>
-                    </div>
+                    </HeroCaption>
                   </div>
                 );
               })()

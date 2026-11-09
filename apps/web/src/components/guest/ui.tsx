@@ -43,6 +43,16 @@ export function HookahIcon({ size = 24, strokeWidth = 1.75, ...rest }: SVGProps<
   );
 }
 
+/** Halal mark: crescent and star in the Lucide line style. */
+export function HalalIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M15.5 4.6A8 8 0 1 0 15.5 19.4 6.6 6.6 0 0 1 15.5 4.6Z" />
+      <path d="m18 8.5.7 1.7 1.8.1-1.4 1.1.5 1.8-1.6-1-1.6 1 .5-1.8-1.4-1.1 1.8-.1Z" />
+    </svg>
+  );
+}
+
 const ROLE_ICON: Record<CategoryRole, LucideIcon | typeof HookahIcon> = {
   soup: Soup,
   salad: Salad,
@@ -71,7 +81,7 @@ export function RoleIcon({ role, name, size = 22 }: { role: CategoryRole; name?:
 
 /* ---------------------------------------------------------------- Chips */
 
-export type ChipTone = "blue" | "green" | "orange" | "purple" | "gray";
+export type ChipTone = "blue" | "green" | "orange" | "purple" | "gray" | "teal";
 
 export function Chip({ tone = "gray", icon, children }: { tone?: ChipTone; icon?: ReactNode; children: ReactNode }) {
   return (
@@ -85,7 +95,8 @@ export function Chip({ tone = "gray", icon, children }: { tone?: ChipTone; icon?
 export function ItemChips({ item, lang }: { item: MenuItem; lang: Lang }) {
   const veg = item.tags.includes("vegan") || item.tags.includes("vegetarian");
   const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(item.name.en ?? "");
-  if (!veg && !spicy && item.status !== "suggested") return null;
+  const halal = item.tags.includes("halal");
+  if (!veg && !spicy && !halal && item.status !== "suggested") return null;
   return (
     <span className="flex flex-wrap gap-1.5">
       {veg && (
@@ -96,6 +107,11 @@ export function ItemChips({ item, lang }: { item: MenuItem; lang: Lang }) {
       {spicy && (
         <Chip tone="orange" icon={<Flame size={12} strokeWidth={2.25} />}>
           Spicy
+        </Chip>
+      )}
+      {halal && (
+        <Chip tone="teal" icon={<HalalIcon size={13} />}>
+          Halal
         </Chip>
       )}
       {item.status === "suggested" && (
@@ -196,11 +212,12 @@ export function ItemCard({
   const desc = describe(item, lang);
   const veg = item.tags.includes("vegan") || item.tags.includes("vegetarian");
   const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(item.name.en ?? "");
+  const halal = item.tags.includes("halal");
   return (
     <div className="flex h-[148px] items-center gap-4">
       <button onClick={onOpen} aria-label={t(item.name, lang)} className="press relative shrink-0">
-        <DishTile item={item} role={role} className="size-[116px] rounded-[24px]" />
-        {(veg || spicy || item.status === "suggested") && (
+        <DishTile item={item} role={role} className="live size-[116px] rounded-[24px]" />
+        {(veg || spicy || halal || item.status === "suggested") && (
           <span className="absolute top-2 left-2 flex gap-1">
             {veg && (
               <span title="Veggie" className="chip-green grid size-6 place-items-center rounded-full">
@@ -212,6 +229,11 @@ export function ItemCard({
                 <Flame size={13} strokeWidth={2.25} />
               </span>
             )}
+            {halal && (
+              <span title="Halal" className="chip-teal grid size-6 place-items-center rounded-full">
+                <HalalIcon size={14} />
+              </span>
+            )}
             {item.status === "suggested" && <span className="flex h-6 items-center rounded-full bg-white px-2 text-[11px] font-semibold text-g-muted">{ui(lang, "draft")}</span>}
           </span>
         )}
@@ -219,11 +241,11 @@ export function ItemCard({
       {/* Fixed rhythm: one-line name, two-line description slot, price row. Every row is the same height. */}
       <div className="flex h-[116px] min-w-0 flex-1 flex-col">
         <button onClick={onOpen} className="min-w-0 text-left">
-          <span className="block truncate text-[16px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
-          <span className="mt-1 line-clamp-2 h-[35px] text-[13px] leading-[1.35] text-g-muted">{desc}</span>
+          <span className="live block truncate text-[16px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+          <span className="live mt-1 line-clamp-2 h-[35px] text-[13px] leading-[1.35] text-g-muted">{desc}</span>
         </button>
         <div className="mt-auto flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em] tabular-nums">
+          <span className="live min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em] tabular-nums">
             {item.variants.length > 1 && <span className="mr-1 text-[13px] font-medium text-g-muted">{ui(lang, "from")}</span>}
             {formatMoney(item.price, currency, lang)}
           </span>
@@ -334,7 +356,7 @@ export function ChoiceChip({ on, onClick, icon, children }: { on: boolean; onCli
         onClick();
       }}
       aria-pressed={on}
-      className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
+      className={`press flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium whitespace-nowrap transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
     >
       {on && !icon ? <Check size={15} strokeWidth={2.5} /> : icon}
       {children}
@@ -345,6 +367,7 @@ export function ChoiceChip({ on, onClick, icon, children }: { on: boolean; onCli
 /* ---------------------------------------------------------------- Page */
 
 let pageSeq = 0;
+let pendingClose: number | null = null;
 
 /**
  * Every secondary screen (dish, cart, orders, roulette, search, about, language)
@@ -383,7 +406,12 @@ export function Sheet({
       if (top < id) close.current();
     };
     try {
-      history.pushState({ ...(history.state ?? {}), yanyinPage: id }, "");
+      const top = (history.state as { yanyinPage?: number } | null)?.yanyinPage;
+      // A page that replaces another in the same render (check → payment) takes over its history entry.
+      if (pendingClose !== null && top === pendingClose) {
+        pendingClose = null;
+        history.replaceState({ ...(history.state ?? {}), yanyinPage: id }, "");
+      } else history.pushState({ ...(history.state ?? {}), yanyinPage: id }, "");
     } catch {}
     document.addEventListener("keydown", onKey);
     window.addEventListener("popstate", onPop);
@@ -393,7 +421,15 @@ export function Sheet({
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("popstate", onPop);
       document.body.style.overflow = prev;
-      if ((history.state as { yanyinPage?: number } | null)?.yanyinPage === id) history.back();
+      if ((history.state as { yanyinPage?: number } | null)?.yanyinPage === id) {
+        pendingClose = id;
+        setTimeout(() => {
+          if (pendingClose === id) {
+            pendingClose = null;
+            history.back();
+          }
+        }, 0);
+      }
     };
   }, [open]);
 

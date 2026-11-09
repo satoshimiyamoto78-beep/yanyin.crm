@@ -14,12 +14,12 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { Check, Clock, MapPin, Search, Send } from "lucide-react";
+import { Check, Clock, FlameKindling, ImageIcon, Leaf, MapPin, Search, SearchX, Send, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
 import { haptic } from "@/lib/haptics";
-import { DishTile, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
+import { DishTile, HalalIcon, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
 
 /* ---------------------------------------------------------------- Item */
 
@@ -462,18 +462,46 @@ export function SearchSheet({
   onQty: (item: MenuItem, q: number) => void;
 }) {
   const [q, setQ] = useState("");
+  const [filters, setFilters] = useState<SearchFilter[]>([]);
+  const [cat, setCat] = useState<string | null>(null);
   const query = q.trim().toLowerCase();
+  const { currency } = menu.venue;
+  const cap = currency === "VND" ? 150_000 : 10;
+  const has = (f: SearchFilter) => filters.includes(f);
+  const toggle = (f: SearchFilter) => setFilters((v) => (v.includes(f) ? v.filter((x) => x !== f) : [...v, f]));
+  const active = Boolean(query || filters.length || cat);
   const results = useMemo(
     () =>
-      query
-        ? menu.categories.flatMap((c) => c.items.filter((i) => Object.values(i.name).some((n) => n?.toLowerCase().includes(query))).map((i) => [i, c] as const))
-        : [],
-    [menu, query],
+      menu.categories
+        .filter((c) => !cat || c.id === cat)
+        .flatMap((c) =>
+          c.items
+            .filter((i) => {
+              if (query && !Object.values(i.name).some((n) => n?.toLowerCase().includes(query)) && !Object.values(i.description ?? {}).some((d) => d?.toLowerCase().includes(query))) return false;
+              const veg = i.tags.includes("vegetarian") || i.tags.includes("vegan");
+              const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(i.name.en ?? "");
+              if (filters.includes("veg") && !veg) return false;
+              if (filters.includes("halal") && !i.tags.includes("halal")) return false;
+              if (filters.includes("mild") && spicy) return false;
+              if (filters.includes("photo") && !i.photo) return false;
+              if (filters.includes("cheap") && i.price > cap) return false;
+              return true;
+            })
+            .map((i) => [i, c] as const),
+        ),
+    [menu, query, filters, cat, cap],
   );
+  const FILTERS: { id: SearchFilter; label: string; icon: React.ReactNode }[] = [
+    { id: "veg", label: ui(lang, "filterVeggie"), icon: <Leaf size={15} strokeWidth={2} /> },
+    { id: "halal", label: ui(lang, "filterHalal"), icon: <HalalIcon size={15} /> },
+    { id: "mild", label: ui(lang, "filterNotSpicy"), icon: <FlameKindling size={15} strokeWidth={2} /> },
+    { id: "photo", label: ui(lang, "filterPhoto"), icon: <ImageIcon size={15} strokeWidth={2} /> },
+    { id: "cheap", label: `${ui(lang, "filterUnder")} ${formatMoney(cap, currency, lang)}`, icon: <Wallet size={15} strokeWidth={2} /> },
+  ];
   return (
-    <Sheet open={open} onClose={onClose} label={ui(lang, "search")} full>
-      <div className="px-5 pt-8 pb-6">
-        <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-4 pr-14 text-g-muted focus-within:ring-2 focus-within:ring-g-blue/30">
+    <Sheet open={open} onClose={onClose} label={ui(lang, "search")} title={false}>
+      <div className="px-5 pt-1 pb-6">
+        <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-4 text-g-muted focus-within:ring-2 focus-within:ring-g-blue/30">
           <Search size={20} strokeWidth={2} />
           <input
             id="menu-search"
@@ -483,27 +511,105 @@ export function SearchSheet({
             placeholder={ui(lang, "search")}
             className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint"
           />
+          {q && (
+            <button aria-label={ui(lang, "clearAll")} onClick={() => setQ("")} className="grid size-7 place-items-center rounded-full bg-g-fill-2 text-g-ink">
+              <X size={14} strokeWidth={2.5} />
+            </button>
+          )}
         </label>
-        <div className="mt-2 divide-y divide-g-line">
-          {results.map(([item, c]) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              role={c.role}
-              lang={lang}
-              currency={menu.venue.currency}
-              qty={qtyOf(item.id)}
-              onOpen={() => onOpen(item)}
-              onAdd={() => onAdd(item)}
-              onQty={(n) => onQty(item, n)}
-            />
-          ))}
-          {query && !results.length && <p className="py-12 text-center text-[15px] text-g-muted">{ui(lang, "noResults")}</p>}
+
+        <div className="mt-5 flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-g-muted">
+            <SlidersHorizontal size={15} strokeWidth={2} /> {ui(lang, "filters")}
+          </p>
+          {active && (
+            <button
+              onClick={() => {
+                setQ("");
+                setFilters([]);
+                setCat(null);
+              }}
+              className="text-[13px] font-semibold text-g-blue"
+            >
+              {ui(lang, "clearAll")}
+            </button>
+          )}
         </div>
+        <div className="no-scrollbar -mx-5 mt-2.5 flex gap-2 overflow-x-auto px-5">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => {
+                haptic("light");
+                toggle(f.id);
+              }}
+              aria-pressed={has(f.id)}
+              className={`press flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium whitespace-nowrap transition-colors ${has(f.id) ? "bg-g-ink text-white" : "bg-g-fill"}`}
+            >
+              {f.icon}
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="no-scrollbar -mx-5 mt-2 flex gap-1 overflow-x-auto px-5">
+          {menu.categories.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => {
+                haptic("light");
+                setCat((v) => (v === c.id ? null : c.id));
+              }}
+              aria-pressed={cat === c.id}
+              className={`press h-9 shrink-0 rounded-full px-3.5 text-[13px] font-medium whitespace-nowrap ${cat === c.id ? "bg-g-blue-soft text-g-blue" : "text-g-muted"}`}
+            >
+              {t(c.name, lang)}
+            </button>
+          ))}
+        </div>
+
+        {active && (
+          <p className="mt-5 text-[13px] text-g-muted tabular-nums">
+            {results.length} {ui(lang, "results")}
+          </p>
+        )}
+        <div className="mt-1 divide-y divide-g-line">
+          {active &&
+            results.map(([item, c]) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                role={c.role}
+                lang={lang}
+                currency={currency}
+                qty={qtyOf(item.id)}
+                onOpen={() => onOpen(item)}
+                onAdd={() => onAdd(item)}
+                onQty={(n) => onQty(item, n)}
+              />
+            ))}
+        </div>
+        {active && !results.length && (
+          <div className="flex flex-col items-center py-14 text-center">
+            <span className="chip-blue grid size-14 place-items-center rounded-full">
+              <SearchX size={24} strokeWidth={1.75} />
+            </span>
+            <p className="mt-3 text-[15px] text-g-muted">{ui(lang, "noResults")}</p>
+          </div>
+        )}
+        {!active && (
+          <div className="flex flex-col items-center py-14 text-center">
+            <span className="chip-blue grid size-14 place-items-center rounded-full">
+              <Search size={24} strokeWidth={1.75} />
+            </span>
+            <p className="mt-3 max-w-[240px] text-[15px] text-g-muted">{ui(lang, "search")}</p>
+          </div>
+        )}
       </div>
     </Sheet>
   );
 }
+
+type SearchFilter = "veg" | "halal" | "mild" | "photo" | "cheap";
 
 /* ---------------------------------------------------------------- About & language */
 

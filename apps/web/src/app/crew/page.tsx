@@ -1,11 +1,12 @@
 import { getMenu } from "@yanyin/seed";
 import type { Metadata } from "next";
-import { CrewBoard } from "@/components/crew/CrewBoard";
+import { CrewApp } from "@/components/crew/CrewApp";
 import { demoCrew } from "@/lib/demo-crew";
+import { demoFloor } from "@/lib/demo-floor";
 
-export const metadata: Metadata = { title: "Quest board" };
+export const metadata: Metadata = { title: "Waiter" };
 
 export default function CrewPage() {
   const menu = getMenu("samarkand-danang")!;
-  return <CrewBoard data={demoCrew(menu)} />;
+  return <CrewApp data={demoCrew(menu)} floor={demoFloor(menu)} menu={menu} />;
 }

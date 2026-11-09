@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
-import { CakeSlice, Check, CookingPot, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import { CakeSlice, Check, Clock, CookingPot, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
@@ -84,7 +84,7 @@ function Gauge({ percent }: { percent: number }) {
  * yanyin.crew — the waiter's own page: level, today's numbers, streak, the team
  * goal and quests. Same white, black and blue system as the guest menu (ADR-013).
  */
-export function CrewBoard({ data }: { data: CrewData }) {
+export function CrewBoard({ data, embedded }: { data: CrewData; embedded?: boolean }) {
   const [xp, setXp] = useState(data.staff.xp);
   const [quests, setQuests] = useState(data.quests);
   const [done, setDone] = useState<CrewQuest | null>(null);
@@ -105,7 +105,7 @@ export function CrewBoard({ data }: { data: CrewData }) {
   const boss = questPercent(data.boss.progress, data.boss.target);
 
   return (
-    <main className="min-h-dvh overflow-x-hidden bg-g-bg text-g-ink">
+    <main className={`overflow-x-hidden bg-white text-g-ink ${embedded ? "" : "min-h-dvh"}`}>
       <div className="mx-auto max-w-[480px] px-5 pt-[max(20px,env(safe-area-inset-top))] pb-16">
         {/* Header */}
         <header className="flex items-center gap-3.5">
@@ -123,21 +123,21 @@ export function CrewBoard({ data }: { data: CrewData }) {
           <div className="flex items-baseline justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[13px] font-medium text-g-muted">Level {level.level}</p>
-              <p className="text-[30px] leading-tight font-semibold tracking-[-0.02em]">{level.title}</p>
+              <p className="live text-[30px] leading-tight font-semibold tracking-[-0.02em]">{level.title}</p>
             </div>
-            <p className="shrink-0 text-[15px] font-semibold tabular-nums">
+            <p className="live shrink-0 text-[15px] font-semibold tabular-nums">
               <CountUp to={level.xpIntoLevel} />
               <span className="text-g-muted"> / {level.xpForNext} XP</span>
             </p>
           </div>
           <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/70">
-            <div className="bar-grad animate-grow h-full rounded-full" style={{ width: `${pct}%` }} />
+            <div className="live bar-grad animate-grow h-full rounded-full" style={{ width: `${pct}%` }} />
           </div>
         </Reveal>
 
         {/* Today */}
         <Reveal as="section" delay={140} className="mt-3 grid grid-cols-3 gap-2.5">
-          <Stat label="Sales today" value={data.today.sales} trend={12} />
+          <Stat label="Sales" value={data.today.sales} trend={12} />
           <Stat label="Tips" value={data.today.tips} trend={8} />
           <Stat label="Avg check" value={data.today.avgCheck} trend={-3} />
         </Reveal>
@@ -149,7 +149,7 @@ export function CrewBoard({ data }: { data: CrewData }) {
               <span className="chip-orange grid size-8 place-items-center rounded-full">
                 <Flame size={17} strokeWidth={2} />
               </span>
-              {data.staff.streakDays}-day streak
+              <span className="live">{data.staff.streakDays}-day streak</span>
             </p>
             <p className="text-[13px] text-g-muted">On time every shift</p>
           </div>
@@ -157,7 +157,7 @@ export function CrewBoard({ data }: { data: CrewData }) {
             {data.staff.week.map((on, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
                 <span
-                  className={`grid aspect-square w-full max-w-10 place-items-center rounded-full ${on ? "blue-grad animate-pop" : "border-[1.5px] border-dashed border-g-faint"}`}
+                  className={`live grid aspect-square w-full max-w-10 place-items-center rounded-full ${on ? "blue-grad animate-pop" : "border-[1.5px] border-dashed border-g-faint"}`}
                   style={on ? { animationDelay: `${i * 70}ms`, animationFillMode: "both" } : undefined}
                 >
                   {on && <Check size={15} strokeWidth={2.75} />}
@@ -174,9 +174,11 @@ export function CrewBoard({ data }: { data: CrewData }) {
             <Users size={16} strokeWidth={1.75} /> Team goal this week
           </p>
           <div className="relative mt-3 flex justify-center">
-            <Gauge percent={boss} />
+            <span className="live w-full max-w-[260px]">
+              <Gauge percent={boss} />
+            </span>
             <div className="absolute inset-x-0 bottom-0 text-center">
-              <p className="text-[36px] leading-none font-semibold tracking-[-0.03em] tabular-nums">
+              <p className="live text-[36px] leading-none font-semibold tracking-[-0.03em] tabular-nums">
                 <CountUp to={boss} />%
               </p>
               <p className="mt-1 text-[13px] text-g-muted">
@@ -206,7 +208,7 @@ export function CrewBoard({ data }: { data: CrewData }) {
                   haptic("success");
                   claim(q);
                 }} className="blue-grad press mt-3 h-11 w-full rounded-full text-[15px] font-semibold">
-                  Claim +{q.reward.xp} XP{q.reward.perk ? ` · ${q.reward.perk}` : ""}
+                  Claim +{q.reward.xp} XP
                 </button>
               )}
             </QuestRow>
@@ -251,15 +253,15 @@ export function CrewBoard({ data }: { data: CrewData }) {
 
         {/* Leaderboard */}
         <SectionTitle title="This week" />
-        <ol className="card rounded-[24px] p-1.5">
+        <Reveal as="ol" className="card rounded-[24px] p-1.5">
           {data.leaderboard.map((p, i) => (
             <li key={p.name} className={`flex items-center gap-4 rounded-[18px] px-4 py-3.5 ${p.me ? "bg-g-blue-soft" : ""}`}>
               <span className={`w-5 text-[15px] font-semibold tabular-nums ${p.me ? "text-g-blue" : "text-g-faint"}`}>{i + 1}</span>
-              <span className={`min-w-0 flex-1 truncate text-[16px] ${p.me ? "font-semibold text-g-blue" : "font-medium"}`}>{p.me ? `${p.name} (you)` : p.name}</span>
-              <span className="shrink-0 text-[15px] font-semibold tabular-nums">{p.me ? xp : p.xp} XP</span>
+              <span className={`live min-w-0 flex-1 truncate text-[16px] ${p.me ? "font-semibold text-g-blue" : "font-medium"}`}>{p.me ? `${p.name} (you)` : p.name}</span>
+              <span className="live shrink-0 text-[15px] font-semibold tabular-nums">{p.me ? xp : p.xp} XP</span>
             </li>
           ))}
-        </ol>
+        </Reveal>
 
         <p className="mt-10 text-center text-[13px] text-g-faint">Progress counts automatically from orders · leaderboards can be turned off by the venue</p>
       </div>
@@ -292,11 +294,14 @@ function SectionTitle({ title, count }: { title: string; count?: number }) {
 function Stat({ label, value, trend }: { label: string; value: number; trend: number }) {
   const v = useCountUp(value);
   return (
-    <div className="mesh-sky min-w-0 rounded-[22px] p-3.5">
-      <p className="truncate text-[12px] text-g-muted">{label}</p>
-      <p className="mt-1 text-[24px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">{short(v)}</p>
+    <div className="card min-w-0 rounded-[22px] p-3.5">
+      <p className="truncate text-[12px] font-medium text-g-muted">{label}</p>
+      <p className="live mt-1 truncate text-[22px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">
+        {short(v)}
+        <span className="ml-0.5 text-[13px] font-medium text-g-muted">₫</span>
+      </p>
       <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${trend >= 0 ? "chip-green" : "chip-orange"}`}>
-        <TrendingUp size={12} strokeWidth={2.25} />
+        <TrendingUp size={12} strokeWidth={2.25} className={trend < 0 ? "-scale-y-100" : ""} />
         {trend >= 0 ? "+" : ""}
         {trend}%
       </span>
@@ -320,27 +325,28 @@ function QuestRow({ q, money, action, children }: { q: CrewQuest; money: (n: num
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3">
-            <p className="min-w-0 text-[16px] leading-snug font-semibold">{q.title}</p>
+            <p className="live min-w-0 text-[16px] leading-snug font-semibold">{q.title}</p>
             {q.state !== "available" && (
-              <span className="shrink-0 text-[15px] font-semibold tabular-nums">
+              <span className="live shrink-0 text-[15px] font-semibold tabular-nums">
                 {q.progress}
                 <span className="text-g-faint">/{q.target}</span>
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-[14px] leading-snug text-g-muted">
-            {q.description} · {q.endsAt}
-          </p>
-          {q.state !== "available" ? (
+          <p className="live mt-0.5 line-clamp-2 text-[14px] leading-snug text-g-muted">{q.description}</p>
+          {q.state !== "available" && (
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-              <div className={`animate-grow h-full rounded-full ${q.state === "done" ? "green-grad" : "bar-grad"}`} style={{ width: `${pct}%` }} />
+              <div className={`live animate-grow h-full rounded-full ${q.state === "done" ? "green-grad" : "bar-grad"}`} style={{ width: `${pct}%` }} />
             </div>
-          ) : (
-            <p className="mt-1.5 text-[14px] font-semibold text-g-blue">
-              {reward}
-              {q.mode === "race" ? " · first to finish wins" : ""}
-            </p>
           )}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <span className="chip-blue inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap">{reward}</span>
+            <span className="inline-flex h-6 items-center gap-1 rounded-full bg-white px-2.5 text-[12px] font-medium whitespace-nowrap text-g-muted">
+              <Clock size={12} strokeWidth={2} /> {q.endsAt.replace(/^Ends /, "")}
+            </span>
+            {q.mode === "race" && <span className="chip-orange inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap">Race · first wins</span>}
+            {q.reward.perk && <span className="inline-flex h-6 items-center rounded-full bg-white px-2.5 text-[12px] font-medium whitespace-nowrap text-g-ink-2">{q.reward.perk}</span>}
+          </div>
           {children}
         </div>
         {action}

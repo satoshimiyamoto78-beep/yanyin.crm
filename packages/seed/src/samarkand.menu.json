@@ -15,7 +15,7 @@
       "zh"
     ]
   },
-  "source": "Founder-provided menu photos, 2026-11-08. Prices in VND. Partial menu: more pages may exist. Items with status=suggested were added by Claude to fill gaps; venue must confirm names, recipes and prices.",
+  "source": "Founder-provided menu photos, 2026-11-08. Prices in VND. Partial menu: more pages may exist. Items with status=suggested were added by Claude to fill gaps; venue must confirm names, recipes and prices. Halal tags on meat dishes are a yanyin draft; the venue must confirm certification.",
   "categories": [
     {
       "name": {
@@ -78,7 +78,10 @@
           "description": {
             "en": "Slow-cooked lamb broth with chickpeas, vegetables and fatir bread",
             "ru": "Томлёный бульон из баранины с нутом, овощами и лепёшкой фатир"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -91,7 +94,10 @@
           "description": {
             "en": "Hand-pulled noodles in rich beef and vegetable broth",
             "ru": "Тянутая лапша в наваристом бульоне с говядиной и овощами"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -104,7 +110,10 @@
           "description": {
             "en": "Uzbek rice soup with beef, tomatoes and sour cream",
             "ru": "Узбекский рисовый суп с говядиной, томатами и сметаной"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         }
       ],
       "status": "confirmed"
@@ -127,7 +136,10 @@
           "description": {
             "en": "Romaine, grilled chicken, parmesan, croutons, Caesar dressing",
             "ru": "Романо, курица гриль, пармезан, гренки, соус цезарь"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -246,7 +258,8 @@
           "price": 240000,
           "status": "suggested",
           "tags": [
-            "signature"
+            "signature",
+            "halal"
           ],
           "description": {
             "en": "Signature plov from the kazan: lamb, yellow carrot, rice, chickpeas",
@@ -264,7 +277,10 @@
           "description": {
             "en": "Teahouse-style plov with beef, carrot and garlic",
             "ru": "Плов как в чайхане: говядина, морковь, целый чеснок"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -275,7 +291,8 @@
           "price": 800000,
           "status": "suggested",
           "tags": [
-            "sharing"
+            "sharing",
+            "halal"
           ],
           "description": {
             "en": "A big kazan of plov to share, served on one platter",
@@ -303,7 +320,10 @@
           "description": {
             "en": "Charcoal-grilled wings with flatbread and tomato sauce",
             "ru": "Крылышки на углях с лепёшкой и томатным соусом"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -317,7 +337,10 @@
           "description": {
             "en": "Juicy chicken breast skewer from the charcoal grill",
             "ru": "Сочная куриная грудка на шампуре с углей"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -331,7 +354,10 @@
           "description": {
             "en": "Lamb loin on the bone, grilled over charcoal with rosemary",
             "ru": "Корейка ягнёнка на кости, жаренная на углях с розмарином"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -362,7 +388,10 @@
           "description": {
             "en": "Marinated beef skewer with onion, bread and sauce",
             "ru": "Маринованная говядина на шампуре с луком, хлебом и соусом"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -376,7 +405,10 @@
           "description": {
             "en": "Tender lamb skewer with fat-tail, onion and tomato sauce",
             "ru": "Нежная баранина с курдюком, луком и томатным соусом"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -390,7 +422,10 @@
           "description": {
             "en": "Minced beef kebab with spices, grilled on a skewer",
             "ru": "Рубленая говядина со специями на шампуре"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -404,7 +439,10 @@
           "description": {
             "en": "Minced lamb kebab with cumin and herbs",
             "ru": "Рубленая баранина с зирой и зеленью"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         }
       ],
       "status": "confirmed"
@@ -427,7 +465,10 @@
           "description": {
             "en": "Beef braised with potatoes, carrots and peppers",
             "ru": "Говядина, тушённая с картофелем, морковью и перцем"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -440,7 +481,10 @@
           "description": {
             "en": "Wok-fried hand-pulled noodles with beef and vegetables",
             "ru": "Обжаренная тянутая лапша с говядиной и овощами"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -453,7 +497,10 @@
           "description": {
             "en": "Homemade beef cutlets with mashed potatoes",
             "ru": "Домашние котлеты из говядины с пюре"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -466,7 +513,10 @@
           "description": {
             "en": "Tender chicken cutlets with mashed potatoes",
             "ru": "Нежные куриные котлеты с пюре"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -479,7 +529,10 @@
           "description": {
             "en": "Lamb and potatoes fried together in a kazan",
             "ru": "Баранина с картофелем, обжаренные в казане"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         }
       ],
       "status": "confirmed"
@@ -515,7 +568,10 @@
           "description": {
             "en": "Sizzling beef with peppers and onion on a hot iron plate",
             "ru": "Шкворчащая говядина с перцем и луком на сковороде"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -544,7 +600,10 @@
           "description": {
             "en": "Grilled eggplant rolls with minced meat and fresh salad",
             "ru": "Рулетики из баклажана с фаршем на гриле и свежим салатом"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         }
       ],
       "status": "confirmed"
@@ -568,7 +627,10 @@
           "description": {
             "en": "Flaky tandoor pastry filled with beef and onion",
             "ru": "Слоёная самса из тандыра с говядиной и луком"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -581,7 +643,10 @@
           "description": {
             "en": "Flaky tandoor pastry filled with lamb and onion",
             "ru": "Слоёная самса из тандыра с бараниной и луком"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -594,7 +659,10 @@
           "description": {
             "en": "Steamed dumplings with lamb and onion, sour cream",
             "ru": "Паровые манты с бараниной и луком, сметана"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -607,7 +675,10 @@
           "description": {
             "en": "Small boiled dumplings with beef in broth",
             "ru": "Маленькие пельмени с говядиной в бульоне"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
@@ -716,7 +787,10 @@
           "description": {
             "en": "Spaghetti with slow-cooked beef ragù and parmesan",
             "ru": "Спагетти с томлёным мясным рагу и пармезаном"
-          }
+          },
+          "tags": [
+            "halal"
+          ]
         },
         {
           "name": {
