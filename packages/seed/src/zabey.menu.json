@@ -365,6 +365,58 @@
         },
         {
           "name": {
+            "en": "Adalya",
+            "ru": "Adalya",
+            "vi": "Adalya"
+          },
+          "price": 380000,
+          "status": "suggested",
+          "description": {
+            "en": "Turkish tobacco with a huge flavour range, light to medium",
+            "ru": "Турецкий табак с огромной линейкой вкусов, от лёгкого до среднего"
+          }
+        },
+        {
+          "name": {
+            "en": "Starbuzz",
+            "ru": "Starbuzz",
+            "vi": "Starbuzz"
+          },
+          "price": 400000,
+          "status": "suggested",
+          "description": {
+            "en": "American classic, thick smoke and sweet flavours",
+            "ru": "Американская классика, густой дым и сладкие вкусы"
+          }
+        },
+        {
+          "name": {
+            "en": "Sebero",
+            "ru": "Sebero",
+            "vi": "Sebero"
+          },
+          "price": 400000,
+          "status": "suggested",
+          "description": {
+            "en": "Fresh, juicy blends, medium strength",
+            "ru": "Свежие сочные миксы, средняя крепость"
+          }
+        },
+        {
+          "name": {
+            "en": "Duft",
+            "ru": "Duft",
+            "vi": "Duft"
+          },
+          "price": 420000,
+          "status": "suggested",
+          "description": {
+            "en": "Russian blond leaf, clear flavours, medium",
+            "ru": "Российский светлый лист, чистые вкусы, средняя крепость"
+          }
+        },
+        {
+          "name": {
             "en": "Bowl refill",
             "vi": "Thay bát mới",
             "ru": "Замена чаши"
