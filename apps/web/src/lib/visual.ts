@@ -20,8 +20,25 @@ export type VenueBrand = {
     mapsQuery: string;
   };
   /** Hero slides: a featured dish (needs a photo) or the Food Roulette card. */
-  hero: ({ kind: "dish"; itemId: string; kicker: Record<"en" | "ru" | "vi", string> } | { kind: "roulette" })[];
+  hero: (HeroDish | { kind: "roulette" })[];
   ageRestricted: boolean;
+};
+
+type L = Record<"en" | "ru" | "vi", string>;
+
+/**
+ * A hero card: a full-bleed photo, a kicker, the dish name, a two-line story,
+ * three short facts and the price with one action.
+ */
+export type HeroDish = {
+  kind: "dish";
+  itemId: string;
+  image: string;
+  kicker: L;
+  blurb: L;
+  facts: L[];
+  /** Action label; "Add" when omitted (builders say "Build"). */
+  cta?: L;
 };
 
 export function venueBrand(venue: Venue): VenueBrand {
@@ -45,7 +62,26 @@ export function venueBrand(venue: Venue): VenueBrand {
         ],
         mapsQuery: "Zabey Community Da Nang",
       },
-      hero: [{ kind: "roulette" }],
+      hero: [
+        {
+          kind: "dish",
+          itemId: "build-your-hookah",
+          image: "/hero/zabey-hookah.webp",
+          kicker: { en: "Zabey signature", ru: "Фирменный Zabey", vi: "Đặc trưng Zabey" },
+          blurb: {
+            en: "Pick one of ten tobaccos, set the strength from 1 to 10 and mix up to three flavours.",
+            ru: "Выберите один из десяти табаков, крепость от 1 до 10 и до трёх вкусов.",
+            vi: "Chọn một trong mười loại thuốc, độ mạnh từ 1 đến 10 và tối đa ba vị.",
+          },
+          facts: [
+            { en: "10 tobaccos", ru: "10 табаков", vi: "10 loại thuốc" },
+            { en: "Fresh coals", ru: "Свежие угли", vi: "Than mới" },
+            { en: "~90 min", ru: "~90 мин", vi: "~90 phút" },
+          ],
+          cta: { en: "Build", ru: "Собрать", vi: "Tự chọn" },
+        },
+        { kind: "roulette" },
+      ],
       ageRestricted: true,
     };
   }
@@ -69,9 +105,39 @@ export function venueBrand(venue: Venue): VenueBrand {
       mapsQuery: "Samarkand restaurant Da Nang",
     },
     hero: [
-      { kind: "dish", itemId: "lamb-shashlik", kicker: { en: "From the charcoal grill", ru: "С углей", vi: "Nướng than hoa" } },
+      {
+        kind: "dish",
+        itemId: "lamb-lyulya-kebab",
+        image: "/hero/samarkand-lyulya.webp",
+        kicker: { en: "From the charcoal grill", ru: "С углей", vi: "Nướng than hoa" },
+        blurb: {
+          en: "Hand-minced lamb with herbs, grilled over charcoal, on warm lavash.",
+          ru: "Рубленая баранина с зеленью, на углях, на тёплом лаваше с луком.",
+          vi: "Thịt cừu băm tay nướng than, ăn kèm bánh lavash ấm và hành tím.",
+        },
+        facts: [
+          { en: "Halal", ru: "Халяль", vi: "Halal" },
+          { en: "2 skewers", ru: "2 шампура", vi: "2 xiên" },
+          { en: "15 min", ru: "15 мин", vi: "15 phút" },
+        ],
+      },
       { kind: "roulette" },
-      { kind: "dish", itemId: "fatir-shurpa", kicker: { en: "Chef's soup", ru: "Суп от шефа", vi: "Súp của bếp trưởng" } },
+      {
+        kind: "dish",
+        itemId: "fatir-shurpa",
+        image: "/hero/samarkand-shurpa.webp",
+        kicker: { en: "Chef's soup", ru: "Суп от шефа", vi: "Súp của bếp trưởng" },
+        blurb: {
+          en: "Lamb broth simmered for hours with potato, carrot and dill.",
+          ru: "Томлёный бульон из баранины с картофелем, морковью и укропом.",
+          vi: "Nước dùng cừu hầm lâu với khoai tây, cà rốt và thì là.",
+        },
+        facts: [
+          { en: "Halal", ru: "Халяль", vi: "Halal" },
+          { en: "450 ml", ru: "450 мл", vi: "450 ml" },
+          { en: "Hearty", ru: "Сытно", vi: "No lâu" },
+        ],
+      },
     ],
     ageRestricted: false,
   };

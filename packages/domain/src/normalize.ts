@@ -64,6 +64,7 @@ type RawItem = {
   /** Ids of the category's modifier groups this item uses; all of them when omitted. */
   modifier_groups?: string[];
   builder?: "pizza" | "drink";
+  cover?: string;
 };
 
 const ROLE_RULES: [RegExp, CategoryRole][] = [
@@ -164,6 +165,7 @@ export function normalizeMenu(raw: RawMenu): Menu {
         status: status(ri.status),
         ...(ri.photo ? { photo: ri.photo } : {}),
         ...(ri.builder ? { builder: ri.builder } : {}),
+        ...(ri.cover ? { cover: ri.cover } : {}),
         ...(ri.note ? { note: ri.note } : {}),
       };
     });

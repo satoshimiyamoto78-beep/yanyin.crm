@@ -18,6 +18,7 @@ import { Check, ChevronRight, Clock, Copy, FlameKindling, ImageIcon, Leaf, MapPi
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
+import Image from "next/image";
 import { haptic } from "@/lib/haptics";
 import { DrinkPreview, OptionTiles, PizzaPreview } from "./builders";
 import { DishTile, HalalIcon, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
@@ -115,6 +116,12 @@ function ItemSheetBody({
           {/* Constructor: a live preview that follows every pick. */}
           <div className="mesh-blue aspect-[1.15] w-full rounded-[28px] p-4">
             {item.builder === "pizza" ? <PizzaPreview item={item} ids={optionIds} variantId={variantId} /> : <DrinkPreview item={item} ids={optionIds} variantId={variantId} />}
+          </div>
+        </div>
+      ) : item.cover ? (
+        <div className="px-3 pt-3">
+          <div className="relative aspect-[1.2] w-full overflow-hidden rounded-[28px]">
+            <Image src={item.cover} alt="" fill sizes="480px" className="object-cover" />
           </div>
         </div>
       ) : item.photo ? (

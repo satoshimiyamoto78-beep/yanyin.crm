@@ -76,12 +76,13 @@
           "status": "confirmed",
           "photo": "/dishes/samarkand/fatir-shurpa.webp",
           "description": {
-            "en": "Slow-cooked lamb broth with chickpeas, vegetables and fatir bread",
-            "ru": "Томлёный бульон из баранины с нутом, овощами и лепёшкой фатир"
+            "en": "Lamb broth simmered for hours with potato, carrot and peppers, finished with dill. With tandoor bread",
+            "ru": "Бульон из баранины, томлённый часами, с картофелем, морковью и перцем, с укропом. С тандырной лепёшкой"
           },
           "tags": [
             "halal"
-          ]
+          ],
+          "cover": "/hero/samarkand-shurpa.webp"
         },
         {
           "name": {
@@ -437,12 +438,13 @@
           "status": "confirmed",
           "photo": "/dishes/samarkand/lamb-lyulya-kebab.webp",
           "description": {
-            "en": "Minced lamb kebab with cumin and herbs",
-            "ru": "Рубленая баранина с зирой и зеленью"
+            "en": "Hand-minced lamb grilled over charcoal, on lavash with red onion and tomato sauce",
+            "ru": "Рубленая баранина на углях, на лаваше с красным луком и томатным соусом"
           },
           "tags": [
             "halal"
-          ]
+          ],
+          "cover": "/hero/samarkand-lyulya.webp"
         }
       ],
       "status": "confirmed"

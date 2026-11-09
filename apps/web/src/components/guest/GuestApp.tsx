@@ -43,7 +43,7 @@ import {
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
 import { Reveal, RouletteWheel, startLoading } from "./motion";
-import { ItemCard, describe } from "./ui";
+import { ItemCard } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
 function initialLang(): Lang {
@@ -663,7 +663,7 @@ function Hero({
   onRoulette: () => void;
 }) {
   const slides = brand.hero.filter(
-    (s) => s.kind === "roulette" || itemById.get(s.itemId)?.photo,
+    (s) => s.kind === "roulette" || itemById.has(s.itemId),
   );
   const [index, setIndex] = useState(0);
   return (
@@ -686,7 +686,7 @@ function Hero({
                 tabIndex={0}
                 onClick={onRoulette}
                 onKeyDown={(e) => e.key === "Enter" && onRoulette()}
-                className="aurora block h-[400px] w-full cursor-pointer rounded-[30px] text-left"
+                className="aurora block h-[440px] w-full cursor-pointer rounded-[30px] text-left"
                 aria-label={ui(lang, "roulette")}
               >
                 <span className="absolute -top-14 -right-20">
@@ -706,47 +706,73 @@ function Hero({
             ) : (
               (() => {
                 const it = itemById.get(s.itemId)!;
+                const builder = it.variants.length > 0 || it.modifierGroups.some((g) => g.required);
                 return (
                   <div
                     role="button"
                     tabIndex={0}
                     onClick={() => onOpen(it)}
                     onKeyDown={(e) => e.key === "Enter" && onOpen(it)}
-                    className="aurora block h-[400px] w-full cursor-pointer rounded-[30px] text-left"
+                    className="relative block h-[440px] w-full cursor-pointer overflow-hidden rounded-[30px] bg-[#0b1636] text-left text-white"
                     aria-label={t(it.name, lang)}
                   >
-                    <span className="absolute inset-x-0 top-4 flex justify-center">
-                      {it.photo && (
-                        <Image
-                          src={it.photo}
-                          alt=""
-                          width={360}
-                          height={240}
-                          priority={i === 0}
-                          className="live h-auto w-[80%] object-contain"
-                        />
-                      )}
+                    {/* Full-bleed photo, a soft scrim for the text, nothing else on top of the food. */}
+                    <Image
+                      src={s.image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 480px) 100vw, 440px"
+                      priority={i === 0}
+                      className="live object-cover"
+                    />
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,22,54,0.4)_0%,rgba(11,22,54,0)_18%,rgba(11,22,54,0)_30%,rgba(11,22,54,0.72)_52%,rgba(11,22,54,0.94)_70%,#0b1636_100%)]"
+                    />
+                    <span className="absolute top-4 left-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-white/18 px-3 text-[12px] font-semibold backdrop-blur-md">
+                      <ChefHat size={13} strokeWidth={2.25} />
+                      {s.kicker[lang as "en"] ?? s.kicker.en}
                     </span>
-                    <HeroCaption
-                      chip={s.kicker[lang as "en"] ?? s.kicker.en}
-                      icon={<ChefHat size={12} strokeWidth={2.25} />}
-                      title={t(it.name, lang)}
-                      text={describe(it, lang)}
-                    >
-                      <span className="live text-[24px] font-semibold tracking-[-0.02em] text-white tabular-nums">
-                        {formatMoney(it.price, currency, lang)}
+                    <span className="absolute inset-x-0 bottom-0 block px-5 pb-5">
+                      <span className="live block text-[28px] leading-[1.08] font-bold tracking-[-0.025em]">
+                        {t(it.name, lang)}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          haptic("success");
-                          onAdd(it);
-                        }}
-                        className="press flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#1d3fd6]"
-                      >
-                        <Plus size={18} strokeWidth={2.25} /> {ui(lang, "add")}
-                      </button>
-                    </HeroCaption>
+                      <span className="live mt-2 line-clamp-2 text-[14px] leading-[1.45] text-white/80">
+                        {s.blurb[lang as "en"] ?? s.blurb.en}
+                      </span>
+                      <span className="mt-3 flex flex-wrap gap-1.5">
+                        {s.facts.map((f) => (
+                          <span
+                            key={f.en}
+                            className="inline-flex h-6 items-center rounded-full border border-white/25 px-2.5 text-[12px] font-medium text-white/90"
+                          >
+                            {f[lang as "en"] ?? f.en}
+                          </span>
+                        ))}
+                      </span>
+                      <span className="mt-4 flex h-12 items-center justify-between gap-3 border-t border-white/15 pt-4 box-content">
+                        <span className="live text-[24px] font-semibold tracking-[-0.02em] tabular-nums">
+                          {builder && it.variants.length === 0 && (
+                            <span className="mr-1 text-[14px] font-medium text-white/70">
+                              {ui(lang, "from")}
+                            </span>
+                          )}
+                          {formatMoney(it.price, currency, lang)}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            haptic(builder ? "light" : "success");
+                            if (builder) onOpen(it);
+                            else onAdd(it);
+                          }}
+                          className="press flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#1d3fd6]"
+                        >
+                          {!builder && <Plus size={18} strokeWidth={2.25} />}
+                          {s.cta ? (s.cta[lang as "en"] ?? s.cta.en) : ui(lang, "add")}
+                        </button>
+                      </span>
+                    </span>
                   </div>
                 );
               })()

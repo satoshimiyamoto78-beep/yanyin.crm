@@ -75,6 +75,8 @@ export type MenuItem = {
   /** Public URL of the dish photo (real photo, AI-enhanced per ADR-007). */
   photo?: string;
   note?: string;
+  /** Full-bleed photo with its own background, for the dish page header. */
+  cover?: string;
   /** A constructor item: the page shows a live preview that follows the picks. */
   builder?: "pizza" | "drink";
 };

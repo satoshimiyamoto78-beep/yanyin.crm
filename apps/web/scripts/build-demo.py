@@ -26,7 +26,7 @@ def main(out: Path) -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     shutil.copytree(export / "_next", out / "assets")
-    for folder in ("dishes",):
+    for folder in ("dishes", "hero"):
         if (export / folder).exists():
             shutil.copytree(export / folder, out / folder)
     for src, dst in PAGES.items():
@@ -45,11 +45,11 @@ def main(out: Path) -> None:
             text = text.replace(name, "build")
         if path.suffix == ".html":
             text = re.sub(r'(["\'(])/_next/', r"\1./assets/", text)
-            text = re.sub(r'(["\'(])/(dishes)/', r"\1./\2/", text)
+            text = re.sub(r'(["\'(])/(dishes|hero)/', r"\1./\2/", text)
         elif path.suffix == ".css":
             text = text.replace("url(/_next/", "url(../../../assets/")
         else:
-            text = re.sub(r'(["\'`])/(dishes)/', r"\1./\2/", text)
+            text = re.sub(r'(["\'`])/(dishes|hero)/', r"\1./\2/", text)
             text = text.replace('"/_next/"', '"./assets/"')
         # The artifact host rejects raw U+FFFD; the escape is equivalent in JS.
         text = text.replace("�", "\\ufffd")
