@@ -28,11 +28,11 @@ export default function Home() {
                 key={menu.venue.slug}
                 href={`/m/${menu.venue.slug}?table=7`}
                 className="group relative overflow-hidden rounded-[28px] p-5 transition active:scale-[0.99]"
-                style={{ background: `linear-gradient(150deg, ${brand.accent}, ${brand.accent}99)` }}
+                style={{ background: "linear-gradient(150deg, #2f5bff, #1b2a66)" }}
               >
                 <ArrowUpRight className="absolute top-5 right-5 size-5 text-white/80 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 <p className="font-display text-2xl font-bold text-white">{menu.venue.name}</p>
-                                <p className="mt-1 text-sm text-white/85">{brand.headline.en}</p>
+                                <p className="mt-1 text-sm text-white/85">{brand.cuisine.en}</p>
                 <p className="mt-4 font-mono text-xs text-white/75">
                   {menu.categories.length} categories · {items.length} items · {suggested} drafts
                 </p>

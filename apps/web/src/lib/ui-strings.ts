@@ -86,6 +86,11 @@ const EN = {
   serviceNote: "Prices in VND. Service charge may apply.",
   from: "from",
   language: "Language",
+  chefRecommends: "Chef recommends",
+  order: "Order",
+  rouletteTitle: "Can't decide? Spin for your set",
+  quickRoulette: "Food Roulette",
+  close: "Close",
 };
 
 export type UiKey = keyof typeof EN;
@@ -175,6 +180,11 @@ const RU: Record<UiKey, string> = {
   serviceNote: "Цены в донгах. Может взиматься сервисный сбор.",
   from: "от",
   language: "Язык",
+  chefRecommends: "Шеф рекомендует",
+  order: "Заказ",
+  rouletteTitle: "Не можете выбрать? Крутите рулетку",
+  quickRoulette: "Food Roulette",
+  close: "Закрыть",
 };
 
 const VI: Record<UiKey, string> = {
@@ -262,6 +272,11 @@ const VI: Record<UiKey, string> = {
   serviceNote: "Giá tính bằng VND. Có thể áp dụng phí phục vụ.",
   from: "từ",
   language: "Ngôn ngữ",
+  chefRecommends: "Đầu bếp gợi ý",
+  order: "Đơn",
+  rouletteTitle: "Chưa biết chọn gì? Quay để chọn món",
+  quickRoulette: "Food Roulette",
+  close: "Đóng",
 };
 
 const STRINGS: Partial<Record<Lang, Record<UiKey, string>>> = { en: EN, ru: RU, vi: VI };

@@ -2,7 +2,7 @@
 
 ## 1. Brand feel
 
-> **Read `docs/06-design-direction.md` first.** The guest app follows the founder's own guest-order design: one yanyin platform look (light #F1F2F5 background, white grouped cards, Inter, one accent per venue, floating pill bottom nav, home/menu/detail/cart/orders/about screens), white-labelled only by accent, mark, copy and photos — like every store on Grab or Yandex Eda. Earlier note, kept for staff/HQ: the guest side is warm, light and photo-first with an orange CTA (#FF6A1A); the staff, HQ and core side is a dark bento with a neon lime accent (#B8F35A) and violet for rewards, plus a light SaaS theme for HQ and core. Glassy 3D neon icons are for sections and rewards, Lucide line icons for actions. The per-surface colours below remain only as identification accents (charts, chips, navigation).
+> **Guest UI rules live in `docs/07-design-audit.md` (ADR-013) and override everything below for yanyin.menu:** one platform look for every venue — white #FFFFFF, fills #F3F4F6, ink #0B0B0F, one blue #2F5BFF only for the primary action, Onest font, scale 28/22/17/15/13, no emoji or third-party 3D icons, Lucide line icons at 1.75, text category tabs (black active pill), photo dishes as 2-column cards, dishes without photos as list rows, one scrolling menu with sheets and a floating black cart. Venues bring logo, name, photos and copy only.
 
 Playful but professional: "a game studio that understands restaurants". The architecture artifact sets the visual language: dark, high-contrast boards, one colour per surface, display font **Unbounded**, body **Manrope**, numbers and code in **JetBrains Mono**.
 
