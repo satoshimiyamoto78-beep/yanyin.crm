@@ -1,24 +1,23 @@
 "use client";
 
 import { allItems, formatMoney, t, type Category, type Lang, type Menu, type MenuItem } from "@yanyin/domain";
-import { ArrowUp, Plus, Sparkles } from "lucide-react";
+import { ArrowUp, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { ui, type UiKey } from "@/lib/ui-strings";
 import { DishTile, Sheet } from "./ui";
 
-/** Yan's mark: the Nomad blue orb with a spark. Used on the floating button and in the chat. */
-export function YanOrb({ size = 44, pulse }: { size?: number; pulse?: boolean }) {
+/**
+ * Yan's mark: a flat disc in the Nomad blue gradient that slowly drifts inside,
+ * with a flat white spark. No 3D shading.
+ */
+export function YanOrb({ size = 44 }: { size?: number }) {
   return (
-    <span
-      className={`grid shrink-0 place-items-center rounded-full text-white ${pulse ? "animate-pulse" : ""}`}
-      style={{
-        width: size,
-        height: size,
-        background: "radial-gradient(circle at 32% 24%, #8fb2ff 0%, #2f6bff 42%, #1a2f9c 80%, #0b1636 100%)",
-      }}
-    >
-      <Sparkles size={size * 0.45} strokeWidth={1.9} />
+    <span className="yan-orb grid shrink-0 place-items-center rounded-full text-white" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 24 24" width={size * 0.5} height={size * 0.5} fill="currentColor" aria-hidden>
+        <path d="M11 3.5c.4 3.9 1.9 5.4 5.8 5.8-3.9.4-5.4 1.9-5.8 5.8-.4-3.9-1.9-5.4-5.8-5.8 3.9-.4 5.4-1.9 5.8-5.8Z" />
+        <path d="M17.5 13.5c.2 1.9.9 2.6 2.8 2.8-1.9.2-2.6.9-2.8 2.8-.2-1.9-.9-2.6-2.8-2.8 1.9-.2 2.6-.9 2.8-2.8Z" opacity={0.85} />
+      </svg>
     </span>
   );
 }

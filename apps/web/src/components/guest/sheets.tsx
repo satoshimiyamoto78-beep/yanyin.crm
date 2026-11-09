@@ -14,7 +14,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { Check, Clock, FlameKindling, ImageIcon, Leaf, MapPin, Search, SearchX, Send, SlidersHorizontal, Wallet, X } from "lucide-react";
+import { Check, ChevronRight, Clock, Copy, FlameKindling, ImageIcon, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -683,34 +683,129 @@ type SearchFilter = "veg" | "halal" | "mild" | "photo" | "cheap";
 
 /* ---------------------------------------------------------------- About & language */
 
-export function AboutSheet({ open, onClose, menu, brand, lang }: { open: boolean; onClose: () => void; menu: Menu; brand: VenueBrand; lang: Lang }) {
+export function AboutSheet({
+  open,
+  onClose,
+  menu,
+  brand,
+  lang,
+  onNotice,
+}: {
+  open: boolean;
+  onClose: () => void;
+  menu: Menu;
+  brand: VenueBrand;
+  lang: Lang;
+  onNotice: (title: string, text?: string) => void;
+}) {
+  const a = brand.about;
+  const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.mapsQuery)}`;
+  const actions: { label: string; icon: React.ReactNode; href?: string; onClick?: () => void }[] = [
+    { label: ui(lang, "aboutRoute"), icon: <Navigation size={20} strokeWidth={1.9} />, href: maps },
+    { label: ui(lang, "aboutCall"), icon: <Phone size={20} strokeWidth={1.9} />, href: `tel:${a.phone.replace(/\s/g, "")}` },
+    {
+      label: ui(lang, "aboutShare"),
+      icon: <Share2 size={20} strokeWidth={1.9} />,
+      onClick: () => {
+        const url = window.location.href.split("?")[0]!;
+        if (navigator.share) navigator.share({ title: menu.venue.name, url }).catch(() => {});
+        else navigator.clipboard?.writeText(url).then(() => onNotice(ui(lang, "copied")));
+      },
+    },
+  ];
   return (
-    <Sheet open={open} onClose={onClose} label={ui(lang, "about")}>
-      <div className="px-5 pt-10 pb-8">
-        <span className="grid size-16 place-items-center rounded-full bg-g-ink text-[26px] font-bold text-white">{brand.mark}</span>
-        <h2 className="mt-4 text-[28px] font-bold tracking-[-0.02em]">{menu.venue.name}</h2>
-        <p className="mt-1 text-[15px] text-g-muted">{brand.cuisine[lang as "en"] ?? brand.cuisine.en}</p>
-        <p className="mt-5 text-[16px] leading-[1.6] text-g-ink-2">{brand.about.bio}</p>
-        <div className="mt-6 divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
-          <InfoRow icon={<MapPin size={18} strokeWidth={1.75} />} label={ui(lang, "address")} value={brand.about.address} />
-          <InfoRow icon={<Clock size={18} strokeWidth={1.75} />} label={ui(lang, "hours")} value={brand.about.hours} />
+    <Sheet open={open} onClose={onClose} label={ui(lang, "about")} title={false}>
+      <div className="px-5 pt-1 pb-10">
+        <div className="aurora rounded-[30px] px-5 pt-6 pb-5">
+          <span className="grid size-16 place-items-center rounded-[20px] bg-white text-[26px] font-bold text-g-ink">{brand.mark}</span>
+          <h2 className="mt-5 text-[30px] leading-tight font-bold tracking-[-0.025em]">{menu.venue.name}</h2>
+          <p className="mt-1 text-[15px] text-white/75">{brand.cuisine[lang as "en"] ?? brand.cuisine.en}</p>
+          <span className="mt-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-white/15 px-3 text-[13px] font-semibold backdrop-blur-md">
+            <span className="size-2 rounded-full bg-[#5ce0a0]" />
+            {ui(lang, "openNow")} · {ui(lang, "openUntil")} {a.closes}
+          </span>
         </div>
-        <p className="mt-6 text-center text-[13px] text-g-faint">{ui(lang, "poweredBy")}</p>
+
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
+          {actions.map((x) =>
+            x.href ? (
+              <a key={x.label} href={x.href} target={x.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => haptic("light")} className="press flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-[22px] bg-g-fill text-[13px] font-semibold">
+                <span className="text-g-blue">{x.icon}</span>
+                {x.label}
+              </a>
+            ) : (
+              <button key={x.label} onClick={() => { haptic("light"); x.onClick?.(); }} className="press flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-[22px] bg-g-fill text-[13px] font-semibold">
+                <span className="text-g-blue">{x.icon}</span>
+                {x.label}
+              </button>
+            ),
+          )}
+        </div>
+
+        <p className="mt-7 text-[16px] leading-[1.6] text-g-ink-2">{a.bio}</p>
+
+        <h3 className="mt-9 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutGood")}</h3>
+        <div className="mt-2 divide-y divide-g-line">
+          <a href={maps} target="_blank" rel="noreferrer" className="flex items-center gap-3.5 py-4">
+            <InfoIcon><MapPin size={18} strokeWidth={1.9} /></InfoIcon>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] text-g-muted">{ui(lang, "address")}</span>
+              <span className="block truncate text-[15px] font-medium">{a.address}</span>
+            </span>
+            <ChevronRight size={18} className="text-g-faint" />
+          </a>
+          <div className="flex items-center gap-3.5 py-4">
+            <InfoIcon><Clock size={18} strokeWidth={1.9} /></InfoIcon>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] text-g-muted">{ui(lang, "hours")}</span>
+              <span className="block text-[15px] font-medium">{a.hours}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-3.5 py-4">
+            <InfoIcon><Wifi size={18} strokeWidth={1.9} /></InfoIcon>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] text-g-muted">{ui(lang, "aboutWifi")} · {a.wifi.name}</span>
+              <span className="block font-mono text-[15px] font-medium">{a.wifi.pass}</span>
+            </span>
+            <button
+              onClick={() => {
+                haptic("light");
+                navigator.clipboard?.writeText(a.wifi.pass).catch(() => {});
+                onNotice(ui(lang, "copied"), ui(lang, "copiedHint"));
+              }}
+              aria-label="Copy Wi-Fi password"
+              className="press grid size-10 place-items-center rounded-full bg-g-fill"
+            >
+              <Copy size={17} strokeWidth={1.9} />
+            </button>
+          </div>
+        </div>
+
+        <h3 className="mt-8 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutPay")}</h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {a.payments.map((p) => (
+            <span key={p} className="inline-flex h-9 items-center rounded-full bg-g-fill px-3.5 text-[14px] font-medium">{p}</span>
+          ))}
+        </div>
+
+        <h3 className="mt-8 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutFeatures")}</h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {a.features.map((f) => (
+            <span key={f.en} className="chip-blue inline-flex h-9 items-center rounded-full px-3.5 text-[14px] font-medium">{f[lang as "en"] ?? f.en}</span>
+          ))}
+        </div>
+
+        <h3 className="mt-8 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutLangs")}</h3>
+        <p className="mt-2 text-[15px] text-g-ink-2">{UI_LANGS.map((l) => LANG_LABEL[l]).join(" · ")}</p>
+
+        <p className="mt-12 text-center text-[13px] text-g-faint">{ui(lang, "poweredBy")}</p>
       </div>
     </Sheet>
   );
 }
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3.5 py-3.5">
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[13px] text-g-muted">{label}</p>
-        <p className="text-[15px] font-medium">{value}</p>
-      </div>
-    </div>
-  );
+function InfoIcon({ children }: { children: React.ReactNode }) {
+  return <span className="chip-blue grid size-10 shrink-0 place-items-center rounded-full">{children}</span>;
 }
 
 export function LangSheet({ open, onClose, lang, onPick }: { open: boolean; onClose: () => void; lang: Lang; onPick: (l: Lang) => void }) {

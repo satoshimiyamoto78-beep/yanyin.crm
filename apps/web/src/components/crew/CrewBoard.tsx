@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
-import { CakeSlice, Check, Clock, CookingPot, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import { CakeSlice, CalendarDays, Check, Clock, CookingPot, LayoutGrid, ReceiptText, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
@@ -84,7 +84,22 @@ function Gauge({ percent }: { percent: number }) {
  * yanyin.crew — the waiter's own page: level, today's numbers, streak, the team
  * goal and quests. Same white, black and blue system as the guest menu (ADR-013).
  */
-export function CrewBoard({ data, embedded }: { data: CrewData; embedded?: boolean }) {
+export type CrewHot = { busy: number; tables: number; bills: number; openOrders: number; inKitchen: number; bookings: number; nextBooking?: string };
+
+export function CrewBoard({
+  data,
+  embedded,
+  hot,
+  onGo,
+  onNotify,
+}: {
+  data: CrewData;
+  embedded?: boolean;
+  /** Live counters for the hot buttons (tables, orders, bookings). */
+  hot?: CrewHot;
+  onGo?: (tab: "tables" | "orders" | "bookings") => void;
+  onNotify?: (title: string, text?: string) => void;
+}) {
   const [xp, setXp] = useState(data.staff.xp);
   const [quests, setQuests] = useState(data.quests);
   const [done, setDone] = useState<CrewQuest | null>(null);
@@ -92,12 +107,17 @@ export function CrewBoard({ data, embedded }: { data: CrewData; embedded?: boole
   const pct = Math.round((level.xpIntoLevel / level.xpForNext) * 100);
   const money = (n: number) => formatMoney(n, data.currency, "en");
 
-  const take = (id: string) => setQuests((qs) => qs.map((q) => (q.id === id ? { ...q, state: "active" } : q)));
+  const take = (id: string) => {
+    setQuests((qs) => qs.map((q) => (q.id === id ? { ...q, state: "active" } : q)));
+    const q = quests.find((x) => x.id === id);
+    if (q) onNotify?.(`Quest taken: ${q.title}`, q.description);
+  };
   const claim = (q: CrewQuest) => {
     setXp((v) => v + q.reward.xp);
     setQuests((qs) => qs.filter((x) => x.id !== q.id));
     setDone(q);
     setTimeout(() => setDone(null), 2400);
+    onNotify?.(`+${q.reward.xp} XP claimed`, q.reward.perk ? `Bonus unlocked: ${q.reward.perk}` : q.title);
   };
 
   const active = quests.filter((q) => q.state !== "available");
@@ -110,13 +130,45 @@ export function CrewBoard({ data, embedded }: { data: CrewData; embedded?: boole
         {/* Header */}
         <header className="flex items-center gap-3.5">
           <span className="ink-grad grid size-[52px] shrink-0 place-items-center rounded-[18px] text-[20px] font-bold">{data.staff.name[0]}</span>
-          <div className="min-w-0">
-            <h1 className="truncate text-[22px] leading-tight font-bold tracking-[-0.02em]">{data.staff.name}</h1>
-            <p className="truncate text-[13px] text-g-muted">
-              {data.staff.role} · {data.staff.venue}
-            </p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] text-g-muted">Good shift,</p>
+            <h1 className="truncate text-[24px] leading-tight font-bold tracking-[-0.02em]">{data.staff.name}</h1>
           </div>
+          <span className="chip-green inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold">
+            <span className="size-1.5 rounded-full bg-g-green" /> On shift · 10:00
+          </span>
         </header>
+
+        {/* Hot buttons */}
+        {hot && onGo && (
+          <Reveal className="mt-6 grid grid-cols-3 gap-2.5">
+            {(
+              [
+                ["tables", "Tables", LayoutGrid, `${hot.busy}/${hot.tables}`, hot.bills ? `${hot.bills} bill asked` : "busy now", hot.bills > 0],
+                ["orders", "Orders", ReceiptText, String(hot.openOrders), hot.inKitchen ? `${hot.inKitchen} in kitchen` : "all served", false],
+                ["bookings", "Bookings", CalendarDays, String(hot.bookings), hot.nextBooking ? `next ${hot.nextBooking}` : "today", false],
+              ] as const
+            ).map(([id, label, Icon, value, sub, alert]) => (
+              <button
+                key={id}
+                onClick={() => {
+                  haptic("light");
+                  onGo(id);
+                }}
+                className={`press flex h-[118px] flex-col justify-between rounded-[22px] p-3.5 text-left ${alert ? "blue-grad" : "bg-g-fill"}`}
+              >
+                <span className="flex items-center justify-between">
+                  <span className={`text-[13px] font-semibold ${alert ? "text-white" : ""}`}>{label}</span>
+                  <Icon size={17} strokeWidth={1.9} className={alert ? "text-white/80" : "text-g-blue"} />
+                </span>
+                <span>
+                  <span className="live block text-[26px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{value}</span>
+                  <span className={`live mt-1 block truncate text-[12px] font-medium ${alert ? "text-white/80" : "text-g-muted"}`}>{sub}</span>
+                </span>
+              </button>
+            ))}
+          </Reveal>
+        )}
 
         {/* Level */}
         <Reveal as="section" delay={70} className="mesh-lilac mt-6 rounded-[28px] p-5">
@@ -200,38 +252,54 @@ export function CrewBoard({ data, embedded }: { data: CrewData; embedded?: boole
 
         {/* Active quests */}
         <SectionTitle title="Your quests" count={active.length} />
-        <div>
+        <Reveal className="divide-y divide-g-line">
           {active.map((q) => (
-            <QuestRow key={q.id} q={q} money={money}>
-              {q.state === "done" && (
-                <button onClick={() => {
-                  haptic("success");
-                  claim(q);
-                }} className="blue-grad press mt-3 h-11 w-full rounded-full text-[15px] font-semibold">
-                  Claim +{q.reward.xp} XP
-                </button>
-              )}
-            </QuestRow>
+            <QuestRow
+              key={q.id}
+              q={q}
+              money={money}
+              action={
+                q.state === "done" ? (
+                  <button
+                    onClick={() => {
+                      haptic("success");
+                      claim(q);
+                    }}
+                    className="blue-grad press h-9 shrink-0 rounded-full px-4 text-[14px] font-semibold whitespace-nowrap"
+                  >
+                    Claim
+                  </button>
+                ) : undefined
+              }
+            />
           ))}
           {!active.length && <p className="py-6 text-[15px] text-g-muted">Take a quest below to start.</p>}
-        </div>
+        </Reveal>
 
         {/* Quest board */}
         {available.length > 0 && (
           <>
             <SectionTitle title="Quest board" count={available.length} />
-            <div>
+            <Reveal className="divide-y divide-g-line">
               {available.map((q) => (
-                <QuestRow key={q.id} q={q} money={money} action={
-                  <button onClick={() => {
-                    haptic("light");
-                    take(q.id);
-                  }} className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white">
-                    Take
-                  </button>
-                } />
+                <QuestRow
+                  key={q.id}
+                  q={q}
+                  money={money}
+                  action={
+                    <button
+                      onClick={() => {
+                        haptic("light");
+                        take(q.id);
+                      }}
+                      className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white"
+                    >
+                      Take
+                    </button>
+                  }
+                />
               ))}
-            </div>
+            </Reveal>
           </>
         )}
 
@@ -313,44 +381,52 @@ function CountUp({ to }: { to: number }) {
   return <>{useCountUp(to)}</>;
 }
 
-function QuestRow({ q, money, action, children }: { q: CrewQuest; money: (n: number) => string; action?: React.ReactNode; children?: React.ReactNode }) {
+/**
+ * One quest as a flat row: icon, title and description; progress with numbers;
+ * a footer with the reward, deadline and one small action.
+ */
+function QuestRow({ q, money, action }: { q: CrewQuest; money: (n: number) => string; action?: React.ReactNode }) {
   const Icon = QUEST_ICON[q.id] ?? Trophy;
   const pct = questPercent(q.progress, q.target);
-  const reward = `+${q.reward.xp} XP${q.reward.bonus ? ` · ${money(q.reward.bonus)}` : ""}`;
+  const done = q.state === "done";
+  const reward = [`+${q.reward.xp} XP`, q.reward.bonus ? money(q.reward.bonus) : null].filter(Boolean).join(" · ");
   return (
-    <Reveal className="card mb-3 rounded-[24px] p-4">
-      <div className="flex items-start gap-3.5">
-        <span className="chip-blue grid size-12 shrink-0 place-items-center rounded-2xl">
-          <Icon size={22} strokeWidth={1.75} />
+    <div className="py-5">
+      <div className="flex gap-3.5">
+        <span className={`grid size-11 shrink-0 place-items-center rounded-[14px] ${done ? "chip-green" : "chip-blue"}`}>
+          {done ? <Check size={20} strokeWidth={2.5} /> : <Icon size={20} strokeWidth={1.8} />}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3">
-            <p className="live min-w-0 text-[16px] leading-snug font-semibold">{q.title}</p>
+            <p className="live truncate text-[16px] font-semibold">{q.title}</p>
             {q.state !== "available" && (
-              <span className="live shrink-0 text-[15px] font-semibold tabular-nums">
-                {q.progress}
-                <span className="text-g-faint">/{q.target}</span>
+              <span className={`live shrink-0 text-[14px] font-semibold tabular-nums ${done ? "text-g-green" : ""}`}>
+                {done ? "Done" : `${q.progress}/${q.target}`}
               </span>
             )}
           </div>
-          <p className="live mt-0.5 line-clamp-2 text-[14px] leading-snug text-g-muted">{q.description}</p>
+          <p className="live mt-0.5 text-[14px] leading-snug text-g-muted">{q.description}</p>
           {q.state !== "available" && (
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-              <div className={`live animate-grow h-full rounded-full ${q.state === "done" ? "green-grad" : "bar-grad"}`} style={{ width: `${pct}%` }} />
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-g-fill">
+              <div className={`live animate-grow h-full rounded-full ${done ? "green-grad" : "bar-grad"}`} style={{ width: `${pct}%` }} />
             </div>
           )}
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <span className="chip-blue inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap">{reward}</span>
-            <span className="inline-flex h-6 items-center gap-1 rounded-full bg-white px-2.5 text-[12px] font-medium whitespace-nowrap text-g-muted">
-              <Clock size={12} strokeWidth={2} /> {q.endsAt.replace(/^Ends /, "")}
-            </span>
-            {q.mode === "race" && <span className="chip-orange inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap">Race · first wins</span>}
-            {q.reward.perk && <span className="inline-flex h-6 items-center rounded-full bg-white px-2.5 text-[12px] font-medium whitespace-nowrap text-g-ink-2">{q.reward.perk}</span>}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold text-g-blue">
+                {reward}
+                {q.mode === "race" && <span className="font-medium text-g-orange"> · race</span>}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-g-muted">
+                <Clock size={12} strokeWidth={2} className="shrink-0" />
+                {q.endsAt}
+                {q.reward.perk ? ` · bonus: ${q.reward.perk.toLowerCase()}` : ""}
+              </p>
+            </div>
+            {action}
           </div>
-          {children}
         </div>
-        {action}
       </div>
-    </Reveal>
+    </div>
   );
 }

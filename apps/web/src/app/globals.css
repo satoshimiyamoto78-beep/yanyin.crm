@@ -254,19 +254,25 @@ body {
  * and breathe; labels, icons and buttons stay sharp. When data arrives they pull
  * into focus.
  */
-.live {
-  transition:
-    filter 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
-    opacity 0.6s ease;
-}
 [data-loading="true"] .live {
-  filter: blur(7px);
-  opacity: 0.55;
-  animation: fx-breathe 1.1s ease-in-out infinite alternate;
+  filter: blur(9px);
+  transform: translateY(3px);
+  animation: live-pulse 1.3s ease-in-out infinite alternate;
 }
-@keyframes fx-breathe {
-  from { filter: blur(9px); opacity: 0.4; }
-  to { filter: blur(5px); opacity: 0.7; }
+@keyframes live-pulse {
+  from { opacity: 0.25; }
+  to { opacity: 0.5; }
+}
+/* Pull into focus: blur melts, the element settles; siblings follow in a short cascade. */
+[data-loaded="true"] .live {
+  animation: focus-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+[data-loaded="true"] .live:nth-child(2) { animation-delay: 60ms; }
+[data-loaded="true"] .live:nth-child(3) { animation-delay: 120ms; }
+[data-loaded="true"] .live:nth-child(n + 4) { animation-delay: 170ms; }
+@keyframes focus-in {
+  from { filter: blur(9px); opacity: 0.35; transform: translateY(3px); }
+  to { filter: blur(0); opacity: 1; transform: none; }
 }
 
 /* Notification drops in from the top and pulls into focus. */
@@ -276,6 +282,26 @@ body {
 }
 .animate-notice {
   animation: notice-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Yan: flat blue disc, the gradient drifts slowly inside. */
+.yan-orb {
+  background: linear-gradient(135deg, #8fb2ff 0%, #2f6bff 35%, #2530b0 65%, #5d8bff 100%);
+  background-size: 260% 260%;
+  animation: yan-drift 7s ease-in-out infinite alternate;
+}
+@keyframes yan-drift {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 100%; }
+}
+
+/* Win ring around the hub when the wheel lands. */
+@keyframes wheel-ring {
+  from { box-shadow: 0 0 0 0 rgba(47, 107, 255, 0.55); }
+  to { box-shadow: 0 0 0 28px rgba(47, 107, 255, 0); }
+}
+.wheel-ring {
+  animation: wheel-ring 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2;
 }
 
 /* Idle roulette wheel turns slowly. */
@@ -323,11 +349,15 @@ body {
   .aurora::before,
   .aurora::after,
   .wheel-idle,
+  .yan-orb,
   .animate-page {
     animation: none;
   }
-  [data-loading="true"] .live {
+  [data-loading="true"] .live,
+  [data-loaded="true"] .live {
     animation: none;
+    filter: none;
+    transform: none;
   }
   .animate-lever,
   .animate-grow,

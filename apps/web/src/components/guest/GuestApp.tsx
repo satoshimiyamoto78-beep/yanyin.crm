@@ -18,6 +18,7 @@ import {
 } from "@yanyin/domain";
 import {
   BellRing,
+  Check,
   ChefHat,
   Dices,
   Flame,
@@ -41,7 +42,7 @@ import {
 } from "./sheets";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { Reveal, RouletteWheel } from "./motion";
+import { Reveal, RouletteWheel, startLoading } from "./motion";
 import { ItemCard, describe } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
@@ -313,7 +314,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         {/* Category tabs */}
         <nav
           aria-label={ui(lang, "categories")}
-          className="sticky top-0 z-30 mt-8 bg-g-bg/90 backdrop-blur-xl"
+          className="sticky top-0 z-30 mt-8 bg-white"
         >
           <div
             ref={tabsRef}
@@ -474,6 +475,9 @@ export function GuestApp({ menu }: { menu: Menu }) {
         menu={menu}
         brand={brand}
         lang={lang}
+        onNotice={(title, text) =>
+          flash({ title, text, icon: <Check size={18} strokeWidth={2.5} /> })
+        }
       />
       <LangSheet
         open={sheet === "lang"}
@@ -482,6 +486,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         onPick={(l) => {
           setLang(l);
           setSheet(null);
+          startLoading(); // new language = new data: blur and pull into focus
         }}
       />
       <YanSheet

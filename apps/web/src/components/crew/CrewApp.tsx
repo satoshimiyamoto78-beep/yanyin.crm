@@ -8,6 +8,7 @@ import {
   ChefHat,
   Clock,
   CreditCard,
+  House,
   LayoutGrid,
   Minus,
   Plus,
@@ -16,7 +17,7 @@ import {
   ReceiptText,
   Search,
   Send,
-  Trophy,
+  Settings,
   Users,
   Wallet,
   type LucideIcon,
@@ -25,12 +26,13 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { Reveal } from "@/components/guest/motion";
+import { Reveal, startLoading } from "@/components/guest/motion";
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
+import { SettingsView } from "./Settings";
 
-type Tab = "tables" | "orders" | "bookings" | "me";
+type Tab = "me" | "tables" | "orders" | "bookings" | "settings";
 
 const STATUS: Record<FloorTable["status"], { label: string; chip: string }> = {
   free: { label: "Free", chip: "chip-gray" },
@@ -59,7 +61,7 @@ type Notice = { title: string; text?: string };
  * full-screen page (table, take order, check, payment, new booking).
  */
 export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorData; menu: Menu }) {
-  const [tab, setTab] = useState<Tab>("tables");
+  const [tab, setTab] = useState<Tab>("me");
   const [tables, setTables] = useState(floor.tables);
   const [bookings, setBookings] = useState(floor.bookings);
   const [history, setHistory] = useState(floor.history);
@@ -81,12 +83,28 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));
   const now = () => new Date().toTimeString().slice(0, 5);
   const billCount = tables.filter((x) => x.status === "bill").length;
+  const go = (t: Tab) => {
+    haptic("tick");
+    setTab(t);
+    window.scrollTo({ top: 0 });
+    startLoading(550); // new section = fresh data: blur, then pull into focus
+  };
+  const todays = bookings.filter((b) => b.day === 0 && b.status !== "seated").sort((a, b) => a.time.localeCompare(b.time));
+  const hot = {
+    busy: tables.filter((x) => x.status !== "free" && x.status !== "reserved").length,
+    tables: tables.length,
+    bills: billCount,
+    openOrders: tables.filter((x) => x.lines.length).length,
+    inKitchen: tables.reduce((n, x) => n + x.lines.filter((l) => l.state !== "served").length, 0),
+    bookings: todays.length,
+    nextBooking: todays[0]?.time,
+  };
 
   return (
     <div className="min-h-dvh bg-white text-g-ink">
       <div className="mx-auto max-w-[480px] pb-28">
         {tab === "tables" && <TablesView tables={tables} money={money} onOpen={setOpen} />}
-        {tab === "orders" && <OrdersView tables={tables} history={history} money={money} onOpenTable={setOpen} onReceipt={setReceipt} />}
+        {tab === "orders" && <OrdersView tables={tables} history={history} money={money} itemById={itemById} onOpenTable={setOpen} onReceipt={setReceipt} />}
         {tab === "bookings" && (
           <BookingsView
             bookings={bookings}
@@ -98,27 +116,25 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
             }}
           />
         )}
-        {tab === "me" && <CrewBoard data={data} embedded />}
+        {tab === "me" && <CrewBoard data={data} embedded hot={hot} onGo={go} onNotify={(title, text) => notify({ title, text })} />}
+        {tab === "settings" && <SettingsView onNotify={(title, text) => notify({ title, text })} />}
       </div>
 
       {/* Tab bar */}
       <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-40 border-t border-g-line bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto grid max-w-[480px] grid-cols-4 px-2 pt-1.5 pb-[max(8px,env(safe-area-inset-bottom))]">
+        <div className="mx-auto grid max-w-[480px] grid-cols-5 px-1 pt-1.5 pb-[max(8px,env(safe-area-inset-bottom))]">
           {(
             [
+              ["me", "Home", House, 0],
               ["tables", "Tables", LayoutGrid, billCount],
               ["orders", "Orders", ReceiptText, 0],
               ["bookings", "Bookings", CalendarDays, 0],
-              ["me", "Me", Trophy, 0],
+              ["settings", "Settings", Settings, 0],
             ] as const
           ).map(([id, label, Icon, badge]) => (
             <button
               key={id}
-              onClick={() => {
-                haptic("tick");
-                setTab(id);
-                window.scrollTo({ top: 0 });
-              }}
+              onClick={() => go(id)}
               aria-current={tab === id ? "page" : undefined}
               className={`press relative flex h-14 flex-col items-center justify-center gap-1 text-[11px] font-semibold ${tab === id ? "text-g-ink" : "text-g-faint"}`}
             >
@@ -155,9 +171,17 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
             patch(table.no, (x) => ({ ...x, status: "seated", guests, since: now(), booking: undefined }));
             notify({ title: `Table ${table.no} seated`, text: `${guests} guests · ${now()}` });
           }}
-          onAdvance={(lineId) => patch(table.no, (x) => ({ ...x, lines: x.lines.map((l) => (l.id === lineId ? { ...l, state: LINE[l.state].next } : l)) }))}
+          onAdvance={(lineId) => {
+            const l = table.lines.find((x) => x.id === lineId);
+            if (!l || l.state === "served") return;
+            const next = LINE[l.state].next;
+            patch(table.no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === lineId ? { ...y, state: next } : y)) }));
+            const name = itemById.get(l.itemId)?.name.en ?? "Item";
+            notify({ title: next === "served" ? `${name} served` : `${name} is cooking`, text: `Table ${table.no} · ${l.qty}×` });
+          }}
           onTakeOrder={() => setPage("picker")}
           onCheck={() => {
+            if (table.status !== "bill") notify({ title: `Check opened · Table ${table.no}`, text: "Show the QR or take payment" });
             patch(table.no, (x) => ({ ...x, status: "bill" }));
             setPage("check");
           }}
@@ -199,6 +223,7 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
           onClose={() => setPage("check")}
           onPaid={(method, tip) => {
             const subtotal = ticketTotal(table.lines);
+            notify({ title: `Table ${table.no} closed`, text: `${METHOD[method].label}${tip ? ` · tip ${money(tip)}` : ""}` });
             setHistory((h) => [{ id: (h[0]?.id ?? 1000) + 1, table: table.no, closedAt: now(), lines: table.lines, subtotal, tip, method, guests: table.guests }, ...h]);
             patch(table.no, (x) => ({ ...x, status: "free", guests: 0, since: undefined, lines: [] }));
           }}
@@ -487,12 +512,16 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
   const [q, setQ] = useState("");
   const [cat, setCat] = useState(menu.categories[0]!.id);
   const [picked, setPicked] = useState<Record<string, number>>({});
+  const [review, setReview] = useState(false);
+  const [note, setNote] = useState("");
   const simple = (i: MenuItem) => i.price > 0 && !i.variants.length && !i.modifierGroups.some((g) => g.required);
   const query = q.trim().toLowerCase();
   const list = menu.categories.flatMap((c) => c.items.filter((i) => simple(i) && (query ? (i.name.en ?? "").toLowerCase().includes(query) : c.id === cat)));
   const all = allItems(menu);
-  const count = Object.values(picked).reduce((s, n) => s + n, 0);
-  const total = Object.entries(picked).reduce((s, [id, n]) => s + (all.find((i) => i.id === id)?.price ?? 0) * n, 0);
+  const byId = new Map(all.map((i) => [i.id, i]));
+  const entries = Object.entries(picked);
+  const count = entries.reduce((s, [, n]) => s + n, 0);
+  const total = entries.reduce((s, [id, n]) => s + (byId.get(id)?.price ?? 0) * n, 0);
   const set = (id: string, n: number) => {
     haptic("tick");
     setPicked((p) => {
@@ -502,74 +531,137 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
       return next;
     });
   };
+  const send = () => onSend(entries.map(([itemId, qty]) => ({ id: lineId(), itemId, qty, price: byId.get(itemId)?.price ?? 0, state: "new" as const })));
+  const stepper = (id: string, n: number) => (
+    <div className="flex h-10 w-[104px] shrink-0 items-center justify-between rounded-full bg-g-ink px-1 text-white">
+      <button aria-label="Remove one" onClick={() => set(id, n - 1)} className="grid size-8 place-items-center">
+        <Minus size={16} />
+      </button>
+      <span className="text-[15px] font-semibold tabular-nums">{n}</span>
+      <button aria-label="Add one" onClick={() => set(id, n + 1)} className="grid size-8 place-items-center">
+        <Plus size={16} />
+      </button>
+    </div>
+  );
   return (
-    <Sheet
-      open
-      onClose={onClose}
-      label={`Table ${table.no} · add items`}
-      footer={
-        <button
-          disabled={!count}
-          onClick={() => {
-            onSend(Object.entries(picked).map(([itemId, qty]) => ({ id: lineId(), itemId, qty, price: all.find((i) => i.id === itemId)?.price ?? 0, state: "new" as const })));
-          }}
-          className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums disabled:opacity-40"
-        >
-          <Send size={18} strokeWidth={2} /> Send to kitchen{count ? ` · ${count} · ${money(total)}` : ""}
-        </button>
-      }
-    >
-      <div className="px-5 pt-1 pb-6">
-        <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-4 text-g-muted">
-          <Search size={20} strokeWidth={2} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a dish" className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint" />
-        </label>
-        {!query && (
-          <div className="no-scrollbar -mx-5 mt-3 flex gap-1 overflow-x-auto px-5">
-            {menu.categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => {
-                  haptic("tick");
-                  setCat(c.id);
-                }}
-                className={`press h-9 shrink-0 rounded-full px-3.5 text-[14px] font-medium whitespace-nowrap ${cat === c.id ? "bg-g-ink text-white" : "text-g-muted"}`}
-              >
-                {t(c.name, "en")}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="mt-2 divide-y divide-g-line">
-          {list.map((i) => {
-            const n = picked[i.id] ?? 0;
-            return (
-              <div key={i.id} className="flex h-16 items-center gap-3">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-medium">{t(i.name, "en")}</span>
-                  <span className="text-[13px] text-g-muted tabular-nums">{money(i.price)}</span>
+    <>
+      <Sheet
+        open
+        onClose={onClose}
+        label={`Table ${table.no} · add items`}
+        footer={
+          count ? (
+            <div className="flex gap-2.5">
+              {/* Preview before sending: see the whole order, change it, add a note. */}
+              <button onClick={() => setReview(true)} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
+                <span key={count} className="animate-pop grid size-7 place-items-center rounded-full bg-g-ink text-[13px] text-white tabular-nums">
+                  {count}
                 </span>
-                {n ? (
-                  <div className="flex h-10 w-[104px] items-center justify-between rounded-full bg-g-ink px-1 text-white">
-                    <button aria-label="Remove one" onClick={() => set(i.id, n - 1)} className="grid size-8 place-items-center">
-                      <Minus size={16} />
+                Review
+              </button>
+              <button onClick={send} className="blue-grad press flex h-14 flex-[1.4] items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums">
+                <Send size={18} strokeWidth={2} /> Send · {money(total)}
+              </button>
+            </div>
+          ) : (
+            <p className="flex h-14 items-center justify-center text-[15px] text-g-muted">Tap + to add dishes</p>
+          )
+        }
+      >
+        <div className="px-5 pt-1 pb-6">
+          <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-4 text-g-muted">
+            <Search size={20} strokeWidth={2} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a dish" className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint" />
+          </label>
+          {!query && (
+            <div className="no-scrollbar -mx-5 mt-3 flex gap-1 overflow-x-auto px-5">
+              {menu.categories.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    haptic("tick");
+                    setCat(c.id);
+                  }}
+                  className={`press h-9 shrink-0 rounded-full px-3.5 text-[14px] font-medium whitespace-nowrap ${cat === c.id ? "bg-g-ink text-white" : "text-g-muted"}`}
+                >
+                  {t(c.name, "en")}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="mt-2 divide-y divide-g-line">
+            {list.map((i) => {
+              const n = picked[i.id] ?? 0;
+              return (
+                <div key={i.id} className="flex h-16 items-center gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-medium">{t(i.name, "en")}</span>
+                    <span className="text-[13px] text-g-muted tabular-nums">{money(i.price)}</span>
+                  </span>
+                  {n ? (
+                    stepper(i.id, n)
+                  ) : (
+                    <button aria-label={`Add ${t(i.name, "en")}`} onClick={() => set(i.id, 1)} className="blue-grad press grid size-10 place-items-center rounded-full">
+                      <Plus size={20} strokeWidth={2.25} />
                     </button>
-                    <span className="text-[15px] font-semibold tabular-nums">{n}</span>
-                    <button aria-label="Add one" onClick={() => set(i.id, n + 1)} className="grid size-8 place-items-center">
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  <button aria-label={`Add ${t(i.name, "en")}`} onClick={() => set(i.id, 1)} className="blue-grad press grid size-10 place-items-center rounded-full">
-                    <Plus size={20} strokeWidth={2.25} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </Sheet>
+      </Sheet>
+
+      {review && (
+        <Sheet
+          open
+          onClose={() => setReview(false)}
+          label={`Review · Table ${table.no}`}
+          footer={
+            <button disabled={!count} onClick={send} className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums disabled:opacity-40">
+              <Send size={18} strokeWidth={2} /> Send to kitchen · {money(total)}
+            </button>
+          }
+        >
+          <div className="px-5 pt-2 pb-8">
+            <p className="text-[14px] text-g-muted">
+              Table {table.no} · {table.guests} guests · new round
+            </p>
+            <p className="text-[40px] leading-tight font-semibold tracking-[-0.03em] tabular-nums">{money(total)}</p>
+            <div className="mt-5 divide-y divide-g-line">
+              {entries.map(([id, n]) => (
+                <div key={id} className="flex h-16 items-center gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-medium">{t(byId.get(id)!.name, "en")}</span>
+                    <span className="text-[13px] text-g-muted tabular-nums">
+                      {n} × {money(byId.get(id)!.price)}
+                    </span>
+                  </span>
+                  {stepper(id, n)}
+                </div>
+              ))}
+            </div>
+            {!count && <p className="py-10 text-center text-[15px] text-g-muted">Nothing left. Go back and add dishes.</p>}
+            {table.lines.length > 0 && (
+              <p className="mt-5 rounded-[18px] bg-g-fill px-4 py-3 text-[13px] text-g-muted">
+                Already on the table: {table.lines.reduce((s, l) => s + l.qty, 0)} items · {money(ticketTotal(table.lines))}
+              </p>
+            )}
+            <label className="mt-6 block text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase" htmlFor="kitchen-note">
+              Note for the kitchen
+            </label>
+            <textarea
+              id="kitchen-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              placeholder="No onion, kids portion, serve together…"
+              className="mt-2 w-full rounded-[16px] bg-g-fill px-4 py-3 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/30"
+            />
+          </div>
+        </Sheet>
+      )}
+    </>
   );
 }
 
@@ -840,29 +932,55 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
 
 /* ---------------------------------------------------------------- Orders */
 
+const total5 = (o: ClosedOrder) => o.subtotal + Math.round(o.subtotal * 0.05) + o.tip;
+
 function OrdersView({
   tables,
   history,
   money,
+  itemById,
   onOpenTable,
   onReceipt,
 }: {
   tables: FloorTable[];
   history: ClosedOrder[];
   money: (n: number) => string;
+  itemById: Map<string, MenuItem>;
   onOpenTable: (no: number) => void;
   onReceipt: (o: ClosedOrder) => void;
 }) {
   const [view, setView] = useState<"open" | "closed">("open");
-  const openTables = tables.filter((x) => x.lines.length);
-  const takings = history.reduce((s, o) => s + o.subtotal + Math.round(o.subtotal * 0.05) + o.tip, 0);
+  const open = tables.filter((x) => x.lines.length);
+  const groups: [string, FloorTable[]][] = [
+    ["Bill asked", open.filter((x) => x.status === "bill")],
+    ["In the kitchen", open.filter((x) => x.status !== "bill" && x.lines.some((l) => l.state !== "served"))],
+    ["Served", open.filter((x) => x.status !== "bill" && x.lines.every((l) => l.state === "served"))],
+  ];
+  const takings = history.reduce((s, o) => s + total5(o), 0);
+  const tips = history.reduce((s, o) => s + o.tip, 0);
+  const summary = (ls: TicketLine[]) => {
+    const names = ls.map((l) => `${l.qty}× ${itemById.get(l.itemId)?.name.en ?? ""}`);
+    return names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "");
+  };
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead title="Orders" sub={`Today · ${history.length} closed · ${money(takings)}`} />
-      <div className="mt-5 flex rounded-full bg-g-fill p-1">
+      <PageHead title="Orders" />
+      <Reveal className="mt-5 grid grid-cols-3 divide-x divide-g-line rounded-[22px] bg-g-fill py-3.5">
+        {[
+          ["Taken today", money(takings)],
+          ["Tips", money(tips)],
+          ["Closed", String(history.length)],
+        ].map(([l, v]) => (
+          <div key={l} className="min-w-0 px-3.5">
+            <p className="text-[12px] font-medium text-g-muted">{l}</p>
+            <p className="live mt-1 truncate text-[15px] font-semibold tabular-nums">{v}</p>
+          </div>
+        ))}
+      </Reveal>
+      <div className="mt-4 flex rounded-full bg-g-fill p-1">
         {(
           [
-            ["open", `Open · ${openTables.length}`],
+            ["open", `Open · ${open.length}`],
             ["closed", `Closed · ${history.length}`],
           ] as const
         ).map(([id, label]) => (
@@ -871,6 +989,7 @@ function OrdersView({
             onClick={() => {
               haptic("tick");
               setView(id);
+              startLoading(450);
             }}
             aria-pressed={view === id}
             className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${view === id ? "bg-white text-g-ink" : "text-g-muted"}`}
@@ -879,48 +998,68 @@ function OrdersView({
           </button>
         ))}
       </div>
-      <Reveal key={view} className="mt-3 divide-y divide-g-line">
-        {view === "open"
-          ? openTables.map((x) => {
-              const cooking = x.lines.filter((l) => l.state !== "served").length;
-              return (
-                <button key={x.no} onClick={() => onOpenTable(x.no)} className="press flex w-full items-center gap-3.5 py-4 text-left">
-                  <span className={`grid size-12 shrink-0 place-items-center rounded-[16px] text-[17px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[16px] font-semibold">Table {x.no}</span>
-                    <span className="live block text-[13px] text-g-muted">
-                      {x.lines.reduce((s, l) => s + l.qty, 0)} items · since {x.since}
-                      {cooking ? ` · ${cooking} in kitchen` : " · all served"}
+
+      {view === "open" ? (
+        groups.map(([title, list]) =>
+          list.length ? (
+            <section key={title} className="mt-7">
+              <h2 className="text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">
+                {title} · {list.length}
+              </h2>
+              <Reveal className="mt-1 divide-y divide-g-line">
+                {list.map((x) => {
+                  const cooking = x.lines.filter((l) => l.state !== "served").length;
+                  return (
+                    <button key={x.no} onClick={() => onOpenTable(x.no)} className="press flex w-full gap-3.5 py-4 text-left">
+                      <span className={`grid size-12 shrink-0 place-items-center rounded-[16px] text-[18px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline justify-between gap-3">
+                          <span className="text-[16px] font-semibold">Table {x.no}</span>
+                          <span className="live shrink-0 text-[16px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
+                        </span>
+                        <span className="live mt-0.5 block truncate text-[14px] text-g-ink-2">{summary(x.lines)}</span>
+                        <span className="mt-1.5 flex items-center gap-2 text-[12px] text-g-muted">
+                          {cooking > 0 && <span className="chip-orange inline-flex h-6 items-center rounded-full px-2 font-semibold">{cooking} cooking</span>}
+                          <span className="live">
+                            since {x.since} · {x.guests} guests
+                          </span>
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </Reveal>
+            </section>
+          ) : null,
+        )
+      ) : (
+        <Reveal className="mt-4 divide-y divide-g-line">
+          {history.map((o) => {
+            const { icon: Icon, label } = METHOD[o.method];
+            return (
+              <button key={o.id} onClick={() => onReceipt(o)} className="press flex w-full gap-3.5 py-4 text-left">
+                <span className="grid size-12 shrink-0 place-items-center rounded-[16px] bg-g-fill text-g-blue">
+                  <Icon size={20} strokeWidth={1.8} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="text-[16px] font-semibold">Table {o.table}</span>
+                    <span className="live shrink-0 text-[16px] font-semibold tabular-nums">{money(total5(o))}</span>
+                  </span>
+                  <span className="live mt-0.5 block truncate text-[14px] text-g-ink-2">{summary(o.lines)}</span>
+                  <span className="mt-1 flex items-center justify-between gap-2 text-[12px] text-g-muted">
+                    <span className="live">
+                      #{o.id} · {o.closedAt} · {label}
                     </span>
+                    {o.tip > 0 && <span className="live shrink-0 font-semibold text-g-green tabular-nums">tip {money(o.tip)}</span>}
                   </span>
-                  <span className="live shrink-0 text-[15px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
-                </button>
-              );
-            })
-          : history.map((o) => {
-              const { icon: Icon, label } = METHOD[o.method];
-              return (
-                <button key={o.id} onClick={() => onReceipt(o)} className="press flex w-full items-center gap-3.5 py-4 text-left">
-                  <span className="grid size-12 shrink-0 place-items-center rounded-[16px] bg-g-fill text-g-muted">
-                    <Icon size={20} strokeWidth={1.8} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[16px] font-semibold">
-                      #{o.id} · Table {o.table}
-                    </span>
-                    <span className="live block text-[13px] text-g-muted">
-                      {o.closedAt} · {o.lines.reduce((s, l) => s + l.qty, 0)} items · {label}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className="live block text-[15px] font-semibold tabular-nums">{money(o.subtotal + Math.round(o.subtotal * 0.05) + o.tip)}</span>
-                    {o.tip > 0 && <span className="live block text-[12px] text-g-green tabular-nums">tip {money(o.tip)}</span>}
-                  </span>
-                </button>
-              );
-            })}
-        {view === "open" && !openTables.length && <p className="py-12 text-center text-[15px] text-g-muted">No open orders</p>}
-      </Reveal>
+                </span>
+              </button>
+            );
+          })}
+        </Reveal>
+      )}
+      {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">No open orders</p>}
     </div>
   );
 }

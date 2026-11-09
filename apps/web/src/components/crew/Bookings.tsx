@@ -4,7 +4,7 @@ import { CalendarPlus, Phone, StickyNote, Users } from "lucide-react";
 import { useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { Reveal } from "@/components/guest/motion";
+import { Reveal, startLoading } from "@/components/guest/motion";
 import { ChoiceChip, Sheet, StepHead } from "@/components/guest/ui";
 import { Counter, PageHead } from "./CrewApp";
 
@@ -28,29 +28,25 @@ export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[];
   const guests = list.reduce((s, b) => s + b.guests, 0);
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead
-        title="Bookings"
-        sub={`${list.length} bookings · ${guests} guests`}
-        action={
-          <button
-            onClick={() => {
-              haptic("light");
-              onNew();
-            }}
-            className="blue-grad press flex h-11 items-center gap-1.5 rounded-full px-4 text-[15px] font-semibold"
-          >
-            <CalendarPlus size={18} strokeWidth={2} /> New
-          </button>
-        }
-      />
+      <PageHead title="Bookings" sub={`${list.length} bookings · ${guests} guests`} />
+      {/* Primary action sits where the thumb is: above the tab bar. */}
+      <button
+        onClick={() => {
+          haptic("light");
+          onNew();
+        }}
+        className="blue-grad press fixed bottom-[calc(max(8px,env(safe-area-inset-bottom))+76px)] left-1/2 z-30 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-6 text-[15px] font-semibold"
+      >
+        <CalendarPlus size={18} strokeWidth={2} /> New booking
+      </button>
       <div className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
         {[0, 1, 2, 3, 4, 5, 6].map((d) => (
-          <ChoiceChip key={d} on={day === d} onClick={() => setDay(d)} icon={<span />}>
+          <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); startLoading(450); }} icon={<span />}>
             {dayLabel(d)}
           </ChoiceChip>
         ))}
       </div>
-      <Reveal key={day} className="mt-3 divide-y divide-g-line">
+      <Reveal className="mt-3 divide-y divide-g-line pb-16">
         {list.map((b) => (
           <div key={b.id} className="flex gap-4 py-4">
             <span className="live w-14 shrink-0 pt-0.5 text-[20px] font-semibold tracking-[-0.02em] tabular-nums">{b.time}</span>
@@ -71,7 +67,7 @@ export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[];
                 </p>
               )}
               {day === 0 && b.status !== "seated" && (
-                <button onClick={() => onSeat(b)} className="press mt-3 h-9 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white">
+                <button onClick={() => { haptic("success"); onSeat(b); }} className="press mt-3 h-9 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white">
                   Guests arrived
                 </button>
               )}

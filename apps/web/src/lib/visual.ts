@@ -8,7 +8,17 @@ import type { Venue } from "@yanyin/domain";
 export type VenueBrand = {
   mark: string;
   cuisine: Record<"en" | "ru" | "vi", string>;
-  about: { bio: string; address: string; hours: string };
+  about: {
+    bio: string;
+    address: string;
+    hours: string;
+    closes: string;
+    phone: string;
+    wifi: { name: string; pass: string };
+    payments: string[];
+    features: Record<"en" | "ru" | "vi", string>[];
+    mapsQuery: string;
+  };
   /** Hero slides: a featured dish (needs a photo) or the Food Roulette card. */
   hero: ({ kind: "dish"; itemId: string; kicker: Record<"en" | "ru" | "vi", string> } | { kind: "roulette" })[];
   ageRestricted: boolean;
@@ -23,6 +33,17 @@ export function venueBrand(venue: Venue): VenueBrand {
         bio: "Zabey Community is a hookah lounge and bar in Da Nang. Good drinks, good people, great time.",
         address: "Da Nang, Vietnam (address to confirm)",
         hours: "Daily 17:00 – 02:00 (to confirm)",
+        closes: "02:00",
+        phone: "+84 900 000 000",
+        wifi: { name: "Zabey_Guest", pass: "chill2026" },
+        payments: ["Cash", "Card", "VietQR", "MoMo"],
+        features: [
+          { en: "Hookah lounge", ru: "Кальянная", vi: "Shisha" },
+          { en: "Cocktail bar", ru: "Коктейльный бар", vi: "Quầy cocktail" },
+          { en: "Live sports", ru: "Спорт на экране", vi: "Thể thao trực tiếp" },
+          { en: "Air conditioning", ru: "Кондиционер", vi: "Máy lạnh" },
+        ],
+        mapsQuery: "Zabey Community Da Nang",
       },
       hero: [{ kind: "roulette" }],
       ageRestricted: true,
@@ -35,6 +56,17 @@ export function venueBrand(venue: Venue): VenueBrand {
       bio: "Samarkand brings the Central Asian table to Da Nang: plov from the kazan, shashlik over charcoal, fresh tandoor bread and big plates made for sharing.",
       address: "Da Nang, Vietnam (address to confirm)",
       hours: "Daily 10:00 – 23:00 (to confirm)",
+      closes: "23:00",
+      phone: "+84 900 000 001",
+      wifi: { name: "Samarkand_Guest", pass: "plov2026" },
+      payments: ["Cash", "Card", "VietQR", "MoMo"],
+      features: [
+        { en: "Halal kitchen", ru: "Халяльная кухня", vi: "Bếp halal" },
+        { en: "Charcoal grill", ru: "Мангал на углях", vi: "Nướng than hoa" },
+        { en: "Family friendly", ru: "Можно с детьми", vi: "Thân thiện gia đình" },
+        { en: "Big tables", ru: "Большие столы", vi: "Bàn lớn" },
+      ],
+      mapsQuery: "Samarkand restaurant Da Nang",
     },
     hero: [
       { kind: "dish", itemId: "lamb-shashlik", kicker: { en: "From the charcoal grill", ru: "С углей", vi: "Nướng than hoa" } },

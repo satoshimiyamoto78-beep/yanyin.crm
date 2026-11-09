@@ -5,7 +5,7 @@ import { Compass, Dices, Flame, Leaf, Minus, Plus, Wind, type LucideIcon } from 
 import { useMemo, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { ui, type UiKey } from "@/lib/ui-strings";
-import { Reveal, RouletteWheel, useWheelSpin } from "./motion";
+import { Reveal, RouletteWheel, startLoading, useWheelSpin } from "./motion";
 import { ChoiceChip, DishTile, Sheet, StepHead, TrackSlider } from "./ui";
 
 const MOODS: Record<Mood, { key: UiKey; icon: LucideIcon }> = {
@@ -57,6 +57,7 @@ export function RouletteSheet({
     const r = spinRoulette({ menu, budget: value, guests, mood, includeAlcohol: alcohol, requireTags: veg ? ["vegetarian"] : undefined });
     setResult(undefined);
     wheel.spin(() => {
+      startLoading(420); // the picked set pulls into focus
       setResult(r);
       setRound((n) => n + 1);
     });
@@ -96,7 +97,7 @@ export function RouletteSheet({
         <p className="mt-1.5 text-[15px] text-g-muted">{ui(lang, "rouletteHint")}</p>
 
         <div className="mt-7 flex justify-center">
-          <RouletteWheel spinRef={wheel.ref} size={264} />
+          <RouletteWheel spinRef={wheel.ref} pointerRef={wheel.pointer} won={wheel.won} size={264} />
         </div>
 
         {result === null && <p className="mt-6 text-center text-[15px] text-g-muted">{ui(lang, "nothingFits")}</p>}

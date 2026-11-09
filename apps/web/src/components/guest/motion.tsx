@@ -6,14 +6,24 @@ import { haptic } from "@/lib/haptics";
 
 /* ---------------------------------------------------------------- Reveal */
 
-let bootAt = 0;
-/** How long the first screen stays in its blurred "loading" state. */
-const BOOT_MS = 650;
+/*
+ * Loading windows. Data blocks are blurred only while data loads: on the first
+ * screen and when data changes (language, tab). Scrolling never blurs.
+ */
+let loadingUntil = 0;
+const listeners = new Set<() => void>();
+
+/** Starts a loading window: every mounted Reveal blurs its data, then pulls it into focus. */
+export function startLoading(ms = 600) {
+  loadingUntil = performance.now() + ms;
+  listeners.forEach((f) => f());
+}
+
+type Phase = "loading" | "in" | "idle";
 
 /**
  * Loading boundary for one block of data. While loading, only its `.live`
- * children (the data itself) are blurred; static labels, icons and buttons stay
- * sharp. Remount it (change its `key`) to replay after the data changes.
+ * children (the data itself) are blurred; labels, icons and buttons stay sharp.
  */
 export function Reveal({
   as: Tag = "div",
@@ -26,33 +36,39 @@ export function Reveal({
   className?: string;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLElement>(null);
-  const [ready, setReady] = useState(false);
+  // Mounted inside a loading window (or on the first screen): start blurred. Mounted later (scrolling, opening a page): sharp.
+  const [phase, setPhase] = useState<Phase>(() =>
+    typeof window === "undefined" || !loadingUntil || performance.now() < loadingUntil ? "loading" : "idle",
+  );
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const now = performance.now();
-    if (!bootAt) bootAt = now;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        io.disconnect();
-        const wait = Math.max(0, bootAt + BOOT_MS - performance.now()) + delay;
-        timer = setTimeout(() => setReady(true), Math.max(90, wait));
-      },
-      { rootMargin: "0px 0px -6% 0px" },
-    );
-    io.observe(el);
+    const run = () => {
+      const now = performance.now();
+      if (!loadingUntil) loadingUntil = now + 650; // first screen
+      if (now >= loadingUntil) {
+        setPhase((p) => (p === "loading" ? "in" : p));
+        return;
+      }
+      setPhase("loading");
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setPhase("in"), loadingUntil - now + delay);
+    };
+    run();
+    listeners.add(run);
     return () => {
-      io.disconnect();
+      listeners.delete(run);
       if (timer) clearTimeout(timer);
     };
   }, [delay]);
 
   return (
-    <Tag ref={ref} aria-busy={!ready} data-loading={ready ? undefined : "true"} className={className || undefined}>
+    <Tag
+      aria-busy={phase === "loading"}
+      data-loading={phase === "loading" ? "true" : undefined}
+      data-loaded={phase === "in" ? "true" : undefined}
+      className={className || undefined}
+    >
       {children}
     </Tag>
   );
@@ -96,12 +112,17 @@ export function RouletteWheel({
   tone = "light",
   size = 280,
   spinRef,
+  pointerRef,
   idle = true,
+  won = false,
 }: {
   tone?: "light" | "dark";
   size?: number;
   spinRef?: React.Ref<HTMLDivElement>;
+  pointerRef?: React.Ref<HTMLSpanElement>;
   idle?: boolean;
+  /** Just landed: the hub rings once. */
+  won?: boolean;
 }) {
   const dark = tone === "dark";
   const r = 100;
@@ -147,29 +168,48 @@ export function RouletteWheel({
         </svg>
       </div>
       {/* Hub and pointer do not rotate. */}
+      {won && <span aria-hidden className="wheel-ring absolute top-1/2 left-1/2 size-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full" />}
       <span className={`absolute top-1/2 left-1/2 grid size-[22%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full ${dark ? "bg-white text-[#2f6bff]" : "blue-grad border-4 border-white"}`}>
         <Dices size={size * 0.09} strokeWidth={2} />
       </span>
-      <span
-        aria-hidden
-        className={`absolute -top-1 left-1/2 size-0 -translate-x-1/2 border-x-[9px] border-t-[14px] border-x-transparent ${dark ? "border-t-white" : "border-t-g-ink"}`}
-      />
+      {/* Pointer: flicks back on every segment like a real wheel's clapper. */}
+      <span aria-hidden className="absolute -top-1.5 left-1/2 -translate-x-1/2">
+        <span
+          ref={pointerRef}
+          className={`block size-0 origin-top border-x-[9px] border-t-[15px] border-x-transparent transition-transform duration-150 ease-out ${dark ? "border-t-white" : "border-t-g-ink"}`}
+        />
+      </span>
     </div>
   );
 }
 
-const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
+/**
+ * Spin curve: a short wind-up, a long deceleration that runs a few degrees past
+ * the target, then settles back (like a real wheel with a clapper).
+ */
+function spinCurve(t: number): number {
+  const OVER = 0.0035; // overshoot, share of the whole distance
+  if (t < 0.08) return 0.5 * (t / 0.08) ** 2 * 0.06; // wind-up
+  if (t < 0.9) {
+    const k = (t - 0.08) / 0.82;
+    return 0.03 + (1 + OVER - 0.03) * (1 - Math.pow(1 - k, 3.4));
+  }
+  const k = (t - 0.9) / 0.1;
+  return 1 + OVER * (1 - (k * k * (3 - 2 * k))); // smooth settle
+}
 
-/** Drives a RouletteWheel: fast spin, motion blur while fast, one tick per segment. */
+/** Drives a RouletteWheel: fast spin, motion blur while fast, a clapper tick per segment. */
 export function useWheelSpin() {
   const ref = useRef<HTMLDivElement>(null);
+  const pointer = useRef<HTMLSpanElement>(null);
   const [spinning, setSpinning] = useState(false);
+  const [won, setWon] = useState(false);
   const angle = useRef(0);
   const raf = useRef(0);
 
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
-  const spin = useCallback((onDone: () => void, ms = 3400) => {
+  const spin = useCallback((onDone: () => void, ms = 4600) => {
     const el = ref.current;
     if (!el) return onDone();
     // Pick up wherever the idle animation left the wheel.
@@ -180,29 +220,43 @@ export function useWheelSpin() {
     }
     el.classList.remove("wheel-idle");
     const from = angle.current;
-    const to = from + 360 * 5 + Math.random() * 360;
+    // Land in the middle of a segment.
+    const turns = 360 * 6;
+    const to = Math.round((from + turns + Math.random() * 360) / SEG) * SEG + SEG / 2 - 0.0001;
     const start = performance.now();
     let prev = from;
     let lastSeg = Math.floor(from / SEG);
+    setWon(false);
     setSpinning(true);
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) ms = 600;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) ms = 700;
     const frame = (now: number) => {
       const t = Math.min(1, (now - start) / ms);
-      const a = from + (to - from) * easeOut(t);
-      const speed = a - prev; // degrees per frame
+      const a = from + (to - from) * spinCurve(t);
+      const speed = Math.abs(a - prev); // degrees per frame
       prev = a;
       el.style.transform = `rotate(${a}deg)`;
-      el.style.filter = speed > 4 ? `blur(${Math.min(3.5, (speed - 4) * 0.12).toFixed(2)}px)` : "none";
+      el.style.filter = speed > 5 ? `blur(${Math.min(3, (speed - 5) * 0.1).toFixed(2)}px)` : "none";
       const s = Math.floor(a / SEG);
       if (s !== lastSeg) {
         lastSeg = s;
         haptic("tick");
+        const p = pointer.current;
+        if (p && speed < 14) {
+          // The clapper visibly flicks only when the wheel is slow enough to see it.
+          p.style.transitionDuration = "0ms";
+          p.style.transform = `rotate(${Math.min(28, 10 + speed * 2)}deg)`;
+          requestAnimationFrame(() => {
+            p.style.transitionDuration = "";
+            p.style.transform = "";
+          });
+        }
       }
       if (t < 1) raf.current = requestAnimationFrame(frame);
       else {
         angle.current = a;
         el.style.filter = "none";
         setSpinning(false);
+        setWon(true);
         haptic("success");
         onDone();
       }
@@ -210,5 +264,5 @@ export function useWheelSpin() {
     raf.current = requestAnimationFrame(frame);
   }, []);
 
-  return { ref, spin, spinning };
+  return { ref, pointer, spin, spinning, won };
 }
