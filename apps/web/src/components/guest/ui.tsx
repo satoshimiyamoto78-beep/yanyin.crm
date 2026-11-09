@@ -3,6 +3,8 @@
 import { formatMoney, t, type CategoryRole, type Currency, type Lang, type MenuItem } from "@yanyin/domain";
 import {
   Beer,
+  Check,
+  ChevronLeft,
   CakeSlice,
   CircleDashed,
   Coffee,
@@ -20,11 +22,11 @@ import {
   UtensilsCrossed,
   Wheat,
   Wine,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, type ReactNode, type SVGProps } from "react";
+import { useEffect, useRef, type ReactNode, type SVGProps } from "react";
+import { haptic } from "@/lib/haptics";
 import { ui } from "@/lib/ui-strings";
 
 /* ---------------------------------------------------------------- Icons */
@@ -192,29 +194,54 @@ export function ItemCard({
 }) {
   const plain = !needsChoice(item);
   const desc = describe(item, lang);
+  const veg = item.tags.includes("vegan") || item.tags.includes("vegetarian");
+  const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(item.name.en ?? "");
   return (
-    <div className="flex gap-4 py-4">
-      <button onClick={onOpen} aria-label={t(item.name, lang)} className="press shrink-0">
-        <DishTile item={item} role={role} className="size-[108px] rounded-[22px]" />
+    <div className="flex h-[148px] items-center gap-4">
+      <button onClick={onOpen} aria-label={t(item.name, lang)} className="press relative shrink-0">
+        <DishTile item={item} role={role} className="size-[116px] rounded-[24px]" />
+        {(veg || spicy || item.status === "suggested") && (
+          <span className="absolute top-2 left-2 flex gap-1">
+            {veg && (
+              <span title="Veggie" className="chip-green grid size-6 place-items-center rounded-full">
+                <Leaf size={13} strokeWidth={2.25} />
+              </span>
+            )}
+            {spicy && (
+              <span title="Spicy" className="chip-orange grid size-6 place-items-center rounded-full">
+                <Flame size={13} strokeWidth={2.25} />
+              </span>
+            )}
+            {item.status === "suggested" && <span className="flex h-6 items-center rounded-full bg-white px-2 text-[11px] font-semibold text-g-muted">{ui(lang, "draft")}</span>}
+          </span>
+        )}
       </button>
-      <div className="flex min-w-0 flex-1 flex-col py-0.5">
-        <button onClick={onOpen} className="text-left">
-          <span className="line-clamp-2 text-[16px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
-          {desc && <span className="mt-1 line-clamp-2 text-[13px] leading-[1.35] text-g-muted">{desc}</span>}
+      {/* Fixed rhythm: one-line name, two-line description slot, price row. Every row is the same height. */}
+      <div className="flex h-[116px] min-w-0 flex-1 flex-col">
+        <button onClick={onOpen} className="min-w-0 text-left">
+          <span className="block truncate text-[16px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+          <span className="mt-1 line-clamp-2 h-[35px] text-[13px] leading-[1.35] text-g-muted">{desc}</span>
         </button>
-        <span className="mt-2 empty:hidden">
-          <ItemChips item={item} lang={lang} />
-        </span>
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+        <div className="mt-auto flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em] tabular-nums">
             {item.variants.length > 1 && <span className="mr-1 text-[13px] font-medium text-g-muted">{ui(lang, "from")}</span>}
             {formatMoney(item.price, currency, lang)}
           </span>
           {qty > 0 && plain ? (
-            <Stepper qty={qty} onChange={onQty} className="w-[104px] shrink-0" />
+            <Stepper
+              qty={qty}
+              onChange={(q) => {
+                haptic("light");
+                onQty(q);
+              }}
+              className="w-[104px] shrink-0"
+            />
           ) : (
             <button
-              onClick={plain ? onAdd : onOpen}
+              onClick={() => {
+                haptic(plain ? "success" : "light");
+                (plain ? onAdd : onOpen)();
+              }}
               aria-label={`${ui(lang, "add")} ${t(item.name, lang)}`}
               className="blue-grad press grid size-10 shrink-0 place-items-center rounded-full"
             >
@@ -227,35 +254,159 @@ export function ItemCard({
   );
 }
 
-/* ---------------------------------------------------------------- Sheet */
+/* ---------------------------------------------------------------- Slider */
 
-export function Sheet({ open, onClose, children, footer, label, full }: { open: boolean; onClose: () => void; children: ReactNode; footer?: ReactNode; label: string; full?: boolean }) {
+/**
+ * The yanyin slider (hookah strength, roulette budget): flat track, blue fill,
+ * optional notches, a thumb with a white ring, and a haptic tick on every step.
+ */
+export function TrackSlider({
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+  label,
+  valueText,
+  notches = 0,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (v: number) => void;
+  label: string;
+  valueText?: string;
+  notches?: number;
+}) {
+  const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  return (
+    <div className="relative h-11">
+      <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-g-fill-2" />
+      <div className="bar-grad absolute top-1/2 left-0 h-2 -translate-y-1/2 rounded-full transition-[width] duration-150" style={{ width: `${pct}%` }} />
+      {notches > 1 && (
+        <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-[3px]" aria-hidden>
+          {Array.from({ length: notches }, (_, i) => (
+            <span key={i} className={`size-1.5 rounded-full ${(i / (notches - 1)) * 100 <= pct ? "bg-white/80" : "bg-g-faint/50"}`} />
+          ))}
+        </div>
+      )}
+      <span
+        aria-hidden
+        className="blue-grad pointer-events-none absolute top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white transition-[left] duration-150"
+        style={{ left: `clamp(16px, ${pct}%, calc(100% - 16px))` }}
+      />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => {
+          haptic("tick");
+          onChange(Number(e.target.value));
+        }}
+        aria-label={label}
+        aria-valuetext={valueText}
+        className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
+      />
+    </div>
+  );
+}
+
+/** Numbered step heading used on configurator pages (hookah, roulette). */
+export function StepHead({ n, title, aside }: { n?: number; title: string; aside?: ReactNode }) {
+  return (
+    <div className="mb-4 flex items-baseline gap-2.5">
+      {n !== undefined && <span className="text-[13px] font-semibold text-g-blue tabular-nums">{String(n).padStart(2, "0")}</span>}
+      <h3 className="text-[17px] font-semibold">{title}</h3>
+      {aside && <span className="ml-auto text-[13px] font-medium text-g-faint">{aside}</span>}
+    </div>
+  );
+}
+
+/** Pill choice chip: black when picked. */
+export function ChoiceChip({ on, onClick, icon, children }: { on: boolean; onClick: () => void; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <button
+      onClick={() => {
+        haptic("light");
+        onClick();
+      }}
+      aria-pressed={on}
+      className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
+    >
+      {on && !icon ? <Check size={15} strokeWidth={2.5} /> : icon}
+      {children}
+    </button>
+  );
+}
+
+/* ---------------------------------------------------------------- Page */
+
+let pageSeq = 0;
+
+/**
+ * Every secondary screen (dish, cart, orders, roulette, search, about, language)
+ * opens as a full-screen page that slides in from the right, with a back button.
+ * It also takes a browser history entry, so the phone's back gesture closes it.
+ */
+export function Sheet({
+  open,
+  onClose,
+  children,
+  footer,
+  label,
+  title = true,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  footer?: ReactNode;
+  label: string;
+  /** Show `label` in the top bar (off when the page has its own big heading). */
+  title?: boolean;
+  /** @deprecated pages are always full screen */
+  full?: boolean;
+}) {
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const id = ++pageSeq;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close.current();
+    const onPop = () => {
+      const top = (history.state as { yanyinPage?: number } | null)?.yanyinPage ?? 0;
+      if (top < id) close.current();
+    };
+    try {
+      history.pushState({ ...(history.state ?? {}), yanyinPage: id }, "");
+    } catch {}
     document.addEventListener("keydown", onKey);
+    window.addEventListener("popstate", onPop);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", onPop);
       document.body.style.overflow = prev;
+      if ((history.state as { yanyinPage?: number } | null)?.yanyinPage === id) history.back();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <button aria-label={label} tabIndex={-1} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.42)] backdrop-blur-[2px]" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={label}
-        className={`animate-sheet relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-t-[32px] bg-white text-g-ink ${full ? "h-[94dvh]" : "max-h-[92dvh]"}`}
-      >
-        <span aria-hidden className="absolute top-2 left-1/2 z-10 h-1 w-9 -translate-x-1/2 rounded-full bg-g-fill-2" />
-        <button onClick={onClose} aria-label="Close" className="card press absolute top-4 right-4 z-10 grid size-9 place-items-center rounded-full">
-          <X size={18} strokeWidth={2} />
-        </button>
+    <div role="dialog" aria-modal="true" aria-label={label} className="animate-page fixed inset-0 z-50 flex flex-col bg-white text-g-ink">
+      <div className="mx-auto flex min-h-0 w-full max-w-[480px] flex-1 flex-col">
+        <header className="flex shrink-0 items-center gap-2 px-4 pt-[max(10px,env(safe-area-inset-top))] pb-1.5">
+          <button onClick={onClose} aria-label="Back" className="press grid size-11 shrink-0 place-items-center rounded-full bg-g-fill">
+            <ChevronLeft size={22} strokeWidth={2} />
+          </button>
+          {title && <span className="min-w-0 flex-1 truncate pr-11 text-center text-[16px] font-semibold">{label}</span>}
+        </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
         {footer && <div className="border-t border-g-line bg-white px-5 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>

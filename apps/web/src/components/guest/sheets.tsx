@@ -18,7 +18,8 @@ import { Check, Clock, MapPin, Search, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
-import { DishTile, ItemCard, ItemChips, Sheet, Stepper, altName } from "./ui";
+import { haptic } from "@/lib/haptics";
+import { DishTile, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
 
 /* ---------------------------------------------------------------- Item */
 
@@ -83,6 +84,7 @@ function ItemSheetBody({
       open
       onClose={onClose}
       label={t(item.name, lang)}
+      title={false}
       footer={
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-[124px] items-center justify-between rounded-full bg-g-fill px-1.5">
@@ -96,7 +98,10 @@ function ItemSheetBody({
           </div>
           <button
             disabled={missing.length > 0}
-            onClick={() => onAdd(item, variantId, optionIds, qty)}
+            onClick={() => {
+              haptic("success");
+              onAdd(item, variantId, optionIds, qty);
+            }}
             className={`press flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums ${missing.length ? "bg-g-fill-2 text-g-faint" : "blue-grad"}`}
           >
             {ui(lang, "add")} · {formatMoney(price * qty, currency, lang)}
@@ -170,7 +175,10 @@ function ItemSheetBody({
                     return (
                       <button
                         key={o.id}
-                        onClick={() => toggle(g.id, o.id)}
+                        onClick={() => {
+                          haptic("light");
+                          toggle(g.id, o.id);
+                        }}
                         aria-pressed={on}
                         className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
                       >
@@ -198,7 +206,6 @@ const STRENGTH_KEYS = ["strength1", "strength2", "strength3", "strength4"] as co
 function StrengthScale({ group, lang, value, onChange }: { group: ModifierGroup; lang: Lang; value: number; onChange: (i: number) => void }) {
   const n = group.options.length;
   const v = Math.max(0, value);
-  const pct = n > 1 ? (v / (n - 1)) * 100 : 0;
   const word = ui(lang, STRENGTH_KEYS[Math.min(3, Math.floor((v / n) * 4))]!);
   return (
     <div>
@@ -208,30 +215,8 @@ function StrengthScale({ group, lang, value, onChange }: { group: ModifierGroup;
           / {n} · <span className="font-medium text-g-ink">{word}</span>
         </span>
       </div>
-      <div className="relative mt-6 h-11">
-        <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-g-fill-2" />
-        <div className="bar-grad absolute top-1/2 left-0 h-2 -translate-y-1/2 rounded-full transition-[width] duration-150" style={{ width: `${pct}%` }} />
-        <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-[3px]" aria-hidden>
-          {group.options.map((o, i) => (
-            <span key={o.id} className={`size-1.5 rounded-full ${i <= v ? "bg-white/80" : "bg-g-faint/50"}`} />
-          ))}
-        </div>
-        <span
-          aria-hidden
-          className="blue-grad pointer-events-none absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-white transition-[left] duration-150"
-          style={{ left: `clamp(16px, ${pct}%, calc(100% - 16px))` }}
-        />
-        <input
-          type="range"
-          min={0}
-          max={n - 1}
-          step={1}
-          value={v}
-          onChange={(e) => onChange(Number(e.target.value))}
-          aria-label={t(group.name, lang)}
-          aria-valuetext={`${v + 1} / ${n}, ${word}`}
-          className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
-        />
+      <div className="mt-6">
+        <TrackSlider value={v} min={0} max={n - 1} onChange={onChange} label={t(group.name, lang)} valueText={`${v + 1} / ${n}, ${word}`} notches={n} />
       </div>
       <div className="mt-1 flex justify-between text-[12px] font-medium text-g-faint tabular-nums">
         <span>1 · {ui(lang, "strength1")}</span>

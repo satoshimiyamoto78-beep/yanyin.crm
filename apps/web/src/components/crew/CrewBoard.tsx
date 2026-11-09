@@ -4,6 +4,8 @@ import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
 import { CakeSlice, Check, CookingPot, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
+import { haptic } from "@/lib/haptics";
+import { Reveal } from "@/components/guest/motion";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -117,7 +119,7 @@ export function CrewBoard({ data }: { data: CrewData }) {
         </header>
 
         {/* Level */}
-        <section className="mesh-lilac mt-6 rounded-[28px] p-5">
+        <Reveal as="section" delay={70} className="mesh-lilac mt-6 rounded-[28px] p-5">
           <div className="flex items-baseline justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[13px] font-medium text-g-muted">Level {level.level}</p>
@@ -131,17 +133,17 @@ export function CrewBoard({ data }: { data: CrewData }) {
           <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/70">
             <div className="bar-grad animate-grow h-full rounded-full" style={{ width: `${pct}%` }} />
           </div>
-        </section>
+        </Reveal>
 
         {/* Today */}
-        <section className="mt-3 grid grid-cols-3 gap-2.5">
+        <Reveal as="section" delay={140} className="mt-3 grid grid-cols-3 gap-2.5">
           <Stat label="Sales today" value={data.today.sales} trend={12} />
           <Stat label="Tips" value={data.today.tips} trend={8} />
           <Stat label="Avg check" value={data.today.avgCheck} trend={-3} />
-        </section>
+        </Reveal>
 
         {/* Streak */}
-        <section className="card mt-3 rounded-[28px] p-5">
+        <Reveal as="section" delay={210} className="card mt-3 rounded-[28px] p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-[17px] font-semibold">
               <span className="chip-orange grid size-8 place-items-center rounded-full">
@@ -164,10 +166,10 @@ export function CrewBoard({ data }: { data: CrewData }) {
               </div>
             ))}
           </div>
-        </section>
+        </Reveal>
 
         {/* Team goal */}
-        <section className="mesh-blue mt-3 overflow-hidden rounded-[28px] p-5">
+        <Reveal as="section" delay={280} className="mesh-blue mt-3 overflow-hidden rounded-[28px] p-5">
           <p className="flex items-center gap-2 text-[13px] font-medium text-g-ink-2">
             <Users size={16} strokeWidth={1.75} /> Team goal this week
           </p>
@@ -192,7 +194,7 @@ export function CrewBoard({ data }: { data: CrewData }) {
               <p className="text-[15px] font-semibold">{data.boss.endsIn}</p>
             </div>
           </div>
-        </section>
+        </Reveal>
 
         {/* Active quests */}
         <SectionTitle title="Your quests" count={active.length} />
@@ -200,7 +202,10 @@ export function CrewBoard({ data }: { data: CrewData }) {
           {active.map((q) => (
             <QuestRow key={q.id} q={q} money={money}>
               {q.state === "done" && (
-                <button onClick={() => claim(q)} className="blue-grad press mt-3 h-11 w-full rounded-full text-[15px] font-semibold">
+                <button onClick={() => {
+                  haptic("success");
+                  claim(q);
+                }} className="blue-grad press mt-3 h-11 w-full rounded-full text-[15px] font-semibold">
                   Claim +{q.reward.xp} XP{q.reward.perk ? ` · ${q.reward.perk}` : ""}
                 </button>
               )}
@@ -216,7 +221,10 @@ export function CrewBoard({ data }: { data: CrewData }) {
             <div>
               {available.map((q) => (
                 <QuestRow key={q.id} q={q} money={money} action={
-                  <button onClick={() => take(q.id)} className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white">
+                  <button onClick={() => {
+                    haptic("light");
+                    take(q.id);
+                  }} className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white">
                     Take
                   </button>
                 } />
@@ -305,7 +313,7 @@ function QuestRow({ q, money, action, children }: { q: CrewQuest; money: (n: num
   const pct = questPercent(q.progress, q.target);
   const reward = `+${q.reward.xp} XP${q.reward.bonus ? ` · ${money(q.reward.bonus)}` : ""}`;
   return (
-    <div className="card mb-3 rounded-[24px] p-4">
+    <Reveal className="card mb-3 rounded-[24px] p-4">
       <div className="flex items-start gap-3.5">
         <span className="chip-blue grid size-12 shrink-0 place-items-center rounded-2xl">
           <Icon size={22} strokeWidth={1.75} />
@@ -324,7 +332,7 @@ function QuestRow({ q, money, action, children }: { q: CrewQuest; money: (n: num
             {q.description} · {q.endsAt}
           </p>
           {q.state !== "available" ? (
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-g-fill">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
               <div className={`animate-grow h-full rounded-full ${q.state === "done" ? "green-grad" : "bar-grad"}`} style={{ width: `${pct}%` }} />
             </div>
           ) : (
@@ -337,6 +345,6 @@ function QuestRow({ q, money, action, children }: { q: CrewQuest; money: (n: num
         </div>
         {action}
       </div>
-    </div>
+    </Reveal>
   );
 }
