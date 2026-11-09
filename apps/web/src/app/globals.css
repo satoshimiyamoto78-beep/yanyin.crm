@@ -8,8 +8,9 @@
  * Staff (yanyin.crew) uses the same system.
  */
 :root {
-  --g-bg: #ffffff;
-  --g-fill: #f3f4f6;
+  --g-bg: #f2f3f6;
+  --g-card: #ffffff;
+  --g-fill: #f4f5f8;
   --g-fill-2: #e9eaee;
   --g-line: #ecedf0;
   --g-ink: #0b0b0f;
@@ -20,6 +21,8 @@
   --g-blue-ink: #ffffff;
   --g-blue-soft: #eaf0ff;
   --g-green: #12a150;
+  --g-orange: #ef6c1a;
+  --g-purple: #7c4dff;
 
 }
 
@@ -27,6 +30,7 @@
   --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --color-g-bg: var(--g-bg);
+  --color-g-card: var(--g-card);
   --color-g-fill: var(--g-fill);
   --color-g-fill-2: var(--g-fill-2);
   --color-g-line: var(--g-line);
@@ -38,6 +42,8 @@
   --color-g-blue-ink: var(--g-blue-ink);
   --color-g-blue-soft: var(--g-blue-soft);
   --color-g-green: var(--g-green);
+  --color-g-orange: var(--g-orange);
+  --color-g-purple: var(--g-purple);
 
 }
 
@@ -52,6 +58,46 @@ body {
   color: var(--g-ink);
   font-feature-settings: "ss01";
 }
+
+/* Raised white card on the soft grey canvas (Iconly-style elevation). */
+.card {
+  background: var(--g-card);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 12px 28px -16px rgba(16, 24, 40, 0.16);
+}
+.card-float {
+  background: var(--g-card);
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.05), 0 18px 40px -18px rgba(16, 24, 40, 0.22);
+}
+
+/* The yanyin blue as a gradient: buttons, progress, highlights. */
+.blue-grad {
+  background: linear-gradient(180deg, #5c87ff 0%, #2f5bff 55%, #1f46e8 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px -10px rgba(47, 91, 255, 0.65);
+}
+.blue-grad-soft {
+  background: linear-gradient(160deg, #eef3ff 0%, #dfe8ff 100%);
+}
+.bar-grad {
+  background: linear-gradient(90deg, #9db8ff 0%, #4a75ff 55%, #2f5bff 100%);
+}
+.green-grad {
+  background: linear-gradient(90deg, #6fe0a1 0%, #12a150 100%);
+}
+.hero-grad {
+  background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eef2fb 55%, #e3e9f7 100%);
+}
+.ink-grad {
+  background: linear-gradient(160deg, #23252d 0%, #0b0b0f 100%);
+  color: #fff;
+}
+
+/* Soft tinted status chips. */
+.chip-blue { background: #eaf0ff; color: #2f5bff; }
+.chip-green { background: #e6f6ed; color: #12a150; }
+.chip-orange { background: #fdeee3; color: #e2600f; }
+.chip-purple { background: #f0eaff; color: #7c4dff; }
+.chip-gray { background: #eef0f3; color: #5d6068; }
 
 /* Tactile press for every tappable surface. */
 .press {
@@ -122,7 +168,26 @@ body {
   animation: pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+@keyframes lever-pull {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(46px); }
+  100% { transform: translateY(0); }
+}
+.animate-lever {
+  animation: lever-pull 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.animate-grow {
+  transform-origin: left;
+  animation: grow-x 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .animate-lever,
+  .animate-grow,
   .animate-sheet,
   .animate-fade,
   .animate-rise,

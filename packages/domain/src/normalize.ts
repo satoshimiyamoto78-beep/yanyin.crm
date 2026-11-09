@@ -51,6 +51,7 @@ type RawCategory = {
 
 type RawItem = {
   name: I18nText;
+  description?: I18nText;
   price?: number;
   variants?: RawVariant[];
   tags?: string[];
@@ -139,6 +140,7 @@ export function normalizeMenu(raw: RawMenu): Menu {
         id: uniqueId(slugify(itemNameEn), itemIds),
         categoryId,
         name: ri.name,
+        ...(ri.description ? { description: ri.description } : {}),
         price,
         variants,
         modifierGroups,

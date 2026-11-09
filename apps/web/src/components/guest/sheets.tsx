@@ -16,7 +16,7 @@ import { Check, Clock, MapPin, Search, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
-import { DishTile, DraftMark, ItemRow, Sheet, Stepper, altName } from "./ui";
+import { DishTile, ItemCard, ItemChips, Sheet, Stepper, altName } from "./ui";
 
 /* ---------------------------------------------------------------- Item */
 
@@ -91,7 +91,7 @@ function ItemSheetBody({
           <button
             disabled={missing.length > 0}
             onClick={() => onAdd(item, variantId, optionIds, qty)}
-            className="press flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-g-blue text-[16px] font-semibold text-white tabular-nums disabled:bg-g-fill-2 disabled:text-g-faint"
+            className={`press flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums ${missing.length ? "bg-g-fill-2 text-g-faint" : "blue-grad"}`}
           >
             {ui(lang, "add")} · {formatMoney(price * qty, currency, lang)}
           </button>
@@ -100,25 +100,21 @@ function ItemSheetBody({
     >
       {item.photo ? (
         <div className="px-3 pt-3">
-          <DishTile item={item} role={category.role} photoScale={0.78} className="aspect-[1.2] w-full rounded-[28px]" />
+          <DishTile item={item} role={category.role} photoScale={0.8} glyph={0.3} className="aspect-[1.25] w-full rounded-[28px]" />
         </div>
       ) : (
-        <div className="h-14" />
+        <div className="px-3 pt-3">
+          <DishTile item={item} role={category.role} glyph={0.3} className="aspect-[2] w-full rounded-[28px]" />
+        </div>
       )}
       <div className="px-5 pt-5 pb-6">
         <p className="text-[13px] font-medium text-g-muted">{t(category.name, lang)}</p>
         <h2 className="mt-1 text-[26px] leading-[1.15] font-bold tracking-[-0.02em] text-balance">{t(item.name, lang)}</h2>
-        {alt && <p className="mt-1.5 text-[15px] text-g-muted">{alt}</p>}
-        {(item.tags.length > 0 || item.status === "suggested") && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {item.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-g-fill px-3 py-1 text-[12px] font-medium capitalize">
-                {tag.replace("_", " ")}
-              </span>
-            ))}
-            {item.status === "suggested" && <DraftMark lang={lang} />}
-          </div>
-        )}
+        {alt && <p className="mt-1 text-[14px] text-g-faint">{alt}</p>}
+        {item.description && <p className="mt-3 text-[16px] leading-[1.5] text-g-ink-2">{t(item.description, lang)}</p>}
+        <div className="mt-3 empty:hidden">
+          <ItemChips item={item} lang={lang} />
+        </div>
 
         {item.variants.length > 0 && (
           <div className="mt-6 flex rounded-full bg-g-fill p-1">
@@ -215,7 +211,7 @@ export function CartSheet({
             setNotes([]);
             setText("");
           }}
-          className="press flex h-14 w-full items-center justify-between rounded-full bg-g-blue px-6 text-[16px] font-semibold text-white disabled:bg-g-fill-2 disabled:text-g-faint"
+          className={`press flex h-14 w-full items-center justify-between rounded-full px-6 text-[16px] font-semibold ${lines.length ? "blue-grad" : "bg-g-fill-2 text-g-faint"}`}
         >
           <span className="flex items-center gap-2">
             <Send size={18} strokeWidth={2} /> {ui(lang, "sendOrder")}
@@ -240,14 +236,14 @@ export function CartSheet({
             const extra = [variant && t(variant.name, lang), ...opts.map((o) => t(o.name, lang))].filter(Boolean).join(" · ");
             return (
               <li key={line.key} className="flex items-center gap-3.5 border-b border-g-line py-3.5 last:border-b-0">
-                <DishTile item={item} role={role} iconSize={20} photoScale={0.92} className="size-14 shrink-0 rounded-2xl" />
+                <DishTile item={item} role={role} photoScale={0.92} glyph={0.6} className="size-16 shrink-0 rounded-[18px]" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-medium">{t(item.name, lang)}</p>
                   {extra && <p className="truncate text-[13px] text-g-muted">{extra}</p>}
                   <p className="mt-0.5 text-[15px] font-semibold tabular-nums">{formatMoney(line.unitPrice * line.qty, currency, lang)}</p>
                 </div>
                 <div className="w-[108px] shrink-0">
-                  <Stepper qty={line.qty} onChange={(q) => onQty(line.key, q)} size="sm" />
+                  <Stepper qty={line.qty} onChange={(q) => onQty(line.key, q)} />
                 </div>
               </li>
             );
@@ -346,7 +342,7 @@ export function OrdersSheet({
           const stage = orderStage(o, now);
           const minsLeft = Math.max(1, Math.ceil(15 - ((now - o.placedAt) / 1000 / 45) * 15));
           return (
-            <article key={o.id} className={`mt-4 rounded-[28px] p-5 ${i === 0 ? "bg-g-fill" : "border border-g-line"}`}>
+            <article key={o.id} className={`mt-4 rounded-[28px] p-5 ${i === 0 ? "blue-grad-soft" : "border border-g-line"}`}>
               <p className="text-[13px] font-medium text-g-muted">
                 {ui(lang, "order")} №{String(o.id).padStart(3, "0")}
               </p>
@@ -360,7 +356,7 @@ export function OrdersSheet({
               </div>
               <div className="mt-4 grid grid-cols-4 gap-1.5" aria-hidden>
                 {STAGES.map((_, s) => (
-                  <span key={s} className={`h-1.5 rounded-full transition-colors duration-700 ${s <= stage ? (stage === 3 ? "bg-g-green" : "bg-g-blue") : "bg-g-fill-2"}`} />
+                  <span key={s} className={`h-1.5 rounded-full transition-colors duration-700 ${s <= stage ? (stage === 3 ? "green-grad" : "bar-grad") : "bg-g-fill-2"}`} />
                 ))}
               </div>
               <ul className="mt-5 space-y-2">
@@ -429,9 +425,9 @@ export function SearchSheet({
             className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint"
           />
         </label>
-        <div className="mt-3">
+        <div className="mt-4 grid gap-3">
           {results.map(([item, c]) => (
-            <ItemRow
+            <ItemCard
               key={item.id}
               item={item}
               role={c.role}
@@ -492,7 +488,7 @@ export function LangSheet({ open, onClose, lang, onPick }: { open: boolean; onCl
             <span className="w-8 text-[13px] font-semibold text-g-muted uppercase">{l}</span>
             <span className="flex-1 text-[16px] font-medium">{LANG_LABEL[l]}</span>
             {l === lang && (
-              <span className="grid size-6 place-items-center rounded-full bg-g-blue text-white">
+              <span className="blue-grad grid size-6 place-items-center rounded-full">
                 <Check size={14} strokeWidth={3} />
               </span>
             )}

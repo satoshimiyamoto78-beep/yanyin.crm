@@ -1,6 +1,6 @@
 "use client";
 
-import { allItems, formatMoney, moodsFor, spinRoulette, t, type Lang, type Menu, type MenuItem, type Mood, type RouletteResult } from "@yanyin/domain";
+import { allItems, formatMoney, moodsFor, spinRoulette, t, type CategoryRole, type Lang, type Menu, type MenuItem, type Mood, type RouletteResult } from "@yanyin/domain";
 import { Check, Compass, Dices, Flame, Leaf, Minus, Plus, Wind, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ui, type UiKey } from "@/lib/ui-strings";
@@ -13,6 +13,12 @@ const MOODS: Record<Mood, { key: UiKey; icon: LucideIcon }> = {
   chill: { key: "moodChill", icon: Wind },
 };
 
+const TILE = 148; // reel window and tile height, px
+const STRIP = 16; // random tiles before the winning one
+
+type Phase = "idle" | "prep" | "run" | "done";
+
+/** Food Roulette as a real slot machine: reels spin and stop one by one on the picked set. */
 export function RouletteSheet({
   open,
   onClose,
@@ -28,39 +34,57 @@ export function RouletteSheet({
 }) {
   const moods = useMemo(() => moodsFor(menu), [menu]);
   const lounge = menu.venue.type === "shisha_lounge";
+  const pool = useMemo(() => allItems(menu), [menu]);
+  const roleOf = useMemo(() => new Map<string, CategoryRole>(menu.categories.flatMap((c) => c.items.map((i) => [i.id, c.role] as const))), [menu]);
+  const idle = useMemo(() => {
+    const photos = pool.filter((i) => i.photo);
+    if (photos.length >= 3) return photos.slice(0, 3);
+    // No photos: one item from each of three different kinds of category.
+    const seen = new Set<string>();
+    return menu.categories.filter((c) => !seen.has(c.role) && seen.add(c.role)).slice(0, 3).map((c) => c.items[0]!);
+  }, [pool, menu]);
+
   const [guests, setGuests] = useState(2);
   const [budget, setBudget] = useState(lounge ? 900_000 : 700_000);
   const [mood, setMood] = useState<Mood>(moods[0]!);
   const [veg, setVeg] = useState(false);
   const [alcohol, setAlcohol] = useState(lounge);
   const [result, setResult] = useState<RouletteResult | undefined>(undefined);
-  const [spinning, setSpinning] = useState(false);
-  const [reel, setReel] = useState<MenuItem | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pool = useMemo(() => allItems(menu), [menu]);
-  const roleOf = useMemo(() => new Map(menu.categories.flatMap((c) => c.items.map((i) => [i.id, c.role] as const))), [menu]);
+  const [strips, setStrips] = useState<MenuItem[][]>(idle.map((i) => [i]));
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [pull, setPull] = useState(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { currency } = menu.venue;
   const min = 100_000 * guests;
-  const max = 3_000_000;
 
   useEffect(
     () => () => {
-      if (timer.current) clearInterval(timer.current);
+      if (timer.current) clearTimeout(timer.current);
     },
     [],
   );
 
+  const spinning = phase === "prep" || phase === "run";
+
   const spin = () => {
-    setSpinning(true);
+    if (spinning) return;
+    setPull((n) => n + 1);
+    const r = spinRoulette({ menu, budget: Math.max(min, budget), guests, mood, includeAlcohol: alcohol, requireTags: veg ? ["vegetarian"] : undefined });
+    const finals = r?.items ?? idle;
+    const random = () => pool[Math.floor(Math.random() * pool.length)]!;
     setResult(undefined);
-    timer.current = setInterval(() => setReel(pool[Math.floor(Math.random() * pool.length)] ?? null), 90);
-    setTimeout(() => {
-      if (timer.current) clearInterval(timer.current);
-      setReel(null);
-      setSpinning(false);
-      setResult(spinRoulette({ menu, budget, guests, mood, includeAlcohol: alcohol, requireTags: veg ? ["vegetarian"] : undefined }));
-    }, 1200);
+    setStrips(finals.map((final) => [...Array.from({ length: STRIP }, random), final]));
+    setPhase("prep");
+    // Two frames so the reels render at the top before the transition starts.
+    requestAnimationFrame(() => requestAnimationFrame(() => setPhase("run")));
+    const total = 1500 + (finals.length - 1) * 450 + 150;
+    timer.current = setTimeout(() => {
+      setPhase("done");
+      setResult(r);
+    }, total);
   };
+
+  const reels = strips.length;
 
   return (
     <Sheet
@@ -68,17 +92,17 @@ export function RouletteSheet({
       onClose={onClose}
       label={ui(lang, "roulette")}
       footer={
-        result ? (
+        phase === "done" && result ? (
           <div className="flex gap-2.5">
-            <button onClick={spin} className="press h-14 flex-1 rounded-full bg-g-fill text-[16px] font-semibold">
+            <button onClick={spin} className="card press h-14 flex-1 rounded-full text-[16px] font-semibold">
               {ui(lang, "spinAgain")}
             </button>
-            <button onClick={() => onAddAll(result.items, guests)} className="press h-14 flex-[1.4] rounded-full bg-g-blue text-[16px] font-semibold text-white">
+            <button onClick={() => onAddAll(result.items, guests)} className="blue-grad press h-14 flex-[1.4] rounded-full text-[16px] font-semibold">
               {ui(lang, "addAll")}
             </button>
           </div>
         ) : (
-          <button onClick={spin} disabled={spinning} className="press flex h-14 w-full items-center justify-center gap-2 rounded-full bg-g-blue text-[16px] font-semibold text-white disabled:opacity-70">
+          <button onClick={spin} disabled={spinning} className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold disabled:opacity-80">
             <Dices size={20} strokeWidth={2} className={spinning ? "animate-spin" : ""} /> {ui(lang, "spin")}
           </button>
         )
@@ -88,32 +112,77 @@ export function RouletteSheet({
         <h2 className="text-[26px] font-bold tracking-[-0.02em]">{ui(lang, "roulette")}</h2>
         <p className="mt-1 text-[15px] text-g-muted">{ui(lang, "rouletteHint")}</p>
 
-        {(spinning || result !== undefined) && (
-          <div className="mt-5 rounded-[24px] bg-g-fill p-4">
-            {spinning && reel && (
-              <div className="flex items-center gap-3.5">
-                <DishTile item={reel} role={roleOf.get(reel.id) ?? "main"} iconSize={20} className="size-14 shrink-0 rounded-2xl bg-white" />
-                <p className="text-[16px] font-medium opacity-60">{t(reel.name, lang)}</p>
-              </div>
-            )}
-            {!spinning && result === null && <p className="py-3 text-center text-[15px] text-g-muted">{ui(lang, "nothingFits")}</p>}
-            {!spinning && result && (
-              <div className="animate-pop">
-                {result.items.map((it) => (
-                  <div key={it.id} className="flex items-center gap-3.5 py-2">
-                    <DishTile item={it} role={roleOf.get(it.id) ?? "main"} iconSize={20} photoScale={0.92} className="size-14 shrink-0 rounded-2xl bg-white" />
-                    <p className="min-w-0 flex-1 truncate text-[15px] font-medium">{t(it.name, lang)}</p>
-                    <p className="text-[15px] font-semibold tabular-nums">{formatMoney(it.price, currency, lang)}</p>
-                  </div>
+        {/* Slot machine */}
+        <div className="relative mt-6 pr-9">
+          <div className="blue-grad rounded-[32px] p-3 pt-2.5">
+            <div className="flex items-center justify-between px-2 pb-2.5">
+              <span className="text-[11px] font-bold tracking-[0.18em] text-white/90 uppercase">Food Roulette</span>
+              <span className="flex gap-1.5" aria-hidden>
+                {Array.from({ length: 6 }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`size-1.5 rounded-full bg-white ${spinning ? "animate-pulse" : ""}`}
+                    style={{ opacity: spinning ? 1 : i % 2 ? 0.45 : 0.9, animationDelay: `${i * 120}ms` }}
+                  />
                 ))}
-                <div className="mt-2 flex items-baseline justify-between border-t border-g-fill-2 pt-3">
-                  <span className="text-[13px] text-g-muted">
-                    {formatMoney(result.perGuest, currency, lang)} {ui(lang, "perGuest")} × {guests}
-                  </span>
-                  <span className="text-[20px] font-bold tabular-nums">{formatMoney(result.total, currency, lang)}</span>
-                </div>
+              </span>
+            </div>
+            <div className="relative rounded-[24px] bg-white p-2 shadow-[inset_0_2px_10px_rgba(16,24,40,0.12)]">
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${reels}, minmax(0, 1fr))` }}>
+                {strips.map((strip, r) => {
+                  const offset = phase === "run" || phase === "done" ? -(strip.length - 1) * TILE : 0;
+                  const duration = 1.5 + r * 0.45;
+                  return (
+                    <div key={r} className="hero-grad relative overflow-hidden rounded-[18px]" style={{ height: TILE }}>
+                      <div
+                        style={{
+                          transform: `translateY(${offset}px)`,
+                          transition: phase === "run" ? `transform ${duration}s cubic-bezier(0.12, 0.82, 0.2, 1)` : "none",
+                        }}
+                      >
+                        {strip.map((it, k) => (
+                          <div key={k} className="flex flex-col items-center justify-center gap-1.5 px-1.5" style={{ height: TILE }}>
+                            <DishTile item={it} role={roleOf.get(it.id) ?? "main"} photoScale={0.95} glyph={0.62} className="size-[78px] rounded-[18px] !bg-none" />
+                            <span className="line-clamp-2 text-center text-[11px] leading-tight font-semibold">{t(it.name, lang)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-white/90 to-transparent" />
+                      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-white/90 to-transparent" />
+                    </div>
+                  );
+                })}
               </div>
-            )}
+              {/* Pay line */}
+              <span aria-hidden className="pointer-events-none absolute top-1/2 -left-1 size-0 -translate-y-1/2 border-y-[7px] border-l-[9px] border-y-transparent border-l-g-blue" />
+              <span aria-hidden className="pointer-events-none absolute top-1/2 -right-1 size-0 -translate-y-1/2 border-y-[7px] border-r-[9px] border-y-transparent border-r-g-blue" />
+            </div>
+          </div>
+          {/* Lever */}
+          <button onClick={spin} disabled={spinning} aria-label={ui(lang, "spin")} className="absolute top-6 right-0 flex h-[150px] w-8 flex-col items-center">
+            <span key={pull} className={`flex flex-col items-center ${pull ? "animate-lever" : ""}`}>
+              <span className="blue-grad size-8 rounded-full" />
+              <span className="h-[86px] w-2 rounded-full bg-gradient-to-b from-[#c9cdd6] to-[#8d929e]" />
+            </span>
+            <span className="-mt-1 h-7 w-5 rounded-lg bg-gradient-to-b from-[#9aa0ad] to-[#6b707c]" />
+          </button>
+        </div>
+
+        {phase === "done" && result === null && <p className="mt-4 text-center text-[15px] text-g-muted">{ui(lang, "nothingFits")}</p>}
+        {phase === "done" && result && (
+          <div className="animate-rise mt-4 rounded-[24px] bg-g-fill p-4">
+            {result.items.map((it) => (
+              <div key={it.id} className="flex items-baseline justify-between gap-3 py-1 text-[15px]">
+                <span className="min-w-0 truncate font-medium">{t(it.name, lang)}</span>
+                <span className="shrink-0 tabular-nums text-g-muted">{formatMoney(it.price, currency, lang)}</span>
+              </div>
+            ))}
+            <div className="mt-2 flex items-baseline justify-between border-t border-g-fill-2 pt-3">
+              <span className="text-[13px] text-g-muted">
+                {formatMoney(result.perGuest, currency, lang)} {ui(lang, "perGuest")} × {guests}
+              </span>
+              <span className="text-[20px] font-bold tabular-nums">{formatMoney(result.total, currency, lang)}</span>
+            </div>
           </div>
         )}
 
@@ -155,7 +224,7 @@ export function RouletteSheet({
             id="roulette-budget"
             type="range"
             min={min}
-            max={max}
+            max={3_000_000}
             step={50_000}
             value={Math.max(min, budget)}
             onChange={(e) => setBudget(Number(e.target.value))}
@@ -164,18 +233,15 @@ export function RouletteSheet({
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {[
-            [veg, setVeg, "vegetarian"],
-            [alcohol, setAlcohol, "alcohol"],
-          ].map(([on, set, key]) => (
-            <button
-              key={key as string}
-              onClick={() => (set as (fn: (v: boolean) => boolean) => void)((v) => !v)}
-              aria-pressed={on as boolean}
-              className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
-            >
-              {(on as boolean) && <Check size={15} strokeWidth={2.5} />}
-              {ui(lang, key as UiKey)}
+          {(
+            [
+              [veg, setVeg, "vegetarian"],
+              [alcohol, setAlcohol, "alcohol"],
+            ] as const
+          ).map(([on, set, key]) => (
+            <button key={key} onClick={() => set((v) => !v)} aria-pressed={on} className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}>
+              {on && <Check size={15} strokeWidth={2.5} />}
+              {ui(lang, key)}
             </button>
           ))}
         </div>

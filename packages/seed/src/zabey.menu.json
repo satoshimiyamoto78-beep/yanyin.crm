@@ -185,7 +185,11 @@
             "ru": "Классический кальян"
           },
           "price": 350000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Pick a flavour and strength, served with fresh coals",
+            "ru": "Выберите вкус и крепость, подаём со свежими углями"
+          }
         },
         {
           "name": {
@@ -195,7 +199,11 @@
           },
           "price": 450000,
           "status": "suggested",
-          "note": "Premium tobacco brands; venue to specify"
+          "note": "Premium tobacco brands; venue to specify",
+          "description": {
+            "en": "Premium tobacco, mixed by our hookah master",
+            "ru": "Премиальный табак, микс от кальянщика"
+          }
         },
         {
           "name": {
@@ -204,7 +212,11 @@
             "ru": "Кальян на фрукте (ананас / грейпфрут)"
           },
           "price": 550000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Hookah bowl carved from a fresh pineapple or grapefruit",
+            "ru": "Чаша из свежего ананаса или грейпфрута"
+          }
         },
         {
           "name": {
@@ -213,7 +225,11 @@
             "ru": "Замена чаши"
           },
           "price": 250000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "A fresh bowl for your hookah",
+            "ru": "Новая чаша для вашего кальяна"
+          }
         }
       ]
     },
@@ -228,14 +244,22 @@
             "en": "Gordon's"
           },
           "price": 99000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "London dry gin",
+            "ru": "Лондонский сухой джин"
+          }
         },
         {
           "name": {
             "en": "Bombay"
           },
           "price": 109000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Bombay Sapphire gin",
+            "ru": "Джин Bombay Sapphire"
+          }
         }
       ],
       "status": "confirmed"
@@ -251,21 +275,33 @@
             "en": "Bacardi Carta Blanca"
           },
           "price": 109000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "White rum",
+            "ru": "Белый ром"
+          }
         },
         {
           "name": {
             "en": "Bacardi Carta Oro"
           },
           "price": 109000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Golden rum",
+            "ru": "Золотой ром"
+          }
         },
         {
           "name": {
             "en": "Bacardi Carta Negra"
           },
           "price": 109000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Dark rum",
+            "ru": "Тёмный ром"
+          }
         }
       ],
       "status": "confirmed"
@@ -281,42 +317,66 @@
             "en": "Martini Bianco"
           },
           "price": 109000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Sweet white vermouth",
+            "ru": "Сладкий белый вермут"
+          }
         },
         {
           "name": {
             "en": "Martini Rosso"
           },
           "price": 109000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Sweet red vermouth",
+            "ru": "Сладкий красный вермут"
+          }
         },
         {
           "name": {
             "en": "Campari"
           },
           "price": 119000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Italian bitter aperitif",
+            "ru": "Итальянский горький аперитив"
+          }
         },
         {
           "name": {
             "en": "Kahlua"
           },
           "price": 119000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Coffee liqueur",
+            "ru": "Кофейный ликёр"
+          }
         },
         {
           "name": {
             "en": "Baileys"
           },
           "price": 119000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Irish cream liqueur",
+            "ru": "Ирландский сливочный ликёр"
+          }
         },
         {
           "name": {
             "en": "Jägermeister"
           },
           "price": 129000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "German herbal liqueur",
+            "ru": "Немецкий травяной ликёр"
+          }
         }
       ],
       "status": "confirmed"
@@ -332,14 +392,22 @@
             "en": "Jose Cuervo Reposado"
           },
           "price": 99000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Aged gold tequila",
+            "ru": "Выдержанная золотая текила"
+          }
         },
         {
           "name": {
             "en": "Jose Cuervo Silver"
           },
           "price": 99000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Silver tequila",
+            "ru": "Серебряная текила"
+          }
         }
       ],
       "status": "confirmed"
@@ -355,28 +423,44 @@
             "en": "Jameson Original"
           },
           "price": 119000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Irish whiskey",
+            "ru": "Ирландский виски"
+          }
         },
         {
           "name": {
             "en": "Johnnie Walker Black Label"
           },
           "price": 159000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Blended Scotch whisky, 12 years",
+            "ru": "Купажированный скотч, 12 лет"
+          }
         },
         {
           "name": {
             "en": "Chivas 12 YO"
           },
           "price": 139000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Blended Scotch whisky, 12 years",
+            "ru": "Купажированный скотч, 12 лет"
+          }
         },
         {
           "name": {
             "en": "Ballantine's Finest"
           },
           "price": 99000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Blended Scotch whisky",
+            "ru": "Купажированный скотч"
+          }
         }
       ],
       "status": "confirmed"
@@ -392,7 +476,11 @@
             "en": "St-Rémy XO"
           },
           "price": 139000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "French brandy XO",
+            "ru": "Французский бренди XO"
+          }
         }
       ],
       "status": "confirmed"
@@ -407,56 +495,88 @@
             "en": "Aperol Spritz"
           },
           "price": 229000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Aperol, prosecco and soda with orange",
+            "ru": "Апероль, просекко и содовая с апельсином"
+          }
         },
         {
           "name": {
             "en": "Negroni"
           },
           "price": 199000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Gin, Campari and red vermouth",
+            "ru": "Джин, кампари и красный вермут"
+          }
         },
         {
           "name": {
             "en": "Mai Tai"
           },
           "price": 199000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Rum, lime, orange liqueur and almond syrup",
+            "ru": "Ром, лайм, апельсиновый ликёр и миндальный сироп"
+          }
         },
         {
           "name": {
             "en": "Long Island Iced Tea"
           },
           "price": 229000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Five spirits, lime and cola",
+            "ru": "Пять крепких напитков, лайм и кола"
+          }
         },
         {
           "name": {
             "en": "Whiskey Sour"
           },
           "price": 199000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Whiskey, lemon and sugar syrup",
+            "ru": "Виски, лимон и сахарный сироп"
+          }
         },
         {
           "name": {
             "en": "Porn Star Martini"
           },
           "price": 209000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Vanilla vodka, passion fruit and prosecco",
+            "ru": "Ванильная водка, маракуйя и просекко"
+          }
         },
         {
           "name": {
             "en": "Mojito"
           },
           "price": 199000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "White rum, lime, mint and soda",
+            "ru": "Белый ром, лайм, мята и содовая"
+          }
         },
         {
           "name": {
             "en": "Margarita"
           },
           "price": 199000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Tequila, lime and orange liqueur",
+            "ru": "Текила, лайм и апельсиновый ликёр"
+          }
         }
       ],
       "status": "confirmed"
@@ -471,21 +591,33 @@
             "en": "Cuba Libre"
           },
           "price": 149000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Rum, cola and lime",
+            "ru": "Ром, кола и лайм"
+          }
         },
         {
           "name": {
             "en": "Gin Tonic"
           },
           "price": 159000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Gin and tonic with lime",
+            "ru": "Джин и тоник с лаймом"
+          }
         },
         {
           "name": {
             "en": "Jäger Bull"
           },
           "price": 169000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Jägermeister and Red Bull",
+            "ru": "Егермейстер и Red Bull"
+          }
         }
       ],
       "status": "confirmed"
@@ -505,7 +637,11 @@
             "ru": "Б-52"
           },
           "price": 109000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Layered Kahlua, Baileys and orange liqueur",
+            "ru": "Слои кофейного, сливочного и апельсинового ликёра"
+          }
         },
         {
           "name": {
@@ -514,7 +650,11 @@
             "ru": "Текила-бум"
           },
           "price": 109000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Tequila and soda, slammed",
+            "ru": "Текила с содовой, «бум» по столу"
+          }
         },
         {
           "name": {
@@ -526,7 +666,11 @@
           "status": "suggested",
           "tags": [
             "sharing"
-          ]
+          ],
+          "description": {
+            "en": "Five shots picked by the bartender",
+            "ru": "Пять шотов на выбор бармена"
+          }
         }
       ]
     },
@@ -542,7 +686,11 @@
             "ru": "Вода LaVie"
           },
           "price": 69000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Still mineral water",
+            "ru": "Негазированная минеральная вода"
+          }
         },
         {
           "name": {
@@ -551,21 +699,33 @@
             "ru": "Содовая"
           },
           "price": 49000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Sparkling water",
+            "ru": "Газированная вода"
+          }
         },
         {
           "name": {
             "en": "Schweppes"
           },
           "price": 49000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Tonic or soda",
+            "ru": "Тоник или содовая"
+          }
         },
         {
           "name": {
             "en": "Red Bull"
           },
           "price": 79000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Energy drink, 250 ml",
+            "ru": "Энергетик, 250 мл"
+          }
         },
         {
           "name": {
@@ -573,7 +733,11 @@
           },
           "price": 49000,
           "note": "Split into 3 items with shared price",
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Your choice of soft drink",
+            "ru": "Газировка на выбор"
+          }
         }
       ],
       "status": "confirmed"
@@ -588,21 +752,33 @@
             "en": "Corona Extra"
           },
           "price": 109000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Mexican lager with lime",
+            "ru": "Мексиканский лагер с лаймом"
+          }
         },
         {
           "name": {
             "en": "Strongbow Cider"
           },
           "price": 69000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Apple cider",
+            "ru": "Яблочный сидр"
+          }
         },
         {
           "name": {
             "en": "Blanc 1664"
           },
           "price": 89000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "French wheat beer",
+            "ru": "Французское пшеничное пиво"
+          }
         },
         {
           "name": {
@@ -612,7 +788,11 @@
           "tags": [
             "non_alcoholic"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Non-alcoholic lager",
+            "ru": "Безалкогольный лагер"
+          }
         },
         {
           "name": {
@@ -621,7 +801,11 @@
             "ru": "Saigon Special"
           },
           "price": 59000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Vietnamese lager",
+            "ru": "Вьетнамский лагер"
+          }
         },
         {
           "name": {
@@ -630,7 +814,11 @@
             "ru": "Tiger"
           },
           "price": 69000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Singapore lager",
+            "ru": "Сингапурский лагер"
+          }
         }
       ],
       "status": "confirmed"
@@ -660,7 +848,11 @@
             "vi": "Xoài–Chanh dây",
             "ru": "Манго–маракуйя"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "House lemonade, 0.4 L or 1 L jug",
+            "ru": "Домашний лимонад, 0,4 л или кувшин 1 л"
+          }
         },
         {
           "name": {
@@ -668,7 +860,11 @@
             "vi": "Vải–Dâu tây",
             "ru": "Личи–клубника"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "House lemonade, 0.4 L or 1 L jug",
+            "ru": "Домашний лимонад, 0,4 л или кувшин 1 л"
+          }
         },
         {
           "name": {
@@ -676,7 +872,11 @@
             "vi": "Dứa–Kiwi",
             "ru": "Ананас–киви"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "House lemonade, 0.4 L or 1 L jug",
+            "ru": "Домашний лимонад, 0,4 л или кувшин 1 л"
+          }
         }
       ],
       "status": "confirmed"
@@ -693,7 +893,11 @@
             "vi": "Trà đen",
             "ru": "Чёрный чай"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "A 1 L pot of black leaf tea",
+            "ru": "Чайник чёрного листового чая, 1 л"
+          }
         },
         {
           "name": {
@@ -701,7 +905,11 @@
             "vi": "Trà xanh",
             "ru": "Зелёный чай"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "A 1 L pot of green leaf tea",
+            "ru": "Чайник зелёного листового чая, 1 л"
+          }
         },
         {
           "name": {
@@ -709,7 +917,11 @@
             "vi": "Trà nhài",
             "ru": "Жасминовый чай"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "A 1 L pot of jasmine tea",
+            "ru": "Чайник жасминового чая, 1 л"
+          }
         }
       ],
       "status": "confirmed"
@@ -726,7 +938,11 @@
             "vi": "Việt quất–Bạc hà",
             "ru": "Черника–мята"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Iced tea with blueberry and mint, 1 L",
+            "ru": "Холодный чай с черникой и мятой, 1 л"
+          }
         },
         {
           "name": {
@@ -734,7 +950,11 @@
             "vi": "Sả–Chanh",
             "ru": "Лемонграсс–лайм"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Iced tea with lemongrass and lime, 1 L",
+            "ru": "Холодный чай с лемонграссом и лаймом, 1 л"
+          }
         }
       ],
       "status": "confirmed"
@@ -753,7 +973,11 @@
             "vi": "Pan-Asian",
             "ru": "Паназиатский"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Signature tea with Asian spices, 1 L",
+            "ru": "Авторский чай с азиатскими специями, 1 л"
+          }
         },
         {
           "name": {
@@ -761,7 +985,11 @@
             "vi": "Dâu tây–Húng quế",
             "ru": "Клубника–базилик"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Signature tea with strawberry and basil, 1 L",
+            "ru": "Авторский чай с клубникой и базиликом, 1 л"
+          }
         },
         {
           "name": {
@@ -769,7 +997,11 @@
             "vi": "Moroccan",
             "ru": "Марокканский"
           },
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Green tea with mint, Moroccan style, 1 L",
+            "ru": "Зелёный чай с мятой по-мароккански, 1 л"
+          }
         }
       ],
       "status": "confirmed"
@@ -786,7 +1018,11 @@
             "ru": "Красное вино"
           },
           "price": 139000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "A glass of house red",
+            "ru": "Бокал красного вина"
+          }
         },
         {
           "name": {
@@ -795,7 +1031,11 @@
             "ru": "Белое вино"
           },
           "price": 139000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "A glass of house white",
+            "ru": "Бокал белого вина"
+          }
         }
       ],
       "status": "confirmed"
@@ -815,7 +1055,11 @@
             "ru": "Эспрессо"
           },
           "price": 49000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "A single shot of espresso",
+            "ru": "Порция эспрессо"
+          }
         },
         {
           "name": {
@@ -824,7 +1068,11 @@
             "ru": "Американо"
           },
           "price": 59000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Espresso with hot water",
+            "ru": "Эспрессо с горячей водой"
+          }
         },
         {
           "name": {
@@ -833,7 +1081,11 @@
             "ru": "Капучино"
           },
           "price": 69000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Espresso with steamed milk foam",
+            "ru": "Эспрессо с молочной пенкой"
+          }
         },
         {
           "name": {
@@ -842,7 +1094,11 @@
             "ru": "Вьетнамский кофе со льдом и молоком"
           },
           "price": 59000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Strong Vietnamese coffee, condensed milk, ice",
+            "ru": "Крепкий вьетнамский кофе, сгущёнка и лёд"
+          }
         }
       ]
     },
@@ -864,7 +1120,11 @@
           "status": "suggested",
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "description": {
+            "en": "Corn chips with warm cheese sauce",
+            "ru": "Кукурузные чипсы с тёплым сырным соусом"
+          }
         },
         {
           "name": {
@@ -876,7 +1136,11 @@
           "status": "suggested",
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "description": {
+            "en": "Crispy fries with ketchup",
+            "ru": "Хрустящий картофель фри с кетчупом"
+          }
         },
         {
           "name": {
@@ -885,7 +1149,11 @@
             "ru": "Куриные крылышки"
           },
           "price": 149000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Charcoal-grilled wings with flatbread and tomato sauce",
+            "ru": "Крылышки на углях с лепёшкой и томатным соусом"
+          }
         },
         {
           "name": {
@@ -897,7 +1165,11 @@
           "status": "suggested",
           "tags": [
             "vegan"
-          ]
+          ],
+          "description": {
+            "en": "Roasted salted nuts",
+            "ru": "Обжаренные солёные орехи"
+          }
         },
         {
           "name": {
@@ -910,7 +1182,11 @@
           "tags": [
             "vegan",
             "sharing"
-          ]
+          ],
+          "description": {
+            "en": "Seasonal tropical fruits to share",
+            "ru": "Сезонные тропические фрукты на компанию"
+          }
         }
       ]
     }

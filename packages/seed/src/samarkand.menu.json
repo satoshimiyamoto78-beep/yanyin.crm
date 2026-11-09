@@ -32,7 +32,11 @@
           },
           "price": 180000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/tom-yum.webp"
+          "photo": "/dishes/samarkand/tom-yum.webp",
+          "description": {
+            "en": "Hot and sour Thai soup with shrimp, mushrooms and lemongrass",
+            "ru": "Острый кисло-сладкий суп с креветками, грибами и лемонграссом"
+          }
         },
         {
           "name": {
@@ -42,7 +46,11 @@
           },
           "price": 180000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/fish-soup.webp"
+          "photo": "/dishes/samarkand/fish-soup.webp",
+          "description": {
+            "en": "Clear fish broth with salmon, potatoes and dill",
+            "ru": "Прозрачный рыбный бульон с лососем, картофелем и укропом"
+          }
         },
         {
           "name": {
@@ -52,7 +60,11 @@
           },
           "price": 130000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/creamy-mushroom-soup.webp"
+          "photo": "/dishes/samarkand/creamy-mushroom-soup.webp",
+          "description": {
+            "en": "Smooth mushroom cream soup served with croutons",
+            "ru": "Нежный грибной крем-суп с гренками"
+          }
         },
         {
           "name": {
@@ -62,7 +74,11 @@
           },
           "price": 250000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/fatir-shurpa.webp"
+          "photo": "/dishes/samarkand/fatir-shurpa.webp",
+          "description": {
+            "en": "Slow-cooked lamb broth with chickpeas, vegetables and fatir bread",
+            "ru": "Томлёный бульон из баранины с нутом, овощами и лепёшкой фатир"
+          }
         },
         {
           "name": {
@@ -71,7 +87,11 @@
             "vi": "Súp mì Lagman"
           },
           "price": 180000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Hand-pulled noodles in rich beef and vegetable broth",
+            "ru": "Тянутая лапша в наваристом бульоне с говядиной и овощами"
+          }
         },
         {
           "name": {
@@ -80,7 +100,11 @@
             "vi": "Súp cơm Mastava"
           },
           "price": 170000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Uzbek rice soup with beef, tomatoes and sour cream",
+            "ru": "Узбекский рисовый суп с говядиной, томатами и сметаной"
+          }
         }
       ],
       "status": "confirmed"
@@ -99,7 +123,11 @@
             "vi": "Salad Caesar với thịt gà"
           },
           "price": 160000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Romaine, grilled chicken, parmesan, croutons, Caesar dressing",
+            "ru": "Романо, курица гриль, пармезан, гренки, соус цезарь"
+          }
         },
         {
           "name": {
@@ -108,7 +136,11 @@
             "vi": "Salad Caesar với tôm"
           },
           "price": 200000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Romaine, grilled shrimp, parmesan, croutons, Caesar dressing",
+            "ru": "Романо, креветки гриль, пармезан, гренки, соус цезарь"
+          }
         },
         {
           "name": {
@@ -120,7 +152,11 @@
           "tags": [
             "vegetarian"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Tomatoes, cucumber, feta, olives and red onion with olive oil",
+            "ru": "Томаты, огурцы, фета, маслины и красный лук с оливковым маслом"
+          }
         },
         {
           "name": {
@@ -129,7 +165,11 @@
             "vi": "Salad rau rocket tôm"
           },
           "price": 200000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Arugula, shrimp, cherry tomatoes and parmesan",
+            "ru": "Руккола, креветки, черри и пармезан"
+          }
         },
         {
           "name": {
@@ -138,7 +178,11 @@
             "vi": "Salad hải sản"
           },
           "price": 200000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Shrimp, mussels and greens with lemon dressing",
+            "ru": "Креветки, мидии и зелень с лимонной заправкой"
+          }
         },
         {
           "name": {
@@ -150,7 +194,11 @@
           "tags": [
             "vegetarian"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Crunchy cucumbers with garlic, chili and sesame",
+            "ru": "Хрустящие огурцы с чесноком, чили и кунжутом"
+          }
         },
         {
           "name": {
@@ -159,7 +207,11 @@
             "vi": "Cà tím chiên giòn"
           },
           "price": 180000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Fried eggplant with tomatoes, greens and sweet chili sauce",
+            "ru": "Жареные баклажаны с томатами, зеленью и соусом сладкий чили"
+          }
         },
         {
           "name": {
@@ -168,7 +220,11 @@
             "vi": "Salad Nga"
           },
           "price": 150000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Classic Russian salad with potatoes, peas, pickles and mayo",
+            "ru": "Классический оливье: картофель, горошек, огурцы, майонез"
+          }
         }
       ],
       "status": "confirmed"
@@ -191,7 +247,11 @@
           "status": "suggested",
           "tags": [
             "signature"
-          ]
+          ],
+          "description": {
+            "en": "Signature plov from the kazan: lamb, yellow carrot, rice, chickpeas",
+            "ru": "Фирменный плов из казана: баранина, жёлтая морковь, рис, нут"
+          }
         },
         {
           "name": {
@@ -200,7 +260,11 @@
             "vi": "Cơm Plov kiểu Chaikhana"
           },
           "price": 220000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Teahouse-style plov with beef, carrot and garlic",
+            "ru": "Плов как в чайхане: говядина, морковь, целый чеснок"
+          }
         },
         {
           "name": {
@@ -212,7 +276,11 @@
           "status": "suggested",
           "tags": [
             "sharing"
-          ]
+          ],
+          "description": {
+            "en": "A big kazan of plov to share, served on one platter",
+            "ru": "Большой казан плова на компанию, подаётся на блюде"
+          }
         }
       ]
     },
@@ -231,7 +299,11 @@
           },
           "price": 180000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/chicken-wings.webp"
+          "photo": "/dishes/samarkand/chicken-wings.webp",
+          "description": {
+            "en": "Charcoal-grilled wings with flatbread and tomato sauce",
+            "ru": "Крылышки на углях с лепёшкой и томатным соусом"
+          }
         },
         {
           "name": {
@@ -241,7 +313,11 @@
           },
           "price": 190000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/chicken-breast.webp"
+          "photo": "/dishes/samarkand/chicken-breast.webp",
+          "description": {
+            "en": "Juicy chicken breast skewer from the charcoal grill",
+            "ru": "Сочная куриная грудка на шампуре с углей"
+          }
         },
         {
           "name": {
@@ -251,7 +327,11 @@
           },
           "price": 300000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/lamb-loin-shashlik.webp"
+          "photo": "/dishes/samarkand/lamb-loin-shashlik.webp",
+          "description": {
+            "en": "Lamb loin on the bone, grilled over charcoal with rosemary",
+            "ru": "Корейка ягнёнка на кости, жаренная на углях с розмарином"
+          }
         },
         {
           "name": {
@@ -264,7 +344,11 @@
             "vegetarian"
           ],
           "status": "confirmed",
-          "photo": "/dishes/samarkand/grilled-vegetables.webp"
+          "photo": "/dishes/samarkand/grilled-vegetables.webp",
+          "description": {
+            "en": "Peppers, zucchini, onion and tomato from the grill",
+            "ru": "Перец, кабачок, лук и томаты на гриле"
+          }
         },
         {
           "name": {
@@ -274,7 +358,11 @@
           },
           "price": 260000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/beef-shashlik.webp"
+          "photo": "/dishes/samarkand/beef-shashlik.webp",
+          "description": {
+            "en": "Marinated beef skewer with onion, bread and sauce",
+            "ru": "Маринованная говядина на шампуре с луком, хлебом и соусом"
+          }
         },
         {
           "name": {
@@ -284,7 +372,11 @@
           },
           "price": 260000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/lamb-shashlik.webp"
+          "photo": "/dishes/samarkand/lamb-shashlik.webp",
+          "description": {
+            "en": "Tender lamb skewer with fat-tail, onion and tomato sauce",
+            "ru": "Нежная баранина с курдюком, луком и томатным соусом"
+          }
         },
         {
           "name": {
@@ -294,7 +386,11 @@
           },
           "price": 220000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/beef-lyulya-kebab.webp"
+          "photo": "/dishes/samarkand/beef-lyulya-kebab.webp",
+          "description": {
+            "en": "Minced beef kebab with spices, grilled on a skewer",
+            "ru": "Рубленая говядина со специями на шампуре"
+          }
         },
         {
           "name": {
@@ -304,7 +400,11 @@
           },
           "price": 220000,
           "status": "confirmed",
-          "photo": "/dishes/samarkand/lamb-lyulya-kebab.webp"
+          "photo": "/dishes/samarkand/lamb-lyulya-kebab.webp",
+          "description": {
+            "en": "Minced lamb kebab with cumin and herbs",
+            "ru": "Рубленая баранина с зирой и зеленью"
+          }
         }
       ],
       "status": "confirmed"
@@ -323,7 +423,11 @@
             "vi": "Bò hầm"
           },
           "price": 180000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Beef braised with potatoes, carrots and peppers",
+            "ru": "Говядина, тушённая с картофелем, морковью и перцем"
+          }
         },
         {
           "name": {
@@ -332,7 +436,11 @@
             "vi": "Mì Lagman xào"
           },
           "price": 200000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Wok-fried hand-pulled noodles with beef and vegetables",
+            "ru": "Обжаренная тянутая лапша с говядиной и овощами"
+          }
         },
         {
           "name": {
@@ -341,7 +449,11 @@
             "vi": "Chả bò"
           },
           "price": 180000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Homemade beef cutlets with mashed potatoes",
+            "ru": "Домашние котлеты из говядины с пюре"
+          }
         },
         {
           "name": {
@@ -350,7 +462,11 @@
             "vi": "Chả gà"
           },
           "price": 160000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Tender chicken cutlets with mashed potatoes",
+            "ru": "Нежные куриные котлеты с пюре"
+          }
         },
         {
           "name": {
@@ -359,7 +475,11 @@
             "vi": "Thịt cừu chiên khoai tây Kazan-kabob"
           },
           "price": 260000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Lamb and potatoes fried together in a kazan",
+            "ru": "Баранина с картофелем, обжаренные в казане"
+          }
         }
       ],
       "status": "confirmed"
@@ -378,7 +498,11 @@
             "vi": "Salad đặc biệt của bếp trưởng"
           },
           "price": 210000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Seared tuna, greens, olives and red onion",
+            "ru": "Обжаренный тунец, зелень, оливки и красный лук"
+          }
         },
         {
           "name": {
@@ -387,7 +511,11 @@
             "vi": "Món nóng đặc biệt của bếp trưởng"
           },
           "price": 280000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Sizzling beef with peppers and onion on a hot iron plate",
+            "ru": "Шкворчащая говядина с перцем и луком на сковороде"
+          }
         },
         {
           "name": {
@@ -399,7 +527,11 @@
           "tags": [
             "vegetarian"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Marinated tomatoes with garlic and herbs",
+            "ru": "Маринованные помидоры с чесноком и зеленью"
+          }
         },
         {
           "name": {
@@ -408,7 +540,11 @@
             "vi": "Xiên nướng đặc biệt của bếp trưởng"
           },
           "price": 270000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Grilled eggplant rolls with minced meat and fresh salad",
+            "ru": "Рулетики из баклажана с фаршем на гриле и свежим салатом"
+          }
         }
       ],
       "status": "confirmed"
@@ -428,7 +564,11 @@
             "vi": "Bánh Samsa nhân bò"
           },
           "price": 60000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Flaky tandoor pastry filled with beef and onion",
+            "ru": "Слоёная самса из тандыра с говядиной и луком"
+          }
         },
         {
           "name": {
@@ -437,7 +577,11 @@
             "vi": "Bánh Samsa nhân cừu"
           },
           "price": 65000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Flaky tandoor pastry filled with lamb and onion",
+            "ru": "Слоёная самса из тандыра с бараниной и луком"
+          }
         },
         {
           "name": {
@@ -446,7 +590,11 @@
             "vi": "Bánh bao hấp Manty (5 cái)"
           },
           "price": 180000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Steamed dumplings with lamb and onion, sour cream",
+            "ru": "Паровые манты с бараниной и луком, сметана"
+          }
         },
         {
           "name": {
@@ -455,7 +603,11 @@
             "vi": "Há cảo Chuchvara"
           },
           "price": 160000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Small boiled dumplings with beef in broth",
+            "ru": "Маленькие пельмени с говядиной в бульоне"
+          }
         },
         {
           "name": {
@@ -467,7 +619,11 @@
           "status": "suggested",
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "description": {
+            "en": "Fresh lepyoshka baked in the tandoor",
+            "ru": "Свежая лепёшка из тандыра"
+          }
         }
       ]
     },
@@ -489,7 +645,11 @@
           "status": "suggested",
           "tags": [
             "vegan"
-          ]
+          ],
+          "description": {
+            "en": "Thin-sliced tomato, onion and basil",
+            "ru": "Тонко нарезанные томаты, лук и базилик"
+          }
         },
         {
           "name": {
@@ -501,7 +661,11 @@
           "status": "suggested",
           "tags": [
             "vegan"
-          ]
+          ],
+          "description": {
+            "en": "House-pickled cucumbers, tomatoes and cabbage",
+            "ru": "Домашние соленья: огурцы, помидоры, капуста"
+          }
         },
         {
           "name": {
@@ -513,7 +677,11 @@
           "status": "suggested",
           "tags": [
             "vegetarian"
-          ]
+          ],
+          "description": {
+            "en": "Thick strained yogurt with dill and garlic",
+            "ru": "Густой процеженный йогурт с укропом и чесноком"
+          }
         }
       ]
     },
@@ -531,7 +699,11 @@
             "vi": "Mì Ý tôm"
           },
           "price": 180000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Spaghetti with shrimp in garlic cream sauce",
+            "ru": "Спагетти с креветками в сливочно-чесночном соусе"
+          }
         },
         {
           "name": {
@@ -540,7 +712,11 @@
             "vi": "Mì Ý Bolognese"
           },
           "price": 180000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Spaghetti with slow-cooked beef ragù and parmesan",
+            "ru": "Спагетти с томлёным мясным рагу и пармезаном"
+          }
         },
         {
           "name": {
@@ -552,7 +728,11 @@
           "tags": [
             "vegetarian"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Fettuccine with mushrooms in cream sauce",
+            "ru": "Феттучини с грибами в сливочном соусе"
+          }
         },
         {
           "name": {
@@ -561,7 +741,11 @@
             "vi": "Mì Ý cá hồi"
           },
           "price": 210000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Fettuccine with salmon, cream and spinach",
+            "ru": "Феттучини с лососем, сливками и шпинатом"
+          }
         }
       ],
       "status": "confirmed"
@@ -583,7 +767,11 @@
           "tags": [
             "vegan"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Steamed white rice",
+            "ru": "Отварной белый рис"
+          }
         },
         {
           "name": {
@@ -595,7 +783,11 @@
           "tags": [
             "vegetarian"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Crispy fries with ketchup",
+            "ru": "Хрустящий картофель фри с кетчупом"
+          }
         },
         {
           "name": {
@@ -607,7 +799,11 @@
           "tags": [
             "vegetarian"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Oven-roasted potato wedges with spices",
+            "ru": "Запечённые дольки картофеля со специями"
+          }
         },
         {
           "name": {
@@ -619,7 +815,11 @@
           "tags": [
             "vegetarian"
           ],
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Creamy butter mashed potatoes",
+            "ru": "Нежное картофельное пюре на сливочном масле"
+          }
         }
       ],
       "status": "confirmed"
@@ -639,7 +839,11 @@
             "vi": "Bánh mật ong Chak-chak"
           },
           "price": 80000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Fried dough pieces in honey syrup",
+            "ru": "Кусочки теста в медовом сиропе"
+          }
         },
         {
           "name": {
@@ -648,7 +852,11 @@
             "vi": "Bánh Baklava"
           },
           "price": 90000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Layers of pastry with nuts and honey",
+            "ru": "Слои теста с орехами и мёдом"
+          }
         },
         {
           "name": {
@@ -657,7 +865,11 @@
             "vi": "Bánh mật ong Medovik"
           },
           "price": 90000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Layered honey cake with sour cream filling",
+            "ru": "Медовый торт со сметанным кремом"
+          }
         },
         {
           "name": {
@@ -666,7 +878,11 @@
             "vi": "Bánh Napoleon"
           },
           "price": 90000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Puff pastry layers with vanilla custard",
+            "ru": "Слоёный торт с заварным кремом"
+          }
         }
       ]
     },
@@ -685,7 +901,11 @@
             "vi": "Trà xanh (ấm)"
           },
           "price": 50000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "A pot of green tea",
+            "ru": "Чайник зелёного чая"
+          }
         },
         {
           "name": {
@@ -694,7 +914,11 @@
             "vi": "Trà đen (ấm)"
           },
           "price": 50000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "A pot of black tea",
+            "ru": "Чайник чёрного чая"
+          }
         },
         {
           "name": {
@@ -703,7 +927,11 @@
             "vi": "Trà chanh bạc hà (ấm)"
           },
           "price": 60000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Black tea with lemon and fresh mint",
+            "ru": "Чёрный чай с лимоном и свежей мятой"
+          }
         }
       ]
     },
@@ -722,7 +950,11 @@
             "vi": "Cà phê Espresso"
           },
           "price": 40000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "A single shot of espresso",
+            "ru": "Порция эспрессо"
+          }
         },
         {
           "name": {
@@ -731,7 +963,11 @@
             "vi": "Americano"
           },
           "price": 45000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Espresso with hot water",
+            "ru": "Эспрессо с горячей водой"
+          }
         },
         {
           "name": {
@@ -740,7 +976,11 @@
             "vi": "Cappuccino"
           },
           "price": 55000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Espresso with steamed milk foam",
+            "ru": "Эспрессо с молочной пенкой"
+          }
         },
         {
           "name": {
@@ -749,7 +989,11 @@
             "vi": "Latte"
           },
           "price": 60000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Espresso with plenty of steamed milk",
+            "ru": "Эспрессо с большим количеством молока"
+          }
         },
         {
           "name": {
@@ -758,7 +1002,11 @@
             "vi": "Cà phê sữa đá"
           },
           "price": 45000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Strong Vietnamese coffee, condensed milk, ice",
+            "ru": "Крепкий вьетнамский кофе, сгущёнка и лёд"
+          }
         }
       ]
     },
@@ -776,7 +1024,11 @@
             "vi": "Sinh tố chuối"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Banana blended with milk and ice",
+            "ru": "Банан, молоко и лёд"
+          }
         },
         {
           "name": {
@@ -785,7 +1037,11 @@
             "vi": "Sinh tố bơ"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Creamy avocado with condensed milk",
+            "ru": "Сливочный авокадо со сгущённым молоком"
+          }
         },
         {
           "name": {
@@ -794,7 +1050,11 @@
             "vi": "Sinh tố thanh long"
           },
           "price": 60000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Pink dragon fruit blended with ice",
+            "ru": "Питахайя со льдом"
+          }
         },
         {
           "name": {
@@ -803,7 +1063,11 @@
             "vi": "Sinh tố xoài"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Ripe mango blended with ice",
+            "ru": "Спелый манго со льдом"
+          }
         },
         {
           "name": {
@@ -812,7 +1076,11 @@
             "vi": "Sinh tố thập cẩm"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Seasonal tropical fruits blended together",
+            "ru": "Микс сезонных тропических фруктов"
+          }
         }
       ],
       "status": "confirmed"
@@ -831,7 +1099,11 @@
             "vi": "Nước ép cam"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Freshly squeezed orange juice",
+            "ru": "Свежевыжатый апельсиновый сок"
+          }
         },
         {
           "name": {
@@ -840,7 +1112,11 @@
             "vi": "Nước ép táo"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Freshly pressed apple juice",
+            "ru": "Свежевыжатый яблочный сок"
+          }
         },
         {
           "name": {
@@ -849,7 +1125,11 @@
             "vi": "Nước ép dưa hấu"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Fresh watermelon juice",
+            "ru": "Свежий арбузный сок"
+          }
         },
         {
           "name": {
@@ -858,7 +1138,11 @@
             "vi": "Nước chanh dây"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Fresh passion fruit juice",
+            "ru": "Свежий сок маракуйи"
+          }
         },
         {
           "name": {
@@ -867,7 +1151,11 @@
             "vi": "Nước ép dứa"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Fresh pineapple juice",
+            "ru": "Свежий ананасовый сок"
+          }
         },
         {
           "name": {
@@ -876,7 +1164,11 @@
             "vi": "Nước ép trái cây tổng hợp"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "A mix of fresh seasonal juices",
+            "ru": "Микс свежих сезонных соков"
+          }
         }
       ],
       "status": "confirmed"
@@ -895,7 +1187,11 @@
             "vi": "Coca-Cola"
           },
           "price": 30000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "330 ml can",
+            "ru": "Банка 330 мл"
+          }
         },
         {
           "name": {
@@ -904,7 +1200,11 @@
             "vi": "Pepsi"
           },
           "price": 30000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "330 ml can",
+            "ru": "Банка 330 мл"
+          }
         },
         {
           "name": {
@@ -913,7 +1213,11 @@
             "vi": "Coca-Cola Zero"
           },
           "price": 30000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "330 ml can, no sugar",
+            "ru": "Банка 330 мл, без сахара"
+          }
         },
         {
           "name": {
@@ -922,7 +1226,11 @@
             "vi": "Sprite"
           },
           "price": 30000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "330 ml can",
+            "ru": "Банка 330 мл"
+          }
         },
         {
           "name": {
@@ -931,7 +1239,11 @@
             "vi": "Fanta"
           },
           "price": 30000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "330 ml can",
+            "ru": "Банка 330 мл"
+          }
         },
         {
           "name": {
@@ -940,7 +1252,11 @@
             "vi": "Soda"
           },
           "price": 30000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Sparkling water",
+            "ru": "Газированная вода"
+          }
         },
         {
           "name": {
@@ -949,7 +1265,11 @@
             "vi": "Nước"
           },
           "price": 20000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Still drinking water",
+            "ru": "Негазированная вода"
+          }
         }
       ],
       "status": "confirmed"
@@ -968,7 +1288,11 @@
             "vi": "Ayran"
           },
           "price": 80000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Chilled salted yogurt drink",
+            "ru": "Холодный солёный кисломолочный напиток"
+          }
         },
         {
           "name": {
@@ -996,7 +1320,11 @@
             }
           ],
           "note": "Menu shows 80 000/160 000; sizes to confirm",
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Fruit compote made in-house, glass or jug",
+            "ru": "Домашний компот, стакан или кувшин"
+          }
         },
         {
           "name": {
@@ -1005,7 +1333,11 @@
             "vi": "Dừa tươi"
           },
           "price": 50000,
-          "status": "confirmed"
+          "status": "confirmed",
+          "description": {
+            "en": "Whole young coconut, served chilled",
+            "ru": "Молодой кокос целиком, охлаждённый"
+          }
         }
       ],
       "status": "confirmed"
@@ -1025,7 +1357,11 @@
             "vi": "Bia Saigon Special"
           },
           "price": 45000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Vietnamese lager",
+            "ru": "Вьетнамский лагер"
+          }
         },
         {
           "name": {
@@ -1034,7 +1370,11 @@
             "vi": "Bia Larue"
           },
           "price": 40000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Light Vietnamese lager",
+            "ru": "Лёгкий вьетнамский лагер"
+          }
         },
         {
           "name": {
@@ -1043,7 +1383,11 @@
             "vi": "Bia Heineken"
           },
           "price": 55000,
-          "status": "suggested"
+          "status": "suggested",
+          "description": {
+            "en": "Dutch lager",
+            "ru": "Нидерландский лагер"
+          }
         }
       ],
       "note": "Confirm whether the venue serves alcohol"

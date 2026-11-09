@@ -1,14 +1,13 @@
 "use client";
 
 import { addLine, allItems, cartCount, cartTotal, formatMoney, setQty, t, unitPrice, type CartLine, type Category, type Lang, type Menu, type MenuItem } from "@yanyin/domain";
-import { BellRing, Check, Dices, Flame, Martini, Plus, ReceiptText, Search, Soup, Wine } from "lucide-react";
-import Image from "next/image";
+import { BellRing, Check, ChefHat, Dices, Flame, Plus, ReceiptText, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import { venueBrand, type VenueBrand } from "@/lib/visual";
 import { RouletteSheet } from "./RouletteSheet";
 import { AboutSheet, CartSheet, ItemSheet, LangSheet, OrdersSheet, SearchSheet, orderStage, type PlacedOrder } from "./sheets";
-import { IconButton, ItemRow, ProductCard } from "./ui";
+import { Chip, DishTile, ItemCard, RoundButton, describe } from "./ui";
 
 function initialLang(): Lang {
   const code = navigator.language.slice(0, 2);
@@ -108,48 +107,60 @@ export function GuestApp({ menu }: { menu: Menu }) {
     <div className="min-h-dvh bg-g-bg text-g-ink">
       <div className="mx-auto max-w-[480px] pb-32">
         {/* Header */}
-        <header className="flex items-center gap-3 px-5 pt-[max(16px,env(safe-area-inset-top))] pb-2">
-          <button onClick={() => setSheet("about")} className="press flex min-w-0 items-center gap-3 text-left">
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-g-ink text-[17px] font-bold text-white">{brand.mark}</span>
+        <header className="flex items-center gap-3.5 px-5 pt-[max(18px,env(safe-area-inset-top))]">
+          <button onClick={() => setSheet("about")} className="press flex min-w-0 flex-1 items-center gap-3.5 text-left">
+            <span className="ink-grad grid size-[52px] shrink-0 place-items-center rounded-[18px] text-[20px] font-bold shadow-[0_10px_22px_-12px_rgba(11,11,15,0.6)]">{brand.mark}</span>
             <span className="min-w-0">
-              <span className="block truncate text-[17px] leading-tight font-semibold">{menu.venue.name}</span>
-              <span className="block truncate text-[13px] text-g-muted">
-                {table ? `${ui(lang, "table")} ${table} · ` : ""}
-                {brand.cuisine[lang as "en"] ?? brand.cuisine.en}
+              <span className="block truncate text-[20px] leading-tight font-bold tracking-[-0.02em]">{menu.venue.name}</span>
+              <span className="mt-1 flex min-w-0 items-center gap-2">
+                {table && <Chip tone="blue">{`${ui(lang, "table")} ${table.padStart(2, "0")}`}</Chip>}
+                <span className="truncate text-[13px] text-g-muted">{brand.cuisine[lang as "en"] ?? brand.cuisine.en}</span>
               </span>
             </span>
           </button>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {orders.length > 0 && (
-              <IconButton label={ui(lang, "orders")} onClick={() => setSheet("orders")} dot={live}>
+              <RoundButton label={ui(lang, "orders")} onClick={() => setSheet("orders")} dot={live}>
                 <ReceiptText size={19} strokeWidth={1.75} />
-              </IconButton>
+              </RoundButton>
             )}
-            <button onClick={() => setSheet("lang")} aria-label={ui(lang, "language")} className="press h-10 rounded-full bg-g-fill px-3.5 text-[13px] font-semibold uppercase">
-              {lang}
-            </button>
-            <IconButton label={ui(lang, "search")} onClick={() => setSheet("search")}>
+            <RoundButton label={ui(lang, "language")} onClick={() => setSheet("lang")}>
+              <span className="text-[13px] font-bold uppercase">{lang}</span>
+            </RoundButton>
+            <RoundButton label={ui(lang, "search")} onClick={() => setSheet("search")}>
               <Search size={19} strokeWidth={1.75} />
-            </IconButton>
+            </RoundButton>
           </div>
         </header>
 
         {/* Hero */}
-        <Hero brand={brand} lang={lang} currency={currency} itemById={itemById} onOpen={setItem} onRoulette={() => setSheet("roulette")} />
+        <Hero
+          brand={brand}
+          lang={lang}
+          currency={currency}
+          itemById={itemById}
+          categoryOf={categoryOf}
+          onOpen={setItem}
+          onAdd={(it) => {
+            quickAdd(it);
+            if (!it.variants.length && !it.modifierGroups.some((g) => g.required)) say("added");
+          }}
+          onRoulette={() => setSheet("roulette")}
+        />
 
         {/* Quick actions */}
-        <div className="mt-3 grid grid-cols-3 gap-2.5 px-5">
-          <QuickAction icon={<BellRing size={22} strokeWidth={1.75} />} label={ui(lang, "callStaff")} onClick={() => say("waiterCalled")} />
+        <div className="mt-4 grid grid-cols-3 gap-3 px-5">
+          <QuickAction icon={<BellRing size={20} strokeWidth={1.75} />} label={ui(lang, "callStaff")} onClick={() => say("waiterCalled")} />
           {hasCoals ? (
-            <QuickAction icon={<Flame size={22} strokeWidth={1.75} />} label={ui(lang, "changeCoals")} onClick={() => say("coalsCalled")} />
+            <QuickAction icon={<Flame size={20} strokeWidth={1.75} />} label={ui(lang, "changeCoals")} onClick={() => say("coalsCalled")} />
           ) : (
-            <QuickAction icon={<ReceiptText size={22} strokeWidth={1.75} />} label={ui(lang, "askBill")} onClick={() => say("billAsked")} />
+            <QuickAction icon={<ReceiptText size={20} strokeWidth={1.75} />} label={ui(lang, "askBill")} onClick={() => say("billAsked")} />
           )}
-          <QuickAction icon={<Dices size={22} strokeWidth={1.75} />} label={ui(lang, "quickRoulette")} onClick={() => setSheet("roulette")} accent />
+          <QuickAction icon={<Dices size={20} strokeWidth={1.75} />} label={ui(lang, "quickRoulette")} onClick={() => setSheet("roulette")} accent />
         </div>
 
         {/* Category tabs */}
-        <nav aria-label={ui(lang, "categories")} className="sticky top-0 z-30 mt-7 bg-white/92 backdrop-blur-xl">
+        <nav aria-label={ui(lang, "categories")} className="sticky top-0 z-30 mt-8 bg-g-bg/90 backdrop-blur-xl">
           <div ref={tabsRef} className="no-scrollbar flex gap-1 overflow-x-auto scroll-smooth px-5 py-2.5">
             {menu.categories.map((c) => {
               const on = c.id === active;
@@ -159,54 +170,40 @@ export function GuestApp({ menu }: { menu: Menu }) {
                   data-tab={c.id}
                   onClick={() => scrollTo(c.id)}
                   aria-current={on ? "true" : undefined}
-                  className={`press h-9 shrink-0 rounded-full px-4 text-[14px] font-medium whitespace-nowrap transition-colors duration-200 ${on ? "bg-g-ink text-white" : "text-g-muted"}`}
+                  className={`press h-9 shrink-0 rounded-full px-4 text-[14px] font-medium whitespace-nowrap transition-colors duration-200 ${on ? "bg-g-ink text-white shadow-[0_8px_18px_-10px_rgba(11,11,15,0.6)]" : "text-g-muted"}`}
                 >
                   {t(c.name, lang)}
                 </button>
               );
             })}
           </div>
-          <div className="h-px bg-g-line" />
         </nav>
 
         {/* Menu */}
         <main className="px-5">
-          {menu.categories.map((c) => {
-            const photos = c.items.filter((i) => i.photo);
-            const rest = c.items.filter((i) => !i.photo);
-            const props = (it: MenuItem) => ({
-              item: it,
-              role: c.role,
-              lang,
-              currency,
-              qty: qtyOf(it.id),
-              onOpen: () => setItem(it),
-              onAdd: () => quickAdd(it),
-              onQty: (q: number) => setPlainQty(it, q),
-            });
-            return (
-              <section key={c.id} id={`cat-${c.id}`} className="pt-9">
-                <h2 className="mb-4 flex items-baseline gap-2 text-[24px] leading-tight font-bold tracking-[-0.025em]">
-                  {t(c.name, lang)}
-                  <span className="text-[15px] font-medium tracking-normal text-g-faint">{c.items.length}</span>
-                </h2>
-                {photos.length > 0 && (
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-7">
-                    {photos.map((it) => (
-                      <ProductCard key={it.id} {...props(it)} />
-                    ))}
-                  </div>
-                )}
-                {rest.length > 0 && (
-                  <div className={photos.length ? "mt-4" : ""}>
-                    {rest.map((it) => (
-                      <ItemRow key={it.id} {...props(it)} />
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })}
+          {menu.categories.map((c) => (
+            <section key={c.id} id={`cat-${c.id}`} className="pt-8">
+              <h2 className="mb-4 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
+                {t(c.name, lang)}
+                <span className="text-[15px] font-medium tracking-normal text-g-faint">{c.items.length}</span>
+              </h2>
+              <div className="grid gap-3">
+                {c.items.map((it) => (
+                  <ItemCard
+                    key={it.id}
+                    item={it}
+                    role={c.role}
+                    lang={lang}
+                    currency={currency}
+                    qty={qtyOf(it.id)}
+                    onOpen={() => setItem(it)}
+                    onAdd={() => quickAdd(it)}
+                    onQty={(q) => setPlainQty(it, q)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
           <p className="pt-12 text-center text-[13px] text-g-faint">
             {ui(lang, "serviceNote")}
             <br />
@@ -222,7 +219,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             onClick={() => setSheet("cart")}
             className="animate-rise press mx-auto flex h-[60px] w-full max-w-[440px] items-center gap-3 rounded-full bg-g-ink pr-6 pl-2 text-white shadow-[0_16px_40px_-14px_rgba(11,11,15,0.55)]"
           >
-            <span className="grid size-11 place-items-center rounded-full bg-g-blue text-[15px] font-bold tabular-nums">{count}</span>
+            <span className="blue-grad grid size-11 place-items-center rounded-full text-[15px] font-bold tabular-nums">{count}</span>
             <span className="flex-1 text-left text-[16px] font-semibold">{ui(lang, "yourOrder")}</span>
             <span className="text-[16px] font-semibold tabular-nums">{formatMoney(total, currency, lang)}</span>
           </button>
@@ -231,7 +228,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
 
       {toast && (
         <div role="status" className={`animate-pop fixed inset-x-0 z-[80] mx-auto ${count > 0 ? "bottom-[calc(max(16px,env(safe-area-inset-bottom))+72px)]" : "bottom-[max(20px,env(safe-area-inset-bottom))]"} flex w-fit max-w-[90vw] items-center gap-2 rounded-full bg-g-ink px-4 py-3 text-[14px] font-medium text-white shadow-xl`}>
-          <span className="grid size-5 place-items-center rounded-full bg-g-blue">
+          <span className="blue-grad grid size-5 place-items-center rounded-full">
             <Check size={12} strokeWidth={3} />
           </span>
           {toast}
@@ -300,9 +297,9 @@ export function GuestApp({ menu }: { menu: Menu }) {
       />
 
       {age !== "ok" && (
-        <div className="animate-fade fixed inset-0 z-[90] flex flex-col bg-white px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
+        <div className="animate-fade fixed inset-0 z-[90] flex flex-col bg-g-bg px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <span className="grid size-16 place-items-center rounded-full bg-g-ink text-[26px] font-bold text-white">{brand.mark}</span>
+            <span className="ink-grad grid size-16 place-items-center rounded-[22px] text-[26px] font-bold">{brand.mark}</span>
             <p className="mt-8 text-[72px] leading-none font-bold tracking-[-0.04em]">18+</p>
             {age === "blocked" ? (
               <p className="mt-4 max-w-[280px] text-[17px] text-g-muted">{ui(lang, "ageBlocked")}</p>
@@ -322,11 +319,11 @@ export function GuestApp({ menu }: { menu: Menu }) {
                     sessionStorage.setItem(`age:${menu.venue.slug}`, "ok");
                   } catch {}
                 }}
-                className="press h-14 rounded-full bg-g-blue text-[16px] font-semibold text-white"
+                className="blue-grad press h-14 rounded-full text-[16px] font-semibold"
               >
                 {ui(lang, "ageYes")}
               </button>
-              <button onClick={() => setAge("blocked")} className="press h-14 rounded-full bg-g-fill text-[16px] font-semibold">
+              <button onClick={() => setAge("blocked")} className="card press h-14 rounded-full text-[16px] font-semibold">
                 {ui(lang, "ageNo")}
               </button>
             </div>
@@ -339,9 +336,9 @@ export function GuestApp({ menu }: { menu: Menu }) {
 
 function QuickAction({ icon, label, onClick, accent }: { icon: React.ReactNode; label: string; onClick: () => void; accent?: boolean }) {
   return (
-    <button onClick={onClick} className={`press flex h-[92px] flex-col justify-between rounded-[22px] p-3.5 text-left ${accent ? "bg-g-blue-soft text-g-blue" : "bg-g-fill"}`}>
-      {icon}
-      <span className={`text-[13px] leading-[1.25] font-medium ${accent ? "text-g-blue" : "text-g-ink"}`}>{label}</span>
+    <button onClick={onClick} className={`press flex h-[104px] flex-col justify-between rounded-[24px] p-3.5 text-left ${accent ? "blue-grad" : "card"}`}>
+      <span className={`grid size-10 place-items-center rounded-full ${accent ? "bg-white/20 text-white" : "chip-blue"}`}>{icon}</span>
+      <span className={`text-[13px] leading-[1.25] font-semibold ${accent ? "text-white" : "text-g-ink"}`}>{label}</span>
     </button>
   );
 }
@@ -351,59 +348,101 @@ function Hero({
   lang,
   currency,
   itemById,
+  categoryOf,
   onOpen,
+  onAdd,
   onRoulette,
 }: {
   brand: VenueBrand;
   lang: Lang;
   currency: Menu["venue"]["currency"];
   itemById: Map<string, MenuItem>;
+  categoryOf: Map<string, Category>;
   onOpen: (it: MenuItem) => void;
+  onAdd: (it: MenuItem) => void;
   onRoulette: () => void;
 }) {
   const slides = brand.hero.filter((s) => s.kind === "roulette" || itemById.get(s.itemId)?.photo);
-  const single = slides.length === 1;
+  const [index, setIndex] = useState(0);
+  const reelItems = (() => {
+    const photos = [...itemById.values()].filter((i) => i.photo);
+    if (photos.length >= 3) return photos.slice(0, 3);
+    const seen = new Set<string>();
+    return [...itemById.values()].filter((i) => {
+      const role = categoryOf.get(i.id)?.role ?? "main";
+      return !seen.has(role) && !!seen.add(role);
+    }).slice(0, 3);
+  })();
   return (
-    <div className={`no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 ${single ? "" : "scroll-px-5"}`}>
-      {slides.map((s, i) => {
-        const width = single ? "w-full" : "w-[86%]";
-        if (s.kind === "roulette") {
-          return (
-            <button key={i} onClick={onRoulette} className={`press relative h-[204px] shrink-0 snap-start overflow-hidden rounded-[28px] bg-g-ink p-5 text-left text-white ${width}`}>
-              <div aria-hidden className="absolute top-5 right-5 flex gap-1.5">
-                {[Soup, Wine, Martini].map((Icon, k) => (
-                  <span key={k} className="grid h-14 w-11 place-items-center rounded-2xl bg-white/10 text-white/80">
-                    <Icon size={20} strokeWidth={1.75} />
+    <div className="mt-5">
+      <div
+        className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto"
+        onScroll={(e) => setIndex(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
+      >
+        {slides.map((s, i) => (
+          <div key={i} className="w-full shrink-0 snap-start px-5">
+            {s.kind === "roulette" ? (
+              <div className="card-float overflow-hidden rounded-[32px]">
+                <button onClick={onRoulette} className="blue-grad relative block h-[200px] w-full overflow-hidden">
+                  <span aria-hidden className="absolute inset-0 bg-[radial-gradient(80%_70%_at_50%_0%,rgba(255,255,255,0.35),transparent_70%)]" />
+                  <span className="absolute inset-x-6 top-1/2 flex -translate-y-1/2 justify-center gap-2.5">
+                    {[0, 1, 2].map((k) => {
+                      const it = reelItems[k];
+                      return (
+                        <span key={k} className="grid h-[112px] w-[88px] place-items-center rounded-[20px] bg-white/95 shadow-[inset_0_-6px_12px_rgba(47,91,255,0.12),0_12px_24px_-12px_rgba(0,0,0,0.35)]">
+                          {it ? <DishTile item={it} role={categoryOf.get(it.id)?.role ?? "main"} photoScale={0.9} glyph={0.62} className="size-full rounded-[20px] !bg-none" /> : <Dices size={28} strokeWidth={1.75} className="text-g-blue" />}
+                        </span>
+                      );
+                    })}
                   </span>
-                ))}
+                </button>
+                <div className="p-5">
+                  <Chip tone="blue" icon={<Dices size={12} strokeWidth={2.25} />}>
+                    {ui(lang, "roulette")}
+                  </Chip>
+                  <h3 className="mt-2.5 text-[24px] leading-[1.15] font-bold tracking-[-0.02em]">{ui(lang, "rouletteTitle")}</h3>
+                  <p className="mt-1.5 text-[14px] leading-snug text-g-muted">{ui(lang, "rouletteHint")}</p>
+                  <button onClick={onRoulette} className="blue-grad press mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold">
+                    <Dices size={18} strokeWidth={2} /> {ui(lang, "rouletteCta")}
+                  </button>
+                </div>
               </div>
-              <span className="absolute inset-x-5 bottom-5 block">
-                <span className="block text-[13px] font-medium text-white/60">{ui(lang, "roulette")}</span>
-                <span className="mt-1 block max-w-[78%] text-[22px] leading-[1.15] font-bold tracking-[-0.02em]">{ui(lang, "rouletteTitle")}</span>
-                <span className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-g-blue px-4 text-[14px] font-semibold">
-                  <Dices size={17} strokeWidth={2} /> {ui(lang, "rouletteCta")}
-                </span>
-              </span>
-            </button>
-          );
-        }
-        const it = itemById.get(s.itemId)!;
-        return (
-          <button key={i} onClick={() => onOpen(it)} className={`press relative h-[204px] shrink-0 snap-start overflow-hidden rounded-[28px] bg-g-fill text-left ${width}`}>
-            <Image src={it.photo!} alt="" width={420} height={280} priority={i === 0} className="dish-shadow absolute top-1/2 -right-[14%] w-[68%] -translate-y-[46%] object-contain" />
-            <span className="absolute inset-y-5 left-5 flex w-[48%] flex-col">
-              <span className="text-[13px] font-medium text-g-muted">{s.kicker[lang as "en"] ?? s.kicker.en}</span>
-              <span className="mt-1 text-[22px] leading-[1.15] font-bold tracking-[-0.02em]">{t(it.name, lang)}</span>
-              <span className="mt-auto inline-flex h-10 w-fit items-center gap-2 rounded-full bg-white pr-1.5 pl-4 text-[15px] font-semibold tabular-nums shadow-[0_2px_10px_-4px_rgba(11,11,15,0.2)]">
-                {formatMoney(it.price, currency, lang)}
-                <span className="grid size-7 place-items-center rounded-full bg-g-blue text-white">
-                  <Plus size={16} strokeWidth={2.25} />
-                </span>
-              </span>
-            </span>
-          </button>
-        );
-      })}
+            ) : (
+              (() => {
+                const it = itemById.get(s.itemId)!;
+                const role = categoryOf.get(it.id)?.role ?? "main";
+                return (
+                  <div className="card-float overflow-hidden rounded-[32px]">
+                    <button onClick={() => onOpen(it)} className="block w-full" aria-label={t(it.name, lang)}>
+                      <DishTile item={it} role={role} photoScale={0.84} className="h-[200px] w-full" />
+                    </button>
+                    <div className="p-5">
+                      <Chip tone="orange" icon={<ChefHat size={12} strokeWidth={2.25} />}>
+                        {s.kicker[lang as "en"] ?? s.kicker.en}
+                      </Chip>
+                      <h3 className="mt-2.5 text-[24px] leading-[1.15] font-bold tracking-[-0.02em]">{t(it.name, lang)}</h3>
+                      <p className="mt-1.5 line-clamp-2 text-[14px] leading-snug text-g-muted">{describe(it, lang)}</p>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <span className="text-[22px] font-bold tracking-[-0.02em] tabular-nums">{formatMoney(it.price, currency, lang)}</span>
+                        <button onClick={() => onAdd(it)} className="blue-grad press flex h-12 items-center gap-2 rounded-full px-5 text-[15px] font-semibold">
+                          <Plus size={18} strokeWidth={2.25} /> {ui(lang, "add")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+          </div>
+        ))}
+      </div>
+      {slides.length > 1 && (
+        <div className="mt-3.5 flex justify-center gap-1.5" aria-hidden>
+          {slides.map((_, i) => (
+            <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === index ? "bar-grad w-5" : "w-1.5 bg-g-fill-2"}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

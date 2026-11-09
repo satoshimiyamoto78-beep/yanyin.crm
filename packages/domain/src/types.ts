@@ -44,6 +44,8 @@ export type MenuItem = {
   id: string;
   categoryId: string;
   name: I18nText;
+  /** Short description shown on cards (draft until the venue confirms). */
+  description?: I18nText;
   /** Base price; when variants exist it equals the cheapest variant. */
   price: number;
   variants: Variant[];
