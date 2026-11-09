@@ -37,6 +37,10 @@ export type ModifierOption = {
   note?: I18nText;
   /** Brand logo path, shown instead of the name when present. */
   logo?: string;
+  /** Swatch colour for tiles and builder previews (sauce, syrup). */
+  color?: string;
+  /** Drawn glyph key for tiles and builder previews (pepperoni, mushroom…). */
+  glyph?: string;
 };
 
 export type ModifierGroup = {
@@ -48,8 +52,9 @@ export type ModifierGroup = {
   /**
    * "scale": ordered steps picked with a slider (hookah strength 1–10).
    * "brands": large brand tiles (hookah tobacco).
+   * "tiles": small visual tiles with a colour or glyph (sauces, toppings, flavours).
    */
-  display: "chips" | "scale" | "brands";
+  display: "chips" | "scale" | "brands" | "tiles";
   /** Option preselected when the guest opens the item (also used by quick add). */
   defaultOptionId?: string;
   options: ModifierOption[];
@@ -70,6 +75,8 @@ export type MenuItem = {
   /** Public URL of the dish photo (real photo, AI-enhanced per ADR-007). */
   photo?: string;
   note?: string;
+  /** A constructor item: the page shows a live preview that follows the picks. */
+  builder?: "pizza" | "drink";
 };
 
 export type ServiceCall = { id: string; name: I18nText };

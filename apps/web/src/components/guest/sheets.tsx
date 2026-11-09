@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
 import { haptic } from "@/lib/haptics";
+import { DrinkPreview, OptionTiles, PizzaPreview } from "./builders";
 import { DishTile, HalalIcon, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
 
 /* ---------------------------------------------------------------- Item */
@@ -109,7 +110,14 @@ function ItemSheetBody({
         </div>
       }
     >
-      {item.photo ? (
+      {item.builder ? (
+        <div className="px-3 pt-3">
+          {/* Constructor: a live preview that follows every pick. */}
+          <div className="mesh-blue aspect-[1.15] w-full rounded-[28px] p-4">
+            {item.builder === "pizza" ? <PizzaPreview item={item} ids={optionIds} variantId={variantId} /> : <DrinkPreview item={item} ids={optionIds} variantId={variantId} />}
+          </div>
+        </div>
+      ) : item.photo ? (
         <div className="px-3 pt-3">
           <DishTile item={item} role={category.role} photoScale={0.8} glyph={0.3} className="aspect-[1.25] w-full rounded-[28px]" />
         </div>
@@ -154,11 +162,22 @@ function ItemSheetBody({
                 {steps && <span className="text-[13px] font-semibold text-g-blue tabular-nums">{String(gi + 1).padStart(2, "0")}</span>}
                 <h3 className="text-[17px] font-semibold">{t(g.name, lang)}</h3>
                 <span className={`ml-auto text-[13px] font-medium ${g.required && missing.includes(g.id) ? "text-g-blue" : "text-g-faint"}`}>
-                  {g.display === "chips" && g.max > 1 && g.max < g.options.length ? `${ui(lang, "pickUpTo")} ${g.max} · ` : ""}
+                  {(g.display === "chips" || g.display === "tiles") && g.max > 1 && g.max < g.options.length ? `${ui(lang, "pickUpTo")} ${g.max} · ` : ""}
                   {ui(lang, g.required ? "required" : "optional")}
                 </span>
               </div>
-              {g.display === "brands" ? (
+              {g.display === "tiles" ? (
+                <OptionTiles
+                  group={g}
+                  lang={lang}
+                  currency={currency}
+                  value={optionIds}
+                  onPick={(id) => {
+                    haptic("light");
+                    toggle(g.id, id);
+                  }}
+                />
+              ) : g.display === "brands" ? (
                 <TobaccoTiles
                   group={g}
                   lang={lang}
@@ -276,21 +295,27 @@ const STRENGTH_KEYS = ["strength1", "strength2", "strength3", "strength4"] as co
 function StrengthScale({ group, lang, value, onChange }: { group: ModifierGroup; lang: Lang; value: number; onChange: (i: number) => void }) {
   const n = group.options.length;
   const v = Math.max(0, value);
-  const word = ui(lang, STRENGTH_KEYS[Math.min(3, Math.floor((v / n) * 4))]!);
+  const strength = group.id === "strength";
+  // Hookah strength reads as a number and a word; other scales (sweetness, ice) read as the step's own name.
+  const word = strength ? ui(lang, STRENGTH_KEYS[Math.min(3, Math.floor((v / n) * 4))]!) : t(group.options[v]!.name, lang);
   return (
     <div>
-      <div className="flex items-end gap-3">
-        <span className="text-[56px] leading-[0.9] font-semibold tracking-[-0.04em] tabular-nums">{v + 1}</span>
-        <span className="pb-1 text-[15px] text-g-muted">
-          / {n} · <span className="font-medium text-g-ink">{word}</span>
-        </span>
-      </div>
-      <div className="mt-6">
+      {strength ? (
+        <div className="flex items-end gap-3">
+          <span className="text-[56px] leading-[0.9] font-semibold tracking-[-0.04em] tabular-nums">{v + 1}</span>
+          <span className="pb-1 text-[15px] text-g-muted">
+            / {n} · <span className="font-medium text-g-ink">{word}</span>
+          </span>
+        </div>
+      ) : (
+        <p key={v} className="animate-pop text-[28px] leading-tight font-semibold tracking-[-0.02em]">{word}</p>
+      )}
+      <div className={strength ? "mt-6" : "mt-4"}>
         <TrackSlider value={v} min={0} max={n - 1} onChange={onChange} label={t(group.name, lang)} valueText={`${v + 1} / ${n}, ${word}`} notches={n} />
       </div>
       <div className="mt-1 flex justify-between text-[12px] font-medium text-g-faint tabular-nums">
-        <span>1 · {ui(lang, "strength1")}</span>
-        <span>{n} · {ui(lang, "strength4")}</span>
+        <span>{strength ? `1 · ${ui(lang, "strength1")}` : t(group.options[0]!.name, lang)}</span>
+        <span>{strength ? `${n} · ${ui(lang, "strength4")}` : t(group.options[n - 1]!.name, lang)}</span>
       </div>
     </div>
   );

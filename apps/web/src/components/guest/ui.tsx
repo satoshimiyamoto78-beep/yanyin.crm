@@ -15,6 +15,7 @@ import {
   Leaf,
   Martini,
   Minus,
+  Pizza,
   Plus,
   Popcorn,
   Salad,
@@ -72,6 +73,7 @@ const ROLE_ICON: Record<CategoryRole, LucideIcon | typeof HookahIcon> = {
 
 export function RoleIcon({ role, name, size = 22 }: { role: CategoryRole; name?: string; size?: number }) {
   let Icon = ROLE_ICON[role];
+  if (name && /pizza|margherita|pepperoni/i.test(name)) Icon = Pizza;
   if (role === "alcohol" && name) {
     if (/beer|cider|corona|heineken|saigon|tiger|larue|1664/i.test(name)) Icon = Beer;
     else if (/spritz|negroni|mojito|margarita|sour|martini|tai|iced tea|libre|tonic|bull|shot|b-52|boom/i.test(name)) Icon = Martini;

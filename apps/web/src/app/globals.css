@@ -295,6 +295,27 @@ body {
   to { background-position: 100% 100%; }
 }
 
+/* Drink builder: the liquid surface rolls, ice bobs, bubbles rise. */
+@keyframes drink-wave {
+  to { transform: translateX(-40px); }
+}
+.drink-wave {
+  animation: drink-wave 2.4s linear infinite;
+}
+@keyframes drink-float {
+  50% { transform: translateY(-3px); }
+}
+.drink-float {
+  animation: drink-float 2.6s ease-in-out infinite;
+}
+@keyframes drink-bubble {
+  from { transform: translateY(0); opacity: 0.9; }
+  to { transform: translateY(-110px); opacity: 0; }
+}
+.drink-bubble {
+  animation: drink-bubble 2.2s ease-in infinite;
+}
+
 /* Win ring around the hub when the wheel lands. */
 @keyframes wheel-ring {
   from { box-shadow: 0 0 0 0 rgba(47, 107, 255, 0.55); }
@@ -350,6 +371,9 @@ body {
   .aurora::after,
   .wheel-idle,
   .yan-orb,
+  .drink-wave,
+  .drink-float,
+  .drink-bubble,
   .animate-page {
     animation: none;
   }

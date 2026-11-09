@@ -29,7 +29,7 @@ export type RawMenu = {
 };
 
 type RawVariant = { name: I18nText; price: number };
-type RawOption = { name: I18nText; price: number; note?: I18nText; logo?: string };
+type RawOption = { name: I18nText; price: number; note?: I18nText; logo?: string; color?: string; glyph?: string };
 
 type RawCategory = {
   name: I18nText;
@@ -43,7 +43,7 @@ type RawCategory = {
     name: I18nText;
     required?: boolean;
     max?: number;
-    display?: "chips" | "scale" | "brands";
+    display?: "chips" | "scale" | "brands" | "tiles";
     /** Index of the preselected option. */
     default?: number;
     options: RawOption[];
@@ -63,6 +63,7 @@ type RawItem = {
   note?: string;
   /** Ids of the category's modifier groups this item uses; all of them when omitted. */
   modifier_groups?: string[];
+  builder?: "pizza" | "drink";
 };
 
 const ROLE_RULES: [RegExp, CategoryRole][] = [
@@ -125,6 +126,8 @@ export function normalizeMenu(raw: RawMenu): Menu {
         price: o.price,
         ...(o.note ? { note: o.note } : {}),
         ...(o.logo ? { logo: o.logo } : {}),
+        ...(o.color ? { color: o.color } : {}),
+        ...(o.glyph ? { glyph: o.glyph } : {}),
       }));
       return {
         id: g.id,
@@ -160,6 +163,7 @@ export function normalizeMenu(raw: RawMenu): Menu {
         tags: ri.tags ?? [],
         status: status(ri.status),
         ...(ri.photo ? { photo: ri.photo } : {}),
+        ...(ri.builder ? { builder: ri.builder } : {}),
         ...(ri.note ? { note: ri.note } : {}),
       };
     });
