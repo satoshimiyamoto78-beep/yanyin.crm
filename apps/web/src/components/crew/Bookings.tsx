@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Clock, History, ListOrdered, UserRound, Armchair, Ban, CalendarCheck, CalendarDays, CalendarPlus, Check, Hourglass, Pencil, Phone, StickyNote, Users } from "lucide-react";
+import { ChevronRight, History, ListOrdered, UserRound, Armchair, Ban, CalendarCheck, CalendarDays, CalendarPlus, Check, Hourglass, Pencil, Phone, StickyNote, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
@@ -301,7 +301,7 @@ function BookingCard({ b, today, onSeat, onHold }: { b: Booking; today: boolean;
   const seated = b.status === "seated";
   const soon = today && !seated && mins(b.time) - NOW <= 60;
   return (
-    <article {...press} style={{ WebkitTouchCallout: "none" }} className={`rounded-[22px] p-4 select-none ${soon ? "bg-g-tint-blue" : "bg-g-fill"} ${seated ? "opacity-55" : ""}`}>
+    <article {...press} style={{ WebkitTouchCallout: "none" }} className={`rounded-[22px] px-4 py-3.5 select-none ${soon ? "bg-g-tint-blue" : "bg-g-fill"} ${seated ? "opacity-55" : ""}`}>
       <div className="flex items-start gap-3.5">
         <div className="min-w-[60px] shrink-0">
           <p className="text-[22px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{b.time}</p>
@@ -325,16 +325,16 @@ function BookingCard({ b, today, onSeat, onHold }: { b: Booking; today: boolean;
           </p>
         </div>
       </div>
-      {(b.note || (today && !seated)) && (
+      {(b.note || soon) && (
         <div className="mt-3 flex items-center gap-2">
           {b.note ? (
             <p className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full bg-g-tint-note px-3 py-1.5 text-[12px] text-g-ink-2">
               <StickyNote size={13} strokeWidth={2} className="shrink-0 text-g-orange" /> <span className="truncate">{b.note}</span>
             </p>
           ) : (
-            <span className="flex-1 text-[11px] text-g-faint">{tr("Hold for more")}</span>
+            <span className="flex-1" />
           )}
-          {today && !seated && (
+          {soon && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -627,97 +627,92 @@ function BookingHistory({ bookings, onClose }: { bookings: Booking[]; onClose: (
 }
 
 /**
- * Guests waiting for a table. For each: who, how many, for when; the free
- * tables that fit them (smallest first, the best one pre-chosen, tap another to
- * switch) and one button to seat them there. No table that fits: say so and
- * offer to call the guest.
+ * Guests waiting for a table, as name pills. Hold a pill for the free tables
+ * that fit the party; tap one to seat them there. Nothing else on the card.
  */
 function WaitingList({ list, tables, today, onSeat, className = "" }: { list: Booking[]; tables: FloorTable[]; today: boolean; onSeat: (b: Booking, table: number) => void; className?: string }) {
   const tr = useTr();
-  const [pick, setPick] = useState<Record<string, number>>({});
+  const [open, setOpen] = useState<string | null>(null);
+  const cur = list.find((b) => b.id === open);
   return (
     <WidgetCard
       className={className}
       title={tr("Waiting list")}
       icon={<ListOrdered size={13} strokeWidth={2.4} />}
-      aside={list.length ? <span className="chip-orange rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums">{list.length}</span> : undefined}
+      aside={list.length ? <span className="text-[12px] text-g-muted">{tr("Hold a name to seat")}</span> : undefined}
     >
       {list.length ? (
-        <div className="mt-3 grid gap-2">
-          {list.map((b) => {
-            const fits = tables.filter((x) => x.status === "free" && x.seats >= b.guests).sort((p, q) => p.seats - q.seats).slice(0, 3);
-            const chosen = pick[b.id] ?? fits[0]?.no;
-            const initials = b.name
-              .split(" ")
-              .map((w) => w[0])
-              .slice(0, 2)
-              .join("")
-              .toUpperCase();
-            return (
-              <div key={b.id} className="min-w-0 rounded-[18px] bg-white p-3">
-                <div className="flex items-center gap-3">
-                  <span className="chip-orange grid size-10 shrink-0 place-items-center rounded-full text-[14px] font-bold">{initials}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-semibold">{b.name}</span>
-                    <span className="mt-0.5 flex items-center gap-2.5 text-[12px] text-g-muted tabular-nums">
-                      <span className="flex items-center gap-1">
-                        <Users size={12} strokeWidth={2.2} /> {b.guests}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} strokeWidth={2.2} /> {b.time}
-                      </span>
-                      {today && <span className="whitespace-nowrap">{relative(b.time)}</span>}
-                    </span>
-                  </span>
-                  {!fits.length && (
-                    <a href={`tel:${b.phone.replace(/\s/g, "")}`} onClick={() => haptic("light")} className="press grid size-9 shrink-0 place-items-center rounded-full bg-g-fill" aria-label={tr("Call")}>
-                      <Phone size={16} strokeWidth={2.2} />
-                    </a>
-                  )}
-                </div>
-                {fits.length ? (
-                  <div className="mt-2.5 flex items-center gap-2">
-                    <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
-                      {fits.map((x) => (
-                        <button
-                          key={x.no}
-                          onClick={() => {
-                            haptic("tick");
-                            setPick((p) => ({ ...p, [b.id]: x.no }));
-                          }}
-                          aria-pressed={chosen === x.no}
-                          className={`press flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap tabular-nums ${chosen === x.no ? "bg-g-blue-soft text-g-blue ring-[1.5px] ring-g-blue" : "bg-g-fill text-g-ink-2"}`}
-                        >
-                          <Armchair size={12} strokeWidth={2.2} /> {x.no} · {x.seats}
-                        </button>
-                      ))}
-                    </div>
-                    {today && chosen !== undefined && (
-                      <button
-                        onClick={() => {
-                          haptic("success");
-                          onSeat(b, chosen);
-                        }}
-                        className="press h-9 shrink-0 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold whitespace-nowrap text-white"
-                      >
-                        {tr("Seat at")} {chosen}
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium text-g-orange">
-                    <Hourglass size={13} strokeWidth={2.2} /> {tr("No free table for this party yet")}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {list.map((b) => (
+            <WaitingPill key={b.id} b={b} onHold={() => setOpen(b.id)} />
+          ))}
         </div>
       ) : (
         <p className="mt-3 flex items-center gap-2 text-[14px] text-g-muted">
           <span className="size-2 rounded-full bg-g-green" /> {tr("No one is waiting for a table")}
         </p>
       )}
+      {cur && (
+        <PeekCard label={cur.name} onClose={() => setOpen(null)}>
+          <PeekHeader
+            kicker={`${cur.time}${today ? ` · ${relative(cur.time)}` : ""}`}
+            title={cur.name}
+            facts={[
+              { icon: Users, text: `${cur.guests} ${tr("guests")}` },
+              { icon: Phone, text: prettyPhone(cur.phone) },
+            ]}
+          />
+          {(() => {
+            const fits = tables.filter((x) => x.status === "free" && x.seats >= cur.guests).sort((p, q) => p.seats - q.seats);
+            return fits.length ? (
+              <>
+                <p className="mt-4 text-[13px] font-semibold text-g-muted">{tr("Seat at a free table")}</p>
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {fits.map((x, i) => (
+                    <button
+                      key={x.no}
+                      disabled={!today}
+                      onClick={() => {
+                        haptic("success");
+                        setOpen(null);
+                        onSeat(cur, x.no);
+                      }}
+                      className={`press flex h-16 flex-col items-center justify-center rounded-[18px] disabled:opacity-40 ${i === 0 ? "blue-grad" : "bg-g-fill"}`}
+                    >
+                      <span className="text-[20px] leading-none font-bold tabular-nums">{x.no}</span>
+                      <span className={`mt-1 flex items-center gap-0.5 text-[11px] ${i === 0 ? "text-white/80" : "text-g-muted"}`}>
+                        <Users size={10} strokeWidth={2.4} /> {x.seats}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[12px] text-g-muted">{tr("The best fit is highlighted")}</p>
+              </>
+            ) : (
+              <PeekActions items={[{ icon: Phone, label: tr("No free table yet · call the guest"), href: `tel:${cur.phone.replace(/\s/g, "")}` }]} />
+            );
+          })()}
+        </PeekCard>
+      )}
     </WidgetCard>
+  );
+}
+
+function WaitingPill({ b, onHold }: { b: Booking; onHold: () => void }) {
+  const press = useLongPress(onHold);
+  const initials = b.name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <button {...press} style={{ WebkitTouchCallout: "none" }} className="flex h-11 items-center gap-2 rounded-full bg-white py-1 pr-3.5 pl-1 select-none">
+      <span className="chip-orange grid size-9 place-items-center rounded-full text-[12px] font-bold">{initials}</span>
+      <span className="text-[14px] font-semibold">{b.name.split(" ")[0]}</span>
+      <span className="flex items-center gap-0.5 text-[12px] text-g-muted tabular-nums">
+        <Users size={12} strokeWidth={2.2} /> {b.guests} · {b.time}
+      </span>
+    </button>
   );
 }

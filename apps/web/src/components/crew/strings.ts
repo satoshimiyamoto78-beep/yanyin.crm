@@ -1,5 +1,9 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Hold a name to seat": "Зажмите имя, чтобы посадить",
+  "Seat at a free table": "Посадить за свободный стол",
+  "The best fit is highlighted": "Лучший по размеру выделен",
+  "No free table yet · call the guest": "Свободного стола нет · позвонить гостю",
   "No free table for this party yet": "Пока нет свободного стола на столько гостей",
   "Drag the scale": "Двигайте шкалу",
   "Booking history": "История броней",
@@ -441,6 +445,10 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Hold a name to seat": "Giữ tên để xếp bàn",
+  "Seat at a free table": "Xếp vào bàn trống",
+  "The best fit is highlighted": "Bàn phù hợp nhất được tô sáng",
+  "No free table yet · call the guest": "Chưa có bàn trống · gọi khách",
   "No free table for this party yet": "Chưa có bàn trống cho nhóm này",
   "Drag the scale": "Kéo thước",
   "Booking history": "Lịch sử đặt bàn",
