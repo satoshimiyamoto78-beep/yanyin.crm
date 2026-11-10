@@ -42,8 +42,8 @@ import {
 } from "./sheets";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { Reveal, RouletteWheel, startLoading } from "./motion";
-import { ItemCard } from "./ui";
+import { Island, Reveal, RouletteWheel, startLoading, type IslandNotice } from "./motion";
+import { ActionCircle, ItemCard } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
 function initialLang(): Lang {
@@ -61,7 +61,7 @@ type SheetName =
   | "yan"
   | null;
 
-type Notice = { title: string; text?: string; icon: React.ReactNode };
+type Notice = IslandNotice;
 
 /**
  * yanyin.menu — the guest app opened from a table QR code. One scrolling menu
@@ -144,8 +144,13 @@ export function GuestApp({ menu }: { menu: Menu }) {
     setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), 2600);
   }, []);
   /** Every action answers with a notification: a title and what happens next. */
-  const say = (key: UiKey, icon: React.ReactNode = <BellRing size={18} strokeWidth={2} />) =>
-    flash({ title: ui(lang, key), text: ui(lang, `${key}Hint` as UiKey), icon });
+  const say = (key: UiKey, icon: React.ReactNode = <BellRing size={16} strokeWidth={2.25} />) =>
+    flash({
+      title: ui(lang, key),
+      text: ui(lang, `${key}Hint` as UiKey),
+      icon,
+      tone: key === "added" || key === "orderSent" ? "green" : key === "coalsCalled" ? "orange" : "blue",
+    });
 
   const addToCart = (
     it: MenuItem,
@@ -284,45 +289,36 @@ export function GuestApp({ menu }: { menu: Menu }) {
         </Reveal>
 
         {/* Quick actions */}
-        {/* Quick actions: the same hot-button tiles as the waiter app; venues add their own service calls. */}
-        <div className="no-scrollbar mt-5 flex gap-2.5 overflow-x-auto px-5">
-          <QuickAction
-            icon={<BellRing size={17} strokeWidth={2} />}
+        {/* Quick actions: one compact row of round buttons, the same as on the waiter's home. */}
+        <div className="mt-5 flex justify-around px-3">
+          <ActionCircle
+            icon={<BellRing size={22} strokeWidth={1.9} />}
             label={ui(lang, "qaWaiter")}
-            action={ui(lang, "qaWaiterDo")}
-            sub={ui(lang, "qaWaiterSub")}
             onClick={() => say("waiterCalled")}
           />
           {hasCoals && (
-            <QuickAction
-              icon={<Flame size={17} strokeWidth={2} />}
-              label={ui(lang, "qaCoals")}
-              action={ui(lang, "qaCoalsDo")}
-              sub={ui(lang, "qaCoalsSub")}
-              onClick={() => say("coalsCalled", <Flame size={18} strokeWidth={2} />)}
+            <ActionCircle
+              icon={<Flame size={22} strokeWidth={1.9} />}
+              label={ui(lang, "qaCoalsDo")}
+              onClick={() => say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)}
             />
           )}
-          <QuickAction
-            icon={<ReceiptText size={17} strokeWidth={2} />}
+          <ActionCircle
+            icon={<ReceiptText size={22} strokeWidth={1.9} />}
             label={ui(lang, "qaBill")}
-            action={ui(lang, "qaBillDo")}
-            sub={ui(lang, "qaBillSub")}
-            onClick={() => say("billAsked", <ReceiptText size={18} strokeWidth={2} />)}
+            onClick={() => say("billAsked", <ReceiptText size={16} strokeWidth={2.25} />)}
           />
-          <QuickAction
-            icon={<Dices size={17} strokeWidth={2} />}
+          <ActionCircle
             label={ui(lang, "qaRoulette")}
-            action={ui(lang, "qaRouletteDo")}
-            sub={ui(lang, "qaRouletteSub")}
             onClick={() => setSheet("roulette")}
-            accent
+            art={<RouletteWheel size={46} bare />}
           />
         </div>
 
         {/* Category tabs */}
         <nav
           aria-label={ui(lang, "categories")}
-          className="sticky top-0 z-30 mt-8 bg-white"
+          className="sticky top-0 z-30 mt-6 bg-white"
         >
           <div
             ref={tabsRef}
@@ -401,29 +397,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         </div>
       )}
 
-      {notice && (
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center px-4 pt-[max(12px,env(safe-area-inset-top))]">
-          <div
-            key={notice.title}
-            role="status"
-            className="animate-notice pointer-events-auto flex w-full max-w-[440px] items-center gap-3 rounded-[22px] bg-g-ink px-4 py-3.5 text-white"
-          >
-            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full">
-              {notice.icon}
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[15px] leading-tight font-semibold">
-                {notice.title}
-              </span>
-              {notice.text && (
-                <span className="mt-0.5 block text-[13px] text-white/60">
-                  {notice.text}
-                </span>
-              )}
-            </span>
-          </div>
-        </div>
-      )}
+      <Island notice={notice} />
 
       <ItemSheet
         item={item}
@@ -579,47 +553,6 @@ export function GuestApp({ menu }: { menu: Menu }) {
         </div>
       )}
     </div>
-  );
-}
-
-function QuickAction({
-  icon,
-  label,
-  action,
-  sub,
-  onClick,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  action: string;
-  sub: string;
-  onClick: () => void;
-  accent?: boolean;
-}) {
-  return (
-    <button
-      onClick={() => {
-        haptic("light");
-        onClick();
-      }}
-      className={`press relative flex h-[112px] w-[132px] shrink-0 flex-col justify-between overflow-hidden rounded-[22px] p-3.5 text-left ${accent ? "mesh-blue" : "bg-g-fill"}`}
-    >
-      {accent && (
-        // Illustration: a corner of the roulette wheel, turning slowly.
-        <span aria-hidden className="absolute -right-9 -bottom-9 opacity-90">
-          <RouletteWheel size={96} />
-        </span>
-      )}
-      <span className="relative flex items-center justify-between">
-        <span className="text-[12px] font-medium text-g-muted">{label}</span>
-        {!accent && <span className="text-g-blue">{icon}</span>}
-      </span>
-      <span className="relative">
-        <span className="block text-[18px] leading-tight font-semibold tracking-[-0.02em]">{action}</span>
-        <span className="mt-0.5 block truncate text-[12px] text-g-muted">{sub}</span>
-      </span>
-    </button>
   );
 }
 

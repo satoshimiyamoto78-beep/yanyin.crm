@@ -287,6 +287,48 @@ export function ItemCard({
   );
 }
 
+/* ---------------------------------------------------------------- Action circles */
+
+/**
+ * Quick action: a round button with a short label under it (banking-app
+ * style). Used in one compact row on the guest menu and the waiter's home.
+ * `badge` shows a count; `accent` marks the one that needs attention.
+ */
+export function ActionCircle({
+  icon,
+  label,
+  onClick,
+  badge,
+  accent,
+  art,
+}: {
+  icon?: ReactNode;
+  label: string;
+  onClick: () => void;
+  badge?: number;
+  accent?: boolean;
+  /** Replaces the icon with an illustration (e.g. the turning roulette wheel). */
+  art?: ReactNode;
+}) {
+  return (
+    <button
+      onClick={() => {
+        haptic("light");
+        onClick();
+      }}
+      className="press flex w-[76px] flex-col items-center gap-2"
+    >
+      <span className="relative">
+        <span className={`grid size-[58px] place-items-center overflow-hidden rounded-full ${accent ? "blue-grad" : art ? "mesh-blue" : "bg-g-fill text-g-blue"}`}>{art ?? icon}</span>
+        {badge ? (
+          <span className="absolute -top-0.5 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-g-ink px-1.5 text-[11px] font-bold text-white ring-2 ring-white tabular-nums">{badge}</span>
+        ) : null}
+      </span>
+      <span className="max-w-full truncate text-[12px] leading-tight font-semibold">{label}</span>
+    </button>
+  );
+}
+
 /* ---------------------------------------------------------------- Slider */
 
 /**

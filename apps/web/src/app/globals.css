@@ -335,6 +335,29 @@ body {
   animation: wheel-ring 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2;
 }
 
+/* Dynamic-Island notification: grows out of a dot, content fades in after. */
+@keyframes island-in {
+  0% { clip-path: inset(0 calc(50% - 22px) round 22px); transform: scale(0.85); }
+  60% { clip-path: inset(0 0 round 22px); transform: scale(1.03); }
+  100% { clip-path: inset(0 0 round 22px); transform: scale(1); }
+}
+@keyframes island-out {
+  to { clip-path: inset(0 calc(50% - 22px) round 22px); transform: scale(0.85); opacity: 0; }
+}
+@keyframes island-content {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: none; }
+}
+.island-in {
+  animation: island-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.island-in .island-content {
+  animation: island-content 0.3s ease-out 0.18s both;
+}
+.island-out {
+  animation: island-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
 /* Idle roulette wheel turns slowly. */
 @keyframes wheel-idle {
   to { transform: rotate(360deg); }

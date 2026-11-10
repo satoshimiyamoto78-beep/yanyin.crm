@@ -26,7 +26,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { loadIfChanged, markShown, Reveal } from "@/components/guest/motion";
+import { Island, loadIfChanged, markShown, Reveal, type IslandNotice } from "@/components/guest/motion";
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
@@ -53,7 +53,7 @@ export const METHOD: Record<PayMethod, { label: string; icon: LucideIcon }> = {
   momo: { label: "MoMo", icon: Wallet },
 };
 
-type Notice = { title: string; text?: string };
+type Notice = IslandNotice;
 
 /**
  * yanyin.crew — the waiter's phone app: the floor (tables), open and closed
@@ -75,8 +75,11 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   const money = useCallback((n: number) => formatMoney(n, floor.venue.currency, "en"), [floor.venue.currency]);
   const table = tables.find((x) => x.no === open) ?? null;
 
-  const notify = useCallback((n: Notice) => {
+  const notify = useCallback((raw: Notice) => {
     haptic("success");
+    // Colour by meaning: done = green, bills and checks = orange, the rest = blue.
+    const tone = raw.tone ?? (/closed|paid|served|seated|saved|claimed|sent/i.test(raw.title) ? "green" : /bill|check/i.test(raw.title) ? "orange" : "blue");
+    const n: Notice = { ...raw, tone, icon: raw.icon ?? <ChefHat size={16} strokeWidth={2.25} /> };
     setNotice(n);
     setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), 2600);
   }, []);
@@ -190,19 +193,7 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
         </div>
       </nav>
 
-      {notice && (
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center px-4 pt-[max(12px,env(safe-area-inset-top))]">
-          <div key={notice.title} role="status" className="animate-notice flex w-full max-w-[440px] items-center gap-3 rounded-[22px] bg-g-ink px-4 py-3.5 text-white">
-            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full">
-              <ChefHat size={18} strokeWidth={2} />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[15px] leading-tight font-semibold">{notice.title}</span>
-              {notice.text && <span className="mt-0.5 block text-[13px] text-white/60">{notice.text}</span>}
-            </span>
-          </div>
-        </div>
-      )}
+      <Island notice={notice} />
 
       {/* Table page and its flow: take order → check → payment */}
       {table && (

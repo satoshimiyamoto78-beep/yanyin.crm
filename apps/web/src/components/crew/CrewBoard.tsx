@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
 import { Reveal } from "@/components/guest/motion";
+import { ActionCircle } from "@/components/guest/ui";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -139,35 +140,21 @@ export function CrewBoard({
           </span>
         </header>
 
-        {/* Hot buttons */}
+        {/* Hot buttons: round, labelled, with a count; the one that needs attention is blue. */}
         {hot && onGo && (
-          <Reveal className="mt-6 grid grid-cols-3 gap-2.5">
-            {(
-              [
-                ["tables", "Tables", LayoutGrid, `${hot.busy}/${hot.tables}`, hot.bills ? `${hot.bills} bill asked` : "busy now", hot.bills > 0],
-                ["orders", "Orders", ReceiptText, String(hot.openOrders), hot.inKitchen ? `${hot.inKitchen} in kitchen` : "all served", false],
-                ["bookings", "Bookings", CalendarDays, String(hot.bookings), hot.nextBooking ? `next ${hot.nextBooking}` : "today", false],
-              ] as const
-            ).map(([id, label, Icon, value, sub, alert]) => (
-              <button
-                key={id}
-                onClick={() => {
-                  haptic("light");
-                  onGo(id);
-                }}
-                className={`press flex h-[118px] flex-col justify-between rounded-[22px] p-3.5 text-left ${alert ? "blue-grad" : "bg-g-fill"}`}
-              >
-                <span className="flex items-center justify-between">
-                  <span className={`text-[13px] font-semibold ${alert ? "text-white" : ""}`}>{label}</span>
-                  <Icon size={17} strokeWidth={1.9} className={alert ? "text-white/80" : "text-g-blue"} />
-                </span>
-                <span>
-                  <span className="live block text-[26px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{value}</span>
-                  <span className={`live mt-1 block truncate text-[12px] font-medium ${alert ? "text-white/80" : "text-g-muted"}`}>{sub}</span>
-                </span>
-              </button>
-            ))}
-          </Reveal>
+          <div className="mt-6 flex justify-around">
+            <ActionCircle icon={<LayoutGrid size={22} strokeWidth={1.9} />} label="Tables" badge={hot.bills || undefined} accent={hot.bills > 0} onClick={() => onGo("tables")} />
+            <ActionCircle icon={<ReceiptText size={22} strokeWidth={1.9} />} label="Orders" badge={hot.openOrders || undefined} onClick={() => onGo("orders")} />
+            <ActionCircle icon={<CalendarDays size={22} strokeWidth={1.9} />} label="Bookings" badge={hot.bookings || undefined} onClick={() => onGo("bookings")} />
+          </div>
+        )}
+        {hot && (
+          <p className="mt-3 text-center text-[13px] text-g-muted">
+            <span className="live">
+              {hot.busy}/{hot.tables} tables busy{hot.bills ? ` · ${hot.bills} bill asked` : ""}
+              {hot.nextBooking ? ` · next booking ${hot.nextBooking}` : ""}
+            </span>
+          </p>
         )}
 
         {/* Level */}

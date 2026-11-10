@@ -138,6 +138,7 @@ export function RouletteWheel({
   pointerRef,
   idle = true,
   won = false,
+  bare = false,
 }: {
   tone?: "light" | "dark";
   size?: number;
@@ -146,6 +147,8 @@ export function RouletteWheel({
   idle?: boolean;
   /** Just landed: the hub rings once. */
   won?: boolean;
+  /** Icon use: no pointer above the wheel. */
+  bare?: boolean;
 }) {
   const dark = tone === "dark";
   const r = 100;
@@ -196,7 +199,7 @@ export function RouletteWheel({
         <Dices size={size * 0.09} strokeWidth={2} />
       </span>
       {/* Pointer: flicks back on every segment like a real wheel's clapper. */}
-      <span aria-hidden className="absolute -top-1.5 left-1/2 -translate-x-1/2">
+      <span aria-hidden className={`absolute -top-1.5 left-1/2 -translate-x-1/2 ${bare ? "hidden" : ""}`}>
         <span
           ref={pointerRef}
           className={`block size-0 origin-top border-x-[9px] border-t-[15px] border-x-transparent transition-transform duration-150 ease-out ${dark ? "border-t-white" : "border-t-g-ink"}`}
@@ -305,4 +308,49 @@ export function CountMoney({ to, delay = 0, ms = 700, format }: { to: number; de
     return () => cancelAnimationFrame(raf);
   }, [to, delay, ms]);
   return <>{format(v)}</>;
+}
+
+/* ---------------------------------------------------------------- Island */
+
+export type IslandTone = "blue" | "green" | "orange";
+export type IslandNotice = { title: string; text?: string; tone?: IslandTone; icon?: ReactNode };
+
+const TONE: Record<IslandTone, string> = {
+  blue: "blue-grad",
+  green: "bg-[#22c55e] text-white",
+  orange: "bg-[#ff8a3d] text-white",
+};
+
+/**
+ * Notifications as a Dynamic Island: a small black capsule at the top centre
+ * that grows out of a dot, shows a coloured circle and the title, then folds
+ * back. Every action in the guest and waiter apps reports through it.
+ */
+export function Island({ notice }: { notice: IslandNotice | null }) {
+  // Keep the last notice on screen while it folds away.
+  const [shown, setShown] = useState<IslandNotice | null>(notice);
+  const [prev, setPrev] = useState<IslandNotice | null>(notice);
+  if (notice !== prev) {
+    setPrev(notice);
+    if (notice) setShown(notice);
+  }
+  const leaving = !notice && !!shown;
+  useEffect(() => {
+    if (!leaving) return;
+    const id = setTimeout(() => setShown(null), 260);
+    return () => clearTimeout(id);
+  }, [leaving]);
+  if (!shown) return null;
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center pt-[max(10px,env(safe-area-inset-top))]">
+      <div
+        key={shown.title}
+        role="status"
+        className={`${leaving ? "island-out" : "island-in"} flex h-11 max-w-[88vw] min-w-[34vw] items-center gap-2.5 rounded-full bg-[#0b0b0f] py-1.5 pr-4 pl-1.5 text-white`}
+      >
+        <span className={`island-content grid size-8 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
+        <span className="island-content min-w-0 truncate text-[14px] font-semibold">{shown.title}</span>
+      </div>
+    </div>
+  );
 }
