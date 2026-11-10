@@ -31,7 +31,14 @@ import {
   ReceiptText,
   Search,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import { venueBrand, type VenueBrand } from "@/lib/visual";
 import { RouletteSheet } from "./RouletteSheet";
@@ -50,7 +57,16 @@ import {
 } from "./sheets";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { Island, LiveIsland, Reveal, RouletteWheel, startLoading, ToTop, useRing, type IslandNotice } from "./motion";
+import {
+  Island,
+  LiveIsland,
+  Reveal,
+  RouletteWheel,
+  startLoading,
+  ToTop,
+  useRing,
+  type IslandNotice,
+} from "./motion";
 import { ItemCard } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
@@ -97,6 +113,37 @@ export function GuestApp({ menu }: { menu: Menu }) {
   const [orders, setOrders] = useState<PlacedOrder[]>([]);
   const [now, setNow] = useState(0);
   const [sheet, setSheet] = useState<SheetName>(null);
+  const [dark, setDark] = useState(false);
+  // The guest's choice is remembered on this phone; the menu applies it to the whole page.
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- read the saved choice once on mount
+      if (localStorage.getItem("yanyin:theme") === "dark") setDark(true);
+    } catch {
+      /* private mode: stay light */
+    }
+  }, []);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (dark) root.dataset.theme = "dark";
+    else delete root.dataset.theme;
+    return () => {
+      delete root.dataset.theme;
+    };
+  }, [dark]);
+  const toggleTheme = () => {
+    const root = document.documentElement;
+    root.classList.add("theme-fade");
+    setTimeout(() => root.classList.remove("theme-fade"), 500);
+    setDark((d) => {
+      try {
+        localStorage.setItem("yanyin:theme", d ? "light" : "dark");
+      } catch {
+        /* not saved, still switches */
+      }
+      return !d;
+    });
+  };
   const [item, setItem] = useState<MenuItem | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [active, setActive] = useState(menu.categories[0]!.id);
@@ -147,7 +194,10 @@ export function GuestApp({ menu }: { menu: Menu }) {
     const tab = bar?.querySelector<HTMLElement>(`[data-tab="${active}"]`);
     // The ring keeps the current section in its centre.
     if (bar && tab)
-      bar.scrollTo({ left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2, behavior: "smooth" });
+      bar.scrollTo({
+        left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2,
+        behavior: "smooth",
+      });
   }, [active]);
   useRing(tabsRef, [menu, lang]);
 
@@ -157,12 +207,20 @@ export function GuestApp({ menu }: { menu: Menu }) {
     setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), 2600);
   }, []);
   /** Every action answers with a notification: a title and what happens next. */
-  const say = (key: UiKey, icon: React.ReactNode = <BellRing size={16} strokeWidth={2.25} />) =>
+  const say = (
+    key: UiKey,
+    icon: React.ReactNode = <BellRing size={16} strokeWidth={2.25} />,
+  ) =>
     flash({
       title: ui(lang, key),
       text: ui(lang, `${key}Hint` as UiKey),
       icon,
-      tone: key === "added" || key === "orderSent" ? "green" : key === "coalsCalled" ? "orange" : "blue",
+      tone:
+        key === "added" || key === "orderSent"
+          ? "green"
+          : key === "coalsCalled"
+            ? "orange"
+            : "blue",
     });
 
   const addToCart = (
@@ -210,7 +268,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
     <div className="min-h-dvh bg-g-bg text-g-ink">
       <div className="mx-auto max-w-[480px] pb-32">
         {/* Top: the banking-app pattern, same as the waiter's home. */}
-        <section className="relative isolate overflow-hidden rounded-b-[32px] pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
+        <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
           {/* Northern lights in the Nomad blue: soft ribbons of light drift over a deep blue sky. */}
           <div className="north-sky" aria-hidden>
             <span className="ns-glow ns-a" />
@@ -253,32 +311,47 @@ export function GuestApp({ menu }: { menu: Menu }) {
             </button>
           </div>
 
-          <div className="mt-9 px-5">
-            <p className="flex min-w-0 items-center gap-1.5 text-[14px] text-white/70">
-              {table && (
-                <>
-                  <span className="size-1.5 shrink-0 rounded-full bg-white" />
-                  <span className="shrink-0 font-semibold text-white">
-                    {`${ui(lang, "table")} ${table.padStart(2, "0")}`}
-                  </span>
-                  <span className="text-white/45">·</span>
-                </>
-              )}
-              <span className="truncate">
-                {orders.length ? ui(lang, "billTitle") : (brand.cuisine[lang as "en"] ?? brand.cuisine.en)}
-              </span>
-            </p>
-            <button
-              onClick={() => (orders.length ? setSheet("bill") : setSheet("about"))}
-              className="press mt-2 flex max-w-full items-center gap-1 text-left"
-            >
-              <span className="truncate text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">
-                {orders.length
-                  ? formatMoney(orders.reduce((n, o) => n + o.total, 0), currency, lang)
-                  : menu.venue.name}
-              </span>
-              <ChevronRight size={22} className="shrink-0 text-white/55" />
-            </button>
+          <div className="mt-9 flex items-center gap-3 px-5">
+            <div className="min-w-0 flex-1">
+              <p className="flex min-w-0 items-center gap-1.5 text-[14px] text-white/70">
+                {table && (
+                  <>
+                    <span className="size-1.5 shrink-0 rounded-full bg-[#fff]" />
+                    <span className="shrink-0 font-semibold text-white">
+                      {`${ui(lang, "table")} ${table.padStart(2, "0")}`}
+                    </span>
+                    <span className="text-white/45">·</span>
+                  </>
+                )}
+                <span className="truncate">
+                  {orders.length
+                    ? ui(lang, "billTitle")
+                    : (brand.cuisine[lang as "en"] ?? brand.cuisine.en)}
+                </span>
+              </p>
+              <button
+                onClick={() =>
+                  orders.length ? setSheet("bill") : setSheet("about")
+                }
+                className="press mt-2 flex max-w-full items-center gap-1 text-left"
+              >
+                <span className="truncate text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">
+                  {orders.length
+                    ? formatMoney(
+                        orders.reduce((n, o) => n + o.total, 0),
+                        currency,
+                        lang,
+                      )
+                    : menu.venue.name}
+                </span>
+                <ChevronRight size={22} className="shrink-0 text-white/55" />
+              </button>
+            </div>
+            <ThemeToggle
+              dark={dark}
+              onToggle={toggleTheme}
+              label={ui(lang, "theme")}
+            />
           </div>
 
           {/* Strip: one big order card, then two rows of the same height: waiter and bill squares, short wide cards. */}
@@ -296,15 +369,23 @@ export function GuestApp({ menu }: { menu: Menu }) {
                   <UtensilsCrossed size={19} strokeWidth={2} />
                 </span>
                 {count > 0 && (
-                  <span className="grid h-7 min-w-7 place-items-center rounded-full bg-g-blue-soft px-2 text-[13px] font-bold text-g-blue tabular-nums">{count}</span>
+                  <span className="grid h-7 min-w-7 place-items-center rounded-full bg-g-blue-soft px-2 text-[13px] font-bold text-g-blue tabular-nums">
+                    {count}
+                  </span>
                 )}
               </span>
               <span>
                 <span className="block text-[17px] leading-tight font-semibold">
-                  {count > 0 ? ui(lang, "yourOrder") : orders.length ? ui(lang, "orderMore") : ui(lang, "startOrder")}
+                  {count > 0
+                    ? ui(lang, "yourOrder")
+                    : orders.length
+                      ? ui(lang, "orderMore")
+                      : ui(lang, "startOrder")}
                 </span>
                 <span className="mt-1 block truncate text-[12px] text-g-muted tabular-nums">
-                  {count > 0 ? formatMoney(total, currency, lang) : ui(lang, "startOrderSub")}
+                  {count > 0
+                    ? formatMoney(total, currency, lang)
+                    : ui(lang, "startOrderSub")}
                 </span>
               </span>
             </button>
@@ -366,7 +447,9 @@ export function GuestApp({ menu }: { menu: Menu }) {
             {hasCoals && (
               <>
                 <WideButton
-                  onClick={() => say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)}
+                  onClick={() =>
+                    say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)
+                  }
                   art={
                     <span className="chip-orange grid size-9 place-items-center rounded-[12px]">
                       <Flame size={18} strokeWidth={2} />
@@ -383,7 +466,11 @@ export function GuestApp({ menu }: { menu: Menu }) {
                     </span>
                   }
                   title={ui(lang, "about")}
-                  sub={brand.about.closes ? `${ui(lang, "openUntil")} ${brand.about.closes}` : ""}
+                  sub={
+                    brand.about.closes
+                      ? `${ui(lang, "openUntil")} ${brand.about.closes}`
+                      : ""
+                  }
                 />
               </>
             )}
@@ -502,7 +589,12 @@ export function GuestApp({ menu }: { menu: Menu }) {
         const stage = orderStage(last, now);
         const since = (now - last.placedAt) / 1000;
         if (stage === 3 && since > 55) return null;
-        const keys: UiKey[] = ["liveSent", "liveAccepted", "liveCooking", "liveReady"];
+        const keys: UiKey[] = [
+          "liveSent",
+          "liveAccepted",
+          "liveCooking",
+          "liveReady",
+        ];
         return (
           <LiveIsland
             label={ui(lang, keys[stage]!)}
@@ -510,7 +602,10 @@ export function GuestApp({ menu }: { menu: Menu }) {
             done={stage === 3}
             eta={(() => {
               // Demo clock: 45 s of real time stands for a 15-minute kitchen.
-              const left = Math.max(0, Math.round((1 - Math.min(1, since / 45)) * 15 * 60));
+              const left = Math.max(
+                0,
+                Math.round((1 - Math.min(1, since / 45)) * 15 * 60),
+              );
               return `${String(Math.floor(left / 60)).padStart(2, "0")}:${String(left % 60).padStart(2, "0")}`;
             })()}
             etaLabel={ui(lang, "liveEta")}
@@ -518,9 +613,19 @@ export function GuestApp({ menu }: { menu: Menu }) {
             thumb={(() => {
               const first = itemById.get(last.lines[0]?.itemId ?? "");
               return first?.photo || first?.cover ? (
-                <Image src={(first.photo ?? first.cover)!} alt="" width={60} height={60} className="size-full object-cover" />
+                <Image
+                  src={(first.photo ?? first.cover)!}
+                  alt=""
+                  width={60}
+                  height={60}
+                  className="size-full object-cover"
+                />
               ) : (
-                <ChefHat size={24} strokeWidth={1.8} className="text-white/80" />
+                <ChefHat
+                  size={24}
+                  strokeWidth={1.8}
+                  className="text-white/80"
+                />
               );
             })()}
             openLabel={ui(lang, "liveOpen")}
@@ -630,7 +735,13 @@ export function GuestApp({ menu }: { menu: Menu }) {
         onClose={() => setSheet(null)}
         brand={brand}
         lang={lang}
-        onNotice={(title) => flash({ title, tone: "green", icon: <Check size={16} strokeWidth={2.5} /> })}
+        onNotice={(title) =>
+          flash({
+            title,
+            tone: "green",
+            icon: <Check size={16} strokeWidth={2.5} />,
+          })
+        }
       />
       <AboutSheet
         open={sheet === "about"}
@@ -738,7 +849,15 @@ export function GuestApp({ menu }: { menu: Menu }) {
 }
 
 /** Square service button in the top strip (waiter, bill). */
-function SquareButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+function SquareButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       aria-label={label}
@@ -749,7 +868,9 @@ function SquareButton({ icon, label, onClick }: { icon: React.ReactNode; label: 
       className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink"
     >
       {icon}
-      <span className="max-w-full truncate px-1 text-[10px] font-semibold">{label}</span>
+      <span className="max-w-full truncate px-1 text-[10px] font-semibold">
+        {label}
+      </span>
     </button>
   );
 }
@@ -758,7 +879,19 @@ function SquareButton({ icon, label, onClick }: { icon: React.ReactNode; label: 
  * Short wide card in the top strip: as tall as a square button, illustration and two lines.
  * `corner` puts a large illustration in the top-left corner, cropped to a quarter.
  */
-function WideButton({ onClick, art, corner, title, sub }: { onClick: () => void; art?: React.ReactNode; corner?: React.ReactNode; title: string; sub: string }) {
+function WideButton({
+  onClick,
+  art,
+  corner,
+  title,
+  sub,
+}: {
+  onClick: () => void;
+  art?: React.ReactNode;
+  corner?: React.ReactNode;
+  title: string;
+  sub: string;
+}) {
   return (
     <button
       onClick={() => {
@@ -768,10 +901,16 @@ function WideButton({ onClick, art, corner, title, sub }: { onClick: () => void;
       className={`press relative flex h-[62px] w-[158px] items-center gap-2.5 overflow-hidden rounded-[20px] bg-white pr-3 text-left text-g-ink ${corner ? "pl-[64px]" : "pl-2.5"}`}
     >
       {corner}
-      {art && <span className="grid size-10 shrink-0 place-items-center">{art}</span>}
+      {art && (
+        <span className="grid size-10 shrink-0 place-items-center">{art}</span>
+      )}
       <span className="relative min-w-0">
-        <span className="block truncate text-[14px] leading-tight font-semibold">{title}</span>
-        <span className="mt-0.5 block truncate text-[11px] text-g-muted">{sub}</span>
+        <span className="block truncate text-[14px] leading-tight font-semibold">
+          {title}
+        </span>
+        <span className="mt-0.5 block truncate text-[11px] text-g-muted">
+          {sub}
+        </span>
       </span>
     </button>
   );
@@ -866,14 +1005,17 @@ function Hero({
                   text={ui(lang, "rouletteHint")}
                 >
                   <span className="press flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-[14px] font-semibold text-[#1d3fd6]">
-                    <Dices size={18} strokeWidth={2} /> {ui(lang, "rouletteCta")}
+                    <Dices size={18} strokeWidth={2} />{" "}
+                    {ui(lang, "rouletteCta")}
                   </span>
                 </HeroCaption>
               </div>
             ) : (
               (() => {
                 const it = itemById.get(s.itemId)!;
-                const builder = it.variants.length > 0 || it.modifierGroups.some((g) => g.required);
+                const builder =
+                  it.variants.length > 0 ||
+                  it.modifierGroups.some((g) => g.required);
                 return (
                   <div
                     role="button"
@@ -936,7 +1078,9 @@ function Hero({
                           className="press flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-semibold text-[#1d3fd6]"
                         >
                           {!builder && <Plus size={18} strokeWidth={2.25} />}
-                          {s.cta ? (s.cta[lang as "en"] ?? s.cta.en) : ui(lang, "add")}
+                          {s.cta
+                            ? (s.cta[lang as "en"] ?? s.cta.en)
+                            : ui(lang, "add")}
                         </button>
                       </span>
                     </span>
@@ -958,5 +1102,53 @@ function Hero({
         </div>
       )}
     </div>
+  );
+}
+
+/** Sun that turns into the moon: rays fold away and a shadow slides in to carve the crescent. */
+function ThemeToggle({
+  dark,
+  onToggle,
+  label,
+}: {
+  dark: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  const id = useId();
+  return (
+    <button
+      aria-label={label}
+      aria-pressed={dark}
+      onClick={() => {
+        haptic("tick");
+        onToggle();
+      }}
+      className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 backdrop-blur-md"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width={22}
+        height={22}
+        className={`theme-ico ${dark ? "is-dark" : ""}`}
+        aria-hidden
+      >
+        <mask id={`moon-${id}`}>
+          <rect width="24" height="24" fill="#fff" />
+          <circle className="moon-bite" cx="17" cy="9" r="5.5" fill="#000" />
+        </mask>
+        <circle
+          className="sun-core"
+          cx="12"
+          cy="12"
+          r="5"
+          fill="#fff"
+          mask={`url(#moon-${id})`}
+        />
+        <g className="rays" stroke="#fff" strokeWidth="2" strokeLinecap="round">
+          <path d="M12 1.8v2.2M12 20v2.2M1.8 12h2.2M20 12h2.2M4.8 4.8l1.5 1.5M17.7 17.7l1.5 1.5M4.8 19.2l1.5-1.5M17.7 6.3l1.5-1.5" />
+        </g>
+      </svg>
+    </button>
   );
 }

@@ -109,12 +109,27 @@ body {
  */
 .north-sky {
   position: absolute;
-  inset: 0;
+  inset: 0 0 -120px 0; /* runs past the header and dissolves into the page */
   z-index: -1;
   overflow: hidden;
+  pointer-events: none;
   background:
-    radial-gradient(120% 90% at 85% 0%, #4f7dff 0%, transparent 60%),
-    linear-gradient(165deg, #2f6bff 0%, #2448e0 40%, #1d2fb8 75%, #182596 100%);
+    radial-gradient(120% 90% at 85% 0%, #8fb0ff 0%, transparent 60%),
+    linear-gradient(165deg, #5b8aff 0%, #3f6fff 40%, #3355e6 72%, #2f4fd6 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0, 0, 0, 0.75) 70%, rgba(0, 0, 0, 0.35) 84%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0, 0, 0, 0.75) 70%, rgba(0, 0, 0, 0.35) 84%, transparent 100%);
+}
+/* The last stretch melts: a frosted veil in the page colour rises from the bottom. */
+.north-sky::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 45%;
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--g-bg) 55%, transparent) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 70%);
+  mask-image: linear-gradient(180deg, transparent, #000 70%);
 }
 .ns-glow,
 .ns-ribbon {
@@ -124,28 +139,28 @@ body {
 }
 .ns-glow { filter: blur(40px); }
 .ns-a {
-  width: 75%; height: 70%; left: -20%; top: -15%;
-  background: radial-gradient(closest-side, rgba(108, 150, 255, 0.95), transparent);
-  animation: ns-a 14s ease-in-out infinite alternate;
+  width: 75%; height: 60%; left: -20%; top: -15%;
+  background: radial-gradient(closest-side, rgba(170, 200, 255, 0.95), transparent);
+  animation: ns-a 8s ease-in-out infinite alternate;
 }
 .ns-b {
-  width: 70%; height: 80%; right: -25%; top: 25%;
-  background: radial-gradient(closest-side, rgba(37, 48, 176, 0.95), transparent);
-  animation: ns-b 17s ease-in-out infinite alternate;
+  width: 70%; height: 70%; right: -25%; top: 20%;
+  background: radial-gradient(closest-side, rgba(47, 80, 220, 0.85), transparent);
+  animation: ns-b 10s ease-in-out infinite alternate;
 }
 .ns-c {
-  width: 60%; height: 55%; left: 25%; bottom: -25%;
-  background: radial-gradient(closest-side, rgba(150, 190, 255, 0.7), transparent);
-  animation: ns-c 12s ease-in-out infinite alternate;
+  width: 60%; height: 50%; left: 25%; bottom: 0%;
+  background: radial-gradient(closest-side, rgba(190, 215, 255, 0.75), transparent);
+  animation: ns-c 7s ease-in-out infinite alternate;
 }
 .ns-ribbon {
-  width: 150%; height: 46%; left: -25%;
-  background: radial-gradient(closest-side, transparent 62%, rgba(214, 228, 255, 0.55) 72%, transparent 80%);
+  width: 150%; height: 40%; left: -25%;
+  background: radial-gradient(closest-side, transparent 62%, rgba(230, 238, 255, 0.7) 72%, transparent 80%);
   filter: blur(10px);
   mix-blend-mode: screen;
 }
-.ns-r1 { top: 6%; transform: rotate(-12deg); animation: ns-r1 16s ease-in-out infinite alternate; }
-.ns-r2 { top: 38%; opacity: 0.6; transform: rotate(8deg); animation: ns-r2 21s ease-in-out infinite alternate; }
+.ns-r1 { top: 4%; transform: rotate(-12deg); animation: ns-r1 9s ease-in-out infinite alternate; }
+.ns-r2 { top: 32%; opacity: 0.65; transform: rotate(8deg); animation: ns-r2 12s ease-in-out infinite alternate; }
 @keyframes ns-a { to { transform: translate(35%, 20%) scale(1.15); } }
 @keyframes ns-b { to { transform: translate(-30%, -25%) scale(0.9); } }
 @keyframes ns-c { to { transform: translate(-40%, -15%) scale(1.2); } }
@@ -157,6 +172,61 @@ body {
 @keyframes ns-r2 {
   from { transform: translate(6%, 0) rotate(8deg) scaleY(0.9); }
   to { transform: translate(-8%, -8%) rotate(2deg) scaleY(1.25); }
+}
+/* Night: the same sky, a shade deeper. */
+[data-theme="dark"] .north-sky {
+  background:
+    radial-gradient(120% 90% at 85% 0%, #5b7fff 0%, transparent 60%),
+    linear-gradient(165deg, #2f5bff 0%, #2442d6 40%, #1d2fb8 72%, #172596 100%);
+}
+
+/* Theme switch: the sun's rays fold away and a shadow slides in to carve the moon. */
+.theme-ico * {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.theme-ico .sun-core { transform: scale(1); }
+.theme-ico .moon-bite { transform: translate(10px, -6px); }
+.theme-ico .rays { transform: rotate(0deg) scale(1); opacity: 1; }
+.theme-ico.is-dark { transform: rotate(-25deg); }
+.theme-ico.is-dark .sun-core { transform: scale(1.55); }
+.theme-ico.is-dark .moon-bite { transform: translate(0, 0); }
+.theme-ico.is-dark .rays { transform: rotate(90deg) scale(0.3); opacity: 0; }
+.theme-ico { transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/*
+ * Dark theme for the guest app. Tokens flip; white surfaces become graphite
+ * cards; solid-ink buttons become a lifted grey so white labels stay readable.
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --g-bg: #0c0d10;
+  --g-card: #17191e;
+  --g-fill: #1b1d23;
+  --g-fill-2: #2a2d35;
+  --g-line: #24262d;
+  --g-ink: #f3f4f6;
+  --g-ink-2: #c9ccd3;
+  --g-muted: #9a9ea8;
+  --g-faint: #686c76;
+  --g-blue: #6c96ff;
+  --g-blue-soft: #1c2647;
+}
+[data-theme="dark"] .bg-white { background-color: var(--g-card); }
+[data-theme="dark"] .bg-g-ink { background-color: #2c2f37; }
+[data-theme="dark"] .bg-white\/80 { background-color: rgb(36 39 46 / 0.82); }
+[data-theme="dark"] .chip-blue { background: #1c2647; color: #8fb0ff; }
+[data-theme="dark"] .chip-green { background: #0f2a1d; color: #4cd18a; }
+[data-theme="dark"] .chip-orange { background: #2e1d10; color: #ff9a55; }
+[data-theme="dark"] .chip-purple { background: #1c2647; color: #8fb0ff; }
+[data-theme="dark"] .chip-gray { background: #22252c; color: #a9adb6; }
+[data-theme="dark"] .chip-teal { background: #0e2a28; color: #4fd1c5; }
+[data-theme="dark"] .ring-g-line { --tw-ring-color: var(--g-line); }
+/* Theme change cross-fades instead of snapping. */
+.theme-fade,
+.theme-fade *:not(.theme-ico, .theme-ico *) {
+  transition: background-color 0.45s ease, color 0.45s ease, border-color 0.45s ease !important;
 }
 
 /* Dark blue aurora surface for hero cards (white text on top). */
