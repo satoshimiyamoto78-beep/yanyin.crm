@@ -28,7 +28,7 @@ const tint = (c: string, a: number) => {
   const n = parseInt(m[1]!, 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
-import { DishTile, HalalIcon, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
+import { DishTile, HalalIcon, ItemCard, ItemChips, RoleIcon, Sheet, Stepper, TrackSlider, altName } from "./ui";
 
 /* ---------------------------------------------------------------- Item */
 
@@ -1064,4 +1064,40 @@ export function BillSheet({
 
 function StepHeadline({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-3 text-[17px] font-semibold">{children}</h3>;
+}
+
+/* ---------------------------------------------------------------- Categories */
+
+/** All menu sections as one page: icon, name, how many dishes. Tap jumps to the section. */
+export function CategoriesSheet({ open, onClose, menu, lang, onPick }: { open: boolean; onClose: () => void; menu: Menu; lang: Lang; onPick: (id: string) => void }) {
+  return (
+    <Sheet open={open} onClose={onClose} label={ui(lang, "categories")} title={false}>
+      <div className="px-5 pt-1 pb-8">
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "categories")}</h2>
+        <p className="mt-1 text-[14px] text-g-muted">
+          {menu.categories.length} {ui(lang, "sections")} · {menu.categories.reduce((n, c) => n + c.items.length, 0)} {ui(lang, "items")}
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          {menu.categories.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => {
+                haptic("light");
+                onPick(c.id);
+              }}
+              className="press flex h-[84px] flex-col justify-between rounded-[20px] bg-g-fill p-3.5 text-left"
+            >
+              <span className="flex items-center justify-between">
+                <span className="text-g-blue">
+                  <RoleIcon role={c.role} name={c.items[0]?.name.en} size={20} />
+                </span>
+                <span className="text-[12px] font-medium text-g-muted tabular-nums">{c.items.length}</span>
+              </span>
+              <span className="truncate text-[15px] font-semibold">{t(c.name, lang)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </Sheet>
+  );
 }

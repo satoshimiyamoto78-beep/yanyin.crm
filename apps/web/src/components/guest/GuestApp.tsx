@@ -21,6 +21,8 @@ import {
   Check,
   ChefHat,
   ChevronRight,
+  Info,
+  LayoutGrid,
   Wifi,
   Dices,
   Flame,
@@ -35,6 +37,7 @@ import { RouletteSheet } from "./RouletteSheet";
 import {
   AboutSheet,
   BillSheet,
+  CategoriesSheet,
   CartSheet,
   ItemSheet,
   LangSheet,
@@ -63,6 +66,7 @@ type SheetName =
   | "roulette"
   | "yan"
   | "bill"
+  | "categories"
   | null;
 
 type Notice = IslandNotice;
@@ -264,60 +268,50 @@ export function GuestApp({ menu }: { menu: Menu }) {
             </button>
           </div>
 
-          {/* Strip: two small service buttons, then cards. */}
-          <div className="no-scrollbar mt-4 flex gap-2.5 overflow-x-auto px-5">
-            <div className="grid shrink-0 gap-2.5">
-              <button
-                aria-label={ui(lang, "qaWaiter")}
-                onClick={() => say("waiterCalled")}
-                className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink"
-              >
-                <BellRing size={21} strokeWidth={1.9} />
-                <span className="text-[10px] font-semibold">{ui(lang, "qaWaiter")}</span>
-              </button>
-              <button
-                aria-label={ui(lang, "qaBill")}
-                onClick={() => {
-                  if (!orders.length)
-                    flash({
-                      title: ui(lang, "billNone"),
-                      text: ui(lang, "billNoneHint"),
-                      tone: "orange",
-                      icon: <ReceiptText size={16} strokeWidth={2.25} />,
-                    });
-                  else setSheet("bill");
-                }}
-                className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink"
-              >
-                <ReceiptText size={21} strokeWidth={1.9} />
-                <span className="text-[10px] font-semibold">{ui(lang, "qaBill")}</span>
-              </button>
-            </div>
-            <TopCard
+          {/* Strip: two rows of the same height. Square service buttons on the left, short wide cards next to them. */}
+          <div className="no-scrollbar mt-4 grid grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">
+            <SquareButton
+              icon={<BellRing size={21} strokeWidth={1.9} />}
+              label={ui(lang, "qaWaiter")}
+              onClick={() => say("waiterCalled")}
+            />
+            <SquareButton
+              icon={<ReceiptText size={21} strokeWidth={1.9} />}
+              label={ui(lang, "qaBill")}
+              onClick={() => {
+                if (!orders.length)
+                  flash({
+                    title: ui(lang, "billNone"),
+                    text: ui(lang, "billNoneHint"),
+                    tone: "orange",
+                    icon: <ReceiptText size={16} strokeWidth={2.25} />,
+                  });
+                else setSheet("bill");
+              }}
+            />
+            <WideButton
               onClick={() => setSheet("roulette")}
-              art={<RouletteWheel size={40} bare />}
+              art={<RouletteWheel size={34} bare />}
               title={ui(lang, "qaRoulette")}
               sub={ui(lang, "qaRouletteShort")}
             />
-            <TopCard
-              onClick={() => setSheet("yan")}
-              art={<YanOrb size={36} />}
-              title={ui(lang, "yanAsk")}
-              sub={ui(lang, "yanQHalal")}
+            <WideButton
+              onClick={() => setSheet("categories")}
+              art={
+                <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
+                  <LayoutGrid size={18} strokeWidth={2} />
+                </span>
+              }
+              title={ui(lang, "categories")}
+              sub={`${menu.categories.length} ${ui(lang, "sections")}`}
             />
-            {hasCoals && (
-              <TopCard
-                onClick={() => say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)}
-                art={
-                  <span className="chip-orange grid size-9 place-items-center rounded-[12px]">
-                    <Flame size={18} strokeWidth={2} />
-                  </span>
-                }
-                title={ui(lang, "qaCoalsDo")}
-                sub={ui(lang, "qaCoalsSub")}
-              />
-            )}
-            <TopCard
+            <WideButton
+              onClick={() => setSheet("yan")}
+              art={<YanOrb size={34} />}
+              title="Yan"
+              sub={ui(lang, "yanShort")}
+            />
+            <WideButton
               onClick={() => setSheet("about")}
               art={
                 <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
@@ -325,8 +319,32 @@ export function GuestApp({ menu }: { menu: Menu }) {
                 </span>
               }
               title="Wi-Fi"
-              sub={ui(lang, "about")}
+              sub={brand.about.wifi.name}
             />
+            {hasCoals && (
+              <>
+                <WideButton
+                  onClick={() => say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)}
+                  art={
+                    <span className="chip-orange grid size-9 place-items-center rounded-[12px]">
+                      <Flame size={18} strokeWidth={2} />
+                    </span>
+                  }
+                  title={ui(lang, "qaCoalsDo")}
+                  sub={ui(lang, "qaCoalsSub")}
+                />
+                <WideButton
+                  onClick={() => setSheet("about")}
+                  art={
+                    <span className="chip-gray grid size-9 place-items-center rounded-[12px]">
+                      <Info size={18} strokeWidth={2} />
+                    </span>
+                  }
+                  title={ui(lang, "about")}
+                  sub={brand.about.closes ? `${ui(lang, "openUntil")} ${brand.about.closes}` : ""}
+                />
+              </>
+            )}
           </div>
         </section>
 
@@ -476,6 +494,17 @@ export function GuestApp({ menu }: { menu: Menu }) {
         );
       })()}
 
+      <CategoriesSheet
+        open={sheet === "categories"}
+        onClose={() => setSheet(null)}
+        menu={menu}
+        lang={lang}
+        onPick={(id) => {
+          setSheet(null);
+          // Let the page close first, then glide to the section.
+          setTimeout(() => scrollTo(id), 80);
+        }}
+      />
       <BillSheet
         open={sheet === "bill"}
         onClose={() => setSheet(null)}
@@ -652,20 +681,37 @@ export function GuestApp({ menu }: { menu: Menu }) {
   );
 }
 
-/** A card in the top strip: a small illustration, a title and one line. */
-function TopCard({ onClick, art, title, sub }: { onClick: () => void; art: React.ReactNode; title: string; sub: string }) {
+/** Square service button in the top strip (waiter, bill). */
+function SquareButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      aria-label={label}
+      onClick={() => {
+        haptic("light");
+        onClick();
+      }}
+      className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink"
+    >
+      {icon}
+      <span className="max-w-full truncate px-1 text-[10px] font-semibold">{label}</span>
+    </button>
+  );
+}
+
+/** Short wide card in the top strip: as tall as a square button, illustration and two lines. */
+function WideButton({ onClick, art, title, sub }: { onClick: () => void; art: React.ReactNode; title: string; sub: string }) {
   return (
     <button
       onClick={() => {
         haptic("light");
         onClick();
       }}
-      className="press flex h-[134px] w-[136px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-3.5 text-left"
+      className="press flex h-[62px] w-[158px] items-center gap-2.5 rounded-[20px] bg-white pr-3 pl-2.5 text-left"
     >
-      <span className="grid size-10 place-items-center">{art}</span>
+      <span className="grid size-10 shrink-0 place-items-center">{art}</span>
       <span className="min-w-0">
-        <span className="block truncate text-[16px] leading-tight font-semibold">{title}</span>
-        <span className="mt-0.5 block truncate text-[12px] text-g-muted">{sub}</span>
+        <span className="block truncate text-[14px] leading-tight font-semibold">{title}</span>
+        <span className="mt-0.5 block truncate text-[11px] text-g-muted">{sub}</span>
       </span>
     </button>
   );
