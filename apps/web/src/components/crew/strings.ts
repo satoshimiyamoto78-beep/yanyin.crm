@@ -1,5 +1,10 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Longest at the table": "Дольше всех",
+  "at the table": "за столом",
+  "Pay": "Оплата",
+  "All bills": "Все счета",
+  "h": "ч",
   "tap a day to compare": "нажмите на день, чтобы сравнить",
   "Who pays first?": "Кто платит первым?",
   "Longest at the table first": "Сначала те, кто дольше за столом",
@@ -363,6 +368,11 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Longest at the table": "Ngồi lâu nhất",
+  "at the table": "tại bàn",
+  "Pay": "Thanh toán",
+  "All bills": "Tất cả hóa đơn",
+  "h": "giờ",
   "tap a day to compare": "chạm vào ngày để so sánh",
   "Who pays first?": "Ai thanh toán trước?",
   "Longest at the table first": "Bàn ngồi lâu nhất trước",

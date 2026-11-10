@@ -64,6 +64,17 @@ function useScrub(count: number, initial: number) {
   return { at, setAt, box, handlers };
 }
 
+/** A soft, breathing glow centred exactly on a chart point (no hard ring). */
+function Halo({ x, y, color }: { x: string; y: string; color: string }) {
+  return (
+    <span
+      aria-hidden
+      className="halo pointer-events-none absolute size-9 rounded-full"
+      style={{ left: x, top: y, background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
+    />
+  );
+}
+
 /** The dark value pill above a chart point. */
 function Pill({ children }: { children: ReactNode }) {
   return <span className="pointer-events-none rounded-full bg-[#0b0b0f] px-2.5 py-1 text-[12px] font-semibold whitespace-nowrap text-white tabular-nums">{children}</span>;
@@ -161,10 +172,8 @@ export function HeroStat({
           <path d={todayPath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray="1" strokeDashoffset={on ? 0 : 1} style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1), stroke 0.3s" }} />
         </svg>
         {/* Now: a dot with a soft pulse at the end of today's line. */}
-        <span className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${(X(nowI) / 300) * 100}%`, top: `${Y(today[nowI]!)}%` }}>
-          <span className="absolute inset-0 m-auto size-5 animate-ping rounded-full opacity-40" style={{ background: color }} />
-          <span className="relative block size-3 rounded-full border-2 border-[#fff]" style={{ background: color }} />
-        </span>
+        <Halo x={`${(X(nowI) / 300) * 100}%`} y={`${Y(today[nowI]!)}%`} color={color} />
+        <span className="pointer-events-none absolute block size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#fff]" style={{ left: `${(X(nowI) / 300) * 100}%`, top: `${Y(today[nowI]!)}%`, background: color }} />
         {at !== nowI && (
           <>
             <span className="pointer-events-none absolute top-0 bottom-0 w-px bg-g-ink/25" style={{ left: `${px}%` }} />
@@ -461,17 +470,23 @@ export function DaysCompareWidget({
     setPick(i);
   };
   return (
-    <WidgetCard title={title} icon={icon} className={className}>
-      <p className="live mt-3 text-[44px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{format(today.value)}</p>
-      <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px]">
-        <span key={pick} className={`animate-pop rounded-md px-1.5 py-0.5 font-semibold tabular-nums ${chip}`}>
+    <WidgetCard
+      title={title}
+      icon={icon}
+      className={className}
+      aside={
+        <span key={pick} className={`animate-pop rounded-md px-1.5 py-0.5 text-[13px] font-semibold tabular-nums ${chip}`}>
           {arrow} {Math.abs(Math.round(change * 100))}%
         </span>
-        <span className="text-g-muted">
+      }
+    >
+      <p className="mt-2 flex items-baseline justify-between gap-2">
+        <span className="live text-[32px] leading-none font-semibold tracking-[-0.035em] tabular-nums">{format(today.value)}</span>
+        <span className="truncate text-[12px] text-g-muted tabular-nums">
           {ref.short} {ref.date} · {format(ref.value)}
         </span>
       </p>
-      <div className="relative mt-4 h-[96px] select-none">
+      <div className="relative mt-3 h-[60px] select-none">
         <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
           <defs>
             <linearGradient id={`dc${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -491,19 +506,18 @@ export function DaysCompareWidget({
             style={{
               left: `${(X(i) / 300) * 100}%`,
               top: `${Y(d.value)}%`,
-              width: i === pick ? 14 : i === n - 1 ? 12 : 7,
-              height: i === pick ? 14 : i === n - 1 ? 12 : 7,
+              width: i === pick ? 12 : i === n - 1 ? 10 : 6,
+              height: i === pick ? 12 : i === n - 1 ? 10 : 6,
               background: i === pick ? "var(--g-fill)" : i === n - 1 ? color : "var(--g-faint)",
-              border: i === pick ? `3px solid ${color}` : i === n - 1 ? "2px solid #fff" : "none",
+              border: i === pick ? `2.5px solid ${color}` : i === n - 1 ? "2px solid #fff" : "none",
+              zIndex: 1,
             }}
           />
         ))}
-        <span className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${(X(n - 1) / 300) * 100}%`, top: `${Y(today.value)}%` }}>
-          <span className="absolute inset-0 m-auto size-6 animate-ping rounded-full opacity-30" style={{ background: color }} />
-        </span>
+        <Halo x={`${(X(n - 1) / 300) * 100}%`} y={`${Y(today.value)}%`} color={color} />
       </div>
       {/* The days: tap one to compare today with it. */}
-      <div className="mt-2 grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+      <div className="mt-1.5 grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
         {days.map((d, i) => {
           const isToday = i === n - 1;
           const sel = i === pick;
@@ -513,15 +527,14 @@ export function DaysCompareWidget({
               onClick={() => choose(i)}
               disabled={isToday}
               aria-pressed={sel}
-              className={`press mx-0.5 flex flex-col items-center rounded-[14px] py-1.5 transition-colors ${sel ? "bg-white" : ""}`}
+              className={`press mx-0.5 h-7 rounded-full text-[12px] whitespace-nowrap tabular-nums transition-colors ${sel ? "bg-white font-semibold text-g-ink" : isToday ? "font-semibold text-g-ink" : "text-g-muted"}`}
             >
-              <span className={`text-[11px] ${sel || isToday ? "font-semibold text-g-ink" : "text-g-muted"}`}>{d.short}</span>
-              <span className={`text-[15px] font-semibold tabular-nums ${sel || isToday ? "text-g-ink" : "text-g-muted"}`}>{d.date}</span>
+              {d.short} {d.date}
             </button>
           );
         })}
       </div>
-      {todayNote && <p className="mt-2 text-[12px] text-g-muted">{todayNote}</p>}
+      {todayNote && <p className="mt-1.5 text-[11px] text-g-faint">{todayNote}</p>}
     </WidgetCard>
   );
 }

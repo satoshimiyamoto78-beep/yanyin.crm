@@ -675,3 +675,16 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .edit-block { animation: none; }
 }
+
+/* Chart "now" glow: a blurred-soft radial disc, centred on the point, breathing slowly. */
+.halo {
+  translate: -50% -50%;
+  animation: halo 2.4s ease-in-out infinite;
+}
+@keyframes halo {
+  0%, 100% { opacity: 0.18; scale: 0.7; }
+  50% { opacity: 0.45; scale: 1.15; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .halo { animation: none; opacity: 0.3; }
+}

@@ -1317,6 +1317,13 @@ function OrdersView({
   const dishes = (st: LineState) => open.reduce((n, x) => n + x.lines.filter((l) => l.state === st).reduce((q, l) => q + l.qty, 0), 0);
   const billTables = open.filter((x) => x.status === "bill").sort((a, b) => (a.since ?? "").localeCompare(b.since ?? ""));
   const [pickBill, setPickBill] = useState(false);
+  // How long a table has been seated, against the demo clock (12:45).
+  const sat = (since?: string) => {
+    if (!since) return "—";
+    const [h, m] = since.split(":").map(Number);
+    const d = 12 * 60 + 45 - ((h ?? 0) * 60 + (m ?? 0));
+    return d >= 60 ? `${Math.floor(d / 60)} ${tr("h")} ${String(d % 60).padStart(2, "0")} ${tr("min")}` : `${d} ${tr("min")}`;
+  };
   const groups: [string, FloorTable[]][] = [
     ["Bill asked", open.filter((x) => x.status === "bill")],
     ["In the kitchen", open.filter((x) => x.status !== "bill" && x.lines.some((l) => l.state !== "served"))],
@@ -1338,7 +1345,7 @@ function OrdersView({
           icon={<Wallet size={13} strokeWidth={2.4} />}
           days={lastDays(takings)}
           format={compactMoney}
-          todayNote={`${history.length} ${tr("bills closed")} · ${tr("tap a day to compare")}`}
+          todayNote={tr("tap a day to compare")}
         />
         <FlowWidget
           className="col-span-2"
@@ -1474,11 +1481,15 @@ function OrdersView({
         </Reveal>
       )}
       {pickBill && (
-        <PeekCard label={tr("Who pays first?")} onClose={() => setPickBill(false)}>
-          <p className="text-[22px] font-bold tracking-[-0.02em]">{tr("Who pays first?")}</p>
-          <p className="mt-1 text-[14px] text-g-muted">{tr("Longest at the table first")}</p>
-          <div className="mt-3 divide-y divide-g-line">
-            {billTables.map((x) => (
+        <PeekCard label={tr("Waiting for the bill")} onClose={() => setPickBill(false)}>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[22px] leading-tight font-bold tracking-[-0.02em]">{tr("Waiting for the bill")}</p>
+            <span className="chip-orange rounded-full px-2.5 py-1 text-[12px] font-semibold tabular-nums">
+              {billTables.length} {tr("tables")}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2">
+            {billTables.map((x, i) => (
               <button
                 key={x.no}
                 onClick={() => {
@@ -1486,19 +1497,27 @@ function OrdersView({
                   setPickBill(false);
                   onOpenTable(x.no);
                 }}
-                className="press flex w-full items-center gap-3 py-3 text-left"
+                className="press flex items-center gap-3.5 rounded-[22px] bg-g-fill p-3 pr-3.5 text-left"
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#ef6c1a] text-[16px] font-semibold text-white tabular-nums">{x.no}</span>
+                <span className="flex w-12 shrink-0 flex-col items-center">
+                  <span className="text-[11px] font-medium text-g-muted">{tr("Table")}</span>
+                  <span className="text-[30px] leading-none font-bold tracking-[-0.03em] tabular-nums">{x.no}</span>
+                </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[16px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
-                  <span className="block text-[13px] text-g-muted">
-                    {x.guests} {tr("guests")} · {tr("since")} {x.since}
+                  {i === 0 && <span className="mb-1 inline-block rounded-full bg-[#ef6c1a] px-2 py-0.5 text-[10px] font-semibold text-white">{tr("Longest at the table")}</span>}
+                  <span className="block text-[17px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
+                  <span className="flex items-center gap-1 text-[12px] whitespace-nowrap text-g-muted tabular-nums">
+                    {x.guests} {tr("guests")} · <Clock size={12} strokeWidth={2.2} className="shrink-0" /> {sat(x.since)}
                   </span>
                 </span>
-                <ChevronRight size={18} className="text-g-faint" />
+                <span className="shrink-0 rounded-full bg-g-ink px-3.5 py-2 text-[13px] font-semibold text-white">{tr("Pay")}</span>
               </button>
             ))}
           </div>
+          <p className="mt-3 flex items-baseline justify-between px-1 text-[13px] text-g-muted">
+            <span>{tr("All bills")}</span>
+            <span className="text-[15px] font-semibold text-g-ink tabular-nums">{money(billTables.reduce((n, x) => n + ticketTotal(x.lines), 0))}</span>
+          </p>
         </PeekCard>
       )}
       {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">No open orders</p>}
