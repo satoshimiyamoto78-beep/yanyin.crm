@@ -3,18 +3,18 @@
 import { useEffect, type RefObject } from "react";
 
 /*
- * Items of a horizontal scroller soften on their own as they reach its edges:
- * the part of an item already past the screen edge decides how much it blurs
- * (up to 3 px) and fades (to 40%); nothing is laid over them. Items on the page
- * gutter, or just touching the edge, stay sharp. Styles
- * are written straight to the DOM each frame; reduced motion keeps them plain.
+ * Items of a horizontal scroller dissolve into the screen edge, iOS style:
+ * only the slice of an item inside the last FADE pixels before the edge fades
+ * out (a mask on the item itself, lined up with the edge), the rest stays
+ * crisp. Nothing is laid over the content, nothing blurs, at rest nothing
+ * changes. Written straight to the DOM each frame.
  */
-const EDGE = 8; // the softening starts this close to the screen edge
+const FADE = 28;
 
 export function useEdgeSoften(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = ref.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!el) return;
     let raf = 0;
     const paint = () => {
       raf = 0;
@@ -23,19 +23,23 @@ export function useEdgeSoften(ref: RefObject<HTMLElement | null>) {
         const c = node as HTMLElement;
         const r = c.getBoundingClientRect();
         if (!r.width) return;
-        // Only the share of the item already past the edge counts: an item that just
-        // touches the edge stays sharp; one mostly off screen is softly blurred and faded.
-        const outL = box.left + EDGE - r.left;
-        const outR = r.right - (box.right - EDGE);
-        const t = Math.max(0, Math.min(1, Math.max(outL, outR) / r.width));
-        if (t <= 0.02) {
-          c.style.filter = "";
-          c.style.opacity = "";
+        // Where the fade zones fall inside this item, in its own pixels.
+        const rFrom = box.right - FADE - r.left; // fade starts here (right edge)
+        const lTo = box.left + FADE - r.left; // fade ends here (left edge)
+        const right = rFrom < r.width;
+        const left = lTo > 0;
+        if (!right && !left) {
+          c.style.maskImage = "";
+          c.style.webkitMaskImage = "";
           return;
         }
-        const e = Math.pow(t, 1.6);
-        c.style.filter = `blur(${(e * 3).toFixed(2)}px)`;
-        c.style.opacity = (1 - e * 0.6).toFixed(3);
+        const stops = [
+          left ? `transparent ${(lTo - FADE).toFixed(1)}px, #000 ${lTo.toFixed(1)}px` : "#000 0px",
+          right ? `#000 ${rFrom.toFixed(1)}px, transparent ${(rFrom + FADE).toFixed(1)}px` : "#000 100%",
+        ];
+        const m = `linear-gradient(90deg, ${stops.join(", ")})`;
+        c.style.maskImage = m;
+        c.style.webkitMaskImage = m;
       });
     };
     const onScroll = () => {
