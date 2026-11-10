@@ -686,7 +686,7 @@ export const RU: Record<string, string> = {
   "on": "включено",
   "on the board": "на доске",
   "paper OK": "бумага есть",
-  "per bill today": "средний чек за сегодня",
+  "per bill today": "за сегодня",
   "race": "гонка",
   "reward": "награда",
   "silent": "без звука",
