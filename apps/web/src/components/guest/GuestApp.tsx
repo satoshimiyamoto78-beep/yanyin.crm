@@ -59,6 +59,7 @@ import {
 } from "./sheets";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
+import { ScrollLock } from "@/lib/scroll-lock";
 import {
   Island,
   LiveIsland,
@@ -714,6 +715,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
 
       {age !== "ok" && (
         <div className="animate-fade fixed inset-0 z-[90] flex flex-col bg-g-bg px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
+          <ScrollLock />
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <span className="ink-grad grid size-16 place-items-center rounded-[22px] text-[26px] font-bold">
               {brand.mark}

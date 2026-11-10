@@ -27,6 +27,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
+import { ScrollLock } from "@/lib/scroll-lock";
 import { Island, loadIfChanged, markShown, Reveal, useLongPress, type IslandNotice } from "@/components/guest/motion";
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
@@ -578,6 +579,7 @@ function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; mo
       ];
   return (
     <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-6" role="dialog" aria-label={`Table ${x.no} quick actions`}>
+      <ScrollLock />
       <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
       <div className="animate-pop relative w-full max-w-[340px]">
         <div className="rounded-[28px] bg-white p-5">

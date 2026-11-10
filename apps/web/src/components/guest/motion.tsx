@@ -3,6 +3,7 @@
 import { ArrowUp, Dices, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
+import { ScrollLock, useScrollLock } from "@/lib/scroll-lock";
 
 /* ---------------------------------------------------------------- Reveal */
 
@@ -427,6 +428,7 @@ export function LiveIsland({
   const [open, setOpen] = useState(false);
   return (
     <>
+      {open && <ScrollLock />}
       {open && <button aria-label="Fold" onClick={() => setOpen(false)} className="animate-fade fixed inset-0 z-40 bg-[rgba(11,11,15,0.25)] backdrop-blur-[2px]" />}
       <div
         className="island-in fixed left-1/2 z-40 -translate-x-1/2 overflow-hidden bg-[#0b0b0f] text-white transition-[width,height,border-radius] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -512,24 +514,46 @@ function BellIcon() {
 /* ---------------------------------------------------------------- Long press and peek */
 
 /** Long press (≈0.45 s) with a haptic tick, like the iOS / One UI context menu; a short tap stays a tap. */
-export function useLongPress(onLong: () => void, onTap?: () => void) {
+export const PEEK_HOLD_MS = 500;
+
+/**
+ * Press and hold. Details (peeks) open only on a hold, never on a plain tap:
+ * the element sinks a little while the finger stays down, the phone ticks once
+ * halfway, and at `ms` it pops with a firm haptic. Moving the finger (a scroll)
+ * cancels. `onTap` is for a separate primary action, if the element has one.
+ */
+export function useLongPress(onLong: () => void, onTap?: () => void, ms = PEEK_HOLD_MS) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tick = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fired = useRef(false);
   const start = useRef<[number, number]>([0, 0]);
+  const el = useRef<HTMLElement | null>(null);
   const clear = () => {
     if (timer.current) clearTimeout(timer.current);
+    if (tick.current) clearTimeout(tick.current);
     timer.current = null;
+    tick.current = null;
+    if (el.current) {
+      el.current.style.transition = "transform 0.25s cubic-bezier(0.22,1,0.36,1)";
+      el.current.style.transform = "";
+    }
   };
   return {
     onPointerDown: (e: React.PointerEvent) => {
       fired.current = false;
       start.current = [e.clientX, e.clientY];
       clear();
+      el.current = e.currentTarget as HTMLElement;
+      // Sink slowly while held, so the hold is felt before it fires.
+      el.current.style.transition = `transform ${ms}ms cubic-bezier(0.3,0,0.2,1)`;
+      el.current.style.transform = "scale(0.95)";
+      tick.current = setTimeout(() => haptic("tick"), ms / 2);
       timer.current = setTimeout(() => {
         fired.current = true;
+        clear();
         haptic("success");
         onLong();
-      }, 450);
+      }, ms);
     },
     onPointerMove: (e: React.PointerEvent) => {
       if (Math.hypot(e.clientX - start.current[0], e.clientY - start.current[1]) > 8) clear();
@@ -552,8 +576,10 @@ export function useLongPress(onLong: () => void, onTap?: () => void) {
  * the thing that was held. Tap outside to close.
  */
 export function PeekCard({ onClose, label, children }: { onClose: () => void; label: string; children: ReactNode }) {
+  // The screen behind is frozen while the card is up, like a native context peek.
+  useScrollLock(true);
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center px-6" role="dialog" aria-label={label}>
+    <div className="fixed inset-0 z-[70] flex touch-none items-center justify-center overscroll-none px-6" role="dialog" aria-label={label}>
       <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
       <div className="animate-pop relative w-full max-w-[340px] rounded-[28px] bg-white p-5 text-g-ink">{children}</div>
     </div>

@@ -28,6 +28,7 @@ import {
 import Image from "next/image";
 import { useEffect, useRef, type ReactNode, type SVGProps, useLayoutEffect } from "react";
 import { haptic } from "@/lib/haptics";
+import { useScrollLock } from "@/lib/scroll-lock";
 import { ui } from "@/lib/ui-strings";
 
 /* ---------------------------------------------------------------- Icons */
@@ -449,6 +450,8 @@ export function Sheet({
   useEffect(() => {
     close.current = onClose;
   }, [onClose]);
+  // The page underneath stays put while this page is open (iOS included).
+  useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -468,12 +471,9 @@ export function Sheet({
     } catch {}
     document.addEventListener("keydown", onKey);
     window.addEventListener("popstate", onPop);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("popstate", onPop);
-      document.body.style.overflow = prev;
       if ((history.state as { yanyinPage?: number } | null)?.yanyinPage === id) {
         pendingClose = id;
         setTimeout(() => {

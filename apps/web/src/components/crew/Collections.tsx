@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
+import { useLongPress } from "@/components/guest/motion";
 import { BADGE_ICON, BADGE_INFO, BadgePeek, QuestRow } from "./CrewBoard";
 import { useTr } from "./prefs";
 
@@ -133,26 +134,29 @@ export function BadgesPage({ badges, onClose }: { badges: CrewData["badges"]; on
             const Icon = BADGE_ICON[b.id] ?? Trophy;
             const info = BADGE_INFO[b.id];
             return (
-              <button
-                key={b.id}
-                onClick={() => {
-                  haptic("light");
-                  setPeek(b.id);
-                }}
-                className="press flex flex-col items-center text-center"
-              >
+              <BadgeCell key={b.id} earned={b.earned} onHold={() => setPeek(b.id)}>
                 <span className={`grid size-[76px] place-items-center rounded-full ${b.earned ? "blue-grad" : "bg-g-fill text-g-faint"}`}>
                   <Icon size={30} strokeWidth={1.7} />
                 </span>
                 <span className={`mt-2 text-[13px] leading-tight font-semibold ${b.earned ? "" : "text-g-muted"}`}>{tr(b.name)}</span>
                 <span className="mt-1 text-[12px] text-g-muted tabular-nums">{b.earned ? tr("Earned") : `${info?.progress ?? 0}%`}</span>
-              </button>
+              </BadgeCell>
             );
           })}
         </div>
-        <p className="mt-8 text-center text-[13px] text-g-faint">{tr("Tap a badge to see how to earn it")}</p>
+        <p className="mt-8 text-center text-[13px] text-g-faint">{tr("Hold a badge to see how to earn it")}</p>
       </div>
       {open && <BadgePeek b={open} onClose={() => setPeek(null)} />}
     </Sheet>
+  );
+}
+
+/** A badge in the grid: hold it to see its story. */
+function BadgeCell({ earned, onHold, children }: { earned: boolean; onHold: () => void; children: ReactNode }) {
+  const press = useLongPress(onHold);
+  return (
+    <button {...press} aria-label={earned ? "Earned badge" : "Badge"} style={{ WebkitTouchCallout: "none" }} className="flex flex-col items-center text-center select-none">
+      {children}
+    </button>
   );
 }

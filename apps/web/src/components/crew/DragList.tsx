@@ -17,6 +17,7 @@ export function DragList<T extends { id: string }>({
   render,
   onLongPress,
   enabled = true,
+  holdMs = 280,
   className = "",
 }: {
   items: T[];
@@ -25,12 +26,21 @@ export function DragList<T extends { id: string }>({
   /** Called when a hold starts a drag (to enter an edit mode). */
   onLongPress?: () => void;
   enabled?: boolean;
+  /** How long to hold before a drag starts. Entering an edit mode wants a long, deliberate hold. */
+  holdMs?: number;
   className?: string;
 }) {
   const refs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [drag, setDrag] = useState<{ id: string; i: number; h: number; dy: number; target: number } | null>(null);
   // Right after a drop the DOM order already matches the picture: skip one frame of transitions.
   const [settling, setSettling] = useState(false);
+  // The item being held (before the drag starts): it sinks slowly so the hold is felt.
+  const [holding, setHolding] = useState<string | null>(null);
+  const ticks = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const stopTicks = () => {
+    ticks.current.forEach(clearTimeout);
+    ticks.current = [];
+  };
   useEffect(() => {
     if (!settling) return;
     const r = requestAnimationFrame(() => requestAnimationFrame(() => setSettling(false)));
@@ -54,6 +64,8 @@ export function DragList<T extends { id: string }>({
     });
 
   const begin = (id: string, i: number, y: number, pointer: number) => {
+    stopTicks();
+    setHolding(null);
     const rects = measure();
     live.current = { id, i, y0: y, rects, target: i, active: true, pointer };
     haptic("light");
@@ -73,7 +85,10 @@ export function DragList<T extends { id: string }>({
       begin(id, i, y, pointer);
       return;
     }
-    const timer = setTimeout(() => begin(id, i, y, pointer), 280);
+    const timer = setTimeout(() => begin(id, i, y, pointer), holdMs);
+    // A long hold ticks along the way (every half second), so the wait is felt, not guessed.
+    if (holdMs >= 1000) for (let at = 500; at < holdMs; at += 500) ticks.current.push(setTimeout(() => haptic("tick"), at));
+    setHolding(id);
     live.current = { id, i, y0: y, rects: [], target: i, active: false, timer, pointer };
   };
 
@@ -83,6 +98,8 @@ export function DragList<T extends { id: string }>({
     if (!l.active) {
       if (Math.abs(e.clientY - l.y0) > 8) {
         clearTimeout(l.timer);
+        stopTicks();
+        setHolding(null);
         live.current = null; // it was a scroll
       }
       return;
@@ -105,6 +122,8 @@ export function DragList<T extends { id: string }>({
   const up = () => {
     const l = live.current;
     live.current = null;
+    stopTicks();
+    setHolding(null);
     if (!l) return;
     clearTimeout(l.timer);
     if (!l.active) return;
@@ -145,8 +164,8 @@ export function DragList<T extends { id: string }>({
             onPointerCancel={up}
             className="relative [display:flow-root]"
             style={{
-              transform: `translateY(${shiftOf(j)}px)${dragging ? " scale(1.02)" : ""}`,
-              transition: dragging || settling ? "none" : "transform 0.32s cubic-bezier(0.22,1,0.36,1)",
+              transform: holding === it.id ? "scale(0.96)" : `translateY(${shiftOf(j)}px)${dragging ? " scale(1.02)" : ""}`,
+              transition: holding === it.id ? `transform ${holdMs}ms cubic-bezier(0.3,0,0.2,1)` : dragging || settling ? "none" : "transform 0.32s cubic-bezier(0.22,1,0.36,1)",
               zIndex: dragging ? 20 : undefined,
               touchAction: drag ? "none" : undefined,
             }}

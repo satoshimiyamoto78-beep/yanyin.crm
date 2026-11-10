@@ -379,6 +379,7 @@ export function CrewBoard({
         <DragList
           items={layout.filter((b) => b.on && blocks[b.id])}
           onLongPress={() => setEditing(true)}
+          holdMs={editing ? 250 : 1500}
           onReorder={(vis) => setLayout([...vis, ...layout.filter((b) => !vis.some((v) => v.id === b.id))])}
           render={(b, { dragging }) => (
             <div className={editing ? `edit-block ${dragging ? "is-dragging" : ""}` : ""}>
@@ -564,7 +565,7 @@ export const BADGE_INFO: Record<string, { what: string; how: string; progress: n
 /** A badge you can hold to peek at its story. */
 export function BadgeTile({ b, onPeek }: { b: CrewData["badges"][number]; onPeek: () => void }) {
   const tr = useTr();
-  const press = useLongPress(onPeek, onPeek);
+  const press = useLongPress(onPeek);
   const Icon = BADGE_ICON[b.id] ?? Trophy;
   return (
     <button data-hold {...press} style={{ WebkitTouchCallout: "none" }} className="press flex flex-col items-center gap-2 text-center select-none">

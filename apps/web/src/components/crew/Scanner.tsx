@@ -3,6 +3,7 @@
 import { Flashlight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
+import { ScrollLock } from "@/lib/scroll-lock";
 
 type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
 
@@ -63,6 +64,7 @@ export function Scanner({ tables, onClose, onTable }: { tables: number[]; onClos
 
   return (
     <div className="animate-fade fixed inset-0 z-[60] flex flex-col bg-[#05070c] text-white" role="dialog" aria-label="Scan table QR">
+      <ScrollLock />
       <video ref={video} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${camera === "on" ? "opacity-100" : "opacity-0"}`} />
       <div className="relative flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))]">
         <button onClick={onClose} aria-label="Close" className="press grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur-md">
