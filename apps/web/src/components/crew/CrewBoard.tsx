@@ -7,6 +7,9 @@ import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
 import { PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
 import { TipsCarousel } from "./TipsCarousel";
+import { NorthSky } from "@/components/system/NorthSky";
+import { Strip, StripBig, StripSquare } from "@/components/system/Strip";
+import { ThemeToggle } from "@/components/system/ThemeToggle";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -94,6 +97,8 @@ export function CrewBoard({
   onGo,
   onNotify,
   onScan,
+  dark = false,
+  onTheme,
 }: {
   data: CrewData;
   embedded?: boolean;
@@ -102,6 +107,8 @@ export function CrewBoard({
   onGo?: (tab: "tables" | "orders" | "bookings" | "settings") => void;
   onNotify?: (title: string, text?: string) => void;
   onScan?: () => void;
+  dark?: boolean;
+  onTheme?: () => void;
 }) {
   const [hidden, setHidden] = useState(false);
   const [peek, setPeek] = useState<{ kind: "badge" | "quest"; id: string } | null>(null);
@@ -131,91 +138,63 @@ export function CrewBoard({
 
   return (
     <main className={`overflow-x-hidden bg-white text-g-ink ${embedded ? "" : "min-h-dvh"}`}>
-      {/* Top: the banking-app pattern. Avatar, search and bell; the shift's money big; a strip of cards. */}
-      <section className="rounded-b-[32px] bg-[linear-gradient(180deg,#e9efff_0%,#f3f6ff_70%,#f7f9ff_100%)] pt-[max(14px,env(safe-area-inset-top))] pb-6">
-        <div className="mx-auto max-w-[480px] px-5">
-          <div className="flex items-center gap-2.5">
-            <button aria-label="Profile" onClick={() => onGo?.("settings")} className="ink-grad grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold">
+      {/* Top: the same blue sky and strip as the guest menu. Avatar, search, scan, theme and bell; the shift's money big; quick actions. */}
+      <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
+        <NorthSky />
+        <div className="mx-auto max-w-[480px]">
+          <div className="flex items-center gap-2 px-5">
+            <button aria-label="Profile" onClick={() => onGo?.("settings")} className="grid size-10 shrink-0 place-items-center rounded-full bg-[#fff] text-[16px] font-bold text-[#0b0b0f]">
               {data.staff.name[0]}
             </button>
-            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/80 px-3.5 text-g-faint">
+            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white/70">
               <Search size={17} strokeWidth={2} />
-              <input placeholder="Tables, dishes, guests" aria-label="Search" className="min-w-0 flex-1 bg-transparent text-[15px] text-g-ink outline-none placeholder:text-g-faint" />
+              <input placeholder="Tables, dishes, guests" aria-label="Search" className="min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/70" />
             </label>
-            <button aria-label="Scan QR" onClick={onScan} className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/80 text-g-ink">
-              <ScanLine size={19} strokeWidth={2} />
-            </button>
-            <button aria-label="Notifications" onClick={() => onNotify?.("No new alerts", "Kitchen and tables are quiet")} className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/80 text-g-ink">
+            {onTheme && <ThemeToggle dark={dark} onToggle={onTheme} label="Light or dark theme" />}
+            <button aria-label="Notifications" onClick={() => onNotify?.("No new alerts", "Kitchen and tables are quiet")} className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
               <Bell size={19} strokeWidth={2} />
-              {hot && hot.bills > 0 && <span className="absolute top-2 right-2.5 size-2 rounded-full border-2 border-white bg-g-orange" />}
+              {hot && hot.bills > 0 && <span className="absolute top-2 right-2.5 size-2 rounded-full bg-g-orange" />}
             </button>
           </div>
 
-          <div className="mt-6 flex items-end justify-between gap-3">
+          <div className="mt-9 flex items-center justify-between gap-3 px-5">
             <div className="min-w-0">
-              <p className="text-[14px] text-g-muted">
-                {data.staff.name} · tips this shift
+              <p className="flex items-center gap-1.5 text-[14px] text-white/70">
+                <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
+                <span className="font-semibold text-white">On shift</span>
+                <span className="text-white/45">·</span>
+                {data.staff.name} · tips
               </p>
-              <button onClick={() => onGo?.("orders")} className="press mt-1 flex items-center gap-1 text-left">
-                <span className="live text-[32px] leading-none font-bold tracking-[-0.03em] tabular-nums">{hidden ? "••• •••" : money(data.today.tips)}</span>
-                <ChevronRight size={22} className="text-g-faint" />
+              <button onClick={() => onGo?.("orders")} className="press mt-2 flex items-center gap-1 text-left">
+                <span className="live text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{hidden ? "••• •••" : money(data.today.tips)}</span>
+                <ChevronRight size={22} className="text-white/55" />
               </button>
             </div>
-            <div className="flex shrink-0 items-center gap-1 pb-1">
-              <button aria-label={hidden ? "Show amounts" : "Hide amounts"} onClick={() => setHidden((v) => !v)} className="press grid size-9 place-items-center rounded-full text-g-ink">
-                {hidden ? <Eye size={20} strokeWidth={1.9} /> : <EyeOff size={20} strokeWidth={1.9} />}
-              </button>
-              <span className="chip-green inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold">
-                <span className="size-1.5 rounded-full bg-g-green" /> On shift
-              </span>
-            </div>
+            <button aria-label={hidden ? "Show amounts" : "Hide amounts"} onClick={() => setHidden((v) => !v)} className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
+              {hidden ? <Eye size={19} strokeWidth={2} /> : <EyeOff size={19} strokeWidth={2} />}
+            </button>
           </div>
 
-          <Reveal className="no-scrollbar -mx-5 mt-5 flex gap-2.5 overflow-x-auto px-5">
-            <div className="grid shrink-0 gap-2.5">
-              <button aria-label="Scan table QR" onClick={onScan} className="press grid size-[66px] place-items-center rounded-[20px] bg-white text-g-ink">
-                <ScanLine size={26} strokeWidth={1.8} />
-              </button>
-              <button aria-label="Take a break" onClick={() => onNotify?.("Break started", "Tables see “back in 10 min”")} className="press grid size-[66px] place-items-center rounded-[20px] bg-white text-g-ink">
-                <Coffee size={24} strokeWidth={1.8} />
-              </button>
-            </div>
-            <button onClick={() => onGo?.("orders")} className="press flex h-[142px] w-[150px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-4 text-left">
-              <span className="blue-grad grid size-9 place-items-center rounded-[12px]">
-                <TrendingUp size={18} strokeWidth={2} />
+          <Strip>
+            <StripBig
+              onClick={() => onGo?.("tables")}
+              icon={<LayoutGrid size={19} strokeWidth={2} />}
+              title={hot ? `${hot.busy}/${hot.tables} tables` : "Tables"}
+              sub={hot?.bills ? `${hot.bills} asking for the bill` : "all calm"}
+              tone={hot?.bills ? "orange" : "muted"}
+            />
+            <StripSquare icon={<ScanLine size={21} strokeWidth={1.9} />} label="Scan" onClick={() => onScan?.()} />
+            <StripSquare icon={<Coffee size={21} strokeWidth={1.9} />} label="Break" onClick={() => onNotify?.("Break started", "Tables see “back in 10 min”")} />
+            <StripBig onClick={() => onGo?.("orders")} icon={<TrendingUp size={19} strokeWidth={2} />} title={hidden ? "•••" : `${short(data.today.sales)} ₫`} sub="Sales today · +12%" />
+            <StripBig icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">Level {level.level}</span>} title={level.title} wide>
+              <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-g-fill">
+                <span className="live bar-grad block h-full rounded-full" style={{ width: `${pct}%` }} />
               </span>
-              <span>
-                <span className="live block text-[20px] leading-tight font-semibold tabular-nums">{hidden ? "•••" : `${short(data.today.sales)} ₫`}</span>
-                <span className="block text-[13px] text-g-muted">Sales today · +12%</span>
+              <span className="mt-1 block text-[12px] text-g-muted tabular-nums">
+                {level.xpIntoLevel} / {level.xpForNext} XP
               </span>
-            </button>
-            <button onClick={() => onGo?.("tables")} className="press flex h-[142px] w-[150px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-4 text-left">
-              <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
-                <LayoutGrid size={18} strokeWidth={2} />
-              </span>
-              <span>
-                <span className="live block text-[20px] leading-tight font-semibold tabular-nums">{hot ? `${hot.busy}/${hot.tables}` : "—"} tables</span>
-                <span className={`block text-[13px] ${hot?.bills ? "font-medium text-g-orange" : "text-g-muted"}`}>{hot?.bills ? `${hot.bills} asking for the bill` : "all calm"}</span>
-              </span>
-            </button>
-            <div className="flex h-[142px] w-[170px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-4">
-              <span className="flex items-center justify-between">
-                <span className="chip-purple grid size-9 place-items-center rounded-[12px]">
-                  <Trophy size={18} strokeWidth={2} />
-                </span>
-                <span className="text-[12px] font-medium text-g-muted">Level {level.level}</span>
-              </span>
-              <span>
-                <span className="live block text-[20px] leading-tight font-semibold">{level.title}</span>
-                <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-g-fill">
-                  <span className="live bar-grad block h-full rounded-full" style={{ width: `${pct}%` }} />
-                </span>
-                <span className="mt-1 block text-[12px] text-g-muted tabular-nums">
-                  {level.xpIntoLevel} / {level.xpForNext} XP
-                </span>
-              </span>
-            </div>
-          </Reveal>
+            </StripBig>
+          </Strip>
         </div>
       </section>
 

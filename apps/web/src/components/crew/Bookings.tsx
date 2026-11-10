@@ -84,7 +84,7 @@ export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[];
                   </span>
                 </div>
                 {b.note && (
-                  <p className="mt-2.5 flex items-start gap-1.5 rounded-[14px] bg-[#fff6ec] px-3 py-2 text-[13px] leading-snug text-g-ink-2">
+                  <p className="mt-2.5 flex items-start gap-1.5 rounded-[14px] bg-g-tint-note px-3 py-2 text-[13px] leading-snug text-g-ink-2">
                     <StickyNote size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-g-orange" /> <span className="live">{b.note}</span>
                   </p>
                 )}

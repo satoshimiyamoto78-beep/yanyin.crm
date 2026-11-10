@@ -61,6 +61,15 @@ something like `yanyin.app` (not decided yet, see `docs/04-decisions.md`).
   mockups, contracts and copies of key docs for the founder.
 - The repo stays the source of truth for docs; Notion and Drive mirror it.
 
+## One visual system
+
+The guest menu and the waiter app are one product. Shared visual building blocks
+(header sky, theme, quick-action strip, notifications, loading blur, pages,
+haptics, colour tokens) live in `apps/web/src/components/system/`,
+`components/guest/motion.tsx` and `app/globals.css`. Change them there, never copy
+them into one app, and check every visual change in both apps (light and dark).
+Our theme uses `data-scheme` on `<html>`, not `data-theme` (the artifact viewer sets that).
+
 ## Default tech stack (decided, see ADR-001)
 
 TypeScript everywhere · Next.js (App Router) + Tailwind + shadcn/ui · Supabase

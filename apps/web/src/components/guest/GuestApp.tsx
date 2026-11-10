@@ -31,17 +31,19 @@ import {
   ReceiptText,
   Search,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import { venueBrand, type VenueBrand } from "@/lib/visual";
 import { RouletteSheet } from "./RouletteSheet";
+import { NorthSky } from "@/components/system/NorthSky";
+import { useScheme } from "@/components/system/scheme";
+import {
+  Strip,
+  StripBig,
+  StripSquare,
+  StripWide,
+} from "@/components/system/Strip";
+import { ThemeToggle } from "@/components/system/ThemeToggle";
 import {
   AboutSheet,
   BillSheet,
@@ -113,51 +115,8 @@ export function GuestApp({ menu }: { menu: Menu }) {
   const [orders, setOrders] = useState<PlacedOrder[]>([]);
   const [now, setNow] = useState(0);
   const [sheet, setSheet] = useState<SheetName>(null);
-  const [dark, setDark] = useState(false);
-  // The header sky only animates while it is on screen.
-  const skyRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = skyRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => el.classList.toggle("is-off", !e?.isIntersecting));
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  // The guest's choice is remembered on this phone; the menu applies it to the whole page.
-  useEffect(() => {
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- read the saved choice once on mount
-      if (localStorage.getItem("yanyin:theme") === "dark") setDark(true);
-    } catch {
-      /* private mode: stay light */
-    }
-  }, []);
-  useEffect(() => {
-    const root = document.documentElement;
-    if (dark) root.dataset.theme = "dark";
-    else delete root.dataset.theme;
-    return () => {
-      delete root.dataset.theme;
-    };
-  }, [dark]);
-  const toggleTheme = () => {
-    const next = !dark;
-    try {
-      localStorage.setItem("yanyin:theme", next ? "dark" : "light");
-    } catch {
-      /* not saved, still switches */
-    }
-    // One GPU cross-fade of the whole screen instead of hundreds of colour transitions.
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    const apply = () => {
-      const root = document.documentElement;
-      if (next) root.dataset.theme = "dark";
-      else delete root.dataset.theme;
-      setDark(next);
-    };
-    if (doc.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) doc.startViewTransition(apply);
-    else apply();
-  };
+  // One light/dark choice for every yanyin surface.
+  const { dark, toggle: toggleTheme } = useScheme();
   const [item, setItem] = useState<MenuItem | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [age, setAge] = useState<"unknown" | "ok" | "blocked">(
@@ -181,7 +140,6 @@ export function GuestApp({ menu }: { menu: Menu }) {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [orders.length]);
-
 
   const flash = useCallback((n: Notice) => {
     haptic("success");
@@ -251,39 +209,39 @@ export function GuestApp({ menu }: { menu: Menu }) {
   // on the page never re-render a hundred cards.
   const menuList = useMemo(
     () => (
-        <main className="px-5">
-          {menu.categories.map((c) => (
-            <section key={c.id} id={`cat-${c.id}`} className="pt-8">
-              <h2 className="mb-1 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
-                {t(c.name, lang)}
-                <span className="text-[15px] font-medium tracking-normal text-g-faint">
-                  {c.items.length}
-                </span>
-              </h2>
-              <div className="divide-y divide-g-line">
-                {c.items.map((it, n) => (
-                  <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 60}>
-                    <ItemCard
-                      item={it}
-                      role={c.role}
-                      lang={lang}
-                      currency={currency}
-                      qty={qtyOf(it.id)}
-                      onOpen={() => setItem(it)}
-                      onAdd={() => quickAdd(it)}
-                      onQty={(q) => setPlainQty(it, q)}
-                    />
-                  </Reveal>
-                ))}
-              </div>
-            </section>
-          ))}
-          <p className="pt-12 text-center text-[13px] text-g-faint">
-            {ui(lang, "serviceNote")}
-            <br />
-            {ui(lang, "poweredBy")}
-          </p>
-        </main>
+      <main className="px-5">
+        {menu.categories.map((c) => (
+          <section key={c.id} id={`cat-${c.id}`} className="pt-8">
+            <h2 className="mb-1 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
+              {t(c.name, lang)}
+              <span className="text-[15px] font-medium tracking-normal text-g-faint">
+                {c.items.length}
+              </span>
+            </h2>
+            <div className="divide-y divide-g-line">
+              {c.items.map((it, n) => (
+                <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 60}>
+                  <ItemCard
+                    item={it}
+                    role={c.role}
+                    lang={lang}
+                    currency={currency}
+                    qty={qtyOf(it.id)}
+                    onOpen={() => setItem(it)}
+                    onAdd={() => quickAdd(it)}
+                    onQty={(q) => setPlainQty(it, q)}
+                  />
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        ))}
+        <p className="pt-12 text-center text-[13px] text-g-faint">
+          {ui(lang, "serviceNote")}
+          <br />
+          {ui(lang, "poweredBy")}
+        </p>
+      </main>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- callbacks only read state that is in the deps
     [menu, lang, currency, lines],
@@ -295,13 +253,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         {/* Top: the banking-app pattern, same as the waiter's home. */}
         <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
           {/* Northern lights in the Nomad blue: soft ribbons of light drift over a deep blue sky. */}
-          <div ref={skyRef} className="north-sky" aria-hidden>
-            <span className="ns-glow ns-a" />
-            <span className="ns-glow ns-b" />
-            <span className="ns-glow ns-c" />
-            <span className="ns-ribbon ns-r1" />
-            <span className="ns-ribbon ns-r2" />
-          </div>
+          <NorthSky />
           <div className="flex items-center gap-2.5 px-5">
             <button
               onClick={() => setSheet("about")}
@@ -380,46 +332,39 @@ export function GuestApp({ menu }: { menu: Menu }) {
           </div>
 
           {/* Strip: one big order card, then two rows of the same height: waiter and bill squares, short wide cards. */}
-          <div className="no-scrollbar mt-7 grid grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">
-            <button
+          <Strip>
+            <StripBig
               onClick={() => {
-                haptic("light");
                 if (count > 0) setSheet("cart");
                 else if (menu.categories[0]) scrollTo(menu.categories[0].id);
               }}
-              className="press row-span-2 flex h-[134px] w-[148px] flex-col justify-between rounded-[22px] bg-white p-3.5 text-left text-g-ink"
-            >
-              <span className="flex items-center justify-between">
-                <span className="blue-grad grid size-10 place-items-center rounded-full">
-                  <UtensilsCrossed size={19} strokeWidth={2} />
-                </span>
-                {count > 0 && (
+              icon={<UtensilsCrossed size={19} strokeWidth={2} />}
+              badge={
+                count > 0 && (
                   <span className="grid h-7 min-w-7 place-items-center rounded-full bg-g-blue-soft px-2 text-[13px] font-bold text-g-blue tabular-nums">
                     {count}
                   </span>
-                )}
-              </span>
-              <span>
-                <span className="block text-[17px] leading-tight font-semibold">
-                  {count > 0
-                    ? ui(lang, "yourOrder")
-                    : orders.length
-                      ? ui(lang, "orderMore")
-                      : ui(lang, "startOrder")}
-                </span>
-                <span className="mt-1 block truncate text-[12px] text-g-muted tabular-nums">
-                  {count > 0
-                    ? formatMoney(total, currency, lang)
-                    : ui(lang, "startOrderSub")}
-                </span>
-              </span>
-            </button>
-            <SquareButton
+                )
+              }
+              title={
+                count > 0
+                  ? ui(lang, "yourOrder")
+                  : orders.length
+                    ? ui(lang, "orderMore")
+                    : ui(lang, "startOrder")
+              }
+              sub={
+                count > 0
+                  ? formatMoney(total, currency, lang)
+                  : ui(lang, "startOrderSub")
+              }
+            />
+            <StripSquare
               icon={<BellRing size={21} strokeWidth={1.9} />}
               label={ui(lang, "qaWaiter")}
               onClick={() => say("waiterCalled")}
             />
-            <SquareButton
+            <StripSquare
               icon={<ReceiptText size={21} strokeWidth={1.9} />}
               label={ui(lang, "qaBill")}
               onClick={() => {
@@ -433,7 +378,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                 else setSheet("bill");
               }}
             />
-            <WideButton
+            <StripWide
               onClick={() => setSheet("roulette")}
               corner={
                 <span className="wheel-corner pointer-events-none absolute -top-[56px] -left-[56px]">
@@ -443,7 +388,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
               title={ui(lang, "qaRoulette")}
               sub={ui(lang, "qaRouletteShort")}
             />
-            <WideButton
+            <StripWide
               onClick={() => setSheet("categories")}
               art={
                 <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
@@ -453,13 +398,13 @@ export function GuestApp({ menu }: { menu: Menu }) {
               title={ui(lang, "categories")}
               sub={`${menu.categories.length} ${ui(lang, "sections")}`}
             />
-            <WideButton
+            <StripWide
               onClick={() => setSheet("yan")}
               art={<YanOrb size={34} />}
               title="Yan"
               sub={ui(lang, "yanShort")}
             />
-            <WideButton
+            <StripWide
               onClick={() => setSheet("wifi")}
               art={
                 <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
@@ -471,7 +416,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             />
             {hasCoals && (
               <>
-                <WideButton
+                <StripWide
                   onClick={() =>
                     say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)
                   }
@@ -483,7 +428,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                   title={ui(lang, "qaCoalsDo")}
                   sub={ui(lang, "qaCoalsSub")}
                 />
-                <WideButton
+                <StripWide
                   onClick={() => setSheet("about")}
                   art={
                     <span className="chip-gray grid size-9 place-items-center rounded-[12px]">
@@ -499,7 +444,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                 />
               </>
             )}
-          </div>
+          </Strip>
         </section>
 
         {/* Hero */}
@@ -818,74 +763,6 @@ export function GuestApp({ menu }: { menu: Menu }) {
   );
 }
 
-/** Square service button in the top strip (waiter, bill). */
-function SquareButton({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      aria-label={label}
-      onClick={() => {
-        haptic("light");
-        onClick();
-      }}
-      className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink"
-    >
-      {icon}
-      <span className="max-w-full truncate px-1 text-[10px] font-semibold">
-        {label}
-      </span>
-    </button>
-  );
-}
-
-/**
- * Short wide card in the top strip: as tall as a square button, illustration and two lines.
- * `corner` puts a large illustration in the top-left corner, cropped to a quarter.
- */
-function WideButton({
-  onClick,
-  art,
-  corner,
-  title,
-  sub,
-}: {
-  onClick: () => void;
-  art?: React.ReactNode;
-  corner?: React.ReactNode;
-  title: string;
-  sub: string;
-}) {
-  return (
-    <button
-      onClick={() => {
-        haptic("light");
-        onClick();
-      }}
-      className={`press relative flex h-[62px] w-[158px] items-center gap-2.5 overflow-hidden rounded-[20px] bg-white pr-3 text-left text-g-ink ${corner ? "pl-[64px]" : "pl-2.5"}`}
-    >
-      {corner}
-      {art && (
-        <span className="grid size-10 shrink-0 place-items-center">{art}</span>
-      )}
-      <span className="relative min-w-0">
-        <span className="block truncate text-[14px] leading-tight font-semibold">
-          {title}
-        </span>
-        <span className="mt-0.5 block truncate text-[11px] text-g-muted">
-          {sub}
-        </span>
-      </span>
-    </button>
-  );
-}
-
 /** Label, name, description and the action row, all laid over the hero image. */
 function HeroCaption({
   chip,
@@ -1075,66 +952,31 @@ function Hero({
   );
 }
 
-/** Sun that turns into the moon: rays fold away and a shadow slides in to carve the crescent. */
-function ThemeToggle({
-  dark,
-  onToggle,
-  label,
-}: {
-  dark: boolean;
-  onToggle: () => void;
-  label: string;
-}) {
-  const id = useId();
-  return (
-    <button
-      aria-label={label}
-      aria-pressed={dark}
-      onClick={() => {
-        haptic("tick");
-        onToggle();
-      }}
-      className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width={22}
-        height={22}
-        className={`theme-ico ${dark ? "is-dark" : ""}`}
-        aria-hidden
-      >
-        <mask id={`moon-${id}`}>
-          <rect width="24" height="24" fill="#fff" />
-          <circle className="moon-bite" cx="17" cy="9" r="5.5" fill="#000" />
-        </mask>
-        <circle
-          className="sun-core"
-          cx="12"
-          cy="12"
-          r="5"
-          fill="#fff"
-          mask={`url(#moon-${id})`}
-        />
-        <g className="rays" stroke="#fff" strokeWidth="2" strokeLinecap="round">
-          <path d="M12 1.8v2.2M12 20v2.2M1.8 12h2.2M20 12h2.2M4.8 4.8l1.5 1.5M17.7 17.7l1.5 1.5M4.8 19.2l1.5-1.5M17.7 6.3l1.5-1.5" />
-        </g>
-      </svg>
-    </button>
-  );
-}
-
 /**
  * Sticky category ring. It keeps the "section in view" state to itself: while
  * the guest scrolls, only these labels update, not the whole menu page.
  */
-function CategoryTabs({ menu, lang, onPick }: { menu: Menu; lang: Lang; onPick: (id: string) => void }) {
+function CategoryTabs({
+  menu,
+  lang,
+  onPick,
+}: {
+  menu: Menu;
+  lang: Lang;
+  onPick: (id: string) => void;
+}) {
   const [active, setActive] = useState(menu.categories[0]!.id);
   const tabsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
         let top: IntersectionObserverEntry | undefined;
-        for (const e of entries) if (e.isIntersecting && (!top || e.boundingClientRect.top < top.boundingClientRect.top)) top = e;
+        for (const e of entries)
+          if (
+            e.isIntersecting &&
+            (!top || e.boundingClientRect.top < top.boundingClientRect.top)
+          )
+            top = e;
         if (top) setActive(top.target.id.slice(4));
       },
       { rootMargin: "-120px 0px -65% 0px" },
@@ -1155,8 +997,14 @@ function CategoryTabs({ menu, lang, onPick }: { menu: Menu; lang: Lang; onPick: 
     let idle: ReturnType<typeof setTimeout> | undefined;
     const follow = () => {
       const bar = tabsRef.current;
-      const tab = bar?.querySelector<HTMLElement>(`[data-tab="${activeRef.current}"]`);
-      if (bar && tab) bar.scrollTo({ left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2, behavior: "smooth" });
+      const tab = bar?.querySelector<HTMLElement>(
+        `[data-tab="${activeRef.current}"]`,
+      );
+      if (bar && tab)
+        bar.scrollTo({
+          left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2,
+          behavior: "smooth",
+        });
     };
     const onScroll = () => {
       clearTimeout(idle);
@@ -1170,8 +1018,14 @@ function CategoryTabs({ menu, lang, onPick }: { menu: Menu; lang: Lang; onPick: 
   }, []);
   useRing(tabsRef, [menu, lang]);
   return (
-    <nav aria-label={ui(lang, "categories")} className="sticky top-0 z-30 mt-6 bg-white">
-      <div ref={tabsRef} className="no-scrollbar flex snap-x snap-proximity gap-1 overflow-x-auto px-[calc(50%-64px)] py-2.5">
+    <nav
+      aria-label={ui(lang, "categories")}
+      className="sticky top-0 z-30 mt-6 bg-white"
+    >
+      <div
+        ref={tabsRef}
+        className="no-scrollbar flex snap-x snap-proximity gap-1 overflow-x-auto px-[calc(50%-64px)] py-2.5"
+      >
         {menu.categories.map((c) => {
           const on = c.id === active;
           return (

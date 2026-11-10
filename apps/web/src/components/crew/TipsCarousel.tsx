@@ -17,9 +17,9 @@ export type Tip = {
 };
 
 const TONE: Record<Tip["tone"], { bg: string; ink: string; icon: string }> = {
-  blue: { bg: "bg-[#eef3ff]", ink: "text-g-blue", icon: "blue-grad" },
-  green: { bg: "bg-[#ecf8f1]", ink: "text-g-green", icon: "bg-g-green text-white" },
-  orange: { bg: "bg-[#fff3ea]", ink: "text-g-orange", icon: "bg-g-orange text-white" },
+  blue: { bg: "bg-g-tint-blue", ink: "text-g-blue", icon: "blue-grad" },
+  green: { bg: "bg-g-tint-green", ink: "text-g-green", icon: "bg-g-green text-white" },
+  orange: { bg: "bg-g-tint-orange", ink: "text-g-orange", icon: "bg-g-orange text-white" },
   ink: { bg: "bg-g-fill", ink: "text-g-ink-2", icon: "bg-g-ink text-white" },
 };
 

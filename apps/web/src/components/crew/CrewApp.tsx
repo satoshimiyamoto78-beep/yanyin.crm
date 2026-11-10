@@ -31,6 +31,7 @@ import { Island, loadIfChanged, markShown, Reveal, useLongPress, type IslandNoti
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
+import { useScheme } from "@/components/system/scheme";
 import { Scanner } from "./Scanner";
 import { SettingsView } from "./Settings";
 
@@ -64,6 +65,8 @@ type Notice = IslandNotice;
  */
 export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorData; menu: Menu }) {
   const [tab, setTab] = useState<Tab>("me");
+  // The same light/dark choice as the guest menu: one system, one preference.
+  const scheme = useScheme();
   const [tables, setTables] = useState(floor.tables);
   const [bookings, setBookings] = useState(floor.bookings);
   const [history, setHistory] = useState(floor.history);
@@ -167,8 +170,8 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
             }}
           />
         )}
-        {tab === "me" && <CrewBoard data={data} embedded hot={hot} onGo={go} onNotify={(title, text) => notify({ title, text })} onScan={() => setScan(true)} />}
-        {tab === "settings" && <SettingsView onNotify={(title, text) => notify({ title, text })} />}
+        {tab === "me" && <CrewBoard data={data} embedded hot={hot} onGo={go} onNotify={(title, text) => notify({ title, text })} onScan={() => setScan(true)} dark={scheme.dark} onTheme={scheme.toggle} />}
+        {tab === "settings" && <SettingsView onNotify={(title, text) => notify({ title, text })} dark={scheme.dark} onTheme={scheme.toggle} />}
       </div>
 
       {/* Tab bar */}

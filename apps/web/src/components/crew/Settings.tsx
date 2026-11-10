@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronRight, Coffee, Globe, HelpCircle, Lock, LogOut, Printer, ScanFace, Smartphone, Type, Volume2, type LucideIcon } from "lucide-react";
+import { Bell, ChevronRight, Coffee, Globe, HelpCircle, Lock, LogOut, Moon, Printer, ScanFace, Smartphone, Type, Volume2, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 import { PageHead } from "./CrewApp";
@@ -20,7 +20,7 @@ type Prefs = {
 const LANGS = ["English", "Русский", "Tiếng Việt"];
 
 /** Waiter settings, laid out like a native settings screen: grouped rows, switches, values. */
-export function SettingsView({ onNotify }: { onNotify: (title: string, text?: string) => void }) {
+export function SettingsView({ onNotify, dark, onTheme }: { onNotify: (title: string, text?: string) => void; dark: boolean; onTheme: () => void }) {
   const [p, setP] = useState<Prefs>({ newOrders: true, kitchenReady: true, bills: true, bookings: false, sound: true, vibration: true, onBreak: false, pin: true, faceId: false });
   const [lang, setLang] = useState(0);
   const [zone, setZone] = useState<"Hall" | "Terrace">("Hall");
@@ -94,6 +94,9 @@ export function SettingsView({ onNotify }: { onNotify: (title: string, text?: st
           >
             {LANGS[lang]} <ChevronRight size={18} className="text-g-faint" />
           </button>
+        </Row>
+        <Row icon={Moon} label="Dark theme" hint="Same choice as the guest menu on this phone">
+          <Switch on={dark} onChange={onTheme} label="Dark theme" />
         </Row>
         <Row icon={Type} label="Text size">
           <Segmented value={text} options={["Default", "Large"]} onChange={(v) => { setText(v); onNotify("Text size", v); }} />
