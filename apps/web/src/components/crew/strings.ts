@@ -1,5 +1,15 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Race · first to finish wins": "Гонка · побеждает первый",
+  "Solo quest": "Личный квест",
+  "Progress": "Прогресс",
+  "Deadline": "Срок",
+  "All quests": "Все квесты",
+  "Bronze": "Бронза",
+  "Silver": "Серебро",
+  "Gold": "Золото",
+  "Sapphire": "Сапфир",
+  "Diamond": "Бриллиант",
   "Today and the week ahead": "Сегодня и на неделю вперёд",
   "+300k ₫ each": "+300 тыс. ₫ каждому",
   "-day streak": "-дневная серия",
@@ -289,6 +299,16 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Race · first to finish wins": "Đua · ai xong trước thắng",
+  "Solo quest": "Nhiệm vụ cá nhân",
+  "Progress": "Tiến độ",
+  "Deadline": "Hạn",
+  "All quests": "Tất cả nhiệm vụ",
+  "Bronze": "Đồng",
+  "Silver": "Bạc",
+  "Gold": "Vàng",
+  "Sapphire": "Sapphire",
+  "Diamond": "Kim cương",
   "Today and the week ahead": "Hôm nay và tuần tới",
   "+300k ₫ each": "+300k ₫ mỗi người",
   "-day streak": " ngày liên tiếp",

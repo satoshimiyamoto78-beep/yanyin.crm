@@ -10,6 +10,7 @@ import { PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
 import { TipsCarousel } from "./TipsCarousel";
 import { CustomizePage, HOME_BLOCKS, useHomeLayout, type HomeBlock } from "./HomeLayout";
 import { DragList } from "./DragList";
+import { BadgeEmblem, type Tier } from "./Emblems";
 import { useTr } from "./prefs";
 import { BadgesPage, QuestsPage } from "./Collections";
 import { NorthSky } from "@/components/system/NorthSky";
@@ -18,13 +19,15 @@ import { ThemeToggle } from "@/components/system/ThemeToggle";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
-const QUEST_ICON: Record<string, LucideIcon> = {
+export const QUEST_ICON: Record<string, LucideIcon> = {
   "plov-master": CookingPot,
   "sweet-finish": CakeSlice,
   "five-stars": Star,
   "shashlik-sunday": Flame,
   "roulette-host": Dices,
 };
+/** Each badge's metal: how rare and hard it is. */
+export const BADGE_TIER: Record<string, Tier> = { upsell: "gold", speed: "sapphire", fav: "diamond", waste: "silver", team: "bronze", night: "sapphire", roulette: "gold", sommelier: "silver" };
 export const BADGE_ICON: Record<string, LucideIcon> = { upsell: Crown, speed: Zap, fav: Heart, waste: Recycle, team: Handshake, night: Moon, roulette: Dices, sommelier: Martini };
 
 /** Short money for tiles: 4 820 000 → 4.8M, 210 000 → 210k. */
@@ -573,9 +576,7 @@ export function BadgeTile({ b, onPeek }: { b: CrewData["badges"][number]; onPeek
   const Icon = BADGE_ICON[b.id] ?? Trophy;
   return (
     <button data-hold {...press} style={{ WebkitTouchCallout: "none" }} className="press flex flex-col items-center gap-2 text-center select-none">
-      <span className={`grid aspect-square w-full place-items-center rounded-full ${b.earned ? "card text-g-blue" : "border-[1.5px] border-dashed border-g-fill-2 text-g-faint"}`}>
-        <Icon size={24} strokeWidth={1.75} />
-      </span>
+      <BadgeEmblem tier={BADGE_TIER[b.id] ?? "silver"} icon={Icon} earned={b.earned} size={72} />
       <span className={`text-[12px] leading-tight ${b.earned ? "text-g-ink-2" : "text-g-faint"}`}>{tr(b.name)}</span>
     </button>
   );
@@ -668,8 +669,8 @@ export function BadgePeek({ b, onClose }: { b: CrewData["badges"][number]; onClo
   const Icon = BADGE_ICON[b.id] ?? Trophy;
   return (
     <PeekCard label={b.name} onClose={onClose}>
-      <span className={`mx-auto grid size-20 place-items-center rounded-full ${b.earned ? "blue-grad" : "bg-g-fill text-g-faint"}`}>
-        <Icon size={36} strokeWidth={1.7} />
+      <span className="flex justify-center">
+        <BadgeEmblem tier={BADGE_TIER[b.id] ?? "silver"} icon={Icon} earned={b.earned} size={120} />
       </span>
       <p className="mt-4 text-center text-[22px] font-bold tracking-[-0.02em]">{tr(b.name)}</p>
       <p className={`mt-1 text-center text-[13px] font-semibold ${b.earned ? "text-g-green" : "text-g-muted"}`}>{b.earned ? tr("Earned") : tr("Not yet")}</p>

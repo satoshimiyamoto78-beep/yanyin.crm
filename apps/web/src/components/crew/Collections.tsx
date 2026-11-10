@@ -5,8 +5,9 @@ import { useState, type ReactNode } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
-import { useLongPress } from "@/components/guest/motion";
-import { BADGE_ICON, BADGE_INFO, BadgePeek, QuestRow } from "./CrewBoard";
+import { BADGE_ICON, BADGE_INFO, BADGE_TIER, QuestRow, QUEST_ICON } from "./CrewBoard";
+import { BadgeEmblem, QuestMedal, type Tier } from "./Emblems";
+import { HeroCarousel } from "./HeroCarousel";
 import { useTr } from "./prefs";
 
 /** Segmented control in the system style. */
@@ -76,6 +77,9 @@ export function QuestsPage({
         {tr("Claim")}
       </button>
     ) : undefined;
+  const [at, setAt] = useState(0);
+  const cur = list[Math.min(at, list.length - 1)];
+  const medal = (q: CrewQuest) => (q.state === "done" ? "done" : q.state === "available" ? "available" : "active");
   return (
     <Sheet open onClose={onClose} label={tr("Quests")} title={false}>
       <div className="px-5 pt-1 pb-10">
@@ -86,19 +90,63 @@ export function QuestsPage({
         <div className="mt-5">
           <Tabs
             value={tab}
-            onChange={onTab}
+            onChange={(t) => {
+              setAt(0);
+              onTab(t);
+            }}
             options={[
               ["yours", `${tr("Your quests")} · ${active.length}`],
               ["board", `${tr("Quest board")} · ${available.length}`],
             ]}
           />
         </div>
-        <div className="mt-2 divide-y divide-g-line">
-          {list.map((q) => (
-            <QuestRow key={q.id} q={q} money={money} onPeek={() => onPeek(q.id)} action={action(q)} />
-          ))}
-        </div>
-        {!list.length && (
+
+        {cur ? (
+          <>
+            <div className="mt-6">
+              <HeroCarousel key={tab} items={list} index={at} onIndex={setAt} height={190} render={(q) => <QuestMedal state={medal(q)} icon={QUEST_ICON[q.id] ?? Trophy} size={172} />} />
+            </div>
+            {/* What is in the centre right now. */}
+            <section key={cur.id} className="animate-tab mt-5 text-center">
+              <p className="text-[24px] leading-tight font-bold tracking-[-0.02em]">{tr(cur.title)}</p>
+              <p className="mt-1 text-[13px] font-semibold text-g-muted">{cur.mode === "race" ? tr("Race · first to finish wins") : tr("Solo quest")}</p>
+              <p className="mx-auto mt-3 max-w-[300px] text-[15px] leading-snug text-g-ink-2">{tr(cur.description)}</p>
+              {cur.state !== "available" && (
+                <div className="mx-auto mt-4 max-w-[300px]">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-g-muted">{tr("Progress")}</span>
+                    <span className="font-semibold tabular-nums">
+                      {cur.progress}/{cur.target}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-g-fill">
+                    <div className={`h-full rounded-full ${cur.state === "done" ? "green-grad" : "bar-grad"}`} style={{ width: `${Math.round((cur.progress / cur.target) * 100)}%` }} />
+                  </div>
+                </div>
+              )}
+              <div className="mt-4 grid grid-cols-2 gap-2 text-left">
+                <div className="rounded-[18px] bg-g-fill p-3.5">
+                  <p className="text-[12px] text-g-muted">{tr("Reward")}</p>
+                  <p className="text-[15px] font-semibold">
+                    +{cur.reward.xp} XP{cur.reward.bonus ? ` · ${money(cur.reward.bonus)}` : ""}
+                  </p>
+                </div>
+                <div className="rounded-[18px] bg-g-fill p-3.5">
+                  <p className="text-[12px] text-g-muted">{tr("Deadline")}</p>
+                  <p className="text-[15px] font-semibold">{tr(cur.endsAt)}</p>
+                </div>
+              </div>
+              {(tab === "board" || cur.state === "done") && <div className="mt-4 flex justify-center">{action(cur)}</div>}
+            </section>
+
+            <h3 className="mt-10 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{tr("All quests")}</h3>
+            <div className="mt-1 divide-y divide-g-line">
+              {list.map((q) => (
+                <QuestRow key={q.id} q={q} money={money} onPeek={() => onPeek(q.id)} action={action(q)} />
+              ))}
+            </div>
+          </>
+        ) : (
           <div className="py-16 text-center">
             <span className="mx-auto grid size-16 place-items-center rounded-full bg-g-fill text-g-faint">
               <Trophy size={26} strokeWidth={1.7} />
@@ -114,11 +162,13 @@ export function QuestsPage({
 
 /** Every badge, earned first, with how far along the rest are. */
 export function BadgesPage({ badges, onClose }: { badges: CrewData["badges"]; onClose: () => void }) {
-  const [peek, setPeek] = useState<string | null>(null);
-  const open = badges.find((b) => b.id === peek);
+  const tr = useTr();
   const sorted = [...badges].sort((a, b) => Number(b.earned) - Number(a.earned));
   const earned = badges.filter((b) => b.earned).length;
-  const tr = useTr();
+  const [at, setAt] = useState(0);
+  const cur = sorted[at]!;
+  const info = BADGE_INFO[cur.id];
+  const tier = BADGE_TIER[cur.id] ?? "silver";
   return (
     <Sheet open onClose={onClose} label={tr("Badges")} title={false}>
       <div className="px-5 pt-1 pb-10">
@@ -129,34 +179,57 @@ export function BadgesPage({ badges, onClose }: { badges: CrewData["badges"]; on
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-g-fill">
           <div className="bar-grad h-full rounded-full" style={{ width: `${(earned / badges.length) * 100}%` }} />
         </div>
-        <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6">
-          {sorted.map((b) => {
-            const Icon = BADGE_ICON[b.id] ?? Trophy;
-            const info = BADGE_INFO[b.id];
-            return (
-              <BadgeCell key={b.id} earned={b.earned} onHold={() => setPeek(b.id)}>
-                <span className={`grid size-[76px] place-items-center rounded-full ${b.earned ? "blue-grad" : "bg-g-fill text-g-faint"}`}>
-                  <Icon size={30} strokeWidth={1.7} />
-                </span>
-                <span className={`mt-2 text-[13px] leading-tight font-semibold ${b.earned ? "" : "text-g-muted"}`}>{tr(b.name)}</span>
-                <span className="mt-1 text-[12px] text-g-muted tabular-nums">{b.earned ? tr("Earned") : `${info?.progress ?? 0}%`}</span>
-              </BadgeCell>
-            );
-          })}
+
+        <div className="mt-6">
+          <HeroCarousel items={sorted} index={at} onIndex={setAt} height={200} render={(b) => <BadgeEmblem tier={BADGE_TIER[b.id] ?? "silver"} icon={BADGE_ICON[b.id] ?? Trophy} earned={b.earned} size={180} />} />
         </div>
-        <p className="mt-8 text-center text-[13px] text-g-faint">{tr("Hold a badge to see how to earn it")}</p>
+
+        {/* The badge in the centre: name, metal, story and how to get it. */}
+        <section key={cur.id} className="animate-tab mt-5 text-center">
+          <p className="text-[24px] leading-tight font-bold tracking-[-0.02em]">{tr(cur.name)}</p>
+          <p className="mt-1.5 flex items-center justify-center gap-2 text-[13px] font-semibold">
+            <span className="rounded-full bg-g-fill px-2.5 py-1 text-g-ink-2">{tr(TIER_NAME[tier])}</span>
+            <span className={cur.earned ? "text-g-green" : "text-g-muted"}>{cur.earned ? tr("Earned") : tr("Not yet")}</span>
+          </p>
+          {info && <p className="mx-auto mt-3 max-w-[300px] text-[15px] leading-snug text-g-ink-2">{tr(info.what)}</p>}
+          {info && (
+            <p className="mt-3 rounded-[18px] bg-g-fill px-4 py-3 text-left text-[14px] leading-snug">
+              <span className="font-semibold">{tr("How to get it")}: </span>
+              {tr(info.how)}
+            </p>
+          )}
+          {!cur.earned && info && (
+            <div className="mx-auto mt-4 max-w-[300px]">
+              <div className="h-1.5 overflow-hidden rounded-full bg-g-fill">
+                <div className="bar-grad h-full rounded-full" style={{ width: `${info.progress}%` }} />
+              </div>
+              <p className="mt-1.5 text-[12px] text-g-muted">
+                {info.progress}% {tr("there")}
+              </p>
+            </div>
+          )}
+        </section>
+
+        <h3 className="mt-10 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{tr("All badges")}</h3>
+        <div className="mt-3 grid grid-cols-4 gap-x-2 gap-y-4">
+          {sorted.map((b, i) => (
+            <button
+              key={b.id}
+              onClick={() => {
+                haptic("tick");
+                setAt(i);
+              }}
+              aria-pressed={i === at}
+              className={`press flex flex-col items-center gap-1 rounded-[20px] py-2 text-center transition-colors ${i === at ? "bg-g-fill" : ""}`}
+            >
+              <BadgeEmblem tier={BADGE_TIER[b.id] ?? "silver"} icon={BADGE_ICON[b.id] ?? Trophy} earned={b.earned} size={64} />
+              <span className={`text-[11px] leading-tight font-semibold ${b.earned ? "" : "text-g-muted"}`}>{tr(b.name)}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      {open && <BadgePeek b={open} onClose={() => setPeek(null)} />}
     </Sheet>
   );
 }
 
-/** A badge in the grid: hold it to see its story. */
-function BadgeCell({ earned, onHold, children }: { earned: boolean; onHold: () => void; children: ReactNode }) {
-  const press = useLongPress(onHold);
-  return (
-    <button {...press} aria-label={earned ? "Earned badge" : "Badge"} style={{ WebkitTouchCallout: "none" }} className="flex flex-col items-center text-center select-none">
-      {children}
-    </button>
-  );
-}
+const TIER_NAME: Record<Tier, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold", sapphire: "Sapphire", diamond: "Diamond" };

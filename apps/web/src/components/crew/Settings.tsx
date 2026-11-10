@@ -37,7 +37,8 @@ import {
 import { useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
-import { BADGE_ICON } from "./CrewBoard";
+import { BADGE_ICON, BADGE_TIER } from "./CrewBoard";
+import { BadgeEmblem } from "./Emblems";
 import { CREW_LANGS, usePrefs, type CrewLang, type NotifyPrefs } from "./prefs";
 
 export type Me = { first: string; last: string; phone: string; email: string; photo?: string; role: string };
@@ -110,8 +111,8 @@ export function ProfilePage({
               .map((b) => {
                 const Icon = BADGE_ICON[b.id] ?? Trophy;
                 return (
-                  <span key={b.id} title={b.name} className="blue-grad grid size-10 place-items-center rounded-full">
-                    <Icon size={18} strokeWidth={1.9} />
+                  <span key={b.id} title={b.name}>
+                    <BadgeEmblem tier={BADGE_TIER[b.id] ?? "silver"} icon={Icon} earned size={44} />
                   </span>
                 );
               })}
