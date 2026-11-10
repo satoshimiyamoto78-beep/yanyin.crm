@@ -371,8 +371,11 @@ body {
   from { opacity: 0; transform: translateY(14px) scale(0.985); }
   to { opacity: 1; transform: none; }
 }
+/* Fill "backwards" only: a transform animation that stays applied after it ends
+   makes the element the anchor for everything position: fixed inside it (peeks,
+   floating buttons would then sit relative to the long page, not the screen). */
 .animate-page {
-  animation: page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 @keyframes page-out {
   from { opacity: 1; transform: none; }
@@ -388,7 +391,7 @@ body {
   to { opacity: 1; transform: none; }
 }
 .animate-tab {
-  animation: tab-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tab-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 /*

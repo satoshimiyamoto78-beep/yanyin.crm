@@ -3,6 +3,7 @@
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
 import { Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, SlidersHorizontal, Info, Minus, Plus, Crown, Dices, Handshake, Moon, Martini, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
 import { PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
@@ -426,17 +427,20 @@ export function CrewBoard({
           </section>
         )}
 
-        {editing && (
-          <button
-            onClick={() => {
-              haptic("success");
-              setEditing(false);
-            }}
-            className="blue-grad press animate-rise fixed top-[max(14px,env(safe-area-inset-top))] right-4 z-50 h-11 rounded-full px-6 text-[15px] font-semibold"
-          >
-            {tr("Done")}
-          </button>
-        )}
+        {editing &&
+          createPortal(
+            // Done: a clear black capsule at the bottom centre, above the tab bar.
+            <button
+              onClick={() => {
+                haptic("success");
+                setEditing(false);
+              }}
+              className="press animate-rise fixed bottom-[calc(max(10px,env(safe-area-inset-bottom))+80px)] left-1/2 z-[60] flex h-14 -translate-x-1/2 items-center gap-2 rounded-full bg-[#0b0b0f] px-8 text-[16px] font-semibold text-white ring-1 ring-white/15"
+            >
+              <Check size={18} strokeWidth={2.6} /> {tr("Done")}
+            </button>,
+            document.body,
+          )}
 
         <button
           onClick={() => {

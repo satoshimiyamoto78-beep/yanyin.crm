@@ -33,6 +33,7 @@ import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
+import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
 import { Scanner } from "./Scanner";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
@@ -577,7 +578,7 @@ function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; mo
         ...(x.lines.some((l) => l.state !== "served") ? [["Mark all served", ChefHat, run(actions.serveAll)] as [string, LucideIcon, () => void]] : []),
         ["Open table", LayoutGrid, run(actions.open)],
       ];
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-6" role="dialog" aria-label={`Table ${x.no} quick actions`}>
       <ScrollLock />
       <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
@@ -623,7 +624,8 @@ function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; mo
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
