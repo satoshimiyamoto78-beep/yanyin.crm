@@ -16,7 +16,7 @@ export function Strip({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useEdges(ref);
   return (
-    <div ref={ref} className="no-scrollbar edge-fade mx-5 mt-7 grid grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto [grid-auto-columns:max-content]">
+    <div ref={ref} className="no-scrollbar edge-fade mx-2 mt-7 grid scroll-px-3 px-3 grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto [grid-auto-columns:max-content]">
       {children}
     </div>
   );

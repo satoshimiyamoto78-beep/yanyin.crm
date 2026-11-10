@@ -21,8 +21,8 @@ export function YanOrb({ size = 44 }: { size?: number }) {
   return (
     <span className="yan-orb relative grid shrink-0 place-items-center overflow-hidden rounded-full" style={{ width: size, height: size }} aria-hidden>
       <span className="yan-eyes flex items-center" style={{ gap: size * 0.16, marginTop: -size * 0.04 }}>
-        <span className="yan-eye block rounded-full bg-white" style={{ width: eyeW, height: eyeH }} />
-        <span className="yan-eye block rounded-full bg-white" style={{ width: eyeW, height: eyeH }} />
+        <span className="yan-eye block rounded-full bg-[#fff]" style={{ width: eyeW, height: eyeH }} />
+        <span className="yan-eye block rounded-full bg-[#fff]" style={{ width: eyeW, height: eyeH }} />
       </span>
     </span>
   );

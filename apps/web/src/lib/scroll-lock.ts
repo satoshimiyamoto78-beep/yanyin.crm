@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 
 /*
- * Real scroll lock for overlays, iOS included. `overflow: hidden` on <body> is
+ * Real scroll lock for overlays on every device: iPhone and iPad Safari,
+ * Android browsers, desktop. `overflow: hidden` on <body> is
  * not enough on iPhone: the page still scrolls under a sheet or a peek. While
  * anything is open we pin <body> in place (position: fixed at the current
  * offset) and put the page back exactly where it was when the last overlay
@@ -15,7 +16,10 @@ let savedY = 0;
 function lock() {
   if (locks++ > 0) return;
   savedY = window.scrollY;
+  // Desktop browsers with a classic scrollbar: keep the layout from jumping sideways.
+  const bar = window.innerWidth - document.documentElement.clientWidth;
   const b = document.body.style;
+  if (bar > 0) b.paddingRight = `${bar}px`;
   b.position = "fixed";
   b.top = `-${savedY}px`;
   b.left = "0";
@@ -35,6 +39,7 @@ function unlock() {
   b.right = "";
   b.width = "";
   b.overflow = "";
+  b.paddingRight = "";
   document.documentElement.style.overscrollBehavior = "";
   window.scrollTo(0, savedY);
 }

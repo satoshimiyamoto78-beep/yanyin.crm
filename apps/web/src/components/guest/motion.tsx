@@ -196,14 +196,14 @@ export function RouletteWheel({
       </div>
       {/* Hub and pointer do not rotate. */}
       {won && <span aria-hidden className="wheel-ring absolute top-1/2 left-1/2 size-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full" />}
-      <span className={`absolute top-1/2 left-1/2 grid size-[22%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full ${dark ? "bg-white text-[#2f6bff]" : "blue-grad border-4 border-white"}`}>
+      <span className={`absolute top-1/2 left-1/2 grid size-[22%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full ${dark ? "bg-[#fff] text-[#2f6bff]" : "blue-grad border-4 border-[#fff]"}`}>
         <Dices size={size * 0.09} strokeWidth={2} />
       </span>
       {/* Pointer: flicks back on every segment like a real wheel's clapper. */}
       <span aria-hidden className={`absolute -top-1.5 left-1/2 -translate-x-1/2 ${bare ? "hidden" : ""}`}>
         <span
           ref={pointerRef}
-          className={`block size-0 origin-top border-x-[9px] border-t-[15px] border-x-transparent transition-transform duration-150 ease-out ${dark ? "border-t-white" : "border-t-g-ink"}`}
+          className={`block size-0 origin-top border-x-[9px] border-t-[15px] border-x-transparent ${dark ? "border-t-[#fff]" : "border-t-g-ink"}`}
         />
       </span>
     </div>
@@ -231,6 +231,9 @@ export function useWheelSpin() {
   const pointer = useRef<HTMLSpanElement>(null);
   const [spinning, setSpinning] = useState(false);
   const [won, setWon] = useState(false);
+  // The slow idle turn runs only before the first spin; after that the wheel
+  // stays exactly where it landed (the idle animation would override it).
+  const [idle, setIdle] = useState(true);
   const angle = useRef(0);
   const raf = useRef(0);
 
@@ -247,13 +250,16 @@ export function useWheelSpin() {
     }
     el.classList.remove("wheel-idle");
     const from = angle.current;
-    // Land in the middle of a segment.
+    // Land in the middle of a segment: segment centres sit at whole multiples of SEG
+    // (the pointer is at the top), the borders between them at half steps.
     const turns = 360 * 6;
-    const to = Math.round((from + turns + Math.random() * 360) / SEG) * SEG + SEG / 2 - 0.0001;
+    const to = Math.round((from + turns + Math.random() * 360) / SEG) * SEG;
     const start = performance.now();
     let prev = from;
-    let lastSeg = Math.floor(from / SEG);
+    const border = (x: number) => Math.floor((x - SEG / 2) / SEG);
+    let lastSeg = border(from);
     setWon(false);
+    setIdle(false);
     setSpinning(true);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) ms = 700;
     const frame = (now: number) => {
@@ -263,25 +269,34 @@ export function useWheelSpin() {
       prev = a;
       el.style.transform = `rotate(${a}deg)`;
       el.style.filter = speed > 5 ? `blur(${Math.min(3, (speed - 5) * 0.1).toFixed(2)}px)` : "none";
-      const s = Math.floor(a / SEG);
+      const s = border(a);
       if (s !== lastSeg) {
         lastSeg = s;
         haptic("tick");
-        const p = pointer.current;
-        if (p && speed < 14) {
-          // The clapper visibly flicks only when the wheel is slow enough to see it.
-          p.style.transitionDuration = "0ms";
-          p.style.transform = `rotate(${Math.min(28, 10 + speed * 2)}deg)`;
-          requestAnimationFrame(() => {
-            p.style.transitionDuration = "";
-            p.style.transform = "";
-          });
-        }
+      }
+      // The clapper: each peg knocks the pointer aside, then it springs back
+      // over the first part of the segment. Harder knocks when the wheel is fast.
+      const p = pointer.current;
+      if (p) {
+        const frac = ((((a - SEG / 2) % SEG) + SEG) % SEG) / SEG; // 0 right after a border passes
+        // Fast: pegs hit faster than frames, the clapper rides them, held aside and chattering.
+        // Slow: each peg knocks it aside once and it springs back, clearly countable.
+        const deflect =
+          speed > 8
+            ? 15 + Math.min(8, speed * 0.2) + Math.random() * 5
+            : Math.min(24, 10 + speed * 1.8) * Math.pow(Math.max(0, 1 - frac / 0.6), 1.4);
+        p.style.transform = `rotate(${(-deflect).toFixed(2)}deg)`;
       }
       if (t < 1) raf.current = requestAnimationFrame(frame);
       else {
         angle.current = a;
         el.style.filter = "none";
+        if (pointer.current) {
+          pointer.current.style.transition = "transform 0.35s cubic-bezier(0.22,1.4,0.36,1)";
+          pointer.current.style.transform = "";
+          const p = pointer.current;
+          setTimeout(() => (p.style.transition = ""), 400);
+        }
         setSpinning(false);
         setWon(true);
         haptic("success");
@@ -291,7 +306,7 @@ export function useWheelSpin() {
     raf.current = requestAnimationFrame(frame);
   }, []);
 
-  return { ref, pointer, spin, spinning, won };
+  return { ref, pointer, spin, spinning, won, idle };
 }
 
 /** Counts a money value up from zero after `delay` ms (ease-out), for result totals. */

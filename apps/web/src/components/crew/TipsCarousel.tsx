@@ -66,7 +66,7 @@ export function TipsCarousel({ tips, aside }: { tips: Tip[]; aside?: ReactNode }
       <div
         ref={ref}
         onScroll={onScroll}
-        className="no-scrollbar edge-fade mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain [scroll-behavior:smooth]"
+        className="no-scrollbar edge-fade -mx-3 mt-3 flex snap-x snap-mandatory scroll-px-3 gap-2.5 px-3 overflow-x-auto overscroll-x-contain [scroll-behavior:smooth]"
       >
         {tips.map((t) => {
           const tone = TONE[t.tone];

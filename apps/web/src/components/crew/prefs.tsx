@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { RU, VI } from "./strings";
+import { setHaptics } from "@/lib/haptics";
 
 /*
  * Waiter preferences that outlive a page: language, text size, notification
@@ -72,6 +73,10 @@ export function CrewPrefsProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
+  // The "Vibration" switch governs every haptic in the app.
+  useEffect(() => {
+    setHaptics(prefs.notify.vibration);
+  }, [prefs.notify.vibration]);
   const dict = prefs.lang === "ru" ? RU : prefs.lang === "vi" ? VI : null;
   const tr = (en: string) => (dict ? (dict[en] ?? en) : en);
   return (

@@ -96,7 +96,7 @@ export function RouletteSheet({
         <p className="mt-1.5 text-[15px] text-g-muted">{ui(lang, "rouletteHint")}</p>
 
         <div className="mt-7 flex justify-center">
-          <RouletteWheel spinRef={wheel.ref} pointerRef={wheel.pointer} won={wheel.won} size={264} />
+          <RouletteWheel spinRef={wheel.ref} pointerRef={wheel.pointer} won={wheel.won} idle={wheel.idle} size={264} />
         </div>
 
         {result === null && <p className="mt-6 text-center text-[15px] text-g-muted">{ui(lang, "nothingFits")}</p>}
