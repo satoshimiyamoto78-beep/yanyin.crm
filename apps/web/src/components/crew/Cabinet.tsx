@@ -98,7 +98,7 @@ export function CabinetView({
         </p>
       </header>
 
-      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+      <Reveal className="mt-6 grid grid-cols-2 gap-3">
         <HeroStat
           className="col-span-2"
           title={tr("Tips this month")}
@@ -143,7 +143,7 @@ export function CabinetView({
       {/* Growth: level, badges, quests. */}
       <section className="mt-10">
         <h2 className="text-[24px] leading-tight font-bold tracking-[-0.025em]">{tr("Growth")}</h2>
-        <div className="mt-3 grid grid-cols-2 gap-2.5">
+        <div className="mt-3 grid grid-cols-2 gap-3">
           <button onClick={onBadges} className="press col-span-2 flex items-center gap-3 rounded-[26px] bg-g-fill p-4 text-left">
             <span className="flex -space-x-3">
               {data.badges

@@ -18,7 +18,7 @@ const BLUE = "#2f6bff";
 /** Plain card every widget sits on. */
 export function WidgetCard({ title, icon, aside, children, className = "" }: { title: string; icon?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[24px] bg-g-fill p-4 ${className}`}>
+    <section className={`rounded-[24px] bg-g-fill p-[18px] ${className}`}>
       <header className="flex min-h-6 items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-g-ink-2">
           {icon && <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white text-g-blue">{icon}</span>}
@@ -412,7 +412,7 @@ export function IconStat({ title, art, value, sub, tone = "blue", fit = false, c
     orange: { card: "bg-g-tint-orange", label: "text-g-orange" },
   }[tone];
   return (
-    <section className={`relative isolate flex min-h-[124px] flex-col justify-between overflow-hidden rounded-[24px] p-4 ${t.card} ${className}`}>
+    <section className={`relative isolate flex min-h-[132px] flex-col justify-between overflow-hidden rounded-[24px] p-[18px] ${t.card} ${className}`}>
       <span aria-hidden className={`pointer-events-none absolute -z-10 ${fit ? "top-2.5 right-2.5" : "-top-7 -right-9 opacity-75"}`}>
         {art}
       </span>
@@ -563,7 +563,7 @@ export function ActionListWidget({
   return (
     <WidgetCard title={title} icon={icon} className={className} aside={rows.length ? <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums ${chip}`}>{rows.length}</span> : undefined}>
       {rows.length ? (
-        <div className="mt-3 grid gap-2">
+        <div className="mt-4 grid gap-2">
           {rows.map((r) => (
             <div key={r.id} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3">
               <span className={`flex w-11 shrink-0 flex-col items-center rounded-[14px] py-1 ${chip}`}>

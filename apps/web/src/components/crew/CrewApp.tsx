@@ -501,7 +501,7 @@ export function Dash({ items }: { items: DashItem[] }) {
   // Sub-lines mix numbers and words ("4 bills closed"): translate the words, keep the numbers.
   const trSub = (x: string) => x.replace(/[A-Za-z][A-Za-z ’'.]*[A-Za-z]/g, (w) => tr(w));
   return (
-    <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+    <Reveal className="mt-6 grid grid-cols-2 gap-3">
       {items.map((d) => (
         <div key={d.label} className={`flex h-[104px] flex-col justify-between rounded-[22px] p-3.5 ${d.hot ? "blue-grad" : "bg-g-fill"}`}>
           <span className="flex items-center justify-between gap-2">
@@ -608,7 +608,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
         }
       />
       {/* Different forms for different questions: how the hall filled up, how full it is now, who waits for the bill. */}
-      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+      <Reveal className="mt-6 grid grid-cols-2 gap-3">
         <LineWidget
           className="col-span-2"
           title={tr("Hall occupancy")}
@@ -617,7 +617,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           values={[1, 3, 6, busy]}
           format={(v) => `${v} / ${tables.length} ${tr("tables")}`}
         />
-        <IconStat title={tr("Busy now")} art={<TablesArt size={128} />} value={`${busy} / ${tables.length}`} sub={tr("tables")} tone="blue" />
+        <IconStat title={tr("Busy now")} fit art={<TablesArt size={84} />} value={`${busy} / ${tables.length}`} sub={tr("tables")} tone="blue" />
         <IconStat title={tr("Free seats")} fit art={<SeatedArt size={84} />} value={String(seats)} sub={`${tables.filter((x) => x.status === "free").length} ${tr("free tables")}`} tone="green" />
         <ActionListWidget
           className="col-span-2"
@@ -634,7 +634,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           empty={tr("No one is waiting")}
         />
       </Reveal>
-      <div className="mt-5 flex rounded-full bg-g-fill p-1">
+      <div className="mt-8 flex rounded-full bg-g-fill p-1">
         {(["All", "Hall", "Terrace"] as const).map((z) => (
           <button
             key={z}
@@ -649,7 +649,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           </button>
         ))}
       </div>
-      <Reveal className="mt-4 grid grid-cols-3 gap-2.5">
+      <Reveal className="mt-4 grid grid-cols-3 gap-3">
         {shown.map((x) => (
           <TableTile key={x.no} x={x} money={money} onTap={() => actions.open(x.no)} onLong={() => setPeek(x.no)} />
         ))}
@@ -1449,7 +1449,7 @@ function OrdersView({
   return (
     <div className="px-5">
       {/* The day's money as a hero, the live pipeline of orders, then two small rings. */}
-      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+      <Reveal className="mt-6 grid grid-cols-2 gap-3">
         <DaysCompareWidget
           className="col-span-2"
           title={tr("Taken today")}
@@ -1504,7 +1504,7 @@ function OrdersView({
           tone="blue"
         />
       </Reveal>
-      <div className="mt-4 flex rounded-full bg-g-fill p-1">
+      <div className="mt-8 flex rounded-full bg-g-fill p-1">
         {(
           [
             ["open", `Open · ${open.length}`],
@@ -1654,13 +1654,13 @@ function HallHome({
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
       <PageHead title={tr("Hall")} sub={`Samarkand · ${tr("lunch")}`} />
-      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+      <Reveal className="mt-6 grid grid-cols-2 gap-3">
         {first && <HallCard s={first} big onOpen={onOpen} />}
         {rest.map((s) => (
           <HallCard key={s.id} s={s} onOpen={onOpen} />
         ))}
       </Reveal>
-      <div className="mt-6 grid grid-cols-4 gap-2">
+      <div className="mt-8 grid grid-cols-4 gap-2">
         {actions.map((a) => (
           <button
             key={a.label}
@@ -1689,7 +1689,7 @@ function SectionHead({ title, sub, art: Art, onBack }: { title: string; sub: str
       <button onClick={onBack} aria-label={tr("Hall")} className="press flex h-10 items-center gap-1 rounded-full bg-g-fill pr-4 pl-2 text-[14px] font-semibold">
         <ChevronLeft size={20} strokeWidth={2.2} /> {tr("Hall")}
       </button>
-      <div className="mt-4 flex items-center gap-4 rounded-[28px] bg-g-tint-blue p-4 pr-3">
+      <div className="mt-5 flex items-center gap-4 rounded-[28px] bg-g-tint-blue p-5 pr-4">
         <span className="min-w-0 flex-1 pl-1">
           <span className="block text-[30px] leading-tight font-bold tracking-[-0.03em]">{title}</span>
           <span className="mt-0.5 block text-[14px] text-g-muted">{sub}</span>

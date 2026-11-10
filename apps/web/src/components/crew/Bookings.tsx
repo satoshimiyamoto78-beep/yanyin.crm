@@ -70,7 +70,7 @@ export function BookingsView({
   return (
     <div className="px-5">
       {/* When guests arrive (bars), how many are already seated (ring), who waits for a table (meter). */}
-      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+      <Reveal className="mt-6 grid grid-cols-2 gap-3">
         <BookingRuler className="col-span-2" list={list} today={day === 0} initial={next?.id} />
         <IconStat
           title={tr("Seated")}
@@ -87,7 +87,7 @@ export function BookingsView({
           haptic("light");
           setHistory(true);
         }}
-        className="press mt-3 flex w-full items-center gap-3 rounded-[22px] bg-g-fill px-4 py-3 text-left"
+        className="press mt-3 flex w-full items-center gap-3 rounded-[22px] bg-g-fill px-4 py-3.5 text-left"
       >
         <History size={18} strokeWidth={2.2} className="text-g-blue" />
         <span className="flex-1 text-[15px] font-semibold">{tr("Booking history")}</span>
@@ -96,7 +96,7 @@ export function BookingsView({
         </span>
         <ChevronRight size={18} className="text-g-faint" />
       </button>
-      <div className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
+      <div className="no-scrollbar -mx-5 mt-8 flex gap-2 overflow-x-auto px-5">
         {[0, 1, 2, 3, 4, 5, 6].map((d) => (
           <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); loadIfChanged(`bookings:${d}`, JSON.stringify(bookings.filter((b) => b.day === d).map((b) => [b.id, b.status])), 450); }} icon={<span />}>
             {dayLabel(d)}
@@ -104,7 +104,7 @@ export function BookingsView({
         ))}
       </div>
 
-      <Reveal className="mt-3 grid gap-2.5 pb-24">
+      <Reveal className="mt-4 grid gap-3 pb-28">
         {list.map((b) => (
           <BookingCard key={b.id} b={b} today={day === 0} onSeat={() => onSeat(b)} onHold={() => setMenu(b.id)} />
         ))}
@@ -489,7 +489,7 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
       }
     >
       {/* What is under the needle. */}
-      <div className="mt-3 flex h-[56px] items-center">
+      <div className="mt-4 flex h-[60px] items-center">
         {near ? (
           <div key={near.id} className="animate-tab flex w-full items-center gap-3">
             <span className="bg-[linear-gradient(135deg,#6c96ff,#2f5bff_55%,#2530b0)] bg-clip-text text-[30px] leading-none font-semibold tracking-[-0.03em] text-transparent tabular-nums">{near.time}</span>
@@ -512,7 +512,7 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
         )}
       </div>
 
-      <div className="relative -mx-4 mt-1">
+      <div className="relative -mx-4 mt-3">
         {/* The needle: starts under the booking bubbles and runs through the scale. */}
         <span aria-hidden className="pointer-events-none absolute top-[40px] bottom-5 left-1/2 z-10 w-[3px] -translate-x-1/2 rounded-full bg-[linear-gradient(180deg,#6c96ff,#2f5bff_60%,#2530b0)]" />
         <div ref={ref} className="no-scrollbar edge-fade overflow-x-auto overscroll-x-contain select-none">
@@ -642,7 +642,7 @@ function WaitingList({ list, tables, today, onSeat, className = "" }: { list: Bo
       aside={list.length ? <span className="text-[12px] text-g-muted">{tr("Hold a name to seat")}</span> : undefined}
     >
       {list.length ? (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {list.map((b) => (
             <WaitingPill key={b.id} b={b} onHold={() => setOpen(b.id)} />
           ))}
