@@ -1,6 +1,6 @@
 "use client";
 
-import { Dices } from "lucide-react";
+import { Dices, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 
@@ -357,90 +357,154 @@ export function Island({ notice }: { notice: IslandNotice | null }) {
 
 /* ---------------------------------------------------------------- Live order island */
 
-const LW = 290;
-const LH = 52;
-
-/** Point at fraction f (0..1) along the capsule outline, in SVG rect path order (from the top-left start of the top edge, clockwise). */
-function stadiumPoint(f: number): [number, number] {
-  const w = LW - 2;
-  const h = LH - 2;
-  const r = h / 2;
-  const straight = w - 2 * r;
-  const arc = Math.PI * r;
-  const total = 2 * straight + 2 * arc;
-  let d = f * total;
-  const x0 = 1;
-  const y0 = 1;
-  if (d <= straight) return [x0 + r + d, y0];
-  d -= straight;
-  if (d <= arc) {
-    const a = -Math.PI / 2 + d / r;
-    return [x0 + w - r + r * Math.cos(a), y0 + r + r * Math.sin(a)];
-  }
-  d -= arc;
-  if (d <= straight) return [x0 + w - r - d, y0 + h];
-  d -= straight;
-  const a = Math.PI / 2 + d / r;
-  return [x0 + r + r * Math.cos(a), y0 + r + r * Math.sin(a)];
-}
-
-/**
- * The bottom Dynamic Island for a live order: a black capsule whose outline
- * is a fuse in our blue gradient. As the order cooks the fuse burns down, a
- * glowing spark marking the tip. No percentages, only the story in the middle.
- */
-export function LiveIsland({ label, progress, done, onClick, bottom }: { label: string; progress: number; done?: boolean; onClick: () => void; bottom: string }) {
-  const remaining = done ? 0 : Math.max(0.02, 1 - progress);
-  const tip = stadiumPoint(remaining);
+/** Progress ring in the Nomad gradient (green when done); optional picture inside. */
+function Ring({ progress, size, stroke, done, children }: { progress: number; size: number; stroke: number; done?: boolean; children?: ReactNode }) {
+  const r = (size - stroke) / 2;
+  const id = `ring-${size}`;
   return (
-    <button
-      onClick={() => {
-        haptic("light");
-        onClick();
-      }}
-      aria-label={label}
-      className="island-in press fixed left-1/2 z-40 -translate-x-1/2"
-      style={{ bottom, width: LW, height: LH }}
-    >
-      <span className="absolute inset-0 rounded-full bg-[#0b0b0f]" />
-      <svg viewBox={`-2 -2 ${LW + 4} ${LH + 4}`} className="pointer-events-none absolute -inset-[2px] overflow-visible" width={LW + 4} height={LH + 4} aria-hidden>
+    <span className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="absolute inset-0 -rotate-90" aria-hidden>
         <defs>
-          <linearGradient id="fuse" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#8fb2ff" />
-            <stop offset="50%" stopColor="#2f6bff" />
+            <stop offset="55%" stopColor="#2f6bff" />
             <stop offset="100%" stopColor="#6c96ff" />
           </linearGradient>
         </defs>
-        {/* track */}
-        <rect x={1} y={1} width={LW - 2} height={LH - 2} rx={(LH - 2) / 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={2} />
-        {/* the fuse: starts at the top centre, burns back toward it */}
-        <rect
-          x={1}
-          y={1}
-          width={LW - 2}
-          height={LH - 2}
-          rx={(LH - 2) / 2}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
           fill="none"
-          stroke={done ? "#22c55e" : "url(#fuse)"}
-          strokeWidth={3}
+          stroke={done ? "#22c55e" : `url(#${id})`}
+          strokeWidth={stroke}
           strokeLinecap="round"
           pathLength={100}
-          strokeDasharray={`${remaining * 100} 100`}
+          strokeDasharray={`${Math.max(2, progress * 100)} 100`}
           style={{ transition: "stroke-dasharray 1s linear, stroke 0.4s" }}
         />
-        {!done && (
-          <g style={{ transform: `translate(${tip[0]}px, ${tip[1]}px)`, transition: "transform 1s linear" }}>
-            <circle r={7} fill="#8fb2ff" opacity={0.35} className="fuse-glow" />
-            <circle r={3} fill="#ffffff" />
-          </g>
-        )}
       </svg>
-      <span className="relative flex h-full items-center justify-center gap-2 px-6 text-[14px] font-semibold text-white">
-        {done ? <span className="size-2 rounded-full bg-[#22c55e]" /> : <span className="size-2 animate-pulse rounded-full bg-[#8fb2ff]" />}
-        <span key={label} className="island-content truncate">
-          {label}
-        </span>
-      </span>
-    </button>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * The live order as a Dynamic Island at the bottom. Collapsed: a flat black
+ * capsule with the venue mark, the stage and a small gradient progress ring.
+ * Tap to unfold it into a card: the stage, a countdown, the dish inside a
+ * progress ring, and actions (call waiter, fold, open the order).
+ */
+export function LiveIsland({
+  label,
+  progress,
+  done,
+  eta,
+  etaLabel,
+  mark,
+  thumb,
+  openLabel,
+  callLabel,
+  onOpen,
+  onCall,
+  bottom,
+}: {
+  label: string;
+  progress: number;
+  done?: boolean;
+  /** Countdown text, e.g. "08:42". */
+  eta: string;
+  etaLabel: string;
+  mark: string;
+  thumb?: ReactNode;
+  openLabel: string;
+  callLabel: string;
+  onOpen: () => void;
+  onCall: () => void;
+  bottom: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      {open && <button aria-label="Fold" onClick={() => setOpen(false)} className="animate-fade fixed inset-0 z-40 bg-[rgba(11,11,15,0.25)] backdrop-blur-[2px]" />}
+      <div
+        className="island-in fixed left-1/2 z-40 -translate-x-1/2 overflow-hidden bg-[#0b0b0f] text-white transition-[width,height,border-radius] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ bottom, width: open ? "min(92vw, 380px)" : 300, height: open ? 214 : 52, borderRadius: open ? 34 : 26 }}
+      >
+        {!open ? (
+          <button
+            onClick={() => {
+              haptic("light");
+              setOpen(true);
+            }}
+            aria-label={label}
+            aria-expanded={false}
+            className="flex h-[52px] w-full items-center gap-2.5 pr-2.5 pl-2"
+          >
+            <span className="blue-grad grid size-9 shrink-0 place-items-center rounded-full text-[14px] font-bold">{mark}</span>
+            <span key={label} className="island-content min-w-0 flex-1 truncate text-left text-[14px] font-semibold">
+              {label}
+            </span>
+            <Ring progress={progress} size={30} stroke={4} done={done} />
+          </button>
+        ) : (
+          <div className="island-content flex h-full flex-col px-5 pt-4 pb-4">
+            <p className="text-center text-[14px] font-medium text-white/85">{label}</p>
+            <div className="mt-3 flex flex-1 items-center justify-between gap-3">
+              <p className="flex items-baseline gap-2">
+                <span className="text-[13px] text-white/70">{etaLabel}</span>
+                <span className="text-[44px] leading-none font-light tracking-[-0.02em] tabular-nums">{eta}</span>
+              </p>
+              <Ring progress={progress} size={78} stroke={6} done={done}>
+                <span className="grid size-[60px] place-items-center overflow-hidden rounded-full bg-white/10">{thumb}</span>
+              </Ring>
+            </div>
+            <div className="mt-3 flex items-center gap-3 border-t border-white/12 pt-3.5">
+              <button
+                aria-label={callLabel}
+                onClick={() => {
+                  haptic("light");
+                  onCall();
+                }}
+                className="press grid size-11 place-items-center rounded-full bg-[#2f6bff]/25 text-[#8fb2ff]"
+              >
+                <BellIcon />
+              </button>
+              <button
+                aria-label="Fold"
+                onClick={() => {
+                  haptic("light");
+                  setOpen(false);
+                }}
+                className="press grid size-11 place-items-center rounded-full bg-white/12"
+              >
+                <X size={19} strokeWidth={2.2} />
+              </button>
+              <button
+                onClick={() => {
+                  haptic("light");
+                  setOpen(false);
+                  onOpen();
+                }}
+                className="press ml-auto flex items-center gap-1 text-[16px] font-medium"
+              >
+                {openLabel}
+                <span className="text-[20px] leading-none">›</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
   );
 }

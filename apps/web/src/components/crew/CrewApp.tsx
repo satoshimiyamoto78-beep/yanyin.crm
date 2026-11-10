@@ -311,6 +311,13 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
 
 /* ---------------------------------------------------------------- Dashboard strip */
 
+/** Money that always fits a dashboard tile: 4,708,000 → "4.71M ₫", 256,000 → "256k ₫". */
+export function compactMoney(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2).replace(/\.?0+$/, "")}M ₫`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}k ₫`;
+  return `${n} ₫`;
+}
+
 export type DashItem = { label: string; value: string; sub?: string; icon: LucideIcon; tone?: "blue" | "orange" | "green" | "plain"; bar?: number; hot?: boolean };
 
 /** The stats at the top of every waiter page: two by two, big numbers, one optional progress bar. */
@@ -1191,10 +1198,10 @@ function OrdersView({
       <PageHead title="Orders" sub="Today" />
       <Dash
         items={[
-          { label: "Taken today", value: money(takings), sub: `${history.length} bills closed`, icon: Wallet, hot: true },
-          { label: "Tips", value: money(tips), sub: "team pool", icon: Banknote, tone: "green" },
+          { label: "Taken today", value: compactMoney(takings), sub: `${history.length} bills closed`, icon: Wallet, hot: true },
+          { label: "Tips", value: compactMoney(tips), sub: "team pool", icon: Banknote, tone: "green" },
           { label: "Open now", value: String(open.length), sub: `${open.reduce((n, x) => n + x.lines.filter((l) => l.state !== "served").length, 0)} dishes in kitchen`, icon: ChefHat, tone: "orange" },
-          { label: "Avg check", value: money(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0), sub: "today", icon: ReceiptText, tone: "plain" },
+          { label: "Avg check", value: compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0), sub: "per bill today", icon: ReceiptText, tone: "plain" },
         ]}
       />
       <div className="mt-4 flex rounded-full bg-g-fill p-1">

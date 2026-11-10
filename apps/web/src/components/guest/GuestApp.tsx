@@ -424,7 +424,25 @@ export function GuestApp({ menu }: { menu: Menu }) {
             label={ui(lang, keys[stage]!)}
             progress={Math.min(1, since / 45)}
             done={stage === 3}
-            onClick={() => setSheet("orders")}
+            eta={(() => {
+              // Demo clock: 45 s of real time stands for a 15-minute kitchen.
+              const left = Math.max(0, Math.round((1 - Math.min(1, since / 45)) * 15 * 60));
+              return `${String(Math.floor(left / 60)).padStart(2, "0")}:${String(left % 60).padStart(2, "0")}`;
+            })()}
+            etaLabel={ui(lang, "liveEta")}
+            mark={brand.mark}
+            thumb={(() => {
+              const first = itemById.get(last.lines[0]?.itemId ?? "");
+              return first?.photo || first?.cover ? (
+                <Image src={(first.photo ?? first.cover)!} alt="" width={60} height={60} className="size-full object-cover" />
+              ) : (
+                <ChefHat size={24} strokeWidth={1.8} className="text-white/80" />
+              );
+            })()}
+            openLabel={ui(lang, "liveOpen")}
+            callLabel={ui(lang, "qaWaiter")}
+            onOpen={() => setSheet("orders")}
+            onCall={() => say("waiterCalled")}
             bottom={
               count > 0
                 ? "calc(max(16px, env(safe-area-inset-bottom)) + 76px)"
