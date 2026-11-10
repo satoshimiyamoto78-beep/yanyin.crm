@@ -4,11 +4,12 @@ import { useEffect, type RefObject } from "react";
 
 /*
  * Items of a horizontal scroller soften on their own as they reach its edges:
- * they blur and turn transparent, with nothing laid over them (no overlay, no
- * gradient band). At rest every item on the page gutter is fully sharp. Styles
+ * the part of an item already past the screen edge decides how much it blurs
+ * (up to 3 px) and fades (to 40%); nothing is laid over them. Items on the page
+ * gutter, or just touching the edge, stay sharp. Styles
  * are written straight to the DOM each frame; reduced motion keeps them plain.
  */
-const ZONE = 44; // px from each edge where softening happens
+const EDGE = 8; // the softening starts this close to the screen edge
 
 export function useEdgeSoften(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -22,20 +23,19 @@ export function useEdgeSoften(ref: RefObject<HTMLElement | null>) {
         const c = node as HTMLElement;
         const r = c.getBoundingClientRect();
         if (!r.width) return;
-        // How far the item has slid past the soft zone on either side, 0…1.
-        const left = (box.left + ZONE - r.left) / (ZONE + r.width * 0.6);
-        const right = (r.right - (box.right - ZONE)) / (ZONE + r.width * 0.6);
-        const t = Math.max(0, Math.min(1, Math.max(left, right)));
-        if (t <= 0.001) {
+        // Only the share of the item already past the edge counts: an item that just
+        // touches the edge stays sharp; one mostly off screen is softly blurred and faded.
+        const outL = box.left + EDGE - r.left;
+        const outR = r.right - (box.right - EDGE);
+        const t = Math.max(0, Math.min(1, Math.max(outL, outR) / r.width));
+        if (t <= 0.02) {
           c.style.filter = "";
           c.style.opacity = "";
-          c.style.transform = "";
           return;
         }
-        const e = t * t * (3 - 2 * t); // smooth in and out
-        c.style.filter = `blur(${(e * 7).toFixed(2)}px)`;
-        c.style.opacity = (1 - e * 0.9).toFixed(3);
-        c.style.transform = `scale(${(1 - e * 0.06).toFixed(3)})`;
+        const e = Math.pow(t, 1.6);
+        c.style.filter = `blur(${(e * 3).toFixed(2)}px)`;
+        c.style.opacity = (1 - e * 0.6).toFixed(3);
       });
     };
     const onScroll = () => {
