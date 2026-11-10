@@ -140,3 +140,52 @@ export function CheckArt({ size = 150 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Seated: a chair at a round table, in green. */
+export function SeatedArt({ size = 150 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
+      <defs>
+        <linearGradient id="yy-seat-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#7fe0a8" />
+          <stop offset="1" stopColor="#12a150" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="96" cy="70" rx="46" ry="14" fill="url(#yy-seat-a)" />
+      <rect x="92" y="78" width="8" height="58" rx="4" fill="#12a150" opacity="0.8" />
+      <rect x="74" y="132" width="44" height="8" rx="4" fill="#12a150" opacity="0.6" />
+      <rect x="22" y="40" width="14" height="70" rx="7" fill="#3cc479" />
+      <rect x="22" y="92" width="50" height="14" rx="7" fill="url(#yy-seat-a)" />
+      <rect x="28" y="104" width="8" height="36" rx="4" fill="#12a150" opacity="0.7" />
+      <rect x="58" y="104" width="8" height="36" rx="4" fill="#12a150" opacity="0.7" />
+      <circle cx="96" cy="66" r="9" fill="#fff" fillOpacity="0.7" />
+    </svg>
+  );
+}
+
+/** Guests: three people, the front one in the brand blue. */
+export function GuestsArt({ size = 150 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
+      <defs>
+        <linearGradient id="yy-guests-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#9cbcff" />
+          <stop offset="0.55" stopColor="#2f6bff" />
+          <stop offset="1" stopColor="#2530b0" />
+        </linearGradient>
+      </defs>
+      {[
+        [44, 0.35],
+        [116, 0.35],
+      ].map(([x, o]) => (
+        <g key={x} opacity={o as number}>
+          <circle cx={x as number} cy="58" r="17" fill="#2f6bff" />
+          <path d={`M${(x as number) - 30} 128a30 30 0 0 1 60 0z`} fill="#2f6bff" />
+        </g>
+      ))}
+      <circle cx="80" cy="64" r="22" fill="url(#yy-guests-a)" />
+      <path d="M40 146a40 40 0 0 1 80 0z" fill="url(#yy-guests-a)" />
+      <circle cx="73" cy="58" r="5" fill="#fff" fillOpacity="0.5" />
+    </svg>
+  );
+}

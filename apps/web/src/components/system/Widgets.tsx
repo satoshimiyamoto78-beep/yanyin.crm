@@ -18,9 +18,9 @@ const BLUE = "#2f6bff";
 /** Plain card every widget sits on. */
 export function WidgetCard({ title, icon, aside, children, className = "" }: { title: string; icon?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[26px] bg-g-fill p-4 ${className}`}>
-      <header className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-2 text-[14px] font-semibold text-g-ink-2">
+    <section className={`rounded-[24px] bg-g-fill p-4 ${className}`}>
+      <header className="flex min-h-6 items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-g-ink-2">
           {icon && <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white text-g-blue">{icon}</span>}
           <span className="truncate">{title}</span>
         </span>
@@ -210,8 +210,8 @@ export function LineWidget({ title, icon, labels, values, format, initial , clas
   const px = (X(at) / 300) * 100;
   return (
     <WidgetCard title={title} icon={icon} className={className} aside={<span className="text-[13px] text-g-muted">{labels[at]}</span>}>
-      <p className="live mt-2 text-[30px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{format(values[at]!)}</p>
-      <div ref={box} {...handlers} className="relative mt-10 h-[104px] cursor-crosshair touch-pan-y select-none">
+      <p className="live mt-2 text-[26px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{format(values[at]!)}</p>
+      <div ref={box} {...handlers} className="relative mt-8 h-[76px] cursor-crosshair touch-pan-y select-none">
         <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
           <defs>
             <linearGradient id={`la${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -291,7 +291,7 @@ export function RingWidget({ title, icon, value, unit, part, tone = "blue" , cla
     <WidgetCard title={title} icon={icon} className={className}>
       <div className="mt-3 flex items-end justify-between gap-2">
         <span className="min-w-0">
-          <span className="live block text-[24px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
+          <span className="live block text-[22px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
           <span className="mt-1 block truncate text-[12px] text-g-muted">{unit}</span>
         </span>
         <svg viewBox="0 0 56 56" width={48} height={48} className="shrink-0 -rotate-90" aria-label={`${Math.round(part * 100)}%`}>
@@ -358,7 +358,7 @@ export function FlowWidget({
   const total = Math.max(1, stages.reduce((n, s) => n + s.count, 0));
   return (
     <WidgetCard title={title} icon={icon} className={className}>
-      <div className="mt-3">{headline}</div>
+      <div className="mt-2">{headline}</div>
       <div className="mt-3 flex h-2.5 gap-[3px] overflow-hidden rounded-full">
         {stages
           .filter((s) => s.count > 0)
@@ -372,7 +372,7 @@ export function FlowWidget({
       </div>
       <ul className="mt-3 divide-y divide-g-line">
         {stages.map((s) => (
-          <li key={s.label} className="flex items-center gap-3 py-2.5">
+          <li key={s.label} className="flex items-center gap-3 py-2">
             <span className="grid size-8 shrink-0 place-items-center rounded-full text-white" style={{ background: s.color }}>
               {s.icon}
             </span>
@@ -391,7 +391,7 @@ export function FlowWidget({
                 {s.action.label}
               </button>
             ) : null}
-            <span className="live w-7 shrink-0 text-right text-[20px] font-semibold tabular-nums">{s.count}</span>
+            <span className="live w-7 shrink-0 text-right text-[18px] font-semibold tabular-nums">{s.count}</span>
           </li>
         ))}
       </ul>
@@ -412,13 +412,13 @@ export function IconStat({ title, art, value, sub, tone = "blue", className = ""
     orange: { card: "bg-g-tint-orange", label: "text-g-orange" },
   }[tone];
   return (
-    <section className={`relative isolate flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[26px] p-4 ${t.card} ${className}`}>
+    <section className={`relative isolate flex min-h-[124px] flex-col justify-between overflow-hidden rounded-[24px] p-4 ${t.card} ${className}`}>
       <span aria-hidden className="pointer-events-none absolute -top-7 -right-9 -z-10 opacity-75">
         {art}
       </span>
-      <span className={`text-[14px] font-semibold ${t.label}`}>{title}</span>
+      <span className={`text-[13px] font-semibold ${t.label}`}>{title}</span>
       <span className="block">
-        <span className="live block text-[26px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
+        <span className="live block text-[24px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
         <span className="mt-1 block truncate text-[12px] text-g-muted">{sub}</span>
       </span>
     </section>
@@ -535,6 +535,64 @@ export function DaysCompareWidget({
         })}
       </div>
       {todayNote && <p className="mt-1.5 text-[11px] text-g-faint">{todayNote}</p>}
+    </WidgetCard>
+  );
+}
+
+/**
+ * A short to-do list: who needs the waiter right now and the one action that
+ * solves it. Each row: a big number (table, party size), a line about it, how
+ * long it has waited, and a button. Empty state says all is calm.
+ */
+export function ActionListWidget({
+  title,
+  icon,
+  tone = "orange",
+  rows,
+  empty,
+  className = "",
+}: {
+  title: string;
+  icon?: ReactNode;
+  tone?: "orange" | "blue" | "green";
+  rows: { id: string; badge: string; badgeLabel: string; title: string; sub: string; action?: { label: string; onClick: () => void } }[];
+  empty: string;
+  className?: string;
+}) {
+  const chip = { orange: "chip-orange", blue: "chip-blue", green: "chip-green" }[tone];
+  return (
+    <WidgetCard title={title} icon={icon} className={className} aside={rows.length ? <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums ${chip}`}>{rows.length}</span> : undefined}>
+      {rows.length ? (
+        <div className="mt-3 grid gap-2">
+          {rows.map((r) => (
+            <div key={r.id} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3">
+              <span className={`flex w-11 shrink-0 flex-col items-center rounded-[14px] py-1 ${chip}`}>
+                <span className="text-[9px] leading-none font-semibold uppercase">{r.badgeLabel}</span>
+                <span className="text-[20px] leading-tight font-bold tabular-nums">{r.badge}</span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-semibold">{r.title}</span>
+                <span className="block truncate text-[12px] text-g-muted tabular-nums">{r.sub}</span>
+              </span>
+              {r.action && (
+                <button
+                  onClick={() => {
+                    haptic("light");
+                    r.action!.onClick();
+                  }}
+                  className="press h-9 shrink-0 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
+                >
+                  {r.action.label}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 flex items-center gap-2 text-[14px] text-g-muted">
+          <span className="size-2 rounded-full bg-g-green" /> {empty}
+        </p>
+      )}
     </WidgetCard>
   );
 }

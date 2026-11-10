@@ -42,10 +42,10 @@ import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
-import { BookingsArt, CheckArt, OrdersArt, TablesArt, TipsArt } from "./Illustrations";
+import { BookingsArt, CheckArt, OrdersArt, SeatedArt, TablesArt, TipsArt } from "./Illustrations";
 import { CabinetView, pastOrders } from "./Cabinet";
 import { noticeMeta } from "./notices";
-import { DaysCompareWidget, FlowWidget, IconStat, LineWidget, MeterWidget, RingWidget } from "@/components/system/Widgets";
+import { ActionListWidget, DaysCompareWidget, FlowWidget, IconStat, LineWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
 import { Scanner } from "./Scanner";
@@ -126,6 +126,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const [page, setPage] = useState<"picker" | "check" | "pay" | null>(null);
   const [receipt, setReceipt] = useState<ClosedOrder | null>(null);
   const [newBooking, setNewBooking] = useState(false);
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [scan, setScan] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const items = useMemo(() => allItems(menu), [menu]);
@@ -239,11 +240,22 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         {tab === "bookings" && (
           <BookingsView
             bookings={bookings}
+            tables={tables}
             onNew={() => setNewBooking(true)}
             onSeat={(b) => {
               setBookings((bs) => bs.map((x) => (x.id === b.id ? { ...x, status: "seated" } : x)));
               if (b.table) patch(b.table, (x) => ({ ...x, status: "seated", guests: b.guests, since: now(), booking: undefined }));
               notify({ title: `${b.name.split(" ")[0]} is seated`, text: b.table ? `Table ${b.table} · ${b.guests} guests` : `${b.guests} guests` });
+            }}
+            onEdit={setEditBooking}
+            onUpdate={(b) => {
+              setBookings((bs) => bs.map((x) => (x.id === b.id ? b : x)));
+              notify({ title: b.status === "waiting" ? `${b.name.split(" ")[0]} · waiting list` : `Booking confirmed`, text: `${b.time} · ${b.guests} guests` });
+            }}
+            onCancel={(b) => {
+              setBookings((bs) => bs.filter((x) => x.id !== b.id));
+              if (b.day === 0 && b.table) patch(b.table, (x) => (x.status === "reserved" ? { ...x, status: "free", booking: undefined } : x));
+              notify({ title: `Booking cancelled`, text: `${b.name} · ${b.time}`, tone: "orange" });
             }}
           />
         )}
@@ -448,12 +460,17 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         />
       )}
 
-      {newBooking && (
+      {(newBooking || editBooking) && (
         <NewBookingPage
           tables={tables}
-          onClose={() => setNewBooking(false)}
+          initial={editBooking ?? undefined}
+          onClose={() => {
+            setNewBooking(false);
+            setEditBooking(null);
+          }}
           onSave={(b: Booking) => {
-            setBookings((bs) => [...bs, b]);
+            setEditBooking(null);
+            setBookings((bs) => (bs.some((x) => x.id === b.id) ? bs.map((x) => (x.id === b.id ? b : x)) : [...bs, b]));
             if (b.day === 0 && b.table) patch(b.table, (x) => (x.status === "free" ? { ...x, status: "reserved", booking: { name: b.name.split(" ")[0]!, time: b.time } } : x));
             setNewBooking(false);
             notify({ title: "Booking saved", text: `${b.name} · ${b.guests} guests · ${b.time}` });
@@ -552,7 +569,7 @@ function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: numb
       ) : x.status === "reserved" ? (
         <span>
           <span className="live block text-[14px] font-semibold tabular-nums">{x.booking?.time}</span>
-          <span className="live block truncate text-[12px] font-medium text-g-purple">{x.booking?.name}</span>
+          <span className="live block truncate text-[12px] font-medium text-g-teal">{x.booking?.name}</span>
         </span>
       ) : (
         <span>
@@ -598,19 +615,21 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           values={[1, 3, 6, busy]}
           format={(v) => `${v} / ${tables.length} ${tr("tables")}`}
         />
-        <RingWidget title={tr("Busy now")} icon={<Armchair size={13} strokeWidth={2.4} />} value={`${busy}/${tables.length}`} unit={tr("tables")} part={busy / tables.length} />
-        <RingWidget title={tr("Free seats")} icon={<Armchair size={13} strokeWidth={2.4} />} value={String(seats)} unit={`${tables.filter((x) => x.status === "free").length} ${tr("free tables")}`} part={seats / Math.max(1, tables.reduce((n, x) => n + x.seats, 0))} tone="green" />
-        <MeterWidget
+        <IconStat title={tr("Busy now")} art={<TablesArt size={128} />} value={`${busy} / ${tables.length}`} sub={tr("tables")} tone="blue" />
+        <IconStat title={tr("Free seats")} art={<SeatedArt size={128} />} value={String(seats)} sub={`${tables.filter((x) => x.status === "free").length} ${tr("free tables")}`} tone="green" />
+        <ActionListWidget
           className="col-span-2"
           title={tr("Waiting for the bill")}
           icon={<ReceiptText size={13} strokeWidth={2.4} />}
-          value={String(bills.length)}
-          unit={bills.length ? `${tr("Table")} ${bills.map((b) => b.no).join(", ")}` : tr("tables")}
-          level={bills.length / 4}
-          low={tr("None")}
-          high={tr("Many")}
-          word={bills.length ? tr("Go now") : tr("Calm")}
-          tone={bills.length ? "orange" : "green"}
+          rows={bills.map((x) => ({
+            id: String(x.no),
+            badge: String(x.no),
+            badgeLabel: tr("Table"),
+            title: money(ticketTotal(x.lines)),
+            sub: `${x.guests} ${tr("guests")} · ${tr("at the table")} ${seatedFor(x.since)}`,
+            action: { label: tr("Bill"), onClick: () => actions.check(x.no) },
+          }))}
+          empty={tr("No one is waiting")}
         />
       </Reveal>
       <div className="mt-5 flex rounded-full bg-g-fill p-1">
