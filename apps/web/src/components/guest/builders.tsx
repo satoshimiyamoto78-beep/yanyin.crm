@@ -203,77 +203,103 @@ export function PizzaPreview({ item, ids, variantId }: { item: MenuItem; ids: st
   );
 }
 
-const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
-const mix = (colors: string[]) => {
-  const rgb = colors.map(hex).reduce((a, b) => a.map((v, i) => v + b[i]!), [0, 0, 0]).map((v) => Math.round(v / colors.length));
-  return `rgb(${rgb.join(",")})`;
-};
 
-/** Live drink: glass size, colour of the mix, ice, bubbles, mint and boba follow the picks. */
+/** The drink's live name: "Sparkling · strawberry & lychee". */
+export function drinkName(item: MenuItem, ids: string[], lang: Lang): string {
+  const base = picked(item, "base", ids)[0];
+  const fl = picked(item, "flavour", ids).map((o) => t(o.name, lang).toLowerCase());
+  return [base ? t(base.name, lang) : "", fl.join(" & ")].filter(Boolean).join(" · ");
+}
+
+/** The drink's main colour (first flavour, else the base), for tinting the stage. */
+export function drinkColor(item: MenuItem, ids: string[]): string {
+  return picked(item, "flavour", ids)[0]?.color ?? picked(item, "base", ids)[0]?.color ?? "#8fb2ff";
+}
+
+/**
+ * Live drink: a tumbler (or a jug at 1 L) whose liquid layers the two picked
+ * flavours, with a garnish on the rim, ice that bobs, bubbles for sparkling,
+ * and mint, chia or boba when added.
+ */
 export function DrinkPreview({ item, ids, variantId }: { item: MenuItem; ids: string[]; variantId?: string }) {
   const big = item.variants.findIndex((v) => v.id === variantId) > 0;
   const base = picked(item, "base", ids)[0];
   const flavours = picked(item, "flavour", ids);
   const iceIdx = Math.max(0, item.modifierGroups.find((g) => g.id === "ice")?.options.findIndex((o) => ids.includes(o.id)) ?? 2);
   const extras = picked(item, "drinkextras", ids).map((o) => o.name.en);
-  const color = flavours.length ? mix(flavours.map((f) => f.color ?? "#f5e27a")) : (base?.color ?? "#f5e27a");
+  const bottom = flavours[0]?.color ?? base?.color ?? "#f5e27a";
+  const top = flavours[1]?.color ?? flavours[0]?.color ?? base?.color ?? "#f5e27a";
   const sparkling = base?.glyph === "bubbles";
-  // Glass geometry (jug when 1 L).
-  const w = big ? 104 : 78;
-  const h = big ? 150 : 124;
-  const top = 100 - h / 2;
-  const bottom = 100 + h / 2;
+  const w = big ? 112 : 88;
+  const h = big ? 150 : 128;
+  const y0 = 104 - h / 2;
+  const y1 = 104 + h / 2;
   const lx = 100 - w / 2;
   const rx = 100 + w / 2;
-  const fillTop = top + 18;
+  const taper = big ? 6 : 9;
+  const fillTop = y0 + 16;
   const cubes = [0, 2, 4, 6][iceIdx] ?? 4;
+  const glass = `M${lx} ${y0} L${rx} ${y0} L${rx - taper} ${y1 - 10} Q${rx - taper} ${y1} ${rx - taper - 10} ${y1} L${lx + taper + 10} ${y1} Q${lx + taper} ${y1} ${lx + taper} ${y1 - 10} Z`;
+  const garnish = flavours[0]?.glyph ?? base?.glyph ?? "lemon";
   return (
     <svg viewBox="0 0 200 200" className="h-full w-full" aria-label="Drink preview">
       <defs>
         <clipPath id="glass">
-          <path d={`M${lx} ${top} L${rx} ${top} L${rx - 8} ${bottom} Q100 ${bottom + 6} ${lx + 8} ${bottom} Z`} />
+          <path d={glass} />
         </clipPath>
-        <linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.75} />
-          <stop offset="100%" stopColor={color} stopOpacity={1} />
+        <linearGradient id="liquid" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor={bottom} />
+          <stop offset="45%" stopColor={bottom} />
+          <stop offset="75%" stopColor={top} />
+          <stop offset="100%" stopColor={top} stopOpacity={0.85} />
+        </linearGradient>
+        <linearGradient id="glassSheen" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#fff" stopOpacity={0.55} />
+          <stop offset="30%" stopColor="#fff" stopOpacity={0} />
+          <stop offset="85%" stopColor="#fff" stopOpacity={0} />
+          <stop offset="100%" stopColor="#fff" stopOpacity={0.35} />
         </linearGradient>
       </defs>
+      {/* soft shadow under the glass */}
+      <ellipse cx={100} cy={y1 + 6} rx={w / 2 + 6} ry={6} fill="rgba(11,22,54,0.08)" />
       {/* straw */}
-      <path d={`M${100 + w / 5} ${fillTop + 30} L${100 + w / 2.6} ${top - 26} l14 -10`} fill="none" stroke="#2f6bff" strokeWidth={6} strokeLinecap="round" />
+      <path d={`M${100 + w / 6} ${y1 - 24} L${100 + w / 3.2} ${y0 - 22} l12 -9`} fill="none" stroke="#2f6bff" strokeWidth={6} strokeLinecap="round" />
       <g clipPath="url(#glass)">
-        <rect x={lx - 10} y={top - 10} width={w + 20} height={h + 30} fill="#eef2ff" />
-        <path className="drink-wave" d={`M${lx - 40} ${fillTop} q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 V${bottom + 20} H${lx - 40} Z`} fill="url(#liquid)" style={{ transition: "fill 0.4s" }} />
+        <rect x={lx - 10} y={y0 - 10} width={w + 20} height={h + 30} fill="rgba(255,255,255,0.55)" />
+        <path className="drink-wave" d={`M${lx - 40} ${fillTop} q20 -5 40 0 t40 0 t40 0 t40 0 t40 0 V${y1 + 20} H${lx - 40} Z`} fill="url(#liquid)" />
         {extras.includes("Popping boba") &&
-          [0, 1, 2, 3, 4, 5].map((i) => <circle key={`b${i}`} cx={lx + 14 + i * ((w - 28) / 5)} cy={bottom - 9 - (i % 2) * 7} r={5} fill="#ff8a3d" opacity={0.9} />)}
+          [0, 1, 2, 3, 4, 5, 6].map((i) => <circle key={`b${i}`} cx={lx + 16 + i * ((w - 32) / 6)} cy={y1 - 9 - (i % 2) * 7} r={5} fill="#ff8a3d" stroke="#fff" strokeOpacity={0.6} strokeWidth={1} />)}
         {extras.includes("Chia seeds") &&
-          Array.from({ length: 22 }, (_, i) => <circle key={`c${i}`} cx={lx + 8 + ((i * 37) % (w - 16))} cy={fillTop + 20 + ((i * 53) % (h - 40))} r={1.2} fill="#1d1d1d" opacity={0.6} />)}
-        {Array.from({ length: cubes }, (_, i) => (
-          <rect
-            key={`i${i}`}
-            className="drink-float"
-            style={{ animationDelay: `${i * 0.4}s` }}
-            x={lx + 8 + (i % 3) * ((w - 34) / 2)}
-            y={fillTop + 4 + Math.floor(i / 3) * 20}
-            width={18}
-            height={18}
-            rx={5}
-            fill="#ffffff"
-            opacity={0.65}
-            transform={`rotate(${(i * 23) % 30 - 15} ${lx + 17 + (i % 3) * ((w - 34) / 2)} ${fillTop + 13 + Math.floor(i / 3) * 20})`}
-          />
-        ))}
+          Array.from({ length: 26 }, (_, i) => <circle key={`c${i}`} cx={lx + 10 + ((i * 37) % (w - 20))} cy={fillTop + 18 + ((i * 53) % (h - 40))} r={1.2} fill="#1d1d1d" opacity={0.55} />)}
+        {Array.from({ length: cubes }, (_, i) => {
+          const cx = lx + 12 + (i % 3) * ((w - 40) / 2);
+          const cy = fillTop + 2 + Math.floor(i / 3) * 21;
+          return (
+            <g key={`i${i}`} className="drink-float" style={{ animationDelay: `${i * 0.35}s` }} transform={`rotate(${((i * 23) % 30) - 15} ${cx + 9} ${cy + 9})`}>
+              <rect x={cx} y={cy} width={19} height={19} rx={5} fill="#fff" fillOpacity={0.55} stroke="#fff" strokeOpacity={0.9} />
+              <path d={`M${cx + 4} ${cy + 6} q3 -3 8 -2`} stroke="#fff" strokeWidth={2} strokeLinecap="round" fill="none" />
+            </g>
+          );
+        })}
         {sparkling &&
-          Array.from({ length: 9 }, (_, i) => (
-            <circle key={`s${i}`} className="drink-bubble" style={{ animationDelay: `${(i * 0.37) % 2.2}s` }} cx={lx + 10 + ((i * 29) % (w - 20))} cy={bottom - 6} r={2 + (i % 3)} fill="none" stroke="#fff" strokeWidth={1.4} opacity={0.85} />
+          Array.from({ length: 11 }, (_, i) => (
+            <circle key={`s${i}`} className="drink-bubble" style={{ animationDelay: `${(i * 0.33) % 2.2}s` }} cx={lx + 12 + ((i * 29) % (w - 24))} cy={y1 - 8} r={1.6 + (i % 3)} fill="none" stroke="#fff" strokeWidth={1.3} opacity={0.9} />
           ))}
         {extras.includes("Fresh mint") && (
-          <g transform={`translate(${lx + 6} ${fillTop - 12})`}>
+          <g transform={`translate(${lx + 4} ${fillTop - 14})`}>
             <Glyph kind="mint" color="#3fa34d" size={30} />
           </g>
         )}
+        <rect x={lx - 10} y={y0 - 10} width={w + 20} height={h + 30} fill="url(#glassSheen)" />
       </g>
-      <path d={`M${lx} ${top} L${rx} ${top} L${rx - 8} ${bottom} Q100 ${bottom + 6} ${lx + 8} ${bottom} Z`} fill="none" stroke="#c9d4ff" strokeWidth={3} strokeLinejoin="round" />
-      <path d={`M${lx + 10} ${top + 12} L${lx + 16} ${bottom - 18}`} stroke="#fff" strokeWidth={4} strokeLinecap="round" opacity={0.7} />
+      <path d={glass} fill="none" stroke="rgba(47,107,255,0.28)" strokeWidth={2.5} strokeLinejoin="round" />
+      {/* garnish on the rim */}
+      {/* A slice sits on the rim, half over the edge, like a real garnish. */}
+      <g key={garnish} transform={`translate(${lx + 4} ${y0 - 17})`}>
+        <g className="animate-pop" style={{ transformOrigin: "17px 17px" }}>
+          <Glyph kind={garnish} color={flavours[0]?.color ?? base?.color} size={34} />
+        </g>
+      </g>
     </svg>
   );
 }
@@ -296,47 +322,117 @@ function HalfPizza({ src, side, r }: { src?: string; side: "left" | "right"; r: 
   );
 }
 
+const GAP = HALF * 1.32; // vertical distance between neighbouring halves
+
 /**
- * One side of the halves stage: a vertical reel. The picked half sits large at
- * the centre line; its neighbours peek above and below, smaller and faded.
- * Swipe up/down (or tap a neighbour) to change.
+ * Drives one reel with continuous physics: the reel follows the finger 1:1,
+ * flicks carry momentum, and it settles on the nearest half with a critically
+ * damped spring. A haptic tick fires each time a new half reaches the centre.
  */
-function HalfReel({ side, options, index, onChange }: { side: "left" | "right"; options: ModifierOption[]; index: number; onChange: (i: number) => void }) {
-  const n = options.length;
-  const at = (k: number) => (k + n) % n;
-  const startY = useRef(0);
-  const step = (d: number) => {
-    haptic("tick");
-    onChange(at(index + d));
+function useReel(n: number, initial: number, onSettle: (i: number) => void) {
+  const [pos, setPos] = useState(initial); // float index of the half at the centre
+  const p = useRef(initial);
+  const raf = useRef(0);
+  const drag = useRef<{ y: number; p: number; t: number; v: number } | null>(null);
+  const lastTick = useRef(Math.round(initial));
+  const set = (v: number) => {
+    p.current = v;
+    setPos(v);
+    const r = Math.round(v);
+    if (r !== lastTick.current) {
+      lastTick.current = r;
+      haptic("tick");
+    }
   };
+  const animateTo = (target: number, velocity = 0, stiffness = 170) => {
+    cancelAnimationFrame(raf.current);
+    let v = velocity;
+    let last = performance.now();
+    const damping = 2 * Math.sqrt(stiffness); // critically damped: no wobble, no overshoot
+    const frame = (now: number) => {
+      const dt = Math.min(0.032, (now - last) / 1000);
+      last = now;
+      const a = -stiffness * (p.current - target) - damping * v;
+      v += a * dt;
+      const next = p.current + v * dt;
+      if (Math.abs(next - target) < 0.001 && Math.abs(v) < 0.01) {
+        set(target);
+        onSettle((((Math.round(target) % n) + n) % n));
+        return;
+      }
+      set(next);
+      raf.current = requestAnimationFrame(frame);
+    };
+    raf.current = requestAnimationFrame(frame);
+  };
+  const handlers = {
+    onPointerDown: (e: React.PointerEvent) => {
+      cancelAnimationFrame(raf.current);
+      drag.current = { y: e.clientY, p: p.current, t: performance.now(), v: 0 };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      const d = drag.current;
+      if (!d) return;
+      const now = performance.now();
+      const next = d.p - (e.clientY - d.y) / GAP;
+      const dt = Math.max(1, now - d.t) / 1000;
+      d.v = 0.8 * ((next - p.current) / dt) + 0.2 * d.v; // smoothed velocity, halves per second
+      d.t = now;
+      set(next);
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      const d = drag.current;
+      drag.current = null;
+      if (!d) return;
+      const moved = Math.abs(p.current - d.p);
+      if (moved < 0.04) {
+        // A tap: a tap above or below the centre half steps to that neighbour.
+        const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const off = e.clientY - (box.top + box.height / 2);
+        if (Math.abs(off) > HALF * 0.85) animateTo(Math.round(p.current) + Math.sign(off));
+        else animateTo(Math.round(p.current));
+        return;
+      }
+      const projected = p.current + d.v * 0.22; // where the flick would carry it
+      animateTo(Math.round(projected), d.v);
+    },
+  };
+  return { pos, handlers, animateTo, p };
+}
+
+/**
+ * One side of the halves stage: the picked half sits large at the centre
+ * line; neighbours peek above and below, scaling smoothly with distance.
+ */
+function HalfReel({ side, options, reel }: { side: "left" | "right"; options: ModifierOption[]; reel: ReturnType<typeof useReel> }) {
+  const n = options.length;
   const inner = side === "left" ? "right" : "left";
+  const base = Math.floor(reel.pos);
   return (
-    <div
-      className="relative h-full touch-none select-none"
-      style={{ width: HALF + 8 }}
-      onPointerDown={(e) => {
-        startY.current = e.clientY;
-      }}
-      onPointerUp={(e) => {
-        const dy = e.clientY - startY.current;
-        if (Math.abs(dy) > 36) step(dy < 0 ? 1 : -1);
-      }}
-    >
-      {[-1, 0, 1].map((d) => {
-        const o = options[at(index + d)]!;
-        const main = d === 0;
+    <div className="relative h-full touch-none select-none" style={{ width: HALF + 8 }} {...reel.handlers} onPointerCancel={reel.handlers.onPointerUp}>
+      {[-2, -1, 0, 1, 2, 3].map((k) => {
+        const i = base + k;
+        const d = i - reel.pos; // signed distance from the centre, in halves
+        const ad = Math.min(1.6, Math.abs(d));
+        const o = options[((i % n) + n) % n]!;
+        const scale = 1 - 0.58 * Math.min(1, ad);
+        // Neighbours tuck in toward the centre line as they shrink.
+        const y = d * GAP * (ad <= 1 ? 1 - 0.18 * ad : 0.82);
         return (
           <button
-            key={`${o.id}-${d}`}
-            onClick={() => !main && step(d)}
-            aria-label={main ? t(o.name, "en") : `${d < 0 ? "Previous" : "Next"}: ${t(o.name, "en")}`}
-            className="absolute top-1/2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            key={i}
+            onKeyDown={(e) => e.key === "Enter" && Math.abs(d) > 0.5 && reel.animateTo(Math.round(reel.p.current + Math.sign(d)))}
+            tabIndex={Math.abs(d) < 0.5 ? -1 : 0}
+            aria-label={t(o.name, "en")}
+            className="absolute top-1/2 will-change-transform"
             style={{
               [inner]: 0,
-              transform: `translateY(calc(-50% + ${d * (HALF * 1.32)}px)) scale(${main ? 1 : 0.42})`,
+              transform: `translateY(calc(-50% + ${y}px)) scale(${scale})`,
               transformOrigin: `${inner} center`,
-              opacity: main ? 1 : 0.45,
-              zIndex: main ? 2 : 1,
+              opacity: Math.max(0, 1 - 0.55 * ad),
+              zIndex: Math.round(10 - ad * 4),
+              filter: ad > 0.2 ? `blur(${Math.min(2, (ad - 0.2) * 1.5)}px)` : "none",
             }}
           >
             <HalfPizza src={o.photo} side={side} r={HALF} />
@@ -365,29 +461,30 @@ export function HalvesPicker({
   const opts = leftG.options;
   const [l, setL] = useState(Math.max(0, opts.findIndex((o) => o.id === leftG.defaultOptionId)));
   const [r, setR] = useState(Math.max(0, rightG.options.findIndex((o) => o.id === rightG.defaultOptionId)));
+  const leftReel = useReel(opts.length, l, setL);
+  const rightReel = useReel(rightG.options.length, r, setR);
+  // Labels follow the half nearest the centre, even mid-swipe.
+  const wrap = (v: number, n: number) => (((Math.round(v) % n) + n) % n);
+  const li = wrap(leftReel.pos, opts.length);
+  const ri = wrap(rightReel.pos, rightG.options.length);
   const [variantId, setVariantId] = useState(item.variants[0]?.id);
   const [rolling, setRolling] = useState(false);
   const size = item.variants.find((v) => v.id === variantId)?.price ?? 0;
-  const left = opts[l]!;
-  const right = rightG.options[r]!;
+  const left = opts[li]!;
+  const right = rightG.options[ri]!;
   const price = size + left.price + right.price;
   const side = (o: ModifierOption) => size / 2 + o.price; // this half's share; the two shares add up to the price
   const dice = () => {
     if (rolling) return;
     setRolling(true);
-    let k = 0;
-    const id = setInterval(() => {
-      haptic("tick");
-      setL((v) => (v + 1) % opts.length);
-      setR((v) => (v + 2) % opts.length);
-      if (++k >= 7) {
-        clearInterval(id);
-        setL(Math.floor(Math.random() * opts.length));
-        setR(Math.floor(Math.random() * opts.length));
-        haptic("success");
-        setRolling(false);
-      }
-    }, 110);
+    haptic("light");
+    // Each reel spins a different number of halves and decelerates on its own spring.
+    leftReel.animateTo(Math.round(leftReel.p.current) + 6 + Math.floor(Math.random() * opts.length), 26, 60);
+    rightReel.animateTo(Math.round(rightReel.p.current) - (8 + Math.floor(Math.random() * opts.length)), -30, 52);
+    setTimeout(() => {
+      haptic("success");
+      setRolling(false);
+    }, 1300);
   };
   return (
     <Sheet
@@ -398,7 +495,7 @@ export function HalvesPicker({
         <button
           onClick={() => {
             haptic("success");
-            onAdd(item, variantId, [leftG.options[l]!.id, right.id], 1);
+            onAdd(item, variantId, [left.id, right.id], 1);
           }}
           className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums"
         >
@@ -439,13 +536,13 @@ export function HalvesPicker({
 
         {/* The stage: two reels meet at the centre line. */}
         <div className="relative mt-2 flex h-[440px] items-center justify-center overflow-hidden">
-          <HalfReel side="left" options={opts} index={l} onChange={setL} />
+          <HalfReel side="left" options={opts} reel={leftReel} />
           <span aria-hidden className="z-10 h-[330px] w-1 shrink-0 rounded-full bg-white" />
-          <HalfReel side="right" options={rightG.options} index={r} onChange={setR} />
+          <HalfReel side="right" options={rightG.options} reel={rightReel} />
           <button
             onClick={dice}
             aria-label="Random halves"
-            className={`press absolute right-1 bottom-2 z-20 grid size-12 place-items-center rounded-full bg-white text-g-blue ring-1 ring-g-line ${rolling ? "animate-spin" : ""}`}
+            className={`press absolute right-1 bottom-2 z-20 grid size-12 place-items-center rounded-full bg-white text-g-blue ring-1 ring-g-line transition-transform duration-700 ${rolling ? "rotate-[360deg]" : ""}`}
           >
             <Dices size={22} strokeWidth={1.9} />
           </button>

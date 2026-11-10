@@ -43,7 +43,7 @@ type RawCategory = {
     name: I18nText;
     required?: boolean;
     max?: number;
-    display?: "chips" | "scale" | "brands" | "tiles";
+    display?: "chips" | "scale" | "brands" | "tiles" | "remove" | "segment";
     /** Index of the preselected option. */
     default?: number;
     options: RawOption[];

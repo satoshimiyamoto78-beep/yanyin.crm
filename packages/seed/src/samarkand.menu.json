@@ -806,71 +806,24 @@
           ]
         },
         {
-          "id": "sauce",
+          "id": "remove-mushroom",
           "name": {
-            "en": "Sauce",
-            "ru": "Соус",
-            "vi": "Sốt"
+            "en": "Remove ingredients",
+            "ru": "Убрать ингредиенты",
+            "vi": "Bỏ nguyên liệu"
           },
-          "required": true,
-          "max": 1,
-          "display": "tiles",
-          "default": 0,
+          "required": false,
+          "display": "remove",
+          "max": 3,
           "options": [
             {
               "name": {
-                "en": "Tomato",
-                "ru": "Томатный",
-                "vi": "Cà chua"
+                "en": "Mushrooms",
+                "ru": "Шампиньоны",
+                "vi": "Nấm"
               },
-              "price": 0,
-              "color": "#e2462f",
-              "glyph": "sauce"
+              "price": 0
             },
-            {
-              "name": {
-                "en": "Cream",
-                "ru": "Сливочный",
-                "vi": "Kem"
-              },
-              "price": 0,
-              "color": "#f6ecd2",
-              "glyph": "sauce"
-            },
-            {
-              "name": {
-                "en": "BBQ",
-                "ru": "Барбекю",
-                "vi": "BBQ"
-              },
-              "price": 0,
-              "color": "#7a3a22",
-              "glyph": "sauce"
-            },
-            {
-              "name": {
-                "en": "Pesto",
-                "ru": "Песто",
-                "vi": "Pesto"
-              },
-              "price": 15000,
-              "color": "#6aa84f",
-              "glyph": "sauce"
-            }
-          ]
-        },
-        {
-          "id": "cheese",
-          "name": {
-            "en": "Cheese",
-            "ru": "Сыр",
-            "vi": "Phô mai"
-          },
-          "required": true,
-          "max": 1,
-          "display": "chips",
-          "default": 0,
-          "options": [
             {
               "name": {
                 "en": "Mozzarella",
@@ -881,17 +834,226 @@
             },
             {
               "name": {
-                "en": "Extra mozzarella",
-                "ru": "Двойная моцарелла",
-                "vi": "Thêm mozzarella"
+                "en": "Tomato sauce",
+                "ru": "Томатный соус",
+                "vi": "Sốt cà chua"
               },
-              "price": 30000
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "remove-chicken-veggie",
+          "name": {
+            "en": "Remove ingredients",
+            "ru": "Убрать ингредиенты",
+            "vi": "Bỏ nguyên liệu"
+          },
+          "required": false,
+          "display": "remove",
+          "max": 4,
+          "options": [
+            {
+              "name": {
+                "en": "Chicken",
+                "ru": "Курица",
+                "vi": "Gà"
+              },
+              "price": 0
             },
             {
               "name": {
-                "en": "No cheese",
-                "ru": "Без сыра",
-                "vi": "Không phô mai"
+                "en": "Mushrooms",
+                "ru": "Шампиньоны",
+                "vi": "Nấm"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Bell pepper",
+                "ru": "Сладкий перец",
+                "vi": "Ớt chuông"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Red onion",
+                "ru": "Красный лук",
+                "vi": "Hành tím"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "remove-bbq-chicken",
+          "name": {
+            "en": "Remove ingredients",
+            "ru": "Убрать ингредиенты",
+            "vi": "Bỏ nguyên liệu"
+          },
+          "required": false,
+          "display": "remove",
+          "max": 4,
+          "options": [
+            {
+              "name": {
+                "en": "Chicken",
+                "ru": "Курица",
+                "vi": "Gà"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Red onion",
+                "ru": "Красный лук",
+                "vi": "Hành tím"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Coriander",
+                "ru": "Кинза",
+                "vi": "Ngò"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "BBQ sauce",
+                "ru": "Соус барбекю",
+                "vi": "Sốt BBQ"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "remove-chicken-tikka",
+          "name": {
+            "en": "Remove ingredients",
+            "ru": "Убрать ингредиенты",
+            "vi": "Bỏ nguyên liệu"
+          },
+          "required": false,
+          "display": "remove",
+          "max": 3,
+          "options": [
+            {
+              "name": {
+                "en": "Tikka chicken",
+                "ru": "Курица тикка",
+                "vi": "Gà tikka"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Herbs",
+                "ru": "Зелень",
+                "vi": "Rau thơm"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Mozzarella",
+                "ru": "Моцарелла",
+                "vi": "Mozzarella"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "remove-chicken-supreme",
+          "name": {
+            "en": "Remove ingredients",
+            "ru": "Убрать ингредиенты",
+            "vi": "Bỏ nguyên liệu"
+          },
+          "required": false,
+          "display": "remove",
+          "max": 4,
+          "options": [
+            {
+              "name": {
+                "en": "Chicken",
+                "ru": "Курица",
+                "vi": "Gà"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Olives",
+                "ru": "Оливки",
+                "vi": "Ô liu"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Mushrooms",
+                "ru": "Шампиньоны",
+                "vi": "Nấm"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Peppers",
+                "ru": "Перец",
+                "vi": "Ớt"
+              },
+              "price": 0
+            }
+          ]
+        },
+        {
+          "id": "remove-salami-olive",
+          "name": {
+            "en": "Remove ingredients",
+            "ru": "Убрать ингредиенты",
+            "vi": "Bỏ nguyên liệu"
+          },
+          "required": false,
+          "display": "remove",
+          "max": 4,
+          "options": [
+            {
+              "name": {
+                "en": "Beef salami",
+                "ru": "Говяжья салями",
+                "vi": "Salami bò"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Cherry tomatoes",
+                "ru": "Черри",
+                "vi": "Cà chua bi"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Olives",
+                "ru": "Оливки",
+                "vi": "Ô liu"
+              },
+              "price": 0
+            },
+            {
+              "name": {
+                "en": "Basil",
+                "ru": "Базилик",
+                "vi": "Húng quế"
               },
               "price": 0
             }
@@ -900,14 +1062,24 @@
         {
           "id": "toppings",
           "name": {
-            "en": "Toppings",
-            "ru": "Начинки",
-            "vi": "Topping"
+            "en": "Add ingredients",
+            "ru": "Добавить ингредиенты",
+            "vi": "Thêm nguyên liệu"
           },
           "required": false,
           "max": 6,
           "display": "tiles",
           "options": [
+            {
+              "name": {
+                "en": "Extra mozzarella",
+                "ru": "Двойная моцарелла",
+                "vi": "Thêm mozzarella"
+              },
+              "price": 30000,
+              "color": "#f6ecd2",
+              "glyph": "sauce"
+            },
             {
               "name": {
                 "en": "Pepperoni",
@@ -1168,52 +1340,6 @@
       "items": [
         {
           "name": {
-            "en": "Build your pizza",
-            "ru": "Собери свою пиццу",
-            "vi": "Tự làm pizza"
-          },
-          "status": "suggested",
-          "builder": "pizza",
-          "variants": [
-            {
-              "name": {
-                "en": "25 cm",
-                "ru": "25 см",
-                "vi": "25 cm"
-              },
-              "price": 149000
-            },
-            {
-              "name": {
-                "en": "30 cm",
-                "ru": "30 см",
-                "vi": "30 cm"
-              },
-              "price": 189000
-            },
-            {
-              "name": {
-                "en": "35 cm",
-                "ru": "35 см",
-                "vi": "35 cm"
-              },
-              "price": 239000
-            }
-          ],
-          "description": {
-            "en": "Size, dough, sauce, cheese and up to six toppings",
-            "ru": "Размер, тесто, соус, сыр и до шести начинок",
-            "vi": "Cỡ, đế, sốt, phô mai và tối đa sáu topping"
-          },
-          "modifier_groups": [
-            "dough",
-            "sauce",
-            "cheese",
-            "toppings"
-          ]
-        },
-        {
-          "name": {
             "en": "Pizza from halves",
             "ru": "Пицца из половинок",
             "vi": "Pizza hai nửa"
@@ -1289,7 +1415,9 @@
             "vegetarian"
           ],
           "modifier_groups": [
-            "dough"
+            "dough",
+            "remove-mushroom",
+            "toppings"
           ],
           "description": {
             "en": "Mozzarella and lots of fresh champignons on a light tomato base",
@@ -1331,7 +1459,9 @@
             "halal"
           ],
           "modifier_groups": [
-            "dough"
+            "dough",
+            "remove-chicken-veggie",
+            "toppings"
           ],
           "description": {
             "en": "Grilled chicken, mushrooms, bell pepper and red onion",
@@ -1373,7 +1503,9 @@
             "halal"
           ],
           "modifier_groups": [
-            "dough"
+            "dough",
+            "remove-bbq-chicken",
+            "toppings"
           ],
           "description": {
             "en": "Roast chicken, red onion and coriander under a BBQ drizzle",
@@ -1415,7 +1547,9 @@
             "halal"
           ],
           "modifier_groups": [
-            "dough"
+            "dough",
+            "remove-chicken-tikka",
+            "toppings"
           ],
           "description": {
             "en": "Spiced tikka chicken, creamy mozzarella and fresh herbs",
@@ -1457,7 +1591,9 @@
             "halal"
           ],
           "modifier_groups": [
-            "dough"
+            "dough",
+            "remove-chicken-supreme",
+            "toppings"
           ],
           "description": {
             "en": "Chicken, black olives, mushrooms and two kinds of pepper",
@@ -1497,7 +1633,9 @@
           ],
           "tags": [],
           "modifier_groups": [
-            "dough"
+            "dough",
+            "remove-salami-olive",
+            "toppings"
           ],
           "description": {
             "en": "Beef salami, cherry tomatoes, olives and basil",
@@ -2209,7 +2347,7 @@
             "vi": "Độ ngọt"
           },
           "required": true,
-          "display": "scale",
+          "display": "segment",
           "default": 2,
           "options": [
             {
@@ -2218,7 +2356,10 @@
                 "ru": "Без сахара",
                 "vi": "Không đường"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "0%"
+              }
             },
             {
               "name": {
@@ -2226,7 +2367,10 @@
                 "ru": "Менее сладкий",
                 "vi": "Ít ngọt"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "25%"
+              }
             },
             {
               "name": {
@@ -2234,7 +2378,10 @@
                 "ru": "Обычный",
                 "vi": "Vừa"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "50%"
+              }
             },
             {
               "name": {
@@ -2242,7 +2389,10 @@
                 "ru": "Сладкий",
                 "vi": "Ngọt"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "75%"
+              }
             },
             {
               "name": {
@@ -2250,7 +2400,10 @@
                 "ru": "Очень сладкий",
                 "vi": "Rất ngọt"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "100%"
+              }
             }
           ]
         },
@@ -2262,7 +2415,7 @@
             "vi": "Đá"
           },
           "required": true,
-          "display": "scale",
+          "display": "segment",
           "default": 2,
           "options": [
             {
@@ -2271,7 +2424,12 @@
                 "ru": "Без льда",
                 "vi": "Không đá"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "None",
+                "ru": "Нет",
+                "vi": "Không"
+              }
             },
             {
               "name": {
@@ -2279,7 +2437,12 @@
                 "ru": "Мало льда",
                 "vi": "Ít đá"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "Light",
+                "ru": "Мало",
+                "vi": "Ít"
+              }
             },
             {
               "name": {
@@ -2287,7 +2450,12 @@
                 "ru": "Обычно",
                 "vi": "Đá vừa"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "Normal",
+                "ru": "Норма",
+                "vi": "Vừa"
+              }
             },
             {
               "name": {
@@ -2295,7 +2463,12 @@
                 "ru": "Много льда",
                 "vi": "Nhiều đá"
               },
-              "price": 0
+              "price": 0,
+              "note": {
+                "en": "Extra",
+                "ru": "Много",
+                "vi": "Nhiều"
+              }
             }
           ]
         },

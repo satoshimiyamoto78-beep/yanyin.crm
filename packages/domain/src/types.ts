@@ -56,7 +56,7 @@ export type ModifierGroup = {
    * "brands": large brand tiles (hookah tobacco).
    * "tiles": small visual tiles with a colour or glyph (sauces, toppings, flavours).
    */
-  display: "chips" | "scale" | "brands" | "tiles";
+  display: "chips" | "scale" | "brands" | "tiles" | "remove" | "segment";
   /** Option preselected when the guest opens the item (also used by quick add). */
   defaultOptionId?: string;
   options: ModifierOption[];

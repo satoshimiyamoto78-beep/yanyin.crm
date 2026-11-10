@@ -20,7 +20,14 @@ import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview } from "./builders";
+import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview, drinkColor, drinkName } from "./builders";
+
+const tint = (c: string, a: number) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(c);
+  if (!m) return `rgba(143,178,255,${a})`;
+  const n = parseInt(m[1]!, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+};
 import { DishTile, HalalIcon, ItemCard, ItemChips, Sheet, Stepper, TrackSlider, altName } from "./ui";
 
 /* ---------------------------------------------------------------- Item */
@@ -115,9 +122,24 @@ function ItemSheetBody({
       {item.builder ? (
         <div className="px-3 pt-3">
           {/* Constructor: a live preview that follows every pick. */}
-          <div className="mesh-blue aspect-[1.15] w-full rounded-[28px] p-4">
-            {item.builder === "pizza" ? <PizzaPreview item={item} ids={optionIds} variantId={variantId} /> : <DrinkPreview item={item} ids={optionIds} variantId={variantId} />}
-          </div>
+          {item.builder === "pizza" ? (
+            <div className="mesh-blue aspect-[1.15] w-full rounded-[28px] p-4">
+              <PizzaPreview item={item} ids={optionIds} variantId={variantId} />
+            </div>
+          ) : (
+            // The stage takes the drink's colour; its live name sits on top.
+            <div
+              className="relative aspect-[1.1] w-full overflow-hidden rounded-[28px] transition-[background] duration-500"
+              style={{ background: `radial-gradient(120% 90% at 50% 100%, ${tint(drinkColor(item, optionIds), 0.35)} 0%, ${tint(drinkColor(item, optionIds), 0.08)} 55%, #f7f8fb 100%)` }}
+            >
+              <p key={drinkName(item, optionIds, lang)} className="animate-pop absolute inset-x-0 top-4 px-5 text-center text-[15px] font-semibold text-g-ink-2">
+                {drinkName(item, optionIds, lang) || "\u00a0"}
+              </p>
+              <div className="absolute inset-x-6 top-10 bottom-2">
+                <DrinkPreview item={item} ids={optionIds} variantId={variantId} />
+              </div>
+            </div>
+          )}
         </div>
       ) : item.cover ? (
         <div className="px-3 pt-3">
@@ -171,10 +193,55 @@ function ItemSheetBody({
                 <h3 className="text-[17px] font-semibold">{t(g.name, lang)}</h3>
                 <span className={`ml-auto text-[13px] font-medium ${g.required && missing.includes(g.id) ? "text-g-blue" : "text-g-faint"}`}>
                   {(g.display === "chips" || g.display === "tiles") && g.max > 1 && g.max < g.options.length ? `${ui(lang, "pickUpTo")} ${g.max} · ` : ""}
-                  {ui(lang, g.required ? "required" : "optional")}
+                  {g.display === "remove" ? ui(lang, "tapToRemove") : ui(lang, g.required ? "required" : "optional")}
                 </span>
               </div>
-              {g.display === "tiles" ? (
+              {g.display === "remove" ? (
+                // Ingredients the dish comes with: tap to take one out (it strikes through).
+                <div className="flex flex-wrap gap-2">
+                  {g.options.map((o) => {
+                    const out = optionIds.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        onClick={() => {
+                          haptic("light");
+                          toggle(g.id, o.id);
+                        }}
+                        aria-pressed={out}
+                        aria-label={`${out ? "Return" : "Remove"} ${t(o.name, lang)}`}
+                        className={`press flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium transition-all ${out ? "bg-g-fill text-g-faint line-through" : "bg-g-blue-soft text-g-ink"}`}
+                      >
+                        {out ? <X size={15} strokeWidth={2.25} /> : <Check size={15} strokeWidth={2.5} className="text-g-blue" />}
+                        {t(o.name, lang)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : g.display === "segment" ? (
+                <div>
+                  <div className="flex rounded-full bg-g-fill p-1">
+                    {g.options.map((o) => {
+                      const on = optionIds.includes(o.id);
+                      return (
+                        <button
+                          key={o.id}
+                          onClick={() => {
+                            haptic("tick");
+                            if (!on) toggle(g.id, o.id);
+                          }}
+                          aria-pressed={on}
+                          aria-label={t(o.name, lang)}
+                          className={`h-10 flex-1 rounded-full text-[13px] font-semibold tabular-nums transition-colors ${on ? "bg-white text-g-ink" : "text-g-muted"}`}
+                        >
+                          {o.note ? t(o.note, lang) : t(o.name, lang)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-[13px] text-g-muted">{t(g.options.find((o) => optionIds.includes(o.id))?.name ?? { en: "" }, lang)}</p>
+                </div>
+              ) : g.display === "tiles" ? (
                 <OptionTiles
                   group={g}
                   lang={lang}
