@@ -343,6 +343,14 @@ body {
 .animate-fade {
   animation: fade-in 0.2s ease-out;
 }
+/* Yan's chat list slides in from the left edge. */
+@keyframes drawer {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+.animate-drawer {
+  animation: drawer 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 .animate-rise {
   animation: rise 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -610,6 +618,7 @@ body {
   .animate-sheet,
   .animate-fade,
   .animate-rise,
+  .animate-drawer,
   .animate-pop {
     animation: none;
   }

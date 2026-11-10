@@ -52,6 +52,9 @@ import { ActionListWidget, DaysCompareWidget, FlowWidget, IconStat, LineWidget }
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useDish, useLocale, useTr, type TrVars } from "./prefs";
 import { Scanner } from "./Scanner";
+import { CrewSearch } from "./Search";
+import { YanChat } from "./YanChat";
+import { YanOrb } from "@/components/guest/YanSheet";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
 import { InboxPage, kindOf, seedInbox, type InboxItem } from "./Inbox";
 import { BadgesPage } from "./Collections";
@@ -131,6 +134,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const [page, setPage] = useState<"picker" | "check" | "pay" | null>(null);
   const [receipt, setReceipt] = useState<ClosedOrder | null>(null);
   const [newBooking, setNewBooking] = useState(false);
+  // Search over everything, and Yan's chat (optionally opened with a question from search).
+  const [searching, setSearching] = useState(false);
+  const [yan, setYan] = useState<{ q?: string } | null>(null);
   const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [scan, setScan] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -291,6 +297,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             onTheme={scheme.toggle}
             onProfile={() => setProfile("profile")}
             onInbox={() => setInboxOpen(true)}
+            onSearch={() => setSearching(true)}
             unread={unread}
             photo={me.photo}
             name={`${me.first} ${me.last}`}
@@ -329,9 +336,22 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               );
             })}
           </div>
-          <button aria-label={tr("Scan table QR")} onClick={() => setScan(true)} className="blue-grad press grid size-[64px] shrink-0 place-items-center rounded-full">
-            <ScanLine size={24} strokeWidth={2} />
-          </button>
+          {/* Yan sits right above the scan button: one tap to the shift assistant. */}
+          <div className="relative shrink-0">
+            <button
+              aria-label={tr("Ask Yan")}
+              onClick={() => {
+                haptic("light");
+                setYan({});
+              }}
+              className="press absolute bottom-[calc(100%+10px)] left-1/2 grid -translate-x-1/2 place-items-center rounded-full shadow-[0_8px_24px_-8px_rgba(47,91,255,0.55)] ring-4 ring-white/90"
+            >
+              <YanOrb size={48} />
+            </button>
+            <button aria-label={tr("Scan table QR")} onClick={() => setScan(true)} className="blue-grad press grid size-[56px] place-items-center rounded-full">
+              <ScanLine size={22} strokeWidth={2} />
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -452,6 +472,46 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         />
       )}
 
+      {searching && (
+        <CrewSearch
+          tables={tables}
+          bookings={bookings}
+          items={items}
+          history={history}
+          money={money}
+          onClose={() => setSearching(false)}
+          onGo={(g) => {
+            setSearching(false);
+            if (g.kind === "table") setOpen(g.no);
+            else if (g.kind === "bookings") go("bookings");
+            else if (g.kind === "receipt") setReceipt(g.order);
+            else if (g.kind === "yan") setYan({ q: g.q });
+            else if (g.id === "new-booking") setNewBooking(true);
+            else if (g.id === "scan") setScan(true);
+            else if (g.id === "break") notify({ title: tr("Break started"), text: tr("Tables see “back in 10 min”") });
+            else if (g.id === "settings") setProfile("profile");
+            else if (g.id === "inbox") setInboxOpen(true);
+            else if (g.id === "history") go("cabinet");
+            else go(g.id);
+          }}
+        />
+      )}
+      {yan && (
+        <YanChat
+          tables={tables}
+          bookings={bookings}
+          items={items}
+          history={history}
+          money={money}
+          name={me.first}
+          initial={yan.q}
+          onOpenTable={(no) => {
+            setYan(null);
+            setOpen(no);
+          }}
+          onClose={() => setYan(null)}
+        />
+      )}
       {receipt && (
         <Sheet open onClose={() => setReceipt(null)} label={`Order #${receipt.id}`}>
           <div className="px-5 pt-2 pb-8">

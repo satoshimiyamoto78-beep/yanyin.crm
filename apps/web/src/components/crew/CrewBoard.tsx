@@ -109,6 +109,7 @@ export function CrewBoard({
   onTheme,
   onProfile,
   onInbox,
+  onSearch,
   unread = 0,
   photo,
   name,
@@ -126,6 +127,8 @@ export function CrewBoard({
   onProfile?: () => void;
   /** Bell: opens notifications and news. */
   onInbox?: () => void;
+  /** Search field: opens the full search page. */
+  onSearch?: () => void;
   unread?: number;
   photo?: string;
   name?: string;
@@ -326,10 +329,10 @@ export function CrewBoard({
               {/* eslint-disable-next-line @next/next/no-img-element -- a local photo the waiter picked */}
               {photo ? <img src={photo} alt="" className="size-full object-cover" /> : (name ?? data.staff.name)[0]}
             </button>
-            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white/70">
-              <Search size={17} strokeWidth={2} />
-              <input placeholder={tr("Tables, dishes, guests")} aria-label={tr("Search")} className="min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/70" />
-            </label>
+            <button onClick={() => onSearch?.()} aria-label={tr("Search")} className="press flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-left text-white/70">
+              <Search size={17} strokeWidth={2} className="shrink-0" />
+              <span className="truncate text-[15px]">{tr("Tables, dishes, guests")}</span>
+            </button>
             {onTheme && <ThemeToggle dark={dark} onToggle={onTheme} label={tr("Light or dark theme")} />}
             <button aria-label={unread ? tr("Notifications, {n} new", { n: unread }) : tr("Notifications")} onClick={() => onInbox?.()} className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
               <Bell size={19} strokeWidth={2} />
@@ -359,7 +362,7 @@ export function CrewBoard({
             <StripBig
               onClick={() => onGo?.("tables")}
               icon={<LayoutGrid size={19} strokeWidth={2} />}
-              title={hot ? tr("{a} of {b} tables", { a: hot.busy, b: hot.tables }) : tr("Tables")}
+              title={hot ? tr("{a}/{b} tables", { a: hot.busy, b: hot.tables }) : tr("Tables")}
               sub={hot?.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm")}
               tone={hot?.bills ? "orange" : "muted"}
             />
