@@ -322,7 +322,7 @@ function HalfPizza({ src, side, r }: { src?: string; side: "left" | "right"; r: 
   );
 }
 
-const GAP = HALF * 1.32; // vertical distance between neighbouring halves
+const GAP = HALF * 1.62; // vertical distance between neighbouring halves (room to breathe)
 
 /**
  * Drives one reel with continuous physics: the reel follows the finger 1:1,
@@ -416,9 +416,9 @@ function HalfReel({ side, options, reel }: { side: "left" | "right"; options: Mo
         const d = i - reel.pos; // signed distance from the centre, in halves
         const ad = Math.min(1.6, Math.abs(d));
         const o = options[((i % n) + n) % n]!;
-        const scale = 1 - 0.58 * Math.min(1, ad);
-        // Neighbours tuck in toward the centre line as they shrink.
-        const y = d * GAP * (ad <= 1 ? 1 - 0.18 * ad : 0.82);
+        const scale = 1 - 0.56 * Math.min(1, ad);
+        // Neighbours tuck in a little toward the centre line as they shrink.
+        const y = d * GAP * (ad <= 1 ? 1 - 0.1 * ad : 0.9);
         return (
           <button
             key={i}
@@ -474,6 +474,8 @@ export function HalvesPicker({
   const right = rightG.options[ri]!;
   const price = size + left.price + right.price;
   const side = (o: ModifierOption) => size / 2 + o.price; // this half's share; the two shares add up to the price
+  const still = (v: number) => Math.abs(v - Math.round(v)) < 0.02;
+  const moving = rolling || !still(leftReel.pos) || !still(rightReel.pos);
   const dice = () => {
     if (rolling) return;
     setRolling(true);
@@ -520,22 +522,8 @@ export function HalvesPicker({
           ))}
         </div>
 
-        <div className="mt-6 flex items-start justify-between gap-3">
-          {[
-            [left, "text-left"],
-            [right, "text-right"],
-          ].map(([o, align]) => (
-            <div key={align as string} className={`min-w-0 flex-1 ${align as string}`}>
-              <p key={(o as ModifierOption).id} className="animate-pop truncate text-[17px] leading-tight font-semibold">
-                {t((o as ModifierOption).name, lang)}
-              </p>
-              <p className="mt-0.5 text-[13px] text-g-muted tabular-nums">{formatMoney(side(o as ModifierOption), currency, lang)}</p>
-            </div>
-          ))}
-        </div>
-
         {/* The stage: two reels meet at the centre line. */}
-        <div className="relative mt-2 flex h-[440px] items-center justify-center overflow-hidden">
+        <div className="relative mt-4 flex h-[460px] items-center justify-center overflow-hidden">
           <HalfReel side="left" options={opts} reel={leftReel} />
           <span aria-hidden className="z-10 h-[330px] w-1 shrink-0 rounded-full bg-white" />
           <HalfReel side="right" options={rightG.options} reel={rightReel} />
@@ -550,6 +538,43 @@ export function HalvesPicker({
         <p className="mt-1 text-center text-[13px] text-g-muted">
           {t({ en: "Swipe each half up or down", ru: "Листайте каждую половинку вверх или вниз", vi: "Vuốt từng nửa lên hoặc xuống" }, lang)}
         </p>
+
+        {/* What you are getting: blurs while the reels move, comes into focus when they settle. */}
+        <section
+          aria-live="polite"
+          className={`mt-7 transition-[filter,opacity,transform] duration-500 ease-out ${moving ? "scale-[0.985] opacity-45 blur-[6px]" : "blur-0 opacity-100"}`}
+        >
+          <p className="text-[13px] font-semibold text-g-blue">{t({ en: "Your pizza", ru: "Ваша пицца", vi: "Pizza của bạn" }, lang)}</p>
+          <h3 className="mt-1 text-[22px] leading-tight font-bold tracking-[-0.02em]">
+            {left.id === right.id ? t(left.name, lang) : `${t(left.name, lang)} + ${t(right.name, lang)}`}
+          </h3>
+          <div className="mt-4 divide-y divide-g-line">
+            {[
+              [left, t({ en: "Left half", ru: "Левая половина", vi: "Nửa trái" }, lang)],
+              [right, t({ en: "Right half", ru: "Правая половина", vi: "Nửa phải" }, lang)],
+            ].map(([o, label]) => {
+              const opt = o as ModifierOption;
+              return (
+                <div key={label as string} className="flex gap-3 py-3.5">
+                  <span className="relative size-12 shrink-0 overflow-hidden rounded-full bg-g-fill">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- small cut-out from the menu data */}
+                    {opt.photo && <img src={opt.photo} alt="" className="size-full object-cover" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12px] text-g-muted">{label as string}</span>
+                    <span className="block truncate text-[16px] font-semibold">{t(opt.name, lang)}</span>
+                    {opt.note && <span className="mt-0.5 block text-[13px] leading-snug text-g-muted">{t(opt.note, lang)}</span>}
+                  </span>
+                  <span className="shrink-0 pt-4 text-[14px] font-semibold tabular-nums">{formatMoney(side(opt), currency, lang)}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-1 flex items-baseline justify-between border-t border-g-line pt-4">
+            <span className="text-[14px] text-g-muted">{t(item.variants.find((v) => v.id === variantId)?.name ?? { en: "" }, lang)}</span>
+            <span className="text-[26px] font-bold tracking-[-0.02em] tabular-nums">{formatMoney(price, currency, lang)}</span>
+          </div>
+        </section>
       </div>
     </Sheet>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Dices, X } from "lucide-react";
+import { ArrowUp, Dices, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 
@@ -635,4 +635,42 @@ export function useRing(ref: React.RefObject<HTMLElement | null>, deps: unknown[
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run when the labels change
   }, deps);
+}
+
+/**
+ * Back to the top, the iOS way: once the guest is deep in the menu and lets
+ * the page rest, a frosted arrow rises at the bottom centre; the moment they
+ * scroll again it sinks away. One tap glides to the top.
+ */
+export function ToTop({ bottom, label, after = 1.4 }: { bottom: string; label: string; after?: number }) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      setShown(false);
+      clearTimeout(idle);
+      idle = setTimeout(() => setShown(window.scrollY > window.innerHeight * after), 420);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(idle);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [after]);
+  return (
+    <button
+      aria-label={label}
+      tabIndex={shown ? 0 : -1}
+      onClick={() => {
+        haptic("light");
+        setShown(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }}
+      className={`fixed left-1/2 z-30 flex h-11 items-center gap-1.5 rounded-full bg-white/80 pr-4 pl-3 text-[14px] font-semibold text-g-ink ring-1 ring-black/5 backdrop-blur-xl transition-[transform,opacity,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${shown ? "pointer-events-auto -translate-x-1/2 translate-y-0 scale-100 opacity-100 blur-0" : "pointer-events-none -translate-x-1/2 translate-y-6 scale-90 opacity-0 blur-[4px]"}`}
+      style={{ bottom }}
+    >
+      <ArrowUp size={17} strokeWidth={2.25} />
+      {label}
+    </button>
+  );
 }

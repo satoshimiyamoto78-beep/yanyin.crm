@@ -50,7 +50,7 @@ import {
 } from "./sheets";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { Island, LiveIsland, Reveal, RouletteWheel, startLoading, useRing, type IslandNotice } from "./motion";
+import { Island, LiveIsland, Reveal, RouletteWheel, startLoading, ToTop, useRing, type IslandNotice } from "./motion";
 import { ItemCard } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
@@ -535,6 +535,13 @@ export function GuestApp({ menu }: { menu: Menu }) {
           />
         );
       })()}
+
+      {!sheet && (
+        <ToTop
+          label={ui(lang, "toTop")}
+          bottom={`calc(max(20px, env(safe-area-inset-bottom)) + ${(count > 0 ? 76 : 0) + (orders.length && orderStage(orders[orders.length - 1]!, now) < 3 ? 64 : 0)}px)`}
+        />
+      )}
 
       <CategoriesSheet
         open={sheet === "categories"}
