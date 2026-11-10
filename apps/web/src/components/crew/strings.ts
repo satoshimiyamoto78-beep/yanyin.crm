@@ -1,5 +1,6 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "No free table for this party yet": "Пока нет свободного стола на столько гостей",
   "Drag the scale": "Двигайте шкалу",
   "Booking history": "История броней",
   "cancelled": "отменено",
@@ -440,6 +441,7 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "No free table for this party yet": "Chưa có bàn trống cho nhóm này",
   "Drag the scale": "Kéo thước",
   "Booking history": "Lịch sử đặt bàn",
   "cancelled": "đã hủy",

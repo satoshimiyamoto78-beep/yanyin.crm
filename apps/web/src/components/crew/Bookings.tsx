@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, History, UserRound, Armchair, Ban, CalendarCheck, CalendarDays, CalendarPlus, Check, Hourglass, Pencil, Phone, StickyNote, Users } from "lucide-react";
+import { ChevronRight, Clock, History, ListOrdered, UserRound, Armchair, Ban, CalendarCheck, CalendarDays, CalendarPlus, Check, Hourglass, Pencil, Phone, StickyNote, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
@@ -8,7 +8,7 @@ import { loadIfChanged, PeekCard, Reveal, useLongPress } from "@/components/gues
 import { ChoiceChip, Sheet } from "@/components/guest/ui";
 import { Counter } from "./CrewApp";
 import { useTr } from "./prefs";
-import { ActionListWidget, IconStat, WidgetCard } from "@/components/system/Widgets";
+import { IconStat, WidgetCard } from "@/components/system/Widgets";
 import { TimeWheel } from "@/components/system/WheelPicker";
 import { PeekActions, PeekHeader, prettyPhone } from "@/components/system/PeekParts";
 import { GuestsArt, SeatedArt } from "./Illustrations";
@@ -80,26 +80,7 @@ export function BookingsView({
           tone="green"
         />
         <IconStat title={tr("Guests")} fit art={<GuestsArt size={84} />} value={String(guests)} sub={tr("expected today")} tone="blue" />
-        <ActionListWidget
-          className="col-span-2"
-          title={tr("Waiting list")}
-          icon={<Hourglass size={13} strokeWidth={2.4} />}
-          rows={list
-            .filter((b) => b.status === "waiting")
-            .map((b) => {
-              // The smallest free table that fits the party.
-              const fit = tables.filter((x) => x.status === "free" && x.seats >= b.guests).sort((p, q) => p.seats - q.seats)[0];
-              return {
-                id: b.id,
-                badge: String(b.guests),
-                badgeLabel: tr("guests"),
-                title: b.name,
-                sub: fit ? `${b.time} · ${tr("Table")} ${fit.no} ${tr("is free")} · ${fit.seats} ${tr("seats")}` : `${b.time} · ${tr("no free table yet")}`,
-                action: day === 0 && fit ? { label: `${tr("Seat at")} ${fit.no}`, onClick: () => onSeat({ ...b, table: fit.no }) } : undefined,
-              };
-            })}
-          empty={tr("No one is waiting for a table")}
-        />
+        <WaitingList className="col-span-2" list={list.filter((b) => b.status === "waiting")} tables={tables} today={day === 0} onSeat={(b, no) => onSeat({ ...b, table: no })} />
       </Reveal>
       <button
         onClick={() => {
@@ -642,5 +623,101 @@ function BookingHistory({ bookings, onClose }: { bookings: Booking[]; onClose: (
         </div>
       </div>
     </Sheet>
+  );
+}
+
+/**
+ * Guests waiting for a table. For each: who, how many, for when; the free
+ * tables that fit them (smallest first, the best one pre-chosen, tap another to
+ * switch) and one button to seat them there. No table that fits: say so and
+ * offer to call the guest.
+ */
+function WaitingList({ list, tables, today, onSeat, className = "" }: { list: Booking[]; tables: FloorTable[]; today: boolean; onSeat: (b: Booking, table: number) => void; className?: string }) {
+  const tr = useTr();
+  const [pick, setPick] = useState<Record<string, number>>({});
+  return (
+    <WidgetCard
+      className={className}
+      title={tr("Waiting list")}
+      icon={<ListOrdered size={13} strokeWidth={2.4} />}
+      aside={list.length ? <span className="chip-orange rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums">{list.length}</span> : undefined}
+    >
+      {list.length ? (
+        <div className="mt-3 grid gap-2">
+          {list.map((b) => {
+            const fits = tables.filter((x) => x.status === "free" && x.seats >= b.guests).sort((p, q) => p.seats - q.seats).slice(0, 3);
+            const chosen = pick[b.id] ?? fits[0]?.no;
+            const initials = b.name
+              .split(" ")
+              .map((w) => w[0])
+              .slice(0, 2)
+              .join("")
+              .toUpperCase();
+            return (
+              <div key={b.id} className="min-w-0 rounded-[18px] bg-white p-3">
+                <div className="flex items-center gap-3">
+                  <span className="chip-orange grid size-10 shrink-0 place-items-center rounded-full text-[14px] font-bold">{initials}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold">{b.name}</span>
+                    <span className="mt-0.5 flex items-center gap-2.5 text-[12px] text-g-muted tabular-nums">
+                      <span className="flex items-center gap-1">
+                        <Users size={12} strokeWidth={2.2} /> {b.guests}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} strokeWidth={2.2} /> {b.time}
+                      </span>
+                      {today && <span className="whitespace-nowrap">{relative(b.time)}</span>}
+                    </span>
+                  </span>
+                  {!fits.length && (
+                    <a href={`tel:${b.phone.replace(/\s/g, "")}`} onClick={() => haptic("light")} className="press grid size-9 shrink-0 place-items-center rounded-full bg-g-fill" aria-label={tr("Call")}>
+                      <Phone size={16} strokeWidth={2.2} />
+                    </a>
+                  )}
+                </div>
+                {fits.length ? (
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+                      {fits.map((x) => (
+                        <button
+                          key={x.no}
+                          onClick={() => {
+                            haptic("tick");
+                            setPick((p) => ({ ...p, [b.id]: x.no }));
+                          }}
+                          aria-pressed={chosen === x.no}
+                          className={`press flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap tabular-nums ${chosen === x.no ? "bg-g-blue-soft text-g-blue ring-[1.5px] ring-g-blue" : "bg-g-fill text-g-ink-2"}`}
+                        >
+                          <Armchair size={12} strokeWidth={2.2} /> {x.no} · {x.seats}
+                        </button>
+                      ))}
+                    </div>
+                    {today && chosen !== undefined && (
+                      <button
+                        onClick={() => {
+                          haptic("success");
+                          onSeat(b, chosen);
+                        }}
+                        className="press h-9 shrink-0 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold whitespace-nowrap text-white"
+                      >
+                        {tr("Seat at")} {chosen}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium text-g-orange">
+                    <Hourglass size={13} strokeWidth={2.2} /> {tr("No free table for this party yet")}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="mt-3 flex items-center gap-2 text-[14px] text-g-muted">
+          <span className="size-2 rounded-full bg-g-green" /> {tr("No one is waiting for a table")}
+        </p>
+      )}
+    </WidgetCard>
   );
 }
