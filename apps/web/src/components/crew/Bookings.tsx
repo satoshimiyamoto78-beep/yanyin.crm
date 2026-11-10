@@ -10,6 +10,7 @@ import { Counter } from "./CrewApp";
 import { useTr } from "./prefs";
 import { ActionListWidget, IconStat, WidgetCard } from "@/components/system/Widgets";
 import { TimeWheel } from "@/components/system/WheelPicker";
+import { PeekActions, PeekHeader, prettyPhone } from "@/components/system/PeekParts";
 import { GuestsArt, SeatedArt } from "./Illustrations";
 
 const DAY_NAMES = ["Today", "Tomorrow"];
@@ -374,45 +375,37 @@ function BookingCard({ b, today, onSeat, onHold }: { b: Booking; today: boolean;
 function BookingMenu({ b, today, onClose, onSeat, onEdit, onUpdate, onCancel }: { b: Booking; today: boolean; onClose: () => void; onSeat: () => void; onEdit: () => void; onUpdate: (b: Booking) => void; onCancel: () => void }) {
   const tr = useTr();
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const row = "press flex w-full items-center justify-between px-4 py-3.5 text-left text-[15px] font-semibold";
   return (
     <PeekCard label={b.name} onClose={onClose}>
-      <div className="flex items-center gap-3">
-        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-g-fill text-[15px] font-bold tabular-nums">{b.time}</span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[18px] font-bold">{b.name}</span>
-          <span className="block text-[12px] text-g-muted tabular-nums">
-            {b.guests} {tr("guests")} · {b.table ? `${tr("Table")} ${b.table}` : tr("No table")} · {b.phone}
-          </span>
-        </span>
-      </div>
-      {b.note && <p className="mt-3 rounded-[14px] bg-g-tint-note px-3 py-2 text-[13px]">{b.note}</p>}
+      <PeekHeader
+        kicker={`${b.time}${today && b.status !== "seated" ? ` · ${relative(b.time)}` : ""}`}
+        title={b.name}
+        aside={<span className={`${STATE[b.status].chip} mt-1 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold`}>{tr(STATE[b.status].label)}</span>}
+        facts={[
+          { icon: Users, text: `${b.guests} ${tr("guests")}` },
+          b.table ? { icon: Armchair, text: `${tr("Table")} ${b.table}` } : { icon: Armchair, text: tr("No table"), tone: "warn" },
+          { icon: Phone, text: prettyPhone(b.phone) },
+        ]}
+      />
+      {b.note && (
+        <p className="mt-2 flex items-center gap-1.5 rounded-[14px] bg-g-tint-note px-3 py-2 text-[13px]">
+          <StickyNote size={14} className="shrink-0 text-g-orange" /> {b.note}
+        </p>
+      )}
       {!confirmCancel ? (
-        <div className="mt-4 divide-y divide-g-line overflow-hidden rounded-[18px] bg-g-fill">
-          {today && b.status !== "seated" && (
-            <button onClick={onSeat} className={row}>
-              {tr("Seat now")} <Check size={18} strokeWidth={2.2} className="text-g-green" />
-            </button>
-          )}
-          <a href={`tel:${b.phone.replace(/\s/g, "")}`} onClick={() => haptic("light")} className={row}>
-            {tr("Call")} <Phone size={18} strokeWidth={2.2} className="text-g-muted" />
-          </a>
-          <button onClick={onEdit} className={row}>
-            {tr("Edit booking")} <Pencil size={18} strokeWidth={2.2} className="text-g-muted" />
-          </button>
-          {b.status === "waiting" ? (
-            <button onClick={() => onUpdate({ ...b, status: "confirmed" })} className={row}>
-              {tr("Confirm booking")} <CalendarCheck size={18} strokeWidth={2.2} className="text-g-muted" />
-            </button>
-          ) : b.status === "confirmed" ? (
-            <button onClick={() => onUpdate({ ...b, status: "waiting", table: undefined })} className={row}>
-              {tr("Move to waiting list")} <Hourglass size={18} strokeWidth={2.2} className="text-g-muted" />
-            </button>
-          ) : null}
-          <button onClick={() => setConfirmCancel(true)} className={`${row} text-[#e5484d]`}>
-            {tr("Cancel booking")} <Ban size={18} strokeWidth={2.2} />
-          </button>
-        </div>
+        <PeekActions
+          items={[
+            ...(today && b.status !== "seated" ? [{ icon: Check, label: tr("Seat now"), onClick: onSeat, tone: "good" as const }] : []),
+            { icon: Phone, label: tr("Call"), href: `tel:${b.phone.replace(/\s/g, "")}` },
+            { icon: Pencil, label: tr("Edit booking"), onClick: onEdit },
+            ...(b.status === "waiting"
+              ? [{ icon: CalendarCheck, label: tr("Confirm booking"), onClick: () => onUpdate({ ...b, status: "confirmed" }) }]
+              : b.status === "confirmed"
+                ? [{ icon: Hourglass, label: tr("Move to waiting list"), onClick: () => onUpdate({ ...b, status: "waiting", table: undefined }) }]
+                : []),
+            { icon: Ban, label: tr("Cancel booking"), onClick: () => setConfirmCancel(true), tone: "danger" as const },
+          ]}
+        />
       ) : (
         <div className="mt-4">
           <p className="text-[15px] font-semibold">{tr("Cancel this booking?")}</p>

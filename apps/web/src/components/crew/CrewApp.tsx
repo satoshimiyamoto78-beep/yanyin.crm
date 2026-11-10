@@ -4,6 +4,7 @@ import { allItems, formatMoney, t, type Menu, type MenuItem } from "@yanyin/doma
 import {
   Armchair,
   Banknote,
+  CheckCheck,
   RotateCcw,
   PenLine,
   Ban,
@@ -45,6 +46,7 @@ import { useScheme } from "@/components/system/scheme";
 import { BookingsArt, CheckArt, OrdersArt, SeatedArt, TablesArt, TipsArt } from "./Illustrations";
 import { CabinetView, pastOrders } from "./Cabinet";
 import { noticeMeta } from "./notices";
+import { PeekActions, PeekHeader } from "@/components/system/PeekParts";
 import { ActionListWidget, DaysCompareWidget, FlowWidget, IconStat, LineWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
@@ -1766,16 +1768,15 @@ function OrderLineRow({ line: l, name, money, onHold, onStatus }: { line: Ticket
 function DishHead({ line, name, money }: { line: TicketLine; name: string; money: (n: number) => string }) {
   const tr = useTr();
   return (
-    <div className="flex items-center gap-3">
-      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-g-fill text-[16px] font-semibold tabular-nums">{line.qty}×</span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[18px] leading-tight font-bold tracking-[-0.01em]">{name}</span>
-        <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-g-muted">
-          {line.by === "guest" ? <QrCode size={12} strokeWidth={2.4} /> : <UserRound size={12} strokeWidth={2.4} />}
-          {line.by === "guest" ? tr("Guest · QR menu") : tr("Added by the waiter")} · {money(line.price * line.qty)}
-        </span>
-      </span>
-    </div>
+    <PeekHeader
+      kicker={`${line.qty} × ${money(line.price)}`}
+      title={name}
+      facts={[
+        line.by === "guest" ? { icon: QrCode, text: tr("Guest · QR menu"), tone: "blue" } : { icon: UserRound, text: tr("Added by the waiter") },
+        { icon: ReceiptText, text: money(line.price * line.qty) },
+        ...(line.cancelled ? [] : [{ icon: line.state === "served" ? CheckCheck : line.state === "cooking" ? CookingPot : Hourglass, text: tr(LINE[line.state].label) }]),
+      ]}
+    />
   );
 }
 
@@ -1798,18 +1799,16 @@ function LineMenu({ line, name, money, onClose, onQty, onCancel }: { line: Ticke
           </button>
         </div>
       ) : (
-        <div className="mt-4 divide-y divide-g-line overflow-hidden rounded-[18px] bg-g-fill">
-          {!line.cancelled && (
-            <button onClick={() => setQtyMode(true)} className="press flex h-13 w-full items-center justify-between px-4 py-3.5 text-left text-[15px] font-semibold">
-              {tr("Change quantity")} <Plus size={18} strokeWidth={2.2} className="text-g-muted" />
-            </button>
-          )}
-          {!line.cancelled && (
-            <button onClick={onCancel} className="press flex w-full items-center justify-between px-4 py-3.5 text-left text-[15px] font-semibold text-[#e5484d]">
-              {tr("Cancel dish")} <Ban size={18} strokeWidth={2.2} />
-            </button>
-          )}
-        </div>
+        <PeekActions
+          items={
+            line.cancelled
+              ? []
+              : [
+                  { icon: Plus, label: tr("Change quantity"), onClick: () => setQtyMode(true) },
+                  { icon: Ban, label: tr("Cancel dish"), onClick: onCancel, tone: "danger" },
+                ]
+          }
+        />
       )}
     </PeekCard>
   );
