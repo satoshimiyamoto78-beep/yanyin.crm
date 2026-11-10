@@ -26,7 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, type ReactNode, type SVGProps } from "react";
+import { useEffect, useRef, type ReactNode, type SVGProps, useLayoutEffect } from "react";
 import { haptic } from "@/lib/haptics";
 import { ui } from "@/lib/ui-strings";
 
@@ -486,9 +486,31 @@ export function Sheet({
     };
   }, [open]);
 
+  // Leaving is a fade too: just before React removes the page, a static copy of it
+  // takes its place and fades out, so every close (back, swipe, or the app closing
+  // it after an action) dissolves instead of vanishing.
+  const node = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = node.current;
+    return () => {
+      if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const ghost = el.cloneNode(true) as HTMLElement;
+      ghost.classList.remove("animate-page");
+      ghost.classList.add("page-out");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.removeAttribute("role");
+      document.body.appendChild(ghost);
+      // Keep the scroll position the page had, so the copy does not jump.
+      const from = el.querySelectorAll<HTMLElement>("[data-scroll]");
+      ghost.querySelectorAll<HTMLElement>("[data-scroll]").forEach((g, i) => (g.scrollTop = from[i]?.scrollTop ?? 0));
+      setTimeout(() => ghost.remove(), 260);
+    };
+  }, [open]);
+
   if (!open) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-label={label} className="animate-page fixed inset-0 z-50 flex flex-col bg-white text-g-ink">
+    <div ref={node} role="dialog" aria-modal="true" aria-label={label} className="animate-page fixed inset-0 z-50 flex flex-col bg-white text-g-ink">
       <div className="mx-auto flex min-h-0 w-full max-w-[480px] flex-1 flex-col">
         <header className="flex shrink-0 items-center gap-2 px-4 pt-[max(10px,env(safe-area-inset-top))] pb-1.5">
           <button onClick={onClose} aria-label="Back" className="press grid size-11 shrink-0 place-items-center rounded-full bg-g-fill">
@@ -496,7 +518,7 @@ export function Sheet({
           </button>
           {title && <span className="min-w-0 flex-1 truncate pr-11 text-center text-[16px] font-semibold">{label}</span>}
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+        <div data-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
         {footer && <div className="border-t border-g-line bg-white px-5 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
     </div>

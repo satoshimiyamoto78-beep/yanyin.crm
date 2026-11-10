@@ -153,7 +153,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
 
   return (
     <div className="min-h-dvh bg-white text-g-ink">
-      <div className="mx-auto max-w-[480px] pb-28">
+      <div key={tab} className="animate-tab mx-auto max-w-[480px] pb-28">
         {inHall && (
           <HallHead
             seg={tab as HallSeg}

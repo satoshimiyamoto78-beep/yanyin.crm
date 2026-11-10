@@ -366,12 +366,29 @@ body {
 }
 
 /* Full-screen pages slide in from the right. */
+/* Pages fade in with a small rise, and fade out the same way (see Sheet). */
 @keyframes page-in {
-  from { transform: translateX(100%); }
-  to { transform: none; }
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
 }
 .animate-page {
-  animation: page-in 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes page-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(10px) scale(0.99); }
+}
+.page-out {
+  pointer-events: none;
+  animation: page-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+}
+/* Switching between main tabs: a soft cross-fade of the content. */
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-tab {
+  animation: tab-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /*
@@ -573,7 +590,8 @@ body {
   .drink-wave,
   .drink-float,
   .drink-bubble,
-  .animate-page {
+  .animate-page,
+  .animate-tab {
     animation: none;
   }
   [data-loading="true"] .live,
@@ -594,10 +612,8 @@ body {
 
 /*
  * Edge fade for horizontal strips: the strip lives inside the page gutters
- * (like the cards below it) and items dissolve at the edges instead of being
- * cut by the screen. The mask only fades a side that has more content behind
- * it; items that cross the edge also soften and shrink a touch (scroll-driven,
- * where the browser supports it).
+ * (like the cards below it). A short, soft fade appears only on a side that
+ * has more content behind it; the content itself is never blurred.
  */
 @property --fade-l { syntax: "<length>"; inherits: false; initial-value: 0px; }
 @property --fade-r { syntax: "<length>"; inherits: false; initial-value: 0px; }
@@ -608,26 +624,8 @@ body {
   mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
   transition: --fade-l 0.3s ease, --fade-r 0.3s ease;
 }
-.edge-fade[data-more-l="true"] { --fade-l: 34px; }
-.edge-fade[data-more-r="true"] { --fade-r: 34px; }
-@supports (animation-timeline: view()) {
-  .edge-fade > * {
-    animation: edge-in linear both, edge-out linear both;
-    animation-timeline: view(inline), view(inline);
-    animation-range: entry 0% entry 100%, exit 0% exit 100%;
-  }
-}
-@keyframes edge-in {
-  from { opacity: 0.35; filter: blur(3px); transform: scale(0.94); }
-  to { opacity: 1; filter: none; transform: none; }
-}
-@keyframes edge-out {
-  from { opacity: 1; filter: none; transform: none; }
-  to { opacity: 0.35; filter: blur(3px); transform: scale(0.94); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .edge-fade > * { animation: none; }
-}
+.edge-fade[data-more-l="true"] { --fade-l: 14px; }
+.edge-fade[data-more-r="true"] { --fade-r: 14px; }
 
 /* Home edit mode (hold a block): blocks jiggle gently inside a dashed frame, the lifted one floats. */
 .edit-block {
