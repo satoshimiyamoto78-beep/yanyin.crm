@@ -114,6 +114,15 @@ export function GuestApp({ menu }: { menu: Menu }) {
   const [now, setNow] = useState(0);
   const [sheet, setSheet] = useState<SheetName>(null);
   const [dark, setDark] = useState(false);
+  // The header sky only animates while it is on screen.
+  const skyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = skyRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => el.classList.toggle("is-off", !e?.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   // The guest's choice is remembered on this phone; the menu applies it to the whole page.
   useEffect(() => {
     try {
@@ -132,25 +141,28 @@ export function GuestApp({ menu }: { menu: Menu }) {
     };
   }, [dark]);
   const toggleTheme = () => {
-    const root = document.documentElement;
-    root.classList.add("theme-fade");
-    setTimeout(() => root.classList.remove("theme-fade"), 500);
-    setDark((d) => {
-      try {
-        localStorage.setItem("yanyin:theme", d ? "light" : "dark");
-      } catch {
-        /* not saved, still switches */
-      }
-      return !d;
-    });
+    const next = !dark;
+    try {
+      localStorage.setItem("yanyin:theme", next ? "dark" : "light");
+    } catch {
+      /* not saved, still switches */
+    }
+    // One GPU cross-fade of the whole screen instead of hundreds of colour transitions.
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    const apply = () => {
+      const root = document.documentElement;
+      if (next) root.dataset.theme = "dark";
+      else delete root.dataset.theme;
+      setDark(next);
+    };
+    if (doc.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) doc.startViewTransition(apply);
+    else apply();
   };
   const [item, setItem] = useState<MenuItem | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [active, setActive] = useState(menu.categories[0]!.id);
   const [age, setAge] = useState<"unknown" | "ok" | "blocked">(
     brand.ageRestricted ? "unknown" : "ok",
   );
-  const tabsRef = useRef<HTMLDivElement>(null);
 
   // Browser-only values are read after hydration so the server render stays static.
   useEffect(() => {
@@ -170,36 +182,6 @@ export function GuestApp({ menu }: { menu: Menu }) {
     return () => clearInterval(id);
   }, [orders.length]);
 
-  // Highlight the tab of the section in view and keep it visible in the tab bar.
-  useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) => {
-        const top = entries
-          .filter((e) => e.isIntersecting)
-          .sort(
-            (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
-          )[0];
-        if (top) setActive(top.target.id.slice(4));
-      },
-      { rootMargin: "-120px 0px -65% 0px" },
-    );
-    menu.categories.forEach((c) => {
-      const el = document.getElementById(`cat-${c.id}`);
-      if (el) io.observe(el);
-    });
-    return () => io.disconnect();
-  }, [menu]);
-  useEffect(() => {
-    const bar = tabsRef.current;
-    const tab = bar?.querySelector<HTMLElement>(`[data-tab="${active}"]`);
-    // The ring keeps the current section in its centre.
-    if (bar && tab)
-      bar.scrollTo({
-        left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2,
-        behavior: "smooth",
-      });
-  }, [active]);
-  useRing(tabsRef, [menu, lang]);
 
   const flash = useCallback((n: Notice) => {
     haptic("success");
@@ -264,13 +246,56 @@ export function GuestApp({ menu }: { menu: Menu }) {
       });
   };
 
+  // The menu is the heaviest part of the page (every dish card). It is built once per
+  // language, menu and cart change, so clocks, tabs, sheets and theme changes elsewhere
+  // on the page never re-render a hundred cards.
+  const menuList = useMemo(
+    () => (
+        <main className="px-5">
+          {menu.categories.map((c) => (
+            <section key={c.id} id={`cat-${c.id}`} className="pt-8">
+              <h2 className="mb-1 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
+                {t(c.name, lang)}
+                <span className="text-[15px] font-medium tracking-normal text-g-faint">
+                  {c.items.length}
+                </span>
+              </h2>
+              <div className="divide-y divide-g-line">
+                {c.items.map((it, n) => (
+                  <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 60}>
+                    <ItemCard
+                      item={it}
+                      role={c.role}
+                      lang={lang}
+                      currency={currency}
+                      qty={qtyOf(it.id)}
+                      onOpen={() => setItem(it)}
+                      onAdd={() => quickAdd(it)}
+                      onQty={(q) => setPlainQty(it, q)}
+                    />
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+          ))}
+          <p className="pt-12 text-center text-[13px] text-g-faint">
+            {ui(lang, "serviceNote")}
+            <br />
+            {ui(lang, "poweredBy")}
+          </p>
+        </main>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- callbacks only read state that is in the deps
+    [menu, lang, currency, lines],
+  );
+
   return (
     <div className="min-h-dvh bg-g-bg text-g-ink">
       <div className="mx-auto max-w-[480px] pb-32">
         {/* Top: the banking-app pattern, same as the waiter's home. */}
         <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
           {/* Northern lights in the Nomad blue: soft ribbons of light drift over a deep blue sky. */}
-          <div className="north-sky" aria-hidden>
+          <div ref={skyRef} className="north-sky" aria-hidden>
             <span className="ns-glow ns-a" />
             <span className="ns-glow ns-b" />
             <span className="ns-glow ns-c" />
@@ -287,7 +312,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             </button>
             <button
               onClick={() => setSheet("search")}
-              className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-left text-[15px] text-white/70 backdrop-blur-md"
+              className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-left text-[15px] text-white/70"
             >
               <Search size={17} strokeWidth={2} />
               <span className="truncate">{ui(lang, "search")}</span>
@@ -295,7 +320,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             <button
               aria-label={ui(lang, "language")}
               onClick={() => setSheet("lang")}
-              className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-[13px] font-bold uppercase backdrop-blur-md"
+              className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-[13px] font-bold uppercase"
             >
               {lang}
             </button>
@@ -498,66 +523,11 @@ export function GuestApp({ menu }: { menu: Menu }) {
         </Reveal>
 
         {/* Quick actions */}
-        {/* Category tabs */}
-        <nav
-          aria-label={ui(lang, "categories")}
-          className="sticky top-0 z-30 mt-6 bg-white"
-        >
-          <div
-            ref={tabsRef}
-            className="no-scrollbar flex snap-x snap-proximity gap-1 overflow-x-auto px-[calc(50%-64px)] py-2.5 [perspective:520px]"
-          >
-            {menu.categories.map((c) => {
-              const on = c.id === active;
-              return (
-                <button
-                  key={c.id}
-                  data-tab={c.id}
-                  onClick={() => scrollTo(c.id)}
-                  aria-current={on ? "true" : undefined}
-                  className={`h-9 shrink-0 snap-center rounded-full px-4 text-[14px] font-medium whitespace-nowrap transition-colors duration-200 will-change-transform ${on ? "bg-g-ink text-white" : "text-g-muted"}`}
-                >
-                  {t(c.name, lang)}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        {/* Category tabs: own state, so following the scroll never re-renders the page. */}
+        <CategoryTabs menu={menu} lang={lang} onPick={scrollTo} />
 
         {/* Menu */}
-        <main className="px-5">
-          {menu.categories.map((c) => (
-            <section key={c.id} id={`cat-${c.id}`} className="pt-8">
-              <h2 className="mb-1 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
-                {t(c.name, lang)}
-                <span className="text-[15px] font-medium tracking-normal text-g-faint">
-                  {c.items.length}
-                </span>
-              </h2>
-              <div className="divide-y divide-g-line">
-                {c.items.map((it, n) => (
-                  <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 60}>
-                    <ItemCard
-                      item={it}
-                      role={c.role}
-                      lang={lang}
-                      currency={currency}
-                      qty={qtyOf(it.id)}
-                      onOpen={() => setItem(it)}
-                      onAdd={() => quickAdd(it)}
-                      onQty={(q) => setPlainQty(it, q)}
-                    />
-                  </Reveal>
-                ))}
-              </div>
-            </section>
-          ))}
-          <p className="pt-12 text-center text-[13px] text-g-faint">
-            {ui(lang, "serviceNote")}
-            <br />
-            {ui(lang, "poweredBy")}
-          </p>
-        </main>
+        {menuList}
       </div>
 
       {/* Floating cart */}
@@ -1124,7 +1094,7 @@ function ThemeToggle({
         haptic("tick");
         onToggle();
       }}
-      className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 backdrop-blur-md"
+      className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15"
     >
       <svg
         viewBox="0 0 24 24"
@@ -1150,5 +1120,73 @@ function ThemeToggle({
         </g>
       </svg>
     </button>
+  );
+}
+
+/**
+ * Sticky category ring. It keeps the "section in view" state to itself: while
+ * the guest scrolls, only these labels update, not the whole menu page.
+ */
+function CategoryTabs({ menu, lang, onPick }: { menu: Menu; lang: Lang; onPick: (id: string) => void }) {
+  const [active, setActive] = useState(menu.categories[0]!.id);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        let top: IntersectionObserverEntry | undefined;
+        for (const e of entries) if (e.isIntersecting && (!top || e.boundingClientRect.top < top.boundingClientRect.top)) top = e;
+        if (top) setActive(top.target.id.slice(4));
+      },
+      { rootMargin: "-120px 0px -65% 0px" },
+    );
+    menu.categories.forEach((c) => {
+      const el = document.getElementById(`cat-${c.id}`);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+  }, [menu]);
+  // The ring turns the current section to its centre once the page comes to rest:
+  // turning it during the page scroll made two animations fight for every frame.
+  const activeRef = useRef(active);
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
+  useEffect(() => {
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const follow = () => {
+      const bar = tabsRef.current;
+      const tab = bar?.querySelector<HTMLElement>(`[data-tab="${activeRef.current}"]`);
+      if (bar && tab) bar.scrollTo({ left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2, behavior: "smooth" });
+    };
+    const onScroll = () => {
+      clearTimeout(idle);
+      idle = setTimeout(follow, 140);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(idle);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+  useRing(tabsRef, [menu, lang]);
+  return (
+    <nav aria-label={ui(lang, "categories")} className="sticky top-0 z-30 mt-6 bg-white">
+      <div ref={tabsRef} className="no-scrollbar flex snap-x snap-proximity gap-1 overflow-x-auto px-[calc(50%-64px)] py-2.5">
+        {menu.categories.map((c) => {
+          const on = c.id === active;
+          return (
+            <button
+              key={c.id}
+              data-tab={c.id}
+              onClick={() => onPick(c.id)}
+              aria-current={on ? "true" : undefined}
+              className={`h-9 shrink-0 snap-center rounded-full px-4 text-[14px] font-medium whitespace-nowrap ${on ? "bg-g-ink text-white" : "text-g-muted"}`}
+            >
+              {t(c.name, lang)}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

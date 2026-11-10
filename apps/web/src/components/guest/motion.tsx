@@ -574,21 +574,36 @@ export function useRing(ref: React.RefObject<HTMLElement | null>, deps: unknown[
     let center = -1;
     let touching = false;
     let idle: ReturnType<typeof setTimeout> | undefined;
+    // Label centres are measured once (offsetLeft ignores transforms); each frame
+    // only reads scrollLeft, so scrolling never forces layout.
+    let centres: number[] = [];
+    let kids: HTMLElement[] = [];
+    const measure = () => {
+      kids = Array.from(bar.children) as HTMLElement[];
+      centres = kids.map((el) => el.offsetLeft + el.offsetWidth / 2);
+    };
+    const shown = new Map<HTMLElement, string>();
     const paint = () => {
       raf = 0;
-      const box = bar.getBoundingClientRect();
-      const mid = box.left + box.width / 2;
-      const half = box.width / 2;
+      const half = bar.clientWidth / 2;
+      const mid = bar.scrollLeft + half;
       let nearest = -1;
       let best = Infinity;
-      Array.from(bar.children).forEach((node, i) => {
-        const el = node as HTMLElement;
-        const r = el.getBoundingClientRect();
-        const off = (r.left + r.width / 2 - mid) / half; // -1 … 1 across the bar
-        const d = Math.max(-1.4, Math.min(1.4, off));
+      kids.forEach((el, i) => {
+        const off = (centres[i]! - mid) / half; // -1 … 1 across the bar
+        const d = Math.max(-1.3, Math.min(1.3, off));
         const a = Math.abs(d);
-        el.style.transform = `perspective(520px) rotateY(${(-d * 62).toFixed(2)}deg) scale(${(1 - a * 0.16).toFixed(3)})`;
-        el.style.opacity = String(Math.max(0.25, 1 - a * a * 0.6).toFixed(3));
+        // A label on a turning ring: flattened by cos(angle), pulled toward the edge, fading.
+        const angle = d * 1.05;
+        const sx = Math.max(0.35, Math.cos(angle));
+        const shift = (Math.sin(angle) * half * 0.9 - d * half * 0.9) * 0.6;
+        const tf = `translateX(${shift.toFixed(1)}px) scale(${sx.toFixed(3)}, ${(1 - a * 0.12).toFixed(3)})`;
+        const key = tf + (1 - a * a * 0.55).toFixed(2);
+        if (shown.get(el) !== key) {
+          shown.set(el, key);
+          el.style.transform = tf;
+          el.style.opacity = Math.max(0.25, 1 - a * a * 0.55).toFixed(2);
+        }
         if (Math.abs(off) < best) {
           best = Math.abs(off);
           nearest = i;
@@ -602,6 +617,10 @@ export function useRing(ref: React.RefObject<HTMLElement | null>, deps: unknown[
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(paint);
     };
+    const onResize = () => {
+      measure();
+      onScroll();
+    };
     const hold = () => {
       touching = true;
       clearTimeout(idle);
@@ -614,6 +633,7 @@ export function useRing(ref: React.RefObject<HTMLElement | null>, deps: unknown[
       hold();
       release();
     };
+    measure();
     paint();
     bar.addEventListener("scroll", onScroll, { passive: true });
     bar.addEventListener("pointerdown", hold, { passive: true });
@@ -621,7 +641,8 @@ export function useRing(ref: React.RefObject<HTMLElement | null>, deps: unknown[
     bar.addEventListener("touchend", release, { passive: true });
     bar.addEventListener("pointerup", release, { passive: true });
     bar.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", onResize);
+    document.fonts?.ready.then(onResize);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(idle);
@@ -631,7 +652,7 @@ export function useRing(ref: React.RefObject<HTMLElement | null>, deps: unknown[
       bar.removeEventListener("touchend", release);
       bar.removeEventListener("pointerup", release);
       bar.removeEventListener("wheel", onWheel);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run when the labels change
   }, deps);
@@ -646,10 +667,17 @@ export function ToTop({ bottom, label, after = 1.4 }: { bottom: string; label: s
   const [shown, setShown] = useState(false);
   useEffect(() => {
     let idle: ReturnType<typeof setTimeout> | undefined;
+    let visible = false;
+    const show = (v: boolean) => {
+      if (v !== visible) {
+        visible = v;
+        setShown(v);
+      }
+    };
     const onScroll = () => {
-      setShown(false);
+      show(false);
       clearTimeout(idle);
-      idle = setTimeout(() => setShown(window.scrollY > window.innerHeight * after), 420);
+      idle = setTimeout(() => show(window.scrollY > window.innerHeight * after), 420);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
@@ -666,7 +694,7 @@ export function ToTop({ bottom, label, after = 1.4 }: { bottom: string; label: s
         setShown(false);
         window.scrollTo({ top: 0, behavior: "smooth" });
       }}
-      className={`fixed left-1/2 z-30 flex h-11 items-center gap-1.5 rounded-full bg-white/80 pr-4 pl-3 text-[14px] font-semibold text-g-ink ring-1 ring-black/5 backdrop-blur-xl transition-[transform,opacity,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${shown ? "pointer-events-auto -translate-x-1/2 translate-y-0 scale-100 opacity-100 blur-0" : "pointer-events-none -translate-x-1/2 translate-y-6 scale-90 opacity-0 blur-[4px]"}`}
+      className={`fixed left-1/2 z-30 flex h-11 items-center gap-1.5 rounded-full bg-white/80 pr-4 pl-3 text-[14px] font-semibold text-g-ink ring-1 ring-black/5 transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${shown ? "pointer-events-auto -translate-x-1/2 translate-y-0 scale-100 opacity-100 backdrop-blur-xl" : "pointer-events-none -translate-x-1/2 translate-y-6 scale-90 opacity-0"}`}
       style={{ bottom }}
     >
       <ArrowUp size={17} strokeWidth={2.25} />
