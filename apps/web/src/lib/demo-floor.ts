@@ -8,7 +8,16 @@ export type TableStatus = "free" | "seated" | "ordered" | "bill" | "reserved";
 export type LineState = "new" | "cooking" | "served";
 
 /** `by`: who put the line on the ticket, the guest from the QR menu or the waiter. */
-export type TicketLine = { id: string; itemId: string; qty: number; price: number; state: LineState; by?: "guest" | "waiter" };
+export type TicketLine = {
+  id: string;
+  itemId: string;
+  qty: number;
+  price: number;
+  state: LineState;
+  by?: "guest" | "waiter";
+  /** Cancelled by the waiter: kept on the ticket (crossed out, not charged) with the reason. */
+  cancelled?: { reason: string; at: string; by: string };
+};
 
 export type FloorTable = {
   no: number;
@@ -116,4 +125,5 @@ export function demoFloor(menu: Menu): FloorData {
   };
 }
 
-export const ticketTotal = (lines: TicketLine[]) => lines.reduce((s, l) => s + l.price * l.qty, 0);
+/** What the table pays: cancelled lines stay on the ticket but are not charged. */
+export const ticketTotal = (lines: TicketLine[]) => lines.reduce((s, l) => s + (l.cancelled ? 0 : l.price * l.qty), 0);

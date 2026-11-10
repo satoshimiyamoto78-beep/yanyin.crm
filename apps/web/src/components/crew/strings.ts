@@ -1,5 +1,17 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Hold a dish to change it": "Зажмите блюдо, чтобы изменить",
+  "Cancelled": "Отменено",
+  "Change quantity": "Изменить количество",
+  "Cancel dish": "Отменить блюдо",
+  "Why cancel it?": "Почему отменяем?",
+  "It stays on the check crossed out and is not charged. The manager sees the reason.": "Блюдо останется в чеке зачёркнутым и не будет оплачено. Менеджер увидит причину.",
+  "Took too long": "Слишком долго",
+  "Other reason": "Своя причина",
+  "Write the reason": "Напишите причину",
+  "Keep": "Оставить",
+  "Cancelled by": "Отменил",
+  "Not charged": "Не оплачивается",
   "Total": "Итого",
   "per guest": "на гостя",
   "QR menu": "QR-меню",
@@ -383,6 +395,18 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Hold a dish to change it": "Giữ món để thay đổi",
+  "Cancelled": "Đã hủy",
+  "Change quantity": "Đổi số lượng",
+  "Cancel dish": "Hủy món",
+  "Why cancel it?": "Vì sao hủy?",
+  "It stays on the check crossed out and is not charged. The manager sees the reason.": "Món vẫn trong hóa đơn nhưng bị gạch và không tính tiền. Quản lý sẽ thấy lý do.",
+  "Took too long": "Chờ quá lâu",
+  "Other reason": "Lý do khác",
+  "Write the reason": "Nhập lý do",
+  "Keep": "Giữ lại",
+  "Cancelled by": "Người hủy",
+  "Not charged": "Không tính tiền",
   "Total": "Tổng",
   "per guest": "mỗi khách",
   "QR menu": "Menu QR",

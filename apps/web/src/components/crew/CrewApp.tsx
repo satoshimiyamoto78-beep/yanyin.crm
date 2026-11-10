@@ -4,6 +4,9 @@ import { allItems, formatMoney, t, type Menu, type MenuItem } from "@yanyin/doma
 import {
   Armchair,
   Banknote,
+  RotateCcw,
+  PenLine,
+  Ban,
   ChefHat,
   Hourglass,
   CookingPot,
@@ -167,7 +170,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     tables: tables.length,
     bills: billCount,
     openOrders: tables.filter((x) => x.lines.length).length,
-    inKitchen: tables.reduce((n, x) => n + x.lines.filter((l) => l.state !== "served").length, 0),
+    inKitchen: tables.reduce((n, x) => n + x.lines.filter((l) => l.state !== "served" && !l.cancelled).length, 0),
     bookings: todays.length,
     nextBooking: todays[0]?.time,
   };
@@ -365,10 +368,10 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             patch(table.no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === lineId ? { ...y, qty } : y)) }));
             notify({ title: `${itemById.get(l?.itemId ?? "")?.name.en ?? "Item"} · ${qty}×`, text: `Table ${table.no} · order updated` });
           }}
-          onRemoveLine={(lineId, reason) => {
+          onCancelLine={(lineId, reason) => {
             const l = table.lines.find((x) => x.id === lineId);
-            patch(table.no, (x) => ({ ...x, lines: x.lines.filter((y) => y.id !== lineId) }));
-            notify({ title: `${itemById.get(l?.itemId ?? "")?.name.en ?? "Item"} removed`, text: reason ? `Table ${table.no} · ${reason}` : `Table ${table.no}`, tone: "orange" });
+            patch(table.no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === lineId ? { ...y, cancelled: { reason, at: now(), by: floor.waiter } } : y)) }));
+            notify({ title: `${itemById.get(l?.itemId ?? "")?.name.en ?? "Item"} cancelled`, text: `Table ${table.no} · ${reason}`, tone: "orange" });
           }}
           onCheck={() => {
             if (table.status !== "bill") notify({ title: `Check opened · Table ${table.no}`, text: "Show the QR or take payment" });
@@ -515,7 +518,7 @@ export type TableActions = {
 };
 
 function tableState(x: FloorTable) {
-  const cooking = x.lines.filter((l) => l.state !== "served").length;
+  const cooking = x.lines.filter((l) => l.state !== "served" && !l.cancelled).length;
   if (x.status === "bill") return { text: "Bill asked", dot: "bg-white" };
   if (x.status === "seated") return { text: "Waiting to order", dot: "bg-[#8fb2ff]" };
   if (cooking) return { text: `${cooking} cooking`, dot: "bg-g-orange" };
@@ -730,7 +733,7 @@ function TablePage({
   onTakeOrder,
   onCheck,
   onEditLine,
-  onRemoveLine,
+  onCancelLine,
 }: {
   table: FloorTable;
   itemById: Map<string, MenuItem>;
@@ -741,11 +744,14 @@ function TablePage({
   onTakeOrder: () => void;
   onCheck: () => void;
   onEditLine: (lineId: string, qty: number) => void;
-  onRemoveLine: (lineId: string, reason?: string) => void;
+  onCancelLine: (lineId: string, reason: string) => void;
 }) {
   const tr = useTr();
   const [guests, setGuests] = useState(Math.min(2, table.seats));
-  const [editing, setEditing] = useState<string | null>(null);
+  // Hold a dish for its menu; cancelling asks for a reason; a cancelled dish shows why.
+  const [menu, setMenu] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  const [why, setWhy] = useState<string | null>(null);
   const total = ticketTotal(table.lines);
   const empty = table.status === "free" || table.status === "reserved";
   return (
@@ -837,7 +843,7 @@ function TablePage({
           </section>
         ) : (
           <section className="mt-8">
-            <StepHead title={tr("Order")} aside={table.lines.length ? tr("Tap a dish to edit") : undefined} />
+            <StepHead title={tr("Order")} aside={table.lines.length ? tr("Hold a dish to change it") : undefined} />
             {table.lines.length ? (
               <div className="grid gap-5">
                 {(
@@ -854,35 +860,16 @@ function TablePage({
                         <Icon size={13} strokeWidth={2.4} className="text-g-blue" /> {label}
                       </p>
                       <div className="mt-1 divide-y divide-g-line">
-                        {ls.map((l) => {
-                          const it = itemById.get(l.itemId);
-                          return (
-                            <div key={l.id} className="flex items-center gap-3 py-3">
-                              <button
-                                onClick={() => {
-                                  haptic("light");
-                                  setEditing(l.id);
-                                }}
-                                className="press flex min-w-0 flex-1 items-center gap-3 text-left"
-                              >
-                                <span className="w-7 shrink-0 text-[15px] font-semibold text-g-muted tabular-nums">{l.qty}×</span>
-                                <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-[15px] font-medium">{it ? t(it.name, "en") : l.itemId}</span>
-                                  <span className="text-[13px] text-g-muted tabular-nums">{money(l.price * l.qty)}</span>
-                                </span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  haptic("light");
-                                  onAdvance(l.id);
-                                }}
-                                className={`${LINE[l.state].chip} press h-8 shrink-0 rounded-full px-3 text-[12px] font-semibold`}
-                              >
-                                {tr(LINE[l.state].label)}
-                              </button>
-                            </div>
-                          );
-                        })}
+                        {ls.map((l) => (
+                          <OrderLineRow
+                            key={l.id}
+                            line={l}
+                            name={itemById.get(l.itemId) ? t(itemById.get(l.itemId)!.name, "en") : l.itemId}
+                            money={money}
+                            onHold={() => setMenu(l.id)}
+                            onStatus={() => (l.cancelled ? setWhy(l.id) : onAdvance(l.id))}
+                          />
+                        ))}
                       </div>
                     </div>
                   );
@@ -897,12 +884,45 @@ function TablePage({
           </section>
         )}
       </div>
-      {editing &&
-        (() => {
-          const l = table.lines.find((x) => x.id === editing);
-          if (!l) return null;
-          return <LineEditor line={l} name={itemById.get(l.itemId)?.name.en ?? ""} money={money} onClose={() => setEditing(null)} onSave={(q) => { onEditLine(l.id, q); setEditing(null); }} onRemove={(r) => { onRemoveLine(l.id, r); setEditing(null); }} />;
-        })()}
+      {(() => {
+        const name = (id: string) => itemById.get(table.lines.find((x) => x.id === id)?.itemId ?? "")?.name.en ?? "";
+        const m = table.lines.find((x) => x.id === menu);
+        const c = table.lines.find((x) => x.id === cancelling);
+        const w = table.lines.find((x) => x.id === why);
+        return (
+          <>
+            {m && (
+              <LineMenu
+                line={m}
+                name={name(m.id)}
+                money={money}
+                onClose={() => setMenu(null)}
+                onQty={(q) => {
+                  onEditLine(m.id, q);
+                  setMenu(null);
+                }}
+                onCancel={() => {
+                  setMenu(null);
+                  setCancelling(m.id);
+                }}
+              />
+            )}
+            {c && (
+              <CancelSheet
+                line={c}
+                name={name(c.id)}
+                money={money}
+                onClose={() => setCancelling(null)}
+                onConfirm={(r) => {
+                  onCancelLine(c.id, r);
+                  setCancelling(null);
+                }}
+              />
+            )}
+            {w?.cancelled && <CancelInfo line={w} name={name(w.id)} money={money} onClose={() => setWhy(null)} />}
+          </>
+        );
+      })()}
     </Sheet>
   );
 }
@@ -1164,10 +1184,10 @@ export function Receipt({
       <div className="my-4 border-t border-dashed border-g-faint/60" />
       <div className="grid gap-2.5">
         {lines.map((l) => (
-          <div key={l.id} className="flex items-baseline gap-2 text-[15px]">
+          <div key={l.id} className={`flex items-baseline gap-2 text-[15px] ${l.cancelled ? "text-g-faint line-through" : ""}`}>
             <span className="w-6 shrink-0 text-g-muted tabular-nums">{l.qty}×</span>
             <span className="min-w-0 flex-1 truncate">{t(itemById.get(l.itemId)?.name ?? { en: l.itemId }, "en")}</span>
-            <span className="shrink-0 tabular-nums">{money(l.price * l.qty)}</span>
+            <span className="shrink-0 tabular-nums">{l.cancelled ? money(0) : money(l.price * l.qty)}</span>
           </div>
         ))}
       </div>
@@ -1383,7 +1403,7 @@ function OrdersView({
   const tr = useTr();
   const [view, setView] = useState<"open" | "closed">("open");
   const open = tables.filter((x) => x.lines.length);
-  const dishes = (st: LineState) => open.reduce((n, x) => n + x.lines.filter((l) => l.state === st).reduce((q, l) => q + l.qty, 0), 0);
+  const dishes = (st: LineState) => open.reduce((n, x) => n + x.lines.filter((l) => l.state === st && !l.cancelled).reduce((q, l) => q + l.qty, 0), 0);
   const billTables = open.filter((x) => x.status === "bill").sort((a, b) => (a.since ?? "").localeCompare(b.since ?? ""));
   const [pickBill, setPickBill] = useState(false);
   // How long a table has been seated, against the demo clock (12:45).
@@ -1493,7 +1513,7 @@ function OrdersView({
               </h2>
               <Reveal className="mt-1 divide-y divide-g-line">
                 {list.map((x) => {
-                  const cooking = x.lines.filter((l) => l.state !== "served").length;
+                  const cooking = x.lines.filter((l) => l.state !== "served" && !l.cancelled).length;
                   return (
                     <button key={x.no} onClick={() => onOpenTable(x.no)} className="press flex w-full gap-3.5 py-4 text-left">
                       <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
@@ -1694,85 +1714,178 @@ function seatedFor(since?: string) {
   return d >= 60 ? `${Math.floor(d / 60)}h ${String(d % 60).padStart(2, "0")}m` : `${d}m`;
 }
 
-/**
- * Edit one line of the order: change the quantity or remove it. A dish that is
- * already cooking or served can only be removed with a reason (the kitchen and
- * the manager see it).
- */
-function LineEditor({ line, name, money, onClose, onSave, onRemove }: { line: TicketLine; name: string; money: (n: number) => string; onClose: () => void; onSave: (qty: number) => void; onRemove: (reason?: string) => void }) {
+
+/** One dish on the table's ticket. Hold it for its menu; tap the status to move it on, or to see why it was cancelled. */
+function OrderLineRow({ line: l, name, money, onHold, onStatus }: { line: TicketLine; name: string; money: (n: number) => string; onHold: () => void; onStatus: () => void }) {
   const tr = useTr();
+  const press = useLongPress(onHold);
+  const off = Boolean(l.cancelled);
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div {...press} style={{ WebkitTouchCallout: "none" }} className={`flex min-w-0 flex-1 items-center gap-3 select-none ${off ? "opacity-55" : ""}`}>
+        <span className="w-7 shrink-0 text-[15px] font-semibold text-g-muted tabular-nums">{l.qty}×</span>
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate text-[15px] font-medium ${off ? "line-through decoration-g-faint" : ""}`}>{name}</span>
+          <span className={`text-[13px] text-g-muted tabular-nums ${off ? "line-through" : ""}`}>{money(l.price * l.qty)}</span>
+        </span>
+      </div>
+      <button
+        onClick={() => {
+          haptic("light");
+          onStatus();
+        }}
+        className={`press h-8 shrink-0 rounded-full px-3 text-[12px] font-semibold ${off ? "chip-red" : LINE[l.state].chip}`}
+      >
+        {off ? tr("Cancelled") : tr(LINE[l.state].label)}
+      </button>
+    </div>
+  );
+}
+
+/** The dish's own header card, shared by its menu, the cancel sheet and the cancel info. */
+function DishHead({ line, name, money }: { line: TicketLine; name: string; money: (n: number) => string }) {
+  const tr = useTr();
+  return (
+    <div className="flex items-center gap-3">
+      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-g-fill text-[16px] font-semibold tabular-nums">{line.qty}×</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[18px] leading-tight font-bold tracking-[-0.01em]">{name}</span>
+        <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-g-muted">
+          {line.by === "guest" ? <QrCode size={12} strokeWidth={2.4} /> : <UserRound size={12} strokeWidth={2.4} />}
+          {line.by === "guest" ? tr("Guest · QR menu") : tr("Added by the waiter")} · {money(line.price * line.qty)}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** iOS-style context menu for a held dish: the dish on top, its actions in a list below. */
+function LineMenu({ line, name, money, onClose, onQty, onCancel }: { line: TicketLine; name: string; money: (n: number) => string; onClose: () => void; onQty: (q: number) => void; onCancel: () => void }) {
+  const tr = useTr();
+  const [qtyMode, setQtyMode] = useState(false);
   const [qty, setQty] = useState(line.qty);
-  const [reason, setReason] = useState<string | null>(null);
-  const [removing, setRemoving] = useState(false);
-  const started = line.state !== "new";
   return (
     <PeekCard label={name} onClose={onClose}>
-      <p className="text-[12px] font-semibold tracking-[0.04em] text-g-muted uppercase">{line.by === "guest" ? tr("Guest · QR menu") : tr("Added by the waiter")}</p>
-      <p className="mt-1 text-[22px] leading-tight font-bold tracking-[-0.02em]">{name}</p>
-      <p className="mt-1 text-[14px] text-g-muted tabular-nums">
-        {money(line.price)} · {tr(LINE[line.state].label)}
-      </p>
-      {!removing ? (
-        <>
-          <div className="mt-5 flex items-center justify-between rounded-[20px] bg-g-fill p-3">
-            <span className="text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{qty}</span>
+      <DishHead line={line} name={name} money={money} />
+      {qtyMode ? (
+        <div className="mt-4">
+          <div className="flex items-center justify-between rounded-[18px] bg-g-fill p-3">
+            <span className="text-[34px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{qty}</span>
             <Counter value={qty} min={1} max={20} onChange={setQty} />
           </div>
-          <p className="mt-2 text-right text-[14px] font-semibold tabular-nums">{money(line.price * qty)}</p>
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => {
-                haptic("light");
-                if (started) setRemoving(true);
-                else onRemove();
-              }}
-              className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold text-[#e5484d]"
-            >
-              {tr("Remove")}
-            </button>
-            <button
-              disabled={qty === line.qty}
-              onClick={() => {
-                haptic("success");
-                onSave(qty);
-              }}
-              className="blue-grad press h-12 flex-[1.4] rounded-full text-[15px] font-semibold disabled:opacity-40"
-            >
-              {tr("Save")}
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="mt-5 text-[15px] font-semibold">{tr("Why remove it?")}</p>
-          <p className="mt-0.5 text-[13px] text-g-muted">{tr("It is already in the kitchen; the manager will see the reason.")}</p>
-          <div className="mt-3 grid gap-2">
-            {["Guest changed their mind", "Wrong order", "Problem in the kitchen"].map((r) => (
-              <button
-                key={r}
-                onClick={() => {
-                  haptic("tick");
-                  setReason(r);
-                }}
-                aria-pressed={reason === r}
-                className={`press h-11 rounded-full text-[14px] font-semibold ${reason === r ? "bg-g-blue-soft text-g-blue ring-2 ring-g-blue" : "bg-g-fill"}`}
-              >
-                {tr(r)}
-              </button>
-            ))}
-          </div>
-          <button
-            disabled={!reason}
-            onClick={() => {
-              haptic("success");
-              onRemove(reason ?? undefined);
-            }}
-            className="press mt-4 h-12 w-full rounded-full bg-[#e5484d] text-[15px] font-semibold text-white disabled:opacity-40"
-          >
-            {tr("Remove from the order")}
+          <button disabled={qty === line.qty} onClick={() => onQty(qty)} className="blue-grad press mt-3 h-12 w-full rounded-full text-[15px] font-semibold tabular-nums disabled:opacity-40">
+            {tr("Save")} · {money(line.price * qty)}
           </button>
-        </>
+        </div>
+      ) : (
+        <div className="mt-4 divide-y divide-g-line overflow-hidden rounded-[18px] bg-g-fill">
+          {!line.cancelled && (
+            <button onClick={() => setQtyMode(true)} className="press flex h-13 w-full items-center justify-between px-4 py-3.5 text-left text-[15px] font-semibold">
+              {tr("Change quantity")} <Plus size={18} strokeWidth={2.2} className="text-g-muted" />
+            </button>
+          )}
+          {!line.cancelled && (
+            <button onClick={onCancel} className="press flex w-full items-center justify-between px-4 py-3.5 text-left text-[15px] font-semibold text-[#e5484d]">
+              {tr("Cancel dish")} <Ban size={18} strokeWidth={2.2} />
+            </button>
+          )}
+        </div>
       )}
+    </PeekCard>
+  );
+}
+
+const CANCEL_REASONS: { id: string; icon: LucideIcon }[] = [
+  { id: "Guest changed their mind", icon: UserRound },
+  { id: "Wrong order", icon: RotateCcw },
+  { id: "Problem in the kitchen", icon: ChefHat },
+  { id: "Took too long", icon: Clock },
+];
+
+/** Cancel a dish: pick a reason or write one. The dish stays on the check, crossed out and not charged. */
+function CancelSheet({ line, name, money, onClose, onConfirm }: { line: TicketLine; name: string; money: (n: number) => string; onClose: () => void; onConfirm: (reason: string) => void }) {
+  const tr = useTr();
+  const [pick, setPick] = useState<string | null>(null);
+  const [own, setOwn] = useState("");
+  const reason = pick === "other" ? own.trim() : pick ? tr(pick) : "";
+  return (
+    <PeekCard label={tr("Cancel dish")} onClose={onClose}>
+      <DishHead line={line} name={name} money={money} />
+      <p className="mt-4 text-[17px] font-bold">{tr("Why cancel it?")}</p>
+      <p className="mt-0.5 text-[13px] leading-snug text-g-muted">{tr("It stays on the check crossed out and is not charged. The manager sees the reason.")}</p>
+      <div className="mt-3 divide-y divide-g-line overflow-hidden rounded-[18px] bg-g-fill">
+        {[...CANCEL_REASONS, { id: "other", icon: PenLine }].map((r) => (
+          <button
+            key={r.id}
+            onClick={() => {
+              haptic("tick");
+              setPick(r.id);
+            }}
+            aria-pressed={pick === r.id}
+            className="press flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-medium"
+          >
+            <r.icon size={17} strokeWidth={2.2} className="shrink-0 text-g-muted" />
+            <span className="flex-1">{r.id === "other" ? tr("Other reason") : tr(r.id)}</span>
+            <span className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${pick === r.id ? "border-g-blue bg-g-blue" : "border-g-fill-2"}`}>
+              {pick === r.id && <span className="size-2 rounded-full bg-[#fff]" />}
+            </span>
+          </button>
+        ))}
+      </div>
+      {pick === "other" && (
+        <textarea
+          autoFocus
+          value={own}
+          onChange={(e) => setOwn(e.target.value)}
+          rows={2}
+          placeholder={tr("Write the reason")}
+          className="mt-2 w-full resize-none rounded-[16px] bg-g-fill px-4 py-3 text-[15px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/30"
+        />
+      )}
+      <div className="mt-4 flex gap-2">
+        <button onClick={onClose} className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold">
+          {tr("Keep")}
+        </button>
+        <button
+          disabled={!reason}
+          onClick={() => {
+            haptic("success");
+            onConfirm(reason);
+          }}
+          className="press h-12 flex-[1.4] rounded-full bg-[#e5484d] text-[15px] font-semibold text-white disabled:opacity-40"
+        >
+          {tr("Cancel dish")}
+        </button>
+      </div>
+    </PeekCard>
+  );
+}
+
+/** Why a dish was cancelled: who, when, the reason and what was not charged. */
+function CancelInfo({ line, name, money, onClose }: { line: TicketLine; name: string; money: (n: number) => string; onClose: () => void }) {
+  const tr = useTr();
+  const c = line.cancelled!;
+  return (
+    <PeekCard label={tr("Cancelled")} onClose={onClose}>
+      <span className="chip-red inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold">
+        <Ban size={13} strokeWidth={2.4} /> {tr("Cancelled")}
+      </span>
+      <div className="mt-3">
+        <DishHead line={line} name={name} money={money} />
+      </div>
+      <p className="mt-4 rounded-[18px] bg-g-fill px-4 py-3 text-[15px] leading-snug">“{c.reason}”</p>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+        <div className="rounded-[16px] bg-g-fill p-3">
+          <p className="text-g-muted">{tr("Cancelled by")}</p>
+          <p className="font-semibold">
+            {c.by} · {c.at}
+          </p>
+        </div>
+        <div className="rounded-[16px] bg-g-fill p-3">
+          <p className="text-g-muted">{tr("Not charged")}</p>
+          <p className="font-semibold tabular-nums">−{money(line.price * line.qty)}</p>
+        </div>
+      </div>
     </PeekCard>
   );
 }

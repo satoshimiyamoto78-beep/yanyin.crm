@@ -21,6 +21,7 @@ import type { VenueBrand } from "@/lib/visual";
 import Image from "next/image";
 import qrcode from "qrcode-generator";
 import { haptic } from "@/lib/haptics";
+import { SlideToConfirm } from "@/components/system/SlideToConfirm";
 import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview, drinkColor, drinkName } from "./builders";
 
 const tint = (c: string, a: number) => {
@@ -434,20 +435,18 @@ export function CartSheet({
       onClose={onClose}
       label={ui(lang, "yourOrder")}
       footer={
-        <button
+        // Sending to the kitchen is a deliberate act: slide the knob across.
+        <SlideToConfirm
           disabled={!lines.length}
-          onClick={() => {
+          label={ui(lang, "slideToSend")}
+          aside={formatMoney(total, currency, lang)}
+          icon={Send}
+          onConfirm={() => {
             onSend(note);
             setNotes([]);
             setText("");
           }}
-          className={`press flex h-14 w-full items-center justify-between rounded-full px-6 text-[16px] font-semibold ${lines.length ? "blue-grad" : "bg-g-fill-2 text-g-faint"}`}
-        >
-          <span className="flex items-center gap-2">
-            <Send size={18} strokeWidth={2} /> {ui(lang, "sendOrder")}
-          </span>
-          <span className="tabular-nums">{formatMoney(total, currency, lang)}</span>
-        </button>
+        />
       }
     >
       <div className="px-5 pt-8 pb-4">
