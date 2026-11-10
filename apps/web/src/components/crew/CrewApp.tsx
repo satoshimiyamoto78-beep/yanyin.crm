@@ -7,6 +7,7 @@ import {
   ChefHat,
   ChevronLeft,
   ChevronRight,
+  BriefcaseBusiness,
   CalendarPlus,
   Clock,
   CreditCard,
@@ -36,6 +37,7 @@ import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
 import { BookingsArt, OrdersArt, TablesArt } from "./Illustrations";
+import { CabinetView, pastOrders } from "./Cabinet";
 import { FlowWidget, HeroStat, IconStat, LineWidget, MeterWidget, RingWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
@@ -45,7 +47,7 @@ import { InboxPage, kindOf, seedInbox, type InboxItem } from "./Inbox";
 import { BadgesPage } from "./Collections";
 import { levelFromXp } from "@yanyin/domain";
 
-type Tab = "me" | "hall" | "tables" | "orders" | "bookings";
+type Tab = "me" | "hall" | "tables" | "orders" | "bookings" | "cabinet";
 type HallSeg = "tables" | "orders" | "bookings";
 
 /** Demo running totals (million ₫) by hour; the backend will supply real ones. */
@@ -102,9 +104,12 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     setInbox(seedInbox(Date.now()));
   }, []);
   const unread = inbox.filter((i) => !i.read).length;
+  const [cabBadges, setCabBadges] = useState(false);
   const [tables, setTables] = useState(floor.tables);
   const [bookings, setBookings] = useState(floor.bookings);
   const [history, setHistory] = useState(floor.history);
+  // The full order history: today's closed orders plus earlier shifts (demo until the backend).
+  const past = useMemo(() => pastOrders(history), [history]);
   const [open, setOpen] = useState<number | null>(null);
   const [page, setPage] = useState<"picker" | "check" | "pay" | null>(null);
   const [receipt, setReceipt] = useState<ClosedOrder | null>(null);
@@ -132,7 +137,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   useEffect(() => {
     markShown("tab:me", JSON.stringify([floor.history.length])); // the first screen already played its load
   }, [floor.history.length]);
-  const inHall = tab !== "me";
+  const inHall = tab !== "me" && tab !== "cabinet";
   const go = (t: Tab) => {
     haptic("tick");
     setTab(t);
@@ -218,7 +223,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             }}
           />
         )}
-        {tab === "orders" && <OrdersView tables={tables} history={history} money={money} itemById={itemById} onOpenTable={setOpen} onReceipt={setReceipt} />}
+        {tab === "orders" && <OrdersView tables={tables} history={history} money={money} itemById={itemById} onOpenTable={setOpen} onReceipt={setReceipt} onHistory={() => go("cabinet")} />}
         {tab === "bookings" && (
           <BookingsView
             bookings={bookings}
@@ -228,6 +233,17 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               if (b.table) patch(b.table, (x) => ({ ...x, status: "seated", guests: b.guests, since: now(), booking: undefined }));
               notify({ title: `${b.name.split(" ")[0]} is seated`, text: b.table ? `Table ${b.table} · ${b.guests} guests` : `${b.guests} guests` });
             }}
+          />
+        )}
+        {tab === "cabinet" && (
+          <CabinetView
+            data={data}
+            history={past}
+            itemById={itemById}
+            money={money}
+            onReceipt={setReceipt}
+            onBadges={() => setCabBadges(true)}
+            onQuests={() => go("me")}
           />
         )}
         {tab === "me" && (
@@ -252,19 +268,20 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       {/* Tab bar: a floating capsule (Home, Hall) and a separate round scan button, iOS 26 style. */}
       <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-[440px] items-center gap-2.5">
-          <div className="relative grid h-[64px] flex-1 grid-cols-2 rounded-full bg-white/95 p-1.5 ring-1 ring-black/5 backdrop-blur-xl">
+          <div className="relative grid h-[64px] flex-1 grid-cols-3 rounded-full bg-white/95 p-1.5 ring-1 ring-black/5 backdrop-blur-xl">
             <span
               aria-hidden
               className="absolute top-1.5 bottom-1.5 left-1.5 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{ width: "calc((100% - 12px) / 2)", transform: `translateX(${inHall ? 100 : 0}%)` }}
+              style={{ width: "calc((100% - 12px) / 3)", transform: `translateX(${(tab === "me" ? 0 : tab === "cabinet" ? 2 : 1) * 100}%)` }}
             />
             {(
               [
                 ["me", tr("Home"), House, 0],
                 ["hall", tr("Hall"), LayoutGrid, billCount],
+                ["cabinet", tr("Cabinet"), BriefcaseBusiness, 0],
               ] as const
             ).map(([id, label, Icon, badge], i) => {
-              const on = i === 0 ? !inHall : inHall;
+              const on = i === 0 ? tab === "me" : i === 1 ? inHall : tab === "cabinet";
               return (
                 <button
                   key={label}
@@ -310,6 +327,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         />
       )}
       {profile === "badges" && <BadgesPage badges={data.badges} onClose={() => setProfile("profile")} />}
+      {cabBadges && <BadgesPage badges={data.badges} onClose={() => setCabBadges(false)} />}
       {inboxOpen && <InboxPage items={inbox} onClose={() => setInboxOpen(false)} onReadAll={() => setInbox((xs) => xs.map((i) => ({ ...i, read: true })))} />}
 
       <Island notice={notice} />
@@ -1276,6 +1294,7 @@ function OrdersView({
   itemById,
   onOpenTable,
   onReceipt,
+  onHistory,
 }: {
   tables: FloorTable[];
   history: ClosedOrder[];
@@ -1283,6 +1302,7 @@ function OrdersView({
   itemById: Map<string, MenuItem>;
   onOpenTable: (no: number) => void;
   onReceipt: (o: ClosedOrder) => void;
+  onHistory?: () => void;
 }) {
   const tr = useTr();
   const [view, setView] = useState<"open" | "closed">("open");
@@ -1356,7 +1376,7 @@ function OrdersView({
         {(
           [
             ["open", `Open · ${open.length}`],
-            ["closed", `Closed · ${history.length}`],
+            ["closed", `${tr("Closed today")} · ${history.length}`],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -1432,6 +1452,11 @@ function OrdersView({
               </button>
             );
           })}
+          {onHistory && (
+            <button onClick={onHistory} className="press flex w-full items-center justify-between py-4 text-left text-[15px] font-semibold text-g-blue">
+              {tr("All order history in the Cabinet")} <ChevronRight size={18} strokeWidth={2.4} />
+            </button>
+          )}
         </Reveal>
       )}
       {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">No open orders</p>}
