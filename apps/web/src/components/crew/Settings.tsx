@@ -1,31 +1,53 @@
 "use client";
 
-import { Bell, Camera, ChevronRight, Coffee, Globe, HelpCircle, Lock, LogOut, Moon, Plus, Printer, ScanFace, Smartphone, Trophy, Type, UserRound, Volume2, type LucideIcon } from "lucide-react";
+import {
+  Armchair,
+  BadgeCheck,
+  Bell,
+  BellRing,
+  CalendarCheck,
+  CalendarPlus,
+  Camera,
+  Check,
+  ChefHat,
+  ChevronRight,
+  Coffee,
+  CreditCard,
+  DoorOpen,
+  Info,
+  Languages,
+  LifeBuoy,
+  Lock,
+  MapPin,
+  Moon,
+  Plus,
+  Printer,
+  QrCode,
+  ReceiptText,
+  ScanFace,
+  Smartphone,
+  Trophy,
+  Type,
+  UserRound,
+  UtensilsCrossed,
+  Vibrate,
+  Volume2,
+  type LucideIcon,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
 import { BADGE_ICON } from "./CrewBoard";
+import { CREW_LANGS, usePrefs, type CrewLang, type NotifyPrefs } from "./prefs";
 
-type Prefs = {
-  newOrders: boolean;
-  kitchenReady: boolean;
-  bills: boolean;
-  bookings: boolean;
-  sound: boolean;
-  vibration: boolean;
-  onBreak: boolean;
-  pin: boolean;
-  faceId: boolean;
-};
-
-const LANGS = ["English", "Русский", "Tiếng Việt"];
-
-/** Waiter settings, laid out like a native settings screen: grouped rows, switches, values. */
 export type Me = { first: string; last: string; phone: string; email: string; photo?: string; role: string };
+
+type Sub = "notifications" | "printer" | "language" | null;
 
 /**
  * The waiter's profile, opened from the avatar: a big round photo, name and role,
- * the level with earned badges, then personal info and every setting.
+ * the level with earned badges, then settings grouped by what they are about.
+ * Notifications, printer and language open their own pages.
  */
 export function ProfilePage({
   me,
@@ -48,163 +70,319 @@ export function ProfilePage({
   dark: boolean;
   onTheme: () => void;
 }) {
-  const [p, setP] = useState<Prefs>({ newOrders: true, kitchenReady: true, bills: true, bookings: false, sound: true, vibration: true, onBreak: false, pin: true, faceId: false });
-  const [lang, setLang] = useState(0);
-  const [zone, setZone] = useState<"Hall" | "Terrace">("Hall");
-  const [text, setText] = useState<"Default" | "Large">("Default");
-  const flip = (k: keyof Prefs, label: string) => {
-    const v = !p[k];
-    setP((x) => ({ ...x, [k]: v }));
-    onNotify(`${label} ${v ? "on" : "off"}`);
-  };
+  const { prefs, set, tr } = usePrefs();
+  const [sub, setSub] = useState<Sub>(null);
+  const on = Object.entries(prefs.notify).filter(([k, v]) => v && k !== "sound" && k !== "vibration").length;
+  const total = Object.keys(prefs.notify).length - 2;
+  const printer = PRINTERS.find((x) => x.id === prefs.printer.id) ?? PRINTERS[0]!;
   return (
-    <Sheet open onClose={onClose} label="Profile">
-    <div className="px-5 pb-6">
-      <div className="flex flex-col items-center pt-2 text-center">
-        <button onClick={onPersonal} aria-label="Edit photo and personal info" className="press relative">
-          <Avatar me={me} size={104} />
-          <span className="blue-grad absolute right-0 bottom-0 grid size-8 place-items-center rounded-full ring-4 ring-white">
-            <Camera size={15} strokeWidth={2.2} />
-          </span>
+    <Sheet open onClose={onClose} label={tr("Profile")}>
+      <div className="px-5 pb-6">
+        <div className="flex flex-col items-center pt-2 text-center">
+          <button onClick={onPersonal} aria-label={tr("Edit photo and personal info")} className="press relative">
+            <Avatar me={me} size={104} />
+            <span className="blue-grad absolute right-0 bottom-0 grid size-8 place-items-center rounded-full ring-4 ring-white">
+              <Camera size={15} strokeWidth={2.2} />
+            </span>
+          </button>
+          <p className="mt-4 text-[24px] leading-tight font-bold tracking-[-0.02em]">
+            {me.first} {me.last}
+          </p>
+          <p className="mt-1 text-[15px] text-g-muted">{tr(me.role)}</p>
+        </div>
+
+        {/* Level and earned badges; the plus opens every badge. */}
+        <section className="mt-6 rounded-[24px] bg-g-fill p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-[16px] font-semibold">
+              {tr("Level")} {level.level} <span className="font-medium text-g-muted">· {tr(level.title)}</span>
+            </p>
+            <p className="text-[13px] text-g-muted tabular-nums">
+              {level.xpIntoLevel} / {level.xpForNext} XP
+            </p>
+          </div>
+          <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-g-fill-2">
+            <div className="bar-grad h-full rounded-full" style={{ width: `${Math.round((level.xpIntoLevel / level.xpForNext) * 100)}%` }} />
+          </div>
+          <div className="mt-4 flex items-center gap-2">
+            {badges
+              .filter((b) => b.earned)
+              .map((b) => {
+                const Icon = BADGE_ICON[b.id] ?? Trophy;
+                return (
+                  <span key={b.id} title={b.name} className="blue-grad grid size-10 place-items-center rounded-full">
+                    <Icon size={18} strokeWidth={1.9} />
+                  </span>
+                );
+              })}
+            <button
+              onClick={() => {
+                haptic("light");
+                onAllBadges();
+              }}
+              aria-label={tr("All badges")}
+              className="press grid size-10 place-items-center rounded-full border-[1.5px] border-dashed border-g-faint text-g-muted"
+            >
+              <Plus size={18} strokeWidth={2.2} />
+            </button>
+          </div>
+        </section>
+
+        <Group title={tr("Account")}>
+          <Row icon={UserRound} label={tr("Personal info")} hint={`${me.phone} · ${me.email}`} onClick={onPersonal}>
+            <ChevronRight size={18} className="text-g-faint" />
+          </Row>
+          <Row icon={Languages} label={tr("Language")} onClick={() => setSub("language")}>
+            <span className="flex items-center gap-1 text-[15px] text-g-muted">
+              {CREW_LANGS[prefs.lang]} <ChevronRight size={18} className="text-g-faint" />
+            </span>
+          </Row>
+        </Group>
+
+        <Group title={tr("Shift")}>
+          <Row icon={Coffee} label={tr("On break")} hint={prefs.onBreak ? tr("Guests see “back in 10 min”") : tr("Tables can call you")}>
+            <Switch
+              on={prefs.onBreak}
+              onChange={() => {
+                set({ onBreak: !prefs.onBreak });
+                onNotify(prefs.onBreak ? tr("Break over") : tr("Break started"));
+              }}
+              label={tr("On break")}
+            />
+          </Row>
+          <Row icon={MapPin} label={tr("My zone")} hint={tr("Your tables come first")}>
+            <Segmented
+              value={prefs.zone}
+              options={["Hall", "Terrace"]}
+              render={(v) => tr(v)}
+              onChange={(v) => {
+                set({ zone: v });
+                onNotify(tr("Zone"), tr(v));
+              }}
+            />
+          </Row>
+          <Row icon={DoorOpen} label={tr("End shift")} hint={tr("Started 10:00 · 4 tables closed")}>
+            <button
+              onClick={() => {
+                haptic("light");
+                onNotify(tr("Shift report sent"), tr("Your manager gets today's totals and tips"));
+              }}
+              className="press h-9 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white"
+            >
+              {tr("End")}
+            </button>
+          </Row>
+        </Group>
+
+        <Group title={tr("Notifications")}>
+          <Row icon={BellRing} label={tr("Notifications")} hint={`${on} ${tr("of")} ${total} ${tr("on")} · ${prefs.notify.sound ? tr("sound") : tr("silent")}`} onClick={() => setSub("notifications")}>
+            <ChevronRight size={18} className="text-g-faint" />
+          </Row>
+        </Group>
+
+        <Group title={tr("Appearance")}>
+          <Row icon={Moon} label={tr("Dark theme")} hint={tr("Same choice as the guest menu on this phone")}>
+            <Switch on={dark} onChange={onTheme} label={tr("Dark theme")} />
+          </Row>
+          <Row icon={Type} label={tr("Text size")}>
+            <Segmented
+              value={prefs.text}
+              options={["default", "large"]}
+              render={(v) => (v === "default" ? tr("Default") : tr("Large"))}
+              onChange={(v) => set({ text: v })}
+            />
+          </Row>
+        </Group>
+
+        <Group title={tr("Devices")}>
+          <Row icon={Printer} label={tr("Check printer")} hint={`${printer.name} · ${tr(printer.place)}`} onClick={() => setSub("printer")}>
+            <span className="flex items-center gap-2">
+              <span className="chip-green inline-flex h-7 items-center rounded-full px-3 text-[12px] font-semibold">{tr("Connected")}</span>
+              <ChevronRight size={18} className="text-g-faint" />
+            </span>
+          </Row>
+        </Group>
+
+        <Group title={tr("Security")}>
+          <Row icon={Lock} label={tr("PIN on open")}>
+            <Switch on={prefs.pin} onChange={() => set({ pin: !prefs.pin })} label={tr("PIN on open")} />
+          </Row>
+          <Row icon={ScanFace} label="Face ID">
+            <Switch on={prefs.faceId} onChange={() => set({ faceId: !prefs.faceId })} label="Face ID" />
+          </Row>
+        </Group>
+
+        <Group title={tr("About")}>
+          <Row icon={LifeBuoy} label={tr("Help and support")} onClick={() => onNotify(tr("Support"), tr("Write to us in Zalo or Telegram"))}>
+            <ChevronRight size={18} className="text-g-faint" />
+          </Row>
+          <Row icon={Info} label={tr("App version")}>
+            <span className="text-[15px] text-g-muted">yanyin crew 0.8 · demo</span>
+          </Row>
+        </Group>
+
+        <button onClick={() => onNotify(tr("Signed out"), tr("Demo: nothing changed"))} className="press mt-8 h-14 w-full rounded-full bg-g-fill text-[16px] font-semibold text-[#e5484d]">
+          {tr("Sign out")}
         </button>
-        <p className="mt-4 text-[24px] leading-tight font-bold tracking-[-0.02em]">
-          {me.first} {me.last}
-        </p>
-        <p className="mt-1 text-[15px] text-g-muted">{me.role}</p>
+        <p className="mt-6 mb-4 text-center text-[12px] text-g-faint">{tr("Settings save on this phone and sync with your account later.")}</p>
       </div>
 
-      {/* Level and earned badges; the plus opens every badge. */}
-      <section className="mt-6 rounded-[24px] bg-g-fill p-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-[16px] font-semibold">
-            Level {level.level} <span className="font-medium text-g-muted">· {level.title}</span>
-          </p>
-          <p className="text-[13px] text-g-muted tabular-nums">
-            {level.xpIntoLevel} / {level.xpForNext} XP
-          </p>
+      {sub === "notifications" && <NotificationSettings onClose={() => setSub(null)} />}
+      {sub === "printer" && <PrinterPage onClose={() => setSub(null)} onNotify={onNotify} />}
+      {sub === "language" && <LanguagePage onClose={() => setSub(null)} />}
+    </Sheet>
+  );
+}
+
+/** Notification settings by category, each with its own icon; sound and vibration last. */
+function NotificationSettings({ onClose }: { onClose: () => void }) {
+  const { prefs, set, tr } = usePrefs();
+  const n = prefs.notify;
+  const flip = (k: keyof NotifyPrefs) => set({ notify: { ...n, [k]: !n[k] } });
+  const groups: { title: string; rows: { k: keyof NotifyPrefs; icon: LucideIcon; label: string; hint: string; chip: string }[] }[] = [
+    {
+      title: tr("Orders"),
+      rows: [
+        { k: "qrOrders", icon: QrCode, label: tr("Orders from the QR menu"), hint: tr("Guests ordered at the table"), chip: "chip-blue" },
+        { k: "newOrders", icon: UtensilsCrossed, label: tr("New orders on my tables"), hint: tr("Any new item on your tables"), chip: "chip-blue" },
+      ],
+    },
+    { title: tr("Kitchen"), rows: [{ k: "kitchenReady", icon: ChefHat, label: tr("Dish is ready"), hint: tr("Pick it up at the pass"), chip: "chip-green" }] },
+    {
+      title: tr("Bills and calls"),
+      rows: [
+        { k: "bills", icon: ReceiptText, label: tr("Bill requests"), hint: tr("A table asked for the check"), chip: "chip-orange" },
+        { k: "calls", icon: Bell, label: tr("Waiter calls"), hint: tr("A guest pressed “Waiter”"), chip: "chip-orange" },
+        { k: "payments", icon: CreditCard, label: tr("Payments"), hint: tr("Paid by QR or card"), chip: "chip-green" },
+      ],
+    },
+    {
+      title: tr("Bookings"),
+      rows: [
+        { k: "bookings", icon: CalendarPlus, label: tr("New bookings"), hint: tr("Someone booked a table"), chip: "chip-purple" },
+        { k: "arrivals", icon: CalendarCheck, label: tr("Guest arrived"), hint: tr("A booked guest is at the door"), chip: "chip-purple" },
+      ],
+    },
+    { title: tr("Team"), rows: [{ k: "quests", icon: BadgeCheck, label: tr("Quests and badges"), hint: tr("New quests, rewards, levels"), chip: "chip-blue" }] },
+  ];
+  return (
+    <Sheet open onClose={onClose} label={tr("Notifications")}>
+      <div className="px-5 pb-10">
+        {groups.map((g) => (
+          <Group key={g.title} title={g.title}>
+            {g.rows.map((r) => (
+              <Row key={r.k} icon={r.icon} chip={r.chip} label={r.label} hint={r.hint}>
+                <Switch on={n[r.k]} onChange={() => flip(r.k)} label={r.label} />
+              </Row>
+            ))}
+          </Group>
+        ))}
+        <Group title={tr("How they arrive")}>
+          <Row icon={Volume2} label={tr("Sound")} hint={tr("A short chime")}>
+            <Switch on={n.sound} onChange={() => flip("sound")} label={tr("Sound")} />
+          </Row>
+          <Row icon={Vibrate} label={tr("Vibration")} hint={tr("Feel it in your pocket")}>
+            <Switch on={n.vibration} onChange={() => flip("vibration")} label={tr("Vibration")} />
+          </Row>
+        </Group>
+      </div>
+    </Sheet>
+  );
+}
+
+const PRINTERS = [
+  { id: "hall", name: "Sunmi V2", place: "Hall", kind: "Bluetooth" },
+  { id: "bar", name: "Xprinter XP-58", place: "Bar", kind: "Wi-Fi" },
+  { id: "kitchen", name: "Epson TM-T20", place: "Kitchen", kind: "Wi-Fi" },
+];
+
+/** The check printer: status, test print, which printer, and how checks print. */
+function PrinterPage({ onClose, onNotify }: { onClose: () => void; onNotify: (title: string, text?: string) => void }) {
+  const { prefs, set, tr } = usePrefs();
+  const pr = prefs.printer;
+  const cur = PRINTERS.find((x) => x.id === pr.id) ?? PRINTERS[0]!;
+  return (
+    <Sheet open onClose={onClose} label={tr("Check printer")}>
+      <div className="px-5 pb-10">
+        <section className="flex items-center gap-4 rounded-[24px] bg-g-fill p-4">
+          <span className="blue-grad grid size-14 shrink-0 place-items-center rounded-full">
+            <Printer size={24} strokeWidth={1.9} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[18px] font-semibold">{cur.name}</span>
+            <span className="block text-[14px] text-g-muted">
+              {tr(cur.place)} · {cur.kind} · {tr("paper OK")}
+            </span>
+          </span>
+          <span className="chip-green inline-flex h-7 items-center rounded-full px-3 text-[12px] font-semibold">{tr("Online")}</span>
+        </section>
+        <button
+          onClick={() => {
+            haptic("success");
+            onNotify(tr("Test page sent"), `${cur.name} · ${tr(cur.place)}`);
+          }}
+          className="press mt-3 h-12 w-full rounded-full bg-g-ink text-[15px] font-semibold text-white"
+        >
+          {tr("Print a test page")}
+        </button>
+
+        <Group title={tr("Printers nearby")}>
+          {PRINTERS.map((x) => (
+            <Row
+              key={x.id}
+              icon={Printer}
+              label={x.name}
+              hint={`${tr(x.place)} · ${x.kind}`}
+              onClick={() => {
+                haptic("tick");
+                set({ printer: { ...pr, id: x.id } });
+                onNotify(tr("Printer connected"), `${x.name} · ${tr(x.place)}`);
+              }}
+            >
+              {x.id === pr.id ? <Check size={20} strokeWidth={2.5} className="text-g-blue" /> : <span className="text-[14px] font-semibold text-g-blue">{tr("Connect")}</span>}
+            </Row>
+          ))}
+        </Group>
+
+        <Group title={tr("Checks")}>
+          <Row icon={ReceiptText} label={tr("Print the check automatically")} hint={tr("When a table asks for the bill")}>
+            <Switch on={pr.autoPrint} onChange={() => set({ printer: { ...pr, autoPrint: !pr.autoPrint } })} label={tr("Print the check automatically")} />
+          </Row>
+          <Row icon={Armchair} label={tr("Copies")}>
+            <Segmented value={String(pr.copies) as "1" | "2"} options={["1", "2"]} onChange={(v) => set({ printer: { ...pr, copies: Number(v) as 1 | 2 } })} />
+          </Row>
+          <Row icon={Smartphone} label={tr("Paper width")}>
+            <Segmented value={String(pr.width) as "58" | "80"} options={["58", "80"]} render={(v) => `${v} mm`} onChange={(v) => set({ printer: { ...pr, width: Number(v) as 58 | 80 } })} />
+          </Row>
+        </Group>
+      </div>
+    </Sheet>
+  );
+}
+
+/** Interface language for the waiter app. */
+function LanguagePage({ onClose }: { onClose: () => void }) {
+  const { prefs, set, tr } = usePrefs();
+  return (
+    <Sheet open onClose={onClose} label={tr("Language")}>
+      <div className="px-5 pb-10">
+        <div className="divide-y divide-g-line">
+          {(Object.keys(CREW_LANGS) as CrewLang[]).map((l) => (
+            <button
+              key={l}
+              onClick={() => {
+                haptic("tick");
+                set({ lang: l });
+              }}
+              className="press flex h-16 w-full items-center gap-3 text-left"
+            >
+              <span className="flex-1 text-[17px] font-semibold">{CREW_LANGS[l]}</span>
+              {prefs.lang === l && <Check size={22} strokeWidth={2.5} className="text-g-blue" />}
+            </button>
+          ))}
         </div>
-        <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-g-fill-2">
-          <div className="bar-grad h-full rounded-full" style={{ width: `${Math.round((level.xpIntoLevel / level.xpForNext) * 100)}%` }} />
-        </div>
-        <div className="mt-4 flex items-center gap-2">
-          {badges
-            .filter((b) => b.earned)
-            .map((b) => {
-              const Icon = BADGE_ICON[b.id] ?? Trophy;
-              return (
-                <span key={b.id} title={b.name} className="blue-grad grid size-10 place-items-center rounded-full">
-                  <Icon size={18} strokeWidth={1.9} />
-                </span>
-              );
-            })}
-          <button
-            onClick={() => {
-              haptic("light");
-              onAllBadges();
-            }}
-            aria-label="All badges"
-            className="press grid size-10 place-items-center rounded-full border-[1.5px] border-dashed border-g-faint text-g-muted"
-          >
-            <Plus size={18} strokeWidth={2.2} />
-          </button>
-        </div>
-      </section>
-
-      <Group title="Account">
-        <Row icon={UserRound} label="Personal info" hint={`${me.phone} · ${me.email}`} onClick={onPersonal}>
-          <ChevronRight size={18} className="text-g-faint" />
-        </Row>
-      </Group>
-
-      <Group title="Shift">
-        <Row icon={Coffee} label="On break" hint={p.onBreak ? "Guests see “back in 10 min”" : "Tables can call you"}>
-          <Switch on={p.onBreak} onChange={() => flip("onBreak", "Break")} label="On break" />
-        </Row>
-        <Row icon={LogOut} label="End shift" hint="Started 10:00 · 4 tables closed">
-          <button
-            onClick={() => {
-              haptic("light");
-              onNotify("Shift report sent", "Your manager gets today's totals and tips");
-            }}
-            className="press h-9 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white"
-          >
-            End
-          </button>
-        </Row>
-      </Group>
-
-      <Group title="Notifications">
-        <Row icon={Bell} label="New orders from tables">
-          <Switch on={p.newOrders} onChange={() => flip("newOrders", "New order alerts")} label="New orders" />
-        </Row>
-        <Row icon={Bell} label="Dish ready in the kitchen">
-          <Switch on={p.kitchenReady} onChange={() => flip("kitchenReady", "Kitchen alerts")} label="Kitchen ready" />
-        </Row>
-        <Row icon={Bell} label="Bill and waiter calls">
-          <Switch on={p.bills} onChange={() => flip("bills", "Call alerts")} label="Bill and calls" />
-        </Row>
-        <Row icon={Bell} label="New bookings">
-          <Switch on={p.bookings} onChange={() => flip("bookings", "Booking alerts")} label="New bookings" />
-        </Row>
-        <Row icon={Volume2} label="Sound">
-          <Switch on={p.sound} onChange={() => flip("sound", "Sound")} label="Sound" />
-        </Row>
-        <Row icon={Smartphone} label="Vibration">
-          <Switch on={p.vibration} onChange={() => flip("vibration", "Vibration")} label="Vibration" />
-        </Row>
-      </Group>
-
-      <Group title="Work">
-        <Row icon={Globe} label="Language">
-          <button
-            onClick={() => {
-              haptic("tick");
-              const n = (lang + 1) % LANGS.length;
-              setLang(n);
-              onNotify("Language", LANGS[n]);
-            }}
-            className="press flex items-center gap-1 text-[15px] text-g-muted"
-          >
-            {LANGS[lang]} <ChevronRight size={18} className="text-g-faint" />
-          </button>
-        </Row>
-        <Row icon={Moon} label="Dark theme" hint="Same choice as the guest menu on this phone">
-          <Switch on={dark} onChange={onTheme} label="Dark theme" />
-        </Row>
-        <Row icon={Type} label="Text size">
-          <Segmented value={text} options={["Default", "Large"]} onChange={(v) => { setText(v); onNotify("Text size", v); }} />
-        </Row>
-        <Row icon={Globe} label="My zone">
-          <Segmented value={zone} options={["Hall", "Terrace"]} onChange={(v) => { setZone(v); onNotify("Zone", `${v} tables come first`); }} />
-        </Row>
-        <Row icon={Printer} label="Check printer" hint="Sunmi V2 · Hall">
-          <span className="chip-green inline-flex h-7 items-center rounded-full px-3 text-[12px] font-semibold">Connected</span>
-        </Row>
-      </Group>
-
-      <Group title="Security">
-        <Row icon={Lock} label="PIN on open">
-          <Switch on={p.pin} onChange={() => flip("pin", "PIN lock")} label="PIN on open" />
-        </Row>
-        <Row icon={ScanFace} label="Face ID">
-          <Switch on={p.faceId} onChange={() => flip("faceId", "Face ID")} label="Face ID" />
-        </Row>
-      </Group>
-
-      <Group title="About">
-        <Row icon={HelpCircle} label="Help and support" onClick={() => onNotify("Support", "Write to us in Zalo or Telegram")}>
-          <ChevronRight size={18} className="text-g-faint" />
-        </Row>
-        <Row icon={Smartphone} label="App version">
-          <span className="text-[15px] text-g-muted">yanyin crew 0.7 · demo</span>
-        </Row>
-      </Group>
-
-      <button onClick={() => onNotify("Signed out", "Demo: nothing changed")} className="press mt-8 h-14 w-full rounded-full bg-g-fill text-[16px] font-semibold text-[#e5484d]">
-        Sign out
-      </button>
-      <p className="mt-6 mb-4 text-center text-[12px] text-g-faint">Settings save on this phone and sync with your account later.</p>
-    </div>
+        <p className="mt-4 text-[13px] text-g-muted">{tr("Menu items keep the language the venue wrote them in.")}</p>
+      </div>
     </Sheet>
   );
 }
@@ -218,10 +396,10 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ icon: Icon, label, hint, children, onClick }: { icon: LucideIcon; label: string; hint?: string; children: ReactNode; onClick?: () => void }) {
+function Row({ icon: Icon, label, hint, children, onClick, chip = "chip-blue" }: { icon: LucideIcon; label: string; hint?: string; children: ReactNode; onClick?: () => void; chip?: string }) {
   const body = (
     <>
-      <span className="chip-blue grid size-9 shrink-0 place-items-center rounded-full">
+      <span className={`${chip} grid size-9 shrink-0 place-items-center rounded-full`}>
         <Icon size={18} strokeWidth={1.9} />
       </span>
       <span className="min-w-0 flex-1">
@@ -258,7 +436,7 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: () => v
   );
 }
 
-function Segmented<T extends string>({ value, options, onChange }: { value: T; options: T[]; onChange: (v: T) => void }) {
+function Segmented<T extends string>({ value, options, onChange, render = (v) => v }: { value: T; options: T[]; onChange: (v: T) => void; render?: (v: T) => string }) {
   return (
     <div className="flex rounded-full bg-g-fill p-0.5">
       {options.map((o) => (
@@ -271,7 +449,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
           aria-pressed={value === o}
           className={`h-8 rounded-full px-3 text-[13px] font-semibold ${value === o ? "bg-g-ink text-white" : "text-g-muted"}`}
         >
-          {o}
+          {render(o)}
         </button>
       ))}
     </div>

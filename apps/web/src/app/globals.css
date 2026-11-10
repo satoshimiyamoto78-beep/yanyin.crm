@@ -122,69 +122,17 @@ body {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(120% 90% at 85% 0%, #8fb0ff 0%, transparent 60%),
-    linear-gradient(165deg, #5b8aff 0%, #3f6fff 40%, #3355e6 72%, #2f4fd6 100%);
+  background: #3c68f5;
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, rgba(0, 0, 0, 0.82) 64%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0.2) 88%, transparent 100%);
   mask-image: linear-gradient(180deg, #000 0%, #000 55%, rgba(0, 0, 0, 0.82) 64%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0.2) 88%, transparent 100%);
   contain: strict;
 }
-/*
- * Performance: every layer is a soft gradient that only moves with transform,
- * so the GPU composites it without repainting. No filter blur, blend modes or
- * backdrop blur over the moving sky; the animation pauses when the header
- * scrolls out of view (.is-off).
- */
-.ns-glow,
-.ns-ribbon {
-  position: absolute;
-  border-radius: 50%;
-  will-change: transform;
-  backface-visibility: hidden;
+/* The tiny canvas is stretched smoothly: that stretch is the blur. */
+.north-sky canvas {
+  display: block;
+  image-rendering: auto;
 }
-.north-sky.is-off .ns-glow,
-.north-sky.is-off .ns-ribbon {
-  animation-play-state: paused;
-}
-.ns-a {
-  width: 75%; height: 60%; left: -20%; top: -15%;
-  background: radial-gradient(closest-side, rgba(170, 200, 255, 0.95), transparent);
-  animation: ns-a 8s ease-in-out infinite alternate;
-}
-.ns-b {
-  width: 70%; height: 70%; right: -25%; top: 20%;
-  background: radial-gradient(closest-side, rgba(47, 80, 220, 0.85), transparent);
-  animation: ns-b 10s ease-in-out infinite alternate;
-}
-.ns-c {
-  width: 60%; height: 50%; left: 25%; bottom: 0%;
-  background: radial-gradient(closest-side, rgba(190, 215, 255, 0.75), transparent);
-  animation: ns-c 7s ease-in-out infinite alternate;
-}
-.ns-ribbon {
-  width: 150%; height: 40%; left: -25%;
-  background: radial-gradient(closest-side, transparent 58%, rgba(230, 238, 255, 0.18) 66%, rgba(236, 242, 255, 0.5) 72%, rgba(230, 238, 255, 0.18) 78%, transparent 86%);
-}
-.ns-r1 { top: 4%; transform: rotate(-12deg); animation: ns-r1 9s ease-in-out infinite alternate; }
-.ns-r2 { top: 32%; opacity: 0.65; transform: rotate(8deg); animation: ns-r2 12s ease-in-out infinite alternate; }
-@keyframes ns-a { to { transform: translate(35%, 20%) scale(1.15); } }
-@keyframes ns-b { to { transform: translate(-30%, -25%) scale(0.9); } }
-@keyframes ns-c { to { transform: translate(-40%, -15%) scale(1.2); } }
-@keyframes ns-r1 {
-  0% { transform: translate(-6%, 0) rotate(-12deg) scaleY(1); }
-  50% { transform: translate(4%, 6%) rotate(-6deg) scaleY(1.3); }
-  100% { transform: translate(8%, -4%) rotate(-16deg) scaleY(0.9); }
-}
-@keyframes ns-r2 {
-  from { transform: translate(6%, 0) rotate(8deg) scaleY(0.9); }
-  to { transform: translate(-8%, -8%) rotate(2deg) scaleY(1.25); }
-}
-/* Night: the same sky, a shade deeper. */
-[data-scheme="dark"] .north-sky {
-  background:
-    radial-gradient(120% 90% at 85% 0%, #5b7fff 0%, transparent 60%),
-    linear-gradient(165deg, #2f5bff 0%, #2442d6 40%, #1d2fb8 72%, #172596 100%);
-}
+[data-scheme="dark"] .north-sky { background: #2240cc; }
 
 /* Theme switch: the sun's rays fold away and a shadow slides in to carve the moon. */
 .theme-ico * {
@@ -617,8 +565,6 @@ body {
   .spin-ring::before,
   .aurora::before,
   .aurora::after,
-  .ns-glow,
-  .ns-ribbon,
   .wheel-idle,
   .yan-orb::before,
   .yan-eye,
@@ -644,4 +590,64 @@ body {
   .animate-pop {
     animation: none;
   }
+}
+
+/*
+ * Edge fade for horizontal strips: the strip lives inside the page gutters
+ * (like the cards below it) and items dissolve at the edges instead of being
+ * cut by the screen. The mask only fades a side that has more content behind
+ * it; items that cross the edge also soften and shrink a touch (scroll-driven,
+ * where the browser supports it).
+ */
+@property --fade-l { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --fade-r { syntax: "<length>"; inherits: false; initial-value: 0px; }
+.edge-fade {
+  --fade-l: 0px;
+  --fade-r: 0px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+  transition: --fade-l 0.3s ease, --fade-r 0.3s ease;
+}
+.edge-fade[data-more-l="true"] { --fade-l: 34px; }
+.edge-fade[data-more-r="true"] { --fade-r: 34px; }
+@supports (animation-timeline: view()) {
+  .edge-fade > * {
+    animation: edge-in linear both, edge-out linear both;
+    animation-timeline: view(inline), view(inline);
+    animation-range: entry 0% entry 100%, exit 0% exit 100%;
+  }
+}
+@keyframes edge-in {
+  from { opacity: 0.35; filter: blur(3px); transform: scale(0.94); }
+  to { opacity: 1; filter: none; transform: none; }
+}
+@keyframes edge-out {
+  from { opacity: 1; filter: none; transform: none; }
+  to { opacity: 0.35; filter: blur(3px); transform: scale(0.94); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .edge-fade > * { animation: none; }
+}
+
+/* Home edit mode (hold a block): blocks jiggle gently inside a dashed frame, the lifted one floats. */
+.edit-block {
+  position: relative;
+  border-radius: 30px;
+  outline: 1.5px dashed var(--g-fill-2);
+  outline-offset: 6px;
+  margin: 10px 0;
+  animation: jiggle 0.36s ease-in-out infinite alternate;
+}
+.edit-block.is-dragging {
+  animation: none;
+  outline-color: var(--g-blue);
+  box-shadow: 0 18px 40px -18px rgba(20, 30, 80, 0.35);
+}
+.edit-block:nth-child(2n) { animation-delay: -0.18s; }
+@keyframes jiggle {
+  from { transform: rotate(-0.35deg); }
+  to { transform: rotate(0.35deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .edit-block { animation: none; }
 }

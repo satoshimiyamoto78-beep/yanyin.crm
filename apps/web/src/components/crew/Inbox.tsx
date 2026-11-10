@@ -4,6 +4,7 @@ import { Bell, CalendarDays, ChefHat, Megaphone, ReceiptText, Sparkles, Trophy, 
 import { useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
+import { useTr } from "./prefs";
 
 export type InboxKind = "orders" | "kitchen" | "bills" | "bookings" | "team";
 export type InboxItem = { id: string; kind: InboxKind; title: string; text?: string; at: number; read: boolean };
@@ -44,16 +45,17 @@ const NEWS = [
   { id: "n3", icon: Sparkles, from: "yanyin", title: "Dark theme and a new home", text: "Switch the theme from the header, and customize your main screen at the bottom of Home.", when: "Mon" },
 ];
 
-const timeOf = (at: number, now: number) => {
+const timeOf = (at: number, now: number, tr: (s: string) => string) => {
   const d = Math.round((now - at) / MIN);
-  if (d < 1) return "now";
-  if (d < 60) return `${d} min`;
+  if (d < 1) return tr("now");
+  if (d < 60) return `${d} ${tr("min")}`;
   return new Date(at).toTimeString().slice(0, 5);
 };
 const dayOf = (at: number, now: number) => (new Date(at).toDateString() === new Date(now).toDateString() ? "Today" : "Earlier");
 
 /** Notifications (live history, filterable) and news from the venue and yanyin. */
 export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; onClose: () => void; onReadAll: () => void }) {
+  const tr = useTr();
   const [tab, setTab] = useState<"notifications" | "news">("notifications");
   const [filter, setFilter] = useState<InboxKind | "all">("all");
   // Read once on open: the clock for "5 min ago" labels.
@@ -68,12 +70,12 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
         onReadAll();
         onClose();
       }}
-      label="Notifications"
+      label={tr("Notifications")}
       title={false}
     >
       <div className="px-5 pt-1 pb-10">
         <div className="flex items-end justify-between gap-3">
-          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">Notifications</h2>
+          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Notifications")}</h2>
           {unread > 0 && (
             <button
               onClick={() => {
@@ -82,7 +84,7 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
               }}
               className="press pb-1 text-[15px] font-semibold text-g-blue"
             >
-              Mark all read
+              {tr("Mark all read")}
             </button>
           )}
         </div>
@@ -90,8 +92,8 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
         <div className="mt-5 flex rounded-full bg-g-fill p-1">
           {(
             [
-              ["notifications", `Notifications${unread ? ` · ${unread}` : ""}`],
-              ["news", "News"],
+              ["notifications", `${tr("Notifications")}${unread ? ` · ${unread}` : ""}`],
+              ["news", tr("News")],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -121,14 +123,14 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
                   aria-pressed={filter === k}
                   className={`press h-9 shrink-0 rounded-full px-4 text-[14px] font-semibold ${filter === k ? "bg-g-ink text-white" : "bg-g-fill text-g-ink-2"}`}
                 >
-                  {k === "all" ? "All" : KIND[k].label}
+                  {k === "all" ? tr("All") : tr(KIND[k].label)}
                 </button>
               ))}
             </div>
 
             {groups.map(([g, l]) => (
               <section key={g} className="mt-6">
-                <h3 className="text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{g}</h3>
+                <h3 className="text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{tr(g)}</h3>
                 <ul className="mt-1 divide-y divide-g-line">
                   {l.map((i) => {
                     const k = KIND[i.kind];
@@ -139,10 +141,10 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-baseline justify-between gap-3">
-                            <span className={`truncate text-[15px] ${i.read ? "font-medium" : "font-semibold"}`}>{i.title}</span>
-                            <span className="shrink-0 text-[12px] text-g-muted tabular-nums">{timeOf(i.at, now)}</span>
+                            <span className={`truncate text-[15px] ${i.read ? "font-medium" : "font-semibold"}`}>{tr(i.title)}</span>
+                            <span className="shrink-0 text-[12px] text-g-muted tabular-nums">{timeOf(i.at, now, tr)}</span>
                           </span>
-                          {i.text && <span className="mt-0.5 block text-[13px] leading-snug text-g-muted">{i.text}</span>}
+                          {i.text && <span className="mt-0.5 block text-[13px] leading-snug text-g-muted">{tr(i.text)}</span>}
                         </span>
                         {!i.read && <span aria-label="New" className="mt-2 size-2 shrink-0 rounded-full bg-g-blue" />}
                       </li>
@@ -156,8 +158,8 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
                 <span className="mx-auto grid size-16 place-items-center rounded-full bg-g-fill text-g-faint">
                   <Bell size={26} strokeWidth={1.7} />
                 </span>
-                <p className="mt-4 text-[17px] font-semibold">Nothing here yet</p>
-                <p className="mt-1 text-[14px] text-g-muted">{filter === "all" ? "New orders, bills and kitchen calls will show up here." : `No ${KIND[filter].label.toLowerCase()} notifications yet.`}</p>
+                <p className="mt-4 text-[17px] font-semibold">{tr("Nothing here yet")}</p>
+                <p className="mt-1 text-[14px] text-g-muted">{filter === "all" ? tr("New orders, bills and kitchen calls will show up here.") : tr("Nothing in this category yet.")}</p>
               </div>
             )}
           </>
@@ -169,11 +171,11 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
                   <span className="blue-grad grid size-8 shrink-0 place-items-center rounded-full">
                     <n.icon size={15} strokeWidth={2} />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-g-ink-2">{n.from}</span>
-                  <span className="text-[12px] text-g-muted">{n.when}</span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-g-ink-2">{tr(n.from)}</span>
+                  <span className="text-[12px] text-g-muted">{tr(n.when)}</span>
                 </div>
-                <p className="mt-3 text-[17px] leading-snug font-semibold">{n.title}</p>
-                <p className="mt-1 text-[14px] leading-snug text-g-muted">{n.text}</p>
+                <p className="mt-3 text-[17px] leading-snug font-semibold">{tr(n.title)}</p>
+                <p className="mt-1 text-[14px] leading-snug text-g-muted">{tr(n.text)}</p>
               </article>
             ))}
           </div>

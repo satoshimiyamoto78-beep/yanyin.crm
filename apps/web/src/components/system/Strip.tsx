@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { useEdges } from "./useEdges";
 import { haptic } from "@/lib/haptics";
 
 /*
@@ -10,8 +11,15 @@ import { haptic } from "@/lib/haptics";
  * everywhere, so both apps read as one product.
  */
 
+/** Lives inside the page gutters like the cards below; items dissolve at the edges. */
 export function Strip({ children }: { children: ReactNode }) {
-  return <div className="no-scrollbar mt-7 grid grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">{children}</div>;
+  const ref = useRef<HTMLDivElement>(null);
+  useEdges(ref);
+  return (
+    <div ref={ref} className="no-scrollbar edge-fade mx-5 mt-7 grid grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto [grid-auto-columns:max-content]">
+      {children}
+    </div>
+  );
 }
 
 const tap = (fn: () => void) => () => {

@@ -1,9 +1,11 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, GripVertical } from "lucide-react";
 import { useEffect, useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
+import { DragList } from "./DragList";
+import { useTr } from "./prefs";
 
 /** Blocks of the waiter's home screen below the header. Order and visibility are the waiter's choice. */
 export type HomeBlock = "tips" | "streak" | "goal" | "quests" | "board" | "badges" | "week";
@@ -50,52 +52,49 @@ export function useHomeLayout(): [HomeLayout, (l: HomeLayout) => void] {
 
 /** Customize the main screen: show or hide each block and move it up or down. */
 export function CustomizePage({ layout, onChange, onClose }: { layout: HomeLayout; onChange: (l: HomeLayout) => void; onClose: () => void }) {
-  const move = (i: number, d: -1 | 1) => {
-    const j = i + d;
-    if (j < 0 || j >= layout.length) return;
-    haptic("tick");
-    const next = [...layout];
-    [next[i], next[j]] = [next[j]!, next[i]!];
-    onChange(next);
-  };
+  const tr = useTr();
   return (
     <Sheet
       open
       onClose={onClose}
-      label="Main screen"
+      label={tr("Main screen")}
       footer={
         <button onClick={onClose} className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold">
-          Done
+          {tr("Done")}
         </button>
       }
     >
       <div className="px-5 pt-1 pb-8">
-        <p className="text-[15px] leading-snug text-g-muted">Choose what your home shows and in which order. The header with tips and quick actions always stays on top.</p>
-        <ul className="mt-5 divide-y divide-g-line">
-          {layout.map((b, i) => (
-            <li key={b.id} className={`flex items-center gap-3 py-3.5 transition-opacity ${b.on ? "" : "opacity-50"}`}>
+        <p className="text-[15px] leading-snug text-g-muted">{tr("Choose what your home shows and drag blocks into your order. Tip: you can also hold any block on Home to edit it right there.")}</p>
+        <DragList
+          className="mt-5"
+          items={layout}
+          onReorder={onChange}
+          render={(b, { dragging }) => (
+            <div className={`flex items-center gap-3 border-b border-g-line py-3.5 transition-[opacity,background-color] ${b.on ? "" : "opacity-50"} ${dragging ? "rounded-[18px] bg-g-fill" : "bg-white"}`}>
               <button
-                aria-label={b.on ? `Hide ${HOME_BLOCKS[b.id].label}` : `Show ${HOME_BLOCKS[b.id].label}`}
-                onClick={() => onChange(layout.map((x) => (x.id === b.id ? { ...x, on: !x.on } : x)))}
+                data-nodrag
+                aria-label={b.on ? `${tr("Hide")} ${tr(HOME_BLOCKS[b.id].label)}` : `${tr("Show")} ${tr(HOME_BLOCKS[b.id].label)}`}
+                onClick={() => {
+                  haptic("tick");
+                  onChange(layout.map((x) => (x.id === b.id ? { ...x, on: !x.on } : x)));
+                }}
                 className={`press grid size-10 shrink-0 place-items-center rounded-full ${b.on ? "chip-blue" : "bg-g-fill text-g-faint"}`}
               >
                 {b.on ? <Eye size={18} strokeWidth={2} /> : <EyeOff size={18} strokeWidth={2} />}
               </button>
               <span className="min-w-0 flex-1">
-                <span className="block text-[16px] font-semibold">{HOME_BLOCKS[b.id].label}</span>
-                <span className="block truncate text-[13px] text-g-muted">{HOME_BLOCKS[b.id].hint}</span>
+                <span className="block text-[16px] font-semibold">{tr(HOME_BLOCKS[b.id].label)}</span>
+                <span className="block truncate text-[13px] text-g-muted">{tr(HOME_BLOCKS[b.id].hint)}</span>
               </span>
-              <button aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)} className="press grid size-9 place-items-center rounded-full bg-g-fill disabled:opacity-30">
-                <ArrowUp size={16} strokeWidth={2.2} />
-              </button>
-              <button aria-label="Move down" disabled={i === layout.length - 1} onClick={() => move(i, 1)} className="press grid size-9 place-items-center rounded-full bg-g-fill disabled:opacity-30">
-                <ArrowDown size={16} strokeWidth={2.2} />
-              </button>
-            </li>
-          ))}
-        </ul>
+              <span data-grip aria-label={tr("Drag to move")} className="grid size-10 shrink-0 cursor-grab touch-none place-items-center text-g-faint">
+                <GripVertical size={20} strokeWidth={2} />
+              </span>
+            </div>
+          )}
+        />
         <button onClick={() => onChange(DEFAULT)} className="press mt-4 text-[15px] font-semibold text-g-blue">
-          Reset to default
+          {tr("Reset to default")}
         </button>
       </div>
     </Sheet>

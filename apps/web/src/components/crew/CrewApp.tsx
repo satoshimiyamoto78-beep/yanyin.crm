@@ -6,6 +6,7 @@ import {
   Banknote,
   CalendarDays,
   ChefHat,
+  CalendarPlus,
   Clock,
   CreditCard,
   House,
@@ -31,6 +32,7 @@ import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
+import { CrewPrefsProvider, useTr } from "./prefs";
 import { Scanner } from "./Scanner";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
 import { InboxPage, kindOf, seedInbox, type InboxItem } from "./Inbox";
@@ -38,6 +40,7 @@ import { BadgesPage } from "./Collections";
 import { levelFromXp } from "@yanyin/domain";
 
 type Tab = "me" | "tables" | "orders" | "bookings";
+type HallSeg = Exclude<Tab, "me">;
 
 const STATUS: Record<FloorTable["status"], { label: string; chip: string }> = {
   free: { label: "Free", chip: "chip-gray" },
@@ -65,8 +68,19 @@ type Notice = IslandNotice;
  * orders, bookings and the waiter's own quest page. Every secondary screen is a
  * full-screen page (table, take order, check, payment, new booking).
  */
-export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorData; menu: Menu }) {
+export function CrewApp(props: { data: CrewData; floor: FloorData; menu: Menu }) {
+  return (
+    <CrewPrefsProvider>
+      <CrewAppInner {...props} />
+    </CrewPrefsProvider>
+  );
+}
+
+function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData; menu: Menu }) {
   const [tab, setTab] = useState<Tab>("me");
+  // Hall remembers which of its sections was open last.
+  const [hallSeg, setHallSeg] = useState<HallSeg>("tables");
+  const tr = useTr();
   // The same light/dark choice as the guest menu: one system, one preference.
   const scheme = useScheme();
   // Profile (from the avatar), personal info, all badges and the notification inbox are full pages.
@@ -109,8 +123,10 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   useEffect(() => {
     markShown("tab:me", JSON.stringify([floor.history.length])); // the first screen already played its load
   }, [floor.history.length]);
+  const inHall = tab !== "me";
   const go = (t: Tab) => {
     haptic("tick");
+    if (t !== "me") setHallSeg(t);
     setTab(t);
     window.scrollTo({ top: 0 });
     loadIfChanged(`tab:${t}`, signatureOf(t)); // only new or changed data blurs and pulls into focus
@@ -138,6 +154,19 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   return (
     <div className="min-h-dvh bg-white text-g-ink">
       <div className="mx-auto max-w-[480px] pb-28">
+        {inHall && (
+          <HallHead
+            seg={tab as HallSeg}
+            onSeg={(t) => go(t)}
+            counts={{ tables: `${hot.busy}/${hot.tables}`, orders: String(hot.openOrders), bookings: String(hot.bookings) }}
+            actions={[
+              { icon: ScanLine, label: tr("Scan"), onClick: () => setScan(true) },
+              { icon: CalendarPlus, label: tr("New booking"), onClick: () => setNewBooking(true) },
+              { icon: ReceiptText, label: tr("Bills"), onClick: () => go("orders") },
+              { icon: ChefHat, label: tr("Kitchen"), onClick: () => notify({ title: tr("Kitchen pinged"), text: tr("The pass sees your call") }) },
+            ]}
+          />
+        )}
         {tab === "tables" && (
           <TablesView
             tables={tables}
@@ -201,33 +230,39 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
         )}
       </div>
 
-      {/* Tab bar: a floating capsule, the current tab sits on a soft pill that slides between tabs. */}
+      {/* Tab bar: a floating capsule (Home, Hall) and a separate round scan button, iOS 26 style. */}
       <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
-        <div className="relative mx-auto grid h-[64px] max-w-[440px] grid-cols-4 rounded-full bg-white/95 p-1.5 ring-1 ring-black/5 backdrop-blur-xl">
-          <span
-            aria-hidden
-            className="absolute top-1.5 bottom-1.5 left-1.5 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{ width: "calc((100% - 12px) / 4)", transform: `translateX(${["me", "tables", "orders", "bookings"].indexOf(tab) * 100}%)` }}
-          />
-          {(
-            [
-              ["me", "Home", House, 0],
-              ["tables", "Tables", LayoutGrid, billCount],
-              ["orders", "Orders", ReceiptText, 0],
-              ["bookings", "Bookings", CalendarDays, 0],
-            ] as const
-          ).map(([id, label, Icon, badge]) => (
-            <button
-              key={id}
-              onClick={() => go(id)}
-              aria-current={tab === id ? "page" : undefined}
-              className={`relative z-10 flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors ${tab === id ? "text-g-ink" : "text-g-faint"}`}
-            >
-              <Icon size={21} strokeWidth={tab === id ? 2.1 : 1.8} />
-              {label}
-              {badge > 0 && <span className="blue-grad absolute top-1 left-[calc(50%+6px)] grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold">{badge}</span>}
-            </button>
-          ))}
+        <div className="mx-auto flex max-w-[440px] items-center gap-2.5">
+          <div className="relative grid h-[64px] flex-1 grid-cols-2 rounded-full bg-white/95 p-1.5 ring-1 ring-black/5 backdrop-blur-xl">
+            <span
+              aria-hidden
+              className="absolute top-1.5 bottom-1.5 left-1.5 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ width: "calc((100% - 12px) / 2)", transform: `translateX(${inHall ? 100 : 0}%)` }}
+            />
+            {(
+              [
+                ["me", tr("Home"), House, 0],
+                [hallSeg, tr("Hall"), LayoutGrid, billCount],
+              ] as const
+            ).map(([id, label, Icon, badge], i) => {
+              const on = i === 0 ? !inHall : inHall;
+              return (
+                <button
+                  key={label}
+                  onClick={() => go(id)}
+                  aria-current={on ? "page" : undefined}
+                  className={`relative z-10 flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors ${on ? "text-g-ink" : "text-g-faint"}`}
+                >
+                  <Icon size={21} strokeWidth={on ? 2.1 : 1.8} />
+                  {label}
+                  {badge > 0 && <span className="blue-grad absolute top-1 left-[calc(50%+6px)] grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold">{badge}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <button aria-label={tr("Scan table QR")} onClick={() => setScan(true)} className="blue-grad press grid size-[64px] shrink-0 place-items-center rounded-full">
+            <ScanLine size={24} strokeWidth={2} />
+          </button>
         </div>
       </nav>
 
@@ -384,12 +419,15 @@ export type DashItem = { label: string; value: string; sub?: string; icon: Lucid
 /** The stats at the top of every waiter page: two by two, big numbers, one optional progress bar. */
 export function Dash({ items }: { items: DashItem[] }) {
   const tone = { blue: "text-g-blue", orange: "text-g-orange", green: "text-g-green", plain: "text-g-muted" };
+  const tr = useTr();
+  // Sub-lines mix numbers and words ("4 bills closed"): translate the words, keep the numbers.
+  const trSub = (x: string) => x.replace(/[A-Za-z][A-Za-z ’'.]*[A-Za-z]/g, (w) => tr(w));
   return (
     <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
       {items.map((d) => (
         <div key={d.label} className={`flex h-[104px] flex-col justify-between rounded-[22px] p-3.5 ${d.hot ? "blue-grad" : "bg-g-fill"}`}>
           <span className="flex items-center justify-between gap-2">
-            <span className={`truncate text-[12px] font-medium ${d.hot ? "text-white/80" : "text-g-muted"}`}>{d.label}</span>
+            <span className={`truncate text-[12px] font-medium ${d.hot ? "text-white/80" : "text-g-muted"}`}>{tr(d.label)}</span>
             <d.icon size={16} strokeWidth={2} className={d.hot ? "text-white/80" : tone[d.tone ?? "blue"]} />
           </span>
           <span>
@@ -399,7 +437,7 @@ export function Dash({ items }: { items: DashItem[] }) {
                 <span className={`live block h-full rounded-full ${d.hot ? "bg-white" : "bar-grad"}`} style={{ width: `${Math.round(d.bar * 100)}%` }} />
               </span>
             ) : (
-              d.sub && <span className={`live mt-1.5 block truncate text-[12px] ${d.hot ? "text-white/80" : "text-g-muted"}`}>{d.sub}</span>
+              d.sub && <span className={`live mt-1.5 block truncate text-[12px] ${d.hot ? "text-white/80" : "text-g-muted"}`}>{trSub(d.sub)}</span>
             )}
           </span>
         </div>
@@ -473,8 +511,9 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
   const seats = tables.reduce((n, x) => n + (x.status === "free" ? x.seats : 0), 0);
   const peeked = tables.find((x) => x.no === peek) ?? null;
   return (
-    <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
+    <div className="px-5">
       <PageHead
+        hidden
         title="Tables"
         sub="Samarkand · lunch"
         action={
@@ -586,7 +625,8 @@ function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; mo
   );
 }
 
-function PageHead({ title, sub, action }: { title: string; sub?: string; action?: ReactNode }) {
+function PageHead({ title, sub, action, hidden }: { title: string; sub?: string; action?: ReactNode; hidden?: boolean }) {
+  if (hidden) return null;
   return (
     <header className="flex items-end justify-between gap-3">
       <div className="min-w-0">
@@ -1220,8 +1260,7 @@ function OrdersView({
     return names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "");
   };
   return (
-    <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead title="Orders" sub="Today" />
+    <div className="px-5">
       <Dash
         items={[
           { label: "Taken today", value: compactMoney(takings), sub: `${history.length} bills closed`, icon: Wallet, hot: true },
@@ -1313,6 +1352,66 @@ function OrdersView({
         </Reveal>
       )}
       {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">No open orders</p>}
+    </div>
+  );
+}
+
+/**
+ * The Hall: one place for the floor. Title and quick services on top, then the
+ * three sections (tables, orders, bookings), each with its own dashboard.
+ */
+function HallHead({
+  seg,
+  onSeg,
+  counts,
+  actions,
+}: {
+  seg: HallSeg;
+  onSeg: (s: HallSeg) => void;
+  counts: Record<HallSeg, string>;
+  actions: { icon: LucideIcon; label: string; onClick: () => void }[];
+}) {
+  const tr = useTr();
+  return (
+    <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
+      <PageHead title={tr("Hall")} sub={`Samarkand · ${tr("lunch")}`} />
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {actions.map((a) => (
+          <button
+            key={a.label}
+            onClick={() => {
+              haptic("light");
+              a.onClick();
+            }}
+            className="press flex flex-col items-center gap-1.5"
+          >
+            <span className="chip-blue grid size-12 place-items-center rounded-full">
+              <a.icon size={20} strokeWidth={2} />
+            </span>
+            <span className="text-[12px] font-semibold">{a.label}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-5 flex rounded-full bg-g-fill p-1">
+        {(
+          [
+            ["tables", tr("Tables")],
+            ["orders", tr("Orders")],
+            ["bookings", tr("Bookings")],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => onSeg(id)}
+            aria-pressed={seg === id}
+            className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors ${seg === id ? "bg-white text-g-ink" : "text-g-muted"}`}
+          >
+            {label}
+            <span className={`text-[12px] tabular-nums ${seg === id ? "text-g-blue" : "text-g-faint"}`}>{counts[id]}</span>
+          </button>
+        ))}
+      </div>
+      <div className="h-4" />
     </div>
   );
 }

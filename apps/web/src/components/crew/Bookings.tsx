@@ -6,7 +6,7 @@ import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
 import { loadIfChanged, Reveal } from "@/components/guest/motion";
 import { ChoiceChip, Sheet, StepHead } from "@/components/guest/ui";
-import { Counter, Dash, PageHead } from "./CrewApp";
+import { Counter, Dash } from "./CrewApp";
 
 const DAY_NAMES = ["Today", "Tomorrow"];
 const dayLabel = (d: number) => {
@@ -42,8 +42,7 @@ export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[];
   const upcoming = list.filter((b) => b.status !== "seated");
   const next = day === 0 ? upcoming.find((b) => mins(b.time) >= NOW - 5) : upcoming[0];
   return (
-    <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead title="Bookings" sub={dayLabel(day)} />
+    <div className="px-5">
       <Dash
         items={[
           { label: "Next", value: next?.time ?? "—", sub: next ? `${next.name.split(" ")[0]} · ${next.guests} guests${day === 0 ? ` · ${relative(next.time)}` : ""}` : "nothing planned", icon: Clock, hot: Boolean(next) },

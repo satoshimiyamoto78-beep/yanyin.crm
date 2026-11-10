@@ -1,13 +1,15 @@
 "use client";
 
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
-import { Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, SlidersHorizontal, Crown, Dices, Handshake, Moon, Martini, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, SlidersHorizontal, Info, Minus, Plus, Crown, Dices, Handshake, Moon, Martini, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
 import { PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
 import { TipsCarousel } from "./TipsCarousel";
-import { CustomizePage, useHomeLayout, type HomeBlock } from "./HomeLayout";
+import { CustomizePage, HOME_BLOCKS, useHomeLayout, type HomeBlock } from "./HomeLayout";
+import { DragList } from "./DragList";
+import { useTr } from "./prefs";
 import { BadgesPage, QuestsPage } from "./Collections";
 import { NorthSky } from "@/components/system/NorthSky";
 import { Strip, StripBig, StripSquare } from "@/components/system/Strip";
@@ -151,6 +153,9 @@ export function CrewBoard({
   const boss = questPercent(data.boss.progress, data.boss.target);
 
   const [layout, setLayout] = useHomeLayout();
+  const [goalInfo, setGoalInfo] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const tr = useTr();
   const [page, setPage] = useState<"customize" | "yours" | "board" | "badges" | null>(null);
   const takeBtn = (q: CrewQuest) => (
     <button
@@ -160,7 +165,7 @@ export function CrewBoard({
       }}
       className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[14px] font-semibold text-white"
     >
-      Take
+      {tr("Take")}
     </button>
   );
   const claimBtn = (q: CrewQuest) =>
@@ -172,7 +177,7 @@ export function CrewBoard({
         }}
         className="blue-grad press h-9 shrink-0 rounded-full px-4 text-[14px] font-semibold whitespace-nowrap"
       >
-        Claim
+        {tr("Claim")}
       </button>
     ) : undefined;
   const blocks: Record<HomeBlock, React.ReactNode> = {
@@ -181,12 +186,12 @@ export function CrewBoard({
         <TipsCarousel
         tips={[
           ...(available[0]
-            ? [{ id: "quest", kicker: "Quest of the week", title: available[0].title, text: available[0].description, icon: Trophy, tone: "blue" as const, action: { label: `Take · +${available[0].reward.xp} XP`, onClick: () => take(available[0]!.id) } }]
+            ? [{ id: "quest", kicker: tr("Quest of the week"), title: tr(available[0].title), text: tr(available[0].description), icon: Trophy, tone: "blue" as const, action: { label: `${tr("Take")} · +${available[0].reward.xp} XP`, onClick: () => take(available[0]!.id) } }]
             : []),
-          { id: "lemonade", kicker: "Sell more", title: "Offer tarragon lemonade with plov", text: "Guests who take plov add a drink 2× more often when you suggest one.", icon: TrendingUp, tone: "green" as const },
-          { id: "goal", kicker: "Team goal", title: `${boss}% of this week’s goal`, text: `${data.boss.endsIn} · reward ${data.boss.reward}`, icon: Users, tone: "orange" as const },
-          { id: "rush", kicker: "Peak at 19:00", title: "Pre-set tables 4 and 9 now", text: "Six bookings land between 19:00 and 19:30. Set cutlery and water before the rush.", icon: Clock, tone: "ink" as const },
-          { id: "dessert", kicker: "Easy XP", title: "Suggest dessert with tea", text: "Each dessert counts toward Sweet finish. Medovik is today’s favourite.", icon: CakeSlice, tone: "blue" as const },
+          { id: "lemonade", kicker: tr("Sell more"), title: tr("Offer tarragon lemonade with plov"), text: tr("Guests who take plov add a drink 2× more often when you suggest one."), icon: TrendingUp, tone: "green" as const },
+          { id: "goal", kicker: tr("Team goal"), title: `${boss}% ${tr("of this week’s goal")}`, text: `${tr(data.boss.endsIn)} · ${tr("reward")} ${data.boss.reward}`, icon: Users, tone: "orange" as const },
+          { id: "rush", kicker: tr("Peak at 19:00"), title: tr("Pre-set tables 4 and 9 now"), text: tr("Six bookings land between 19:00 and 19:30. Set cutlery and water before the rush."), icon: Clock, tone: "ink" as const },
+          { id: "dessert", kicker: tr("Easy XP"), title: tr("Suggest dessert with tea"), text: tr("Each dessert counts toward Sweet finish. Medovik is today’s favourite."), icon: CakeSlice, tone: "blue" as const },
         ]}
       />
     ),
@@ -197,9 +202,9 @@ export function CrewBoard({
               <span className="chip-orange grid size-8 place-items-center rounded-full">
                 <Flame size={17} strokeWidth={2} />
               </span>
-              <span className="live">{data.staff.streakDays}-day streak</span>
+              <span className="live">{data.staff.streakDays}{tr("-day streak")}</span>
             </p>
-            <p className="text-[13px] text-g-muted">On time every shift</p>
+            <p className="text-[13px] text-g-muted">{tr("On time every shift")}</p>
           </div>
           <div className="mt-4 grid grid-cols-7 gap-2">
             {data.staff.week.map((on, i) => (
@@ -218,9 +223,21 @@ export function CrewBoard({
     ),
     goal: (
         <Reveal as="section" delay={280} className="mesh-blue mt-6 overflow-hidden rounded-[28px] p-5">
-          <p className="flex items-center gap-2 text-[13px] font-medium text-g-ink-2">
-            <Users size={16} strokeWidth={1.75} /> Team goal this week
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex items-center gap-2 text-[13px] font-medium text-g-ink-2">
+              <Users size={16} strokeWidth={1.75} /> {tr("Team goal this week")}
+            </p>
+            <button
+              aria-label={tr("What is the team goal?")}
+              onClick={() => {
+                haptic("light");
+                setGoalInfo(true);
+              }}
+              className="press grid size-8 place-items-center rounded-full bg-white/75 text-g-ink-2"
+            >
+              <Info size={16} strokeWidth={2.2} />
+            </button>
+          </div>
           <div className="relative mt-3 flex justify-center">
             <span className="live w-full max-w-[260px]">
               <Gauge percent={boss} />
@@ -230,36 +247,36 @@ export function CrewBoard({
                 <CountUp to={boss} />%
               </p>
               <p className="mt-1 text-[13px] text-g-muted">
-                {short(data.boss.progress)} of {short(data.boss.target)} ₫
+                {short(data.boss.progress)} {tr("of")} {short(data.boss.target)} ₫
               </p>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2.5">
             <div className="rounded-[18px] bg-white/75 p-3.5 backdrop-blur">
-              <p className="text-[12px] text-g-muted">Reward</p>
+              <p className="text-[12px] text-g-muted">{tr("Reward")}</p>
               <p className="text-[15px] font-semibold">{data.boss.reward}</p>
             </div>
             <div className="rounded-[18px] bg-white/75 p-3.5 backdrop-blur">
-              <p className="text-[12px] text-g-muted">Time left</p>
-              <p className="text-[15px] font-semibold">{data.boss.endsIn}</p>
+              <p className="text-[12px] text-g-muted">{tr("Time left")}</p>
+              <p className="text-[15px] font-semibold">{tr(data.boss.endsIn)}</p>
             </div>
           </div>
         </Reveal>
     ),
     quests: (
       <>
-        <SectionTitle title="Your quests" count={active.length} onAll={() => setPage("yours")} />
+        <SectionTitle title={tr("Your quests")} count={active.length} onAll={() => setPage("yours")} />
         <Reveal className="divide-y divide-g-line">
           {active.slice(0, 2).map((q) => (
             <QuestRow key={q.id} q={q} money={money} onPeek={() => setPeek({ kind: "quest", id: q.id })} action={claimBtn(q)} />
           ))}
-          {!active.length && <p className="py-6 text-[15px] text-g-muted">Take a quest from the board to start.</p>}
+          {!active.length && <p className="py-6 text-[15px] text-g-muted">{tr("Take a quest from the board to start.")}</p>}
         </Reveal>
       </>
     ),
     board: available.length ? (
       <>
-        <SectionTitle title="Quest board" count={available.length} onAll={() => setPage("board")} />
+        <SectionTitle title={tr("Quest board")} count={available.length} onAll={() => setPage("board")} />
         <Reveal className="divide-y divide-g-line">
           {available.slice(0, 2).map((q) => (
             <QuestRow key={q.id} q={q} money={money} onPeek={() => setPeek({ kind: "quest", id: q.id })} action={takeBtn(q)} />
@@ -269,23 +286,23 @@ export function CrewBoard({
     ) : null,
     badges: (
       <>
-        <SectionTitle title="Badges" count={data.badges.filter((b) => b.earned).length} onAll={() => setPage("badges")} />
+        <SectionTitle title={tr("Badges")} count={data.badges.filter((b) => b.earned).length} onAll={() => setPage("badges")} />
         <div className="grid grid-cols-4 gap-2.5">
           {data.badges.slice(0, 4).map((b) => (
             <BadgeTile key={b.id} b={b} onPeek={() => setPeek({ kind: "badge", id: b.id })} />
           ))}
         </div>
-        <p className="mt-2 text-center text-[12px] text-g-faint">Hold a badge or a quest to see what it is</p>
+        <p className="mt-2 text-center text-[12px] text-g-faint">{tr("Hold a badge or a quest to see what it is")}</p>
       </>
     ),
     week: (
       <>
-        <SectionTitle title="This week" />
+        <SectionTitle title={tr("This week")} />
         <Reveal as="ol" className="card rounded-[24px] p-1.5">
           {data.leaderboard.map((p, i) => (
             <li key={p.name} className={`flex items-center gap-4 rounded-[18px] px-4 py-3.5 ${p.me ? "bg-g-blue-soft" : ""}`}>
               <span className={`w-5 text-[15px] font-semibold tabular-nums ${p.me ? "text-g-blue" : "text-g-faint"}`}>{i + 1}</span>
-              <span className={`live min-w-0 flex-1 truncate text-[16px] ${p.me ? "font-semibold text-g-blue" : "font-medium"}`}>{p.me ? `${p.name} (you)` : p.name}</span>
+              <span className={`live min-w-0 flex-1 truncate text-[16px] ${p.me ? "font-semibold text-g-blue" : "font-medium"}`}>{p.me ? `${p.name} (${tr("you")})` : p.name}</span>
               <span className="live shrink-0 text-[15px] font-semibold tabular-nums">{p.me ? xp : p.xp} XP</span>
             </li>
           ))}
@@ -307,7 +324,7 @@ export function CrewBoard({
             </button>
             <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white/70">
               <Search size={17} strokeWidth={2} />
-              <input placeholder="Tables, dishes, guests" aria-label="Search" className="min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/70" />
+              <input placeholder={tr("Tables, dishes, guests")} aria-label={tr("Search")} className="min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/70" />
             </label>
             {onTheme && <ThemeToggle dark={dark} onToggle={onTheme} label="Light or dark theme" />}
             <button aria-label={unread ? `Notifications, ${unread} new` : "Notifications"} onClick={() => onInbox?.()} className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
@@ -320,9 +337,9 @@ export function CrewBoard({
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-[14px] text-white/70">
                 <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
-                <span className="font-semibold text-white">On shift</span>
+                <span className="font-semibold text-white">{tr("On shift")}</span>
                 <span className="text-white/45">·</span>
-                {(name ?? data.staff.name).split(" ")[0]} · tips
+                {(name ?? data.staff.name).split(" ")[0]} · {tr("tips")}
               </p>
               <button onClick={() => onGo?.("orders")} className="press mt-2 flex items-center gap-1 text-left">
                 <span className="live text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{hidden ? "••• •••" : money(data.today.tips)}</span>
@@ -338,14 +355,14 @@ export function CrewBoard({
             <StripBig
               onClick={() => onGo?.("tables")}
               icon={<LayoutGrid size={19} strokeWidth={2} />}
-              title={hot ? `${hot.busy}/${hot.tables} tables` : "Tables"}
-              sub={hot?.bills ? `${hot.bills} asking for the bill` : "all calm"}
+              title={hot ? `${hot.busy}/${hot.tables} ${tr("tables")}` : tr("Tables")}
+              sub={hot?.bills ? `${hot.bills} ${tr("asking for the bill")}` : tr("all calm")}
               tone={hot?.bills ? "orange" : "muted"}
             />
-            <StripSquare icon={<ScanLine size={21} strokeWidth={1.9} />} label="Scan" onClick={() => onScan?.()} />
-            <StripSquare icon={<Coffee size={21} strokeWidth={1.9} />} label="Break" onClick={() => onNotify?.("Break started", "Tables see “back in 10 min”")} />
-            <StripBig onClick={() => onGo?.("orders")} icon={<TrendingUp size={19} strokeWidth={2} />} title={hidden ? "•••" : `${short(data.today.sales)} ₫`} sub="Sales today · +12%" />
-            <StripBig icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">Level {level.level}</span>} title={level.title} wide>
+            <StripSquare icon={<ScanLine size={21} strokeWidth={1.9} />} label={tr("Scan")} onClick={() => onScan?.()} />
+            <StripSquare icon={<Coffee size={21} strokeWidth={1.9} />} label={tr("Break")} onClick={() => onNotify?.(tr("Break started"), tr("Tables see “back in 10 min”"))} />
+            <StripBig onClick={() => onGo?.("orders")} icon={<TrendingUp size={19} strokeWidth={2} />} title={hidden ? "•••" : `${short(data.today.sales)} ₫`} sub={`${tr("Sales today")} · +12%`} />
+            <StripBig icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">{tr("Level")} {level.level}</span>} title={tr(level.title)} wide>
               <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-g-fill">
                 <span className="live bar-grad block h-full rounded-full" style={{ width: `${pct}%` }} />
               </span>
@@ -358,12 +375,67 @@ export function CrewBoard({
       </section>
 
       <div className="mx-auto max-w-[480px] px-5 pb-16">
-        {/* Blocks in the waiter's own order (Customize the main screen). */}
-        {layout
-          .filter((b) => b.on)
-          .map((b) => (
-            <Fragment key={b.id}>{blocks[b.id]}</Fragment>
-          ))}
+        {/* Blocks in the waiter's own order. Hold any block to edit: drag to move, minus to hide. */}
+        <DragList
+          items={layout.filter((b) => b.on && blocks[b.id])}
+          onLongPress={() => setEditing(true)}
+          onReorder={(vis) => setLayout([...vis, ...layout.filter((b) => !vis.some((v) => v.id === b.id))])}
+          render={(b, { dragging }) => (
+            <div className={editing ? `edit-block ${dragging ? "is-dragging" : ""}` : ""}>
+              {editing && (
+                <button
+                  data-nodrag
+                  aria-label={`${tr("Hide")} ${tr(HOME_BLOCKS[b.id].label)}`}
+                  onClick={() => {
+                    haptic("light");
+                    setLayout(layout.map((x) => (x.id === b.id ? { ...x, on: false } : x)));
+                  }}
+                  className="press absolute -top-3 -left-3 z-10 grid size-7 place-items-center rounded-full bg-g-ink text-white"
+                >
+                  <Minus size={15} strokeWidth={3} />
+                </button>
+              )}
+              <div className={editing ? "pointer-events-none select-none" : ""}>{blocks[b.id]}</div>
+            </div>
+          )}
+        />
+
+        {editing && layout.some((b) => !b.on) && (
+          <section className="mt-8">
+            <p className="text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{tr("Hidden")}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {layout
+                .filter((b) => !b.on)
+                .map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => {
+                      haptic("light");
+                      setLayout(layout.map((x) => (x.id === b.id ? { ...x, on: true } : x)));
+                    }}
+                    className="press flex h-10 items-center gap-1.5 rounded-full bg-g-fill pr-4 pl-2 text-[14px] font-semibold"
+                  >
+                    <span className="blue-grad grid size-6 place-items-center rounded-full">
+                      <Plus size={14} strokeWidth={3} />
+                    </span>
+                    {tr(HOME_BLOCKS[b.id].label)}
+                  </button>
+                ))}
+            </div>
+          </section>
+        )}
+
+        {editing && (
+          <button
+            onClick={() => {
+              haptic("success");
+              setEditing(false);
+            }}
+            className="blue-grad press animate-rise fixed top-[max(14px,env(safe-area-inset-top))] right-4 z-50 h-11 rounded-full px-6 text-[15px] font-semibold"
+          >
+            {tr("Done")}
+          </button>
+        )}
 
         <button
           onClick={() => {
@@ -372,9 +444,9 @@ export function CrewBoard({
           }}
           className="press mx-auto mt-12 flex h-12 items-center gap-2 rounded-full bg-g-fill px-5 text-[15px] font-semibold"
         >
-          <SlidersHorizontal size={17} strokeWidth={2} /> Customize the main screen
+          <SlidersHorizontal size={17} strokeWidth={2} /> {tr("Customize the main screen")}
         </button>
-        <p className="mt-6 text-center text-[13px] text-g-faint">Progress counts automatically from orders · leaderboards can be turned off by the venue</p>
+        <p className="mt-6 text-center text-[13px] text-g-faint">{tr("Progress counts automatically from orders · leaderboards can be turned off by the venue")}</p>
       </div>
 
       {page === "customize" && <CustomizePage layout={layout} onChange={setLayout} onClose={() => setPage(null)} />}
@@ -393,6 +465,29 @@ export function CrewBoard({
       )}
       {page === "badges" && <BadgesPage badges={data.badges} onClose={() => setPage(null)} />}
 
+      {goalInfo && (
+        <PeekCard label={tr("Team goal")} onClose={() => setGoalInfo(false)}>
+          <span className="blue-grad mx-auto grid size-16 place-items-center rounded-full">
+            <Users size={28} strokeWidth={1.8} />
+          </span>
+          <p className="mt-4 text-center text-[22px] font-bold tracking-[-0.02em]">{tr("Team goal")}</p>
+          <p className="mt-1 text-center text-[14px] text-g-muted">{tr(data.boss.title)}</p>
+          <p className="mt-4 text-[15px] leading-snug text-g-ink-2">
+            {tr("The whole team sells toward one target this week. Every check you close adds to it, whoever's table it is.")}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-[16px] bg-g-fill p-3">
+              <p className="text-[12px] text-g-muted">{tr("Reward")}</p>
+              <p className="text-[15px] font-semibold">{data.boss.reward}</p>
+            </div>
+            <div className="rounded-[16px] bg-g-fill p-3">
+              <p className="text-[12px] text-g-muted">{tr("Time left")}</p>
+              <p className="text-[15px] font-semibold">{tr(data.boss.endsIn)}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-[13px] leading-snug text-g-muted">{tr("If the team reaches 100% before the week ends, everyone on shift gets the reward with their pay. The gauge fills from closed checks only.")}</p>
+        </PeekCard>
+      )}
       {peek?.kind === "badge" && <BadgePeek b={data.badges.find((x) => x.id === peek.id)!} onClose={() => setPeek(null)} />}
       {peek?.kind === "quest" && (() => {
         const q = quests.find((x) => x.id === peek.id);
@@ -445,8 +540,8 @@ export function CrewBoard({
             <span className="blue-grad mx-auto grid size-20 place-items-center rounded-full">
               <Check size={36} strokeWidth={2.5} />
             </span>
-            <p className="mt-6 text-[28px] font-bold tracking-[-0.02em]">Quest complete</p>
-            <p className="mt-1 text-[17px] text-g-muted">{done.title}</p>
+            <p className="mt-6 text-[28px] font-bold tracking-[-0.02em]">{tr("Quest complete")}</p>
+            <p className="mt-1 text-[17px] text-g-muted">{tr(done.title)}</p>
             <p className="mt-4 text-[20px] font-semibold text-g-blue">+{done.reward.xp} XP</p>
           </div>
         </div>
@@ -468,19 +563,21 @@ export const BADGE_INFO: Record<string, { what: string; how: string; progress: n
 
 /** A badge you can hold to peek at its story. */
 export function BadgeTile({ b, onPeek }: { b: CrewData["badges"][number]; onPeek: () => void }) {
+  const tr = useTr();
   const press = useLongPress(onPeek, onPeek);
   const Icon = BADGE_ICON[b.id] ?? Trophy;
   return (
-    <button {...press} style={{ WebkitTouchCallout: "none" }} className="press flex flex-col items-center gap-2 text-center select-none">
+    <button data-hold {...press} style={{ WebkitTouchCallout: "none" }} className="press flex flex-col items-center gap-2 text-center select-none">
       <span className={`grid aspect-square w-full place-items-center rounded-full ${b.earned ? "card text-g-blue" : "border-[1.5px] border-dashed border-g-fill-2 text-g-faint"}`}>
         <Icon size={24} strokeWidth={1.75} />
       </span>
-      <span className={`text-[12px] leading-tight ${b.earned ? "text-g-ink-2" : "text-g-faint"}`}>{b.name}</span>
+      <span className={`text-[12px] leading-tight ${b.earned ? "text-g-ink-2" : "text-g-faint"}`}>{tr(b.name)}</span>
     </button>
   );
 }
 
 function SectionTitle({ title, count, onAll }: { title: string; count?: number; onAll?: () => void }) {
+  const tr = useTr();
   return (
     <div className="mt-10 mb-2 flex items-baseline justify-between gap-3">
       <h2 className="flex items-baseline gap-2 text-[24px] leading-tight font-bold tracking-[-0.025em]">
@@ -495,7 +592,7 @@ function SectionTitle({ title, count, onAll }: { title: string; count?: number; 
           }}
           className="press flex shrink-0 items-center gap-0.5 text-[15px] font-semibold text-g-blue underline decoration-g-blue/30 decoration-2 underline-offset-4"
         >
-          See all <ChevronRight size={16} strokeWidth={2.4} />
+          {tr("See all")} <ChevronRight size={16} strokeWidth={2.4} />
         </button>
       )}
     </div>
@@ -512,27 +609,28 @@ function CountUp({ to }: { to: number }) {
  * a footer with the reward, deadline and one small action.
  */
 export function QuestRow({ q, money, action, onPeek }: { q: CrewQuest; money: (n: number) => string; action?: React.ReactNode; onPeek?: () => void }) {
+  const tr = useTr();
   const press = useLongPress(() => onPeek?.());
   const Icon = QUEST_ICON[q.id] ?? Trophy;
   const pct = questPercent(q.progress, q.target);
   const done = q.state === "done";
   const reward = [`+${q.reward.xp} XP`, q.reward.bonus ? money(q.reward.bonus) : null].filter(Boolean).join(" · ");
   return (
-    <div className="py-5 select-none" {...press} style={{ WebkitTouchCallout: "none" }}>
+    <div data-hold className="py-5 select-none" {...press} style={{ WebkitTouchCallout: "none" }}>
       <div className="flex gap-3.5">
         <span className={`grid size-11 shrink-0 place-items-center rounded-full ${done ? "chip-green" : "chip-blue"}`}>
           {done ? <Check size={20} strokeWidth={2.5} /> : <Icon size={20} strokeWidth={1.8} />}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3">
-            <p className="live truncate text-[16px] font-semibold">{q.title}</p>
+            <p className="live truncate text-[16px] font-semibold">{tr(q.title)}</p>
             {q.state !== "available" && (
               <span className={`live shrink-0 text-[14px] font-semibold tabular-nums ${done ? "text-g-green" : ""}`}>
-                {done ? "Done" : `${q.progress}/${q.target}`}
+                {done ? tr("Done") : `${q.progress}/${q.target}`}
               </span>
             )}
           </div>
-          <p className="live mt-0.5 text-[14px] leading-snug text-g-muted">{q.description}</p>
+          <p className="live mt-0.5 text-[14px] leading-snug text-g-muted">{tr(q.description)}</p>
           {q.state !== "available" && (
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-g-fill">
               <div className={`live animate-grow h-full rounded-full ${done ? "green-grad" : "bar-grad"}`} style={{ width: `${pct}%` }} />
@@ -542,12 +640,12 @@ export function QuestRow({ q, money, action, onPeek }: { q: CrewQuest; money: (n
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-semibold text-g-blue">
                 {reward}
-                {q.mode === "race" && <span className="font-medium text-g-orange"> · race</span>}
+                {q.mode === "race" && <span className="font-medium text-g-orange"> · {tr("race")}</span>}
               </p>
               <p className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-g-muted">
                 <Clock size={12} strokeWidth={2} className="shrink-0" />
-                {q.endsAt}
-                {q.reward.perk ? ` · bonus: ${q.reward.perk.toLowerCase()}` : ""}
+                {tr(q.endsAt)}
+                {q.reward.perk ? ` · ${tr("bonus")}: ${tr(q.reward.perk).toLowerCase()}` : ""}
               </p>
             </div>
             {action}
@@ -560,6 +658,7 @@ export function QuestRow({ q, money, action, onPeek }: { q: CrewQuest; money: (n
 
 /** Hold-to-peek card for a badge: what it is, how to get it, how far along. */
 export function BadgePeek({ b, onClose }: { b: CrewData["badges"][number]; onClose: () => void }) {
+  const tr = useTr();
   const info = BADGE_INFO[b.id] ?? { what: "", how: "", progress: 0 };
   const Icon = BADGE_ICON[b.id] ?? Trophy;
   return (
@@ -567,19 +666,19 @@ export function BadgePeek({ b, onClose }: { b: CrewData["badges"][number]; onClo
       <span className={`mx-auto grid size-20 place-items-center rounded-full ${b.earned ? "blue-grad" : "bg-g-fill text-g-faint"}`}>
         <Icon size={36} strokeWidth={1.7} />
       </span>
-      <p className="mt-4 text-center text-[22px] font-bold tracking-[-0.02em]">{b.name}</p>
-      <p className={`mt-1 text-center text-[13px] font-semibold ${b.earned ? "text-g-green" : "text-g-muted"}`}>{b.earned ? "Earned" : "Not yet"}</p>
-      <p className="mt-4 text-[15px] leading-snug text-g-ink-2">{info.what}</p>
+      <p className="mt-4 text-center text-[22px] font-bold tracking-[-0.02em]">{tr(b.name)}</p>
+      <p className={`mt-1 text-center text-[13px] font-semibold ${b.earned ? "text-g-green" : "text-g-muted"}`}>{b.earned ? tr("Earned") : tr("Not yet")}</p>
+      <p className="mt-4 text-[15px] leading-snug text-g-ink-2">{tr(info.what)}</p>
       <p className="mt-3 rounded-[16px] bg-g-fill px-3.5 py-2.5 text-[14px] leading-snug">
-        <span className="font-semibold">How to get it: </span>
-        {info.how}
+        <span className="font-semibold">{tr("How to get it")}: </span>
+        {tr(info.how)}
       </p>
       {!b.earned && (
         <div className="mt-4">
           <div className="h-1.5 overflow-hidden rounded-full bg-g-fill">
             <div className="bar-grad h-full rounded-full" style={{ width: `${info.progress}%` }} />
           </div>
-          <p className="mt-1.5 text-[12px] text-g-muted">{info.progress}% there</p>
+          <p className="mt-1.5 text-[12px] text-g-muted">{info.progress}% {tr("there")}</p>
         </div>
       )}
     </PeekCard>

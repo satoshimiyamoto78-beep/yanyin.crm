@@ -4,6 +4,8 @@ import { type LucideIcon } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 import { YanOrb } from "@/components/guest/YanSheet";
+import { useEdges } from "@/components/system/useEdges";
+import { useTr } from "./prefs";
 
 export type Tip = {
   id: string;
@@ -30,6 +32,8 @@ const TONE: Record<Tip["tone"], { bg: string; ink: string; icon: string }> = {
  */
 export function TipsCarousel({ tips, aside }: { tips: Tip[]; aside?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  useEdges(ref);
+  const tr = useTr();
   const [at, setAt] = useState(0);
 
   const onScroll = () => {
@@ -45,24 +49,24 @@ export function TipsCarousel({ tips, aside }: { tips: Tip[]; aside?: ReactNode }
   };
   const go = (i: number) => {
     const el = ref.current;
-    const card = el?.children[i] as HTMLElement | undefined;
+    const card = el?.children[0] as HTMLElement | undefined;
     if (!el || !card) return;
-    el.scrollTo({ left: card.offsetLeft - 20, behavior: "smooth" });
+    el.scrollTo({ left: i * (card.offsetWidth + 10), behavior: "smooth" });
   };
 
   return (
     <section className="mt-6">
       <div className="flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-[17px] font-semibold">
-          <YanOrb size={24} /> Yan suggests
+          <YanOrb size={24} /> {tr("Yan suggests")}
         </h2>
-        {aside ?? <span className="text-[13px] text-g-muted tabular-nums">{at + 1} of {tips.length}</span>}
+        {aside ?? <span className="text-[13px] text-g-muted tabular-nums">{at + 1} {tr("of")} {tips.length}</span>}
       </div>
 
       <div
         ref={ref}
         onScroll={onScroll}
-        className="no-scrollbar -mx-5 mt-3 flex snap-x snap-mandatory scroll-px-5 gap-2.5 overflow-x-auto overscroll-x-contain px-5 [scroll-behavior:smooth]"
+        className="no-scrollbar edge-fade mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain [scroll-behavior:smooth]"
       >
         {tips.map((t) => {
           const tone = TONE[t.tone];
