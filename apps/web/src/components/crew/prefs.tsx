@@ -49,8 +49,35 @@ const DEFAULT: CrewPrefs = {
 };
 const KEY = "yanyin:crew-prefs";
 
-type Ctx = { prefs: CrewPrefs; set: (p: Partial<CrewPrefs>) => void; tr: (en: string) => string };
-const PrefsContext = createContext<Ctx>({ prefs: DEFAULT, set: () => {}, tr: (s) => s });
+/** Values for `{name}` slots in a phrase; `n` also picks the plural form. */
+export type TrVars = Record<string, string | number>;
+type Tr = (en: string, vars?: TrVars) => string;
+type Names = { en?: string; ru?: string; vi?: string };
+type Ctx = { prefs: CrewPrefs; set: (p: Partial<CrewPrefs>) => void; tr: Tr; dish: (n: Names | undefined) => string; locale: string };
+
+/**
+ * Plural forms are written in one string, split by "|": English "a|b"
+ * (one, many), Russian "a|b|c" (1 гость, 2 гостя, 5 гостей). Vietnamese has
+ * no plural, so its phrases have a single form.
+ */
+const plural = (forms: string[], n: number, lang: CrewLang) => {
+  if (forms.length === 1) return forms[0]!;
+  if (lang === "ru" && forms.length >= 3) {
+    const a = Math.abs(n) % 100;
+    const b = a % 10;
+    return forms[a > 10 && a < 20 ? 2 : b === 1 ? 0 : b >= 2 && b <= 4 ? 1 : 2]!;
+  }
+  return forms[Math.abs(n) === 1 ? 0 : forms.length - 1]!;
+};
+
+/** Translates a whole phrase (never glued pieces), fills `{slots}` and picks the plural form by `n`. */
+export const translate = (dict: Record<string, string> | null, lang: CrewLang): Tr => (en, vars) => {
+  let s = dict?.[en] ?? en;
+  if (s.includes("|")) s = plural(s.split("|"), typeof vars?.n === "number" ? vars.n : 2, dict?.[en] ? lang : "en");
+  return vars ? s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : s;
+};
+
+const PrefsContext = createContext<Ctx>({ prefs: DEFAULT, set: () => {}, tr: translate(null, "en"), dish: (n) => n?.en ?? "", locale: "en" });
 
 export function CrewPrefsProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<CrewPrefs>(DEFAULT);
@@ -78,9 +105,12 @@ export function CrewPrefsProvider({ children }: { children: ReactNode }) {
     setHaptics(prefs.notify.vibration);
   }, [prefs.notify.vibration]);
   const dict = prefs.lang === "ru" ? RU : prefs.lang === "vi" ? VI : null;
-  const tr = (en: string) => (dict ? (dict[en] ?? en) : en);
+  const tr = translate(dict, prefs.lang);
+  // Dish names come from the venue's menu, which carries its own translations.
+  const dish = (n: Names | undefined) => (n ? (n[prefs.lang] ?? n.en ?? n.ru ?? n.vi ?? "") : "");
+  const locale = prefs.lang === "ru" ? "ru-RU" : prefs.lang === "vi" ? "vi-VN" : "en-GB";
   return (
-    <PrefsContext.Provider value={{ prefs, set, tr }}>
+    <PrefsContext.Provider value={{ prefs, set, tr, dish, locale }}>
       {/* Large text scales the whole waiter app, pages and bars included. */}
       <div style={prefs.text === "large" ? { zoom: 1.12 } : undefined}>{children}</div>
     </PrefsContext.Provider>
@@ -89,3 +119,5 @@ export function CrewPrefsProvider({ children }: { children: ReactNode }) {
 
 export const usePrefs = () => useContext(PrefsContext);
 export const useTr = () => useContext(PrefsContext).tr;
+export const useDish = () => useContext(PrefsContext).dish;
+export const useLocale = () => useContext(PrefsContext).locale;

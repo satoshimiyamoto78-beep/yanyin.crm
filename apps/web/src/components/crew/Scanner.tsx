@@ -4,6 +4,7 @@ import { Flashlight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
+import { useTr } from "./prefs";
 
 type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
 
@@ -14,6 +15,7 @@ type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string 
  * scanning screen and lets you pick a table, so the flow can be tried.
  */
 export function Scanner({ tables, onClose, onTable }: { tables: number[]; onClose: () => void; onTable: (no: number) => void }) {
+  const tr = useTr();
   const video = useRef<HTMLVideoElement>(null);
   const [camera, setCamera] = useState<"starting" | "on" | "off">("starting");
   const [found, setFound] = useState<number | null>(null);
@@ -63,15 +65,15 @@ export function Scanner({ tables, onClose, onTable }: { tables: number[]; onClos
   }, []);
 
   return (
-    <div className="animate-fade fixed inset-0 z-[60] flex flex-col bg-[#05070c] text-white" role="dialog" aria-label="Scan table QR">
+    <div className="animate-fade fixed inset-0 z-[60] flex flex-col bg-[#05070c] text-white" role="dialog" aria-label={tr("Scan table QR")}>
       <ScrollLock />
       <video ref={video} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${camera === "on" ? "opacity-100" : "opacity-0"}`} />
       <div className="relative flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))]">
-        <button onClick={onClose} aria-label="Close" className="press grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur-md">
+        <button onClick={onClose} aria-label={tr("Close")} className="press grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur-md">
           <X size={20} strokeWidth={2} />
         </button>
-        <p className="text-[16px] font-semibold">Scan table QR</p>
-        <button aria-label="Torch" className="press grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur-md">
+        <p className="text-[16px] font-semibold">{tr("Scan table QR")}</p>
+        <button aria-label={tr("Torch")} className="press grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur-md">
           <Flashlight size={19} strokeWidth={2} />
         </button>
       </div>
@@ -96,12 +98,12 @@ export function Scanner({ tables, onClose, onTable }: { tables: number[]; onClos
           )}
         </div>
         <p className="mt-6 max-w-[260px] text-center text-[14px] text-white/70">
-          {camera === "off" ? "Camera is off here. Pick the table to try the flow." : "Point at the QR code on the table"}
+          {camera === "off" ? tr("The camera is off here. Pick a table below.") : tr("Point the camera at the QR code on the table")}
         </p>
       </div>
 
       <div className="relative px-5 pb-[max(20px,env(safe-area-inset-bottom))]">
-        <p className="mb-2 text-[12px] font-semibold tracking-[0.06em] text-white/50 uppercase">Or pick a table</p>
+        <p className="mb-2 text-[12px] font-semibold tracking-[0.06em] text-white/50 uppercase">{tr("Or pick a table")}</p>
         <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
           {tables.map((no) => (
             <button

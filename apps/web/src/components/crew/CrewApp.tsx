@@ -1,9 +1,10 @@
 "use client";
 
-import { allItems, formatMoney, t, type Menu, type MenuItem } from "@yanyin/domain";
+import { allItems, formatMoney, type Menu, type MenuItem } from "@yanyin/domain";
 import {
   Armchair,
   Banknote,
+  HandCoins,
   CheckCheck,
   RotateCcw,
   PenLine,
@@ -43,13 +44,13 @@ import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
-import { BookingsArt, CheckArt, OrdersArt, SeatedArt, TablesArt, TipsArt } from "./Illustrations";
+import { BookingsArt, OrdersArt, TablesArt } from "./Illustrations";
 import { CabinetView, pastOrders } from "./Cabinet";
 import { noticeMeta } from "./notices";
 import { PeekActions, PeekHeader } from "@/components/system/PeekParts";
 import { ActionListWidget, DaysCompareWidget, FlowWidget, IconStat, LineWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
-import { CrewPrefsProvider, useTr } from "./prefs";
+import { CrewPrefsProvider, useDish, useLocale, useTr, type TrVars } from "./prefs";
 import { Scanner } from "./Scanner";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
 import { InboxPage, kindOf, seedInbox, type InboxItem } from "./Inbox";
@@ -61,11 +62,12 @@ type HallSeg = "tables" | "orders" | "bookings";
 
 /** The last five days of takings, today last (earlier days are demo until the backend). */
 const PAST_TAKINGS = [3_900_000, 5_200_000, 4_300_000, 4_200_000];
-function lastDays(today: number) {
+function lastDays(today: number, locale: string) {
   return [...PAST_TAKINGS, today].map((value, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (4 - i));
-    return { short: d.toLocaleDateString("en", { weekday: "short" }), date: String(d.getDate()), value };
+    const wd = d.toLocaleDateString(locale, { weekday: "short" }).replace(".", "");
+    return { short: `${wd.charAt(0).toUpperCase()}${wd.slice(1)}`, date: String(d.getDate()), value };
   });
 }
 
@@ -106,6 +108,7 @@ export function CrewApp(props: { data: CrewData; floor: FloorData; menu: Menu })
 function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData; menu: Menu }) {
   const [tab, setTab] = useState<Tab>("me");
   const tr = useTr();
+  const dish = useDish();
   // The same light/dark choice as the guest menu: one system, one preference.
   const scheme = useScheme();
   // Profile (from the avatar), personal info, all badges and the notification inbox are full pages.
@@ -185,9 +188,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         {tab === "hall" && (
           <HallHome
             sections={[
-              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? `${hot.bills} ${tr("asking for the bill")}` : tr("all calm"), hot: hot.bills > 0, art: TablesArt },
-              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: `${hot.inKitchen} ${tr("dishes in kitchen")}`, art: OrdersArt },
-              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? `${tr("next")} ${hot.nextBooking}` : tr("nothing planned"), art: BookingsArt },
+              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: TablesArt },
+              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: OrdersArt },
+              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: BookingsArt },
             ]}
             onOpen={(id) => go(id)}
             actions={[
@@ -220,20 +223,20 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               },
               check: (no) => {
                 const x = tables.find((t) => t.no === no);
-                if (x && x.status !== "bill") notify({ title: `Check opened · Table ${no}`, text: "Show the QR or take payment" });
+                if (x && x.status !== "bill") notify({ title: tr("Bill opened · table {n}", { n: no }), text: tr("Show the QR or take payment") });
                 patch(no, (t) => ({ ...t, status: "bill" }));
                 setOpen(no);
                 setPage("check");
               },
               serveAll: (no) => {
                 patch(no, (t) => ({ ...t, lines: t.lines.map((l) => ({ ...l, state: "served" as const })) }));
-                notify({ title: `Table ${no}: all served`, text: "Kitchen tickets closed" });
+                notify({ title: tr("Table {n}: everything is served", { n: no }), text: tr("Kitchen tickets are closed") });
               },
               seat: (no) => {
                 const x = tables.find((t) => t.no === no);
                 const g = Math.min(2, x?.seats ?? 2);
                 patch(no, (t) => ({ ...t, status: "seated", guests: g, since: now(), booking: undefined }));
-                notify({ title: `Table ${no} seated`, text: `${g} guests · ${now()}` });
+                notify({ title: tr("Guests seated at table {n}", { n: no }), text: `${tr("{n} guest|{n} guests", { n: g })} · ${now()}` });
               },
             }}
           />
@@ -247,21 +250,21 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             onSeat={(b) => {
               setBookings((bs) => bs.map((x) => (x.id === b.id ? { ...x, status: "seated" } : x)));
               if (b.table) patch(b.table, (x) => ({ ...x, status: "seated", guests: b.guests, since: now(), booking: undefined }));
-              notify({ title: `${b.name.split(" ")[0]} is seated`, text: b.table ? `Table ${b.table} · ${b.guests} guests` : `${b.guests} guests` });
+              notify({ title: tr("{name} is seated", { name: b.name.split(" ")[0]! }), text: b.table ? `${tr("Table {n}", { n: b.table })} · ${tr("{n} guest|{n} guests", { n: b.guests })}` : tr("{n} guest|{n} guests", { n: b.guests }) });
             }}
             onEdit={setEditBooking}
             onUpdate={(b) => {
               setBookings((bs) => bs.map((x) => (x.id === b.id ? b : x)));
-              notify({ title: `Booking confirmed`, text: `${b.time} · ${b.guests} guests` });
+              notify({ title: tr("Booking updated"), text: `${b.time} · ${tr("{n} guest|{n} guests", { n: b.guests })}` });
             }}
             onQueue={(b) => {
               setBookings((bs) => (bs.some((x) => x.id === b.id) ? bs.map((x) => (x.id === b.id ? b : x)) : [...bs, b]));
-              notify({ title: `${b.name.split(" ")[0]} · in the queue`, text: `${b.guests} guests · you will hear when a table frees up` });
+              notify({ title: tr("{name} is in the queue", { name: b.name.split(" ")[0]! }), text: tr("We will tell you when a table for {n} frees up", { n: b.guests }) });
             }}
             onCancel={(b) => {
               setBookings((bs) => bs.map((x) => (x.id === b.id ? { ...x, status: "cancelled", cancelled: { at: now(), reason: "Cancelled by the waiter" } } : x)));
               if (b.day === 0 && b.table) patch(b.table, (x) => (x.status === "reserved" ? { ...x, status: "free", booking: undefined } : x));
-              notify(b.status === "waiting" ? { title: `${b.name.split(" ")[0]} left the queue`, text: `${b.guests} guests`, tone: "orange" } : { title: `Booking cancelled`, text: `${b.name} · ${b.time}`, tone: "orange" });
+              notify(b.status === "waiting" ? { title: tr("{name} left the queue", { name: b.name.split(" ")[0]! }), text: tr("{n} guest|{n} guests", { n: b.guests }), tone: "orange" } : { title: tr("Booking cancelled"), text: `${b.name} · ${b.time}`, tone: "orange" });
             }}
           />
         )}
@@ -296,7 +299,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       </div>
 
       {/* Tab bar: a floating capsule (Home, Hall) and a separate round scan button, iOS 26 style. */}
-      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
+      <nav aria-label={tr("Sections")} className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-[440px] items-center gap-2.5">
           <div className="relative grid h-[64px] flex-1 grid-cols-3 rounded-full bg-white/95 p-1.5 ring-1 ring-black/5 backdrop-blur-xl">
             <span
@@ -352,7 +355,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onSave={(m) => {
             setMe(m);
             setProfile("profile");
-            notify({ title: "Profile saved", text: `${m.first} ${m.last}` });
+            notify({ title: tr("Profile saved"), text: `${m.first} ${m.last}` });
           }}
         />
       )}
@@ -371,29 +374,29 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onClose={() => setOpen(null)}
           onSeat={(guests) => {
             patch(table.no, (x) => ({ ...x, status: "seated", guests, since: now(), booking: undefined }));
-            notify({ title: `Table ${table.no} seated`, text: `${guests} guests · ${now()}` });
+            notify({ title: tr("Guests seated at table {n}", { n: table.no }), text: `${tr("{n} guest|{n} guests", { n: guests })} · ${now()}` });
           }}
           onAdvance={(lineId) => {
             const l = table.lines.find((x) => x.id === lineId);
             if (!l || l.state === "served") return;
             const next = LINE[l.state].next;
             patch(table.no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === lineId ? { ...y, state: next } : y)) }));
-            const name = itemById.get(l.itemId)?.name.en ?? "Item";
-            notify({ title: next === "served" ? `${name} served` : `${name} is cooking`, text: `Table ${table.no} · ${l.qty}×` });
+            const name = dish(itemById.get(l.itemId)?.name);
+            notify({ title: next === "served" ? tr("{dish} is served", { dish: name }) : tr("{dish} is cooking", { dish: name }), text: `${tr("Table {n}", { n: table.no })} · ${l.qty}×` });
           }}
           onTakeOrder={() => setPage("picker")}
           onEditLine={(lineId, qty) => {
             const l = table.lines.find((x) => x.id === lineId);
             patch(table.no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === lineId ? { ...y, qty } : y)) }));
-            notify({ title: `${itemById.get(l?.itemId ?? "")?.name.en ?? "Item"} · ${qty}×`, text: `Table ${table.no} · order updated` });
+            notify({ title: `${dish(itemById.get(l?.itemId ?? "")?.name)} · ${qty}×`, text: tr("Table {n} · order updated", { n: table.no }) });
           }}
           onCancelLine={(lineId, reason) => {
             const l = table.lines.find((x) => x.id === lineId);
             patch(table.no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === lineId ? { ...y, cancelled: { reason, at: now(), by: floor.waiter } } : y)) }));
-            notify({ title: `${itemById.get(l?.itemId ?? "")?.name.en ?? "Item"} cancelled`, text: `Table ${table.no} · ${reason}`, tone: "orange" });
+            notify({ title: tr("{dish} cancelled", { dish: dish(itemById.get(l?.itemId ?? "")?.name) }), text: `${tr("Table {n}", { n: table.no })} · ${tr(reason)}`, tone: "orange" });
           }}
           onCheck={() => {
-            if (table.status !== "bill") notify({ title: `Check opened · Table ${table.no}`, text: "Show the QR or take payment" });
+            if (table.status !== "bill") notify({ title: tr("Bill opened · table {n}", { n: table.no }), text: tr("Show the QR or take payment") });
             patch(table.no, (x) => ({ ...x, status: "bill" }));
             setPage("check");
           }}
@@ -408,14 +411,14 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onSend={(add) => {
             patch(table.no, (x) => ({ ...x, status: "ordered", lines: [...x.lines, ...add] }));
             setPage(null);
-            notify({ title: "Sent to the kitchen", text: `Table ${table.no} · ${add.reduce((s, l) => s + l.qty, 0)} items` });
+            notify({ title: tr("Sent to the kitchen"), text: `${tr("Table {n}", { n: table.no })} · ${tr("{n} item|{n} items", { n: add.reduce((s, l) => s + l.qty, 0) })}` });
           }}
         />
       )}
       {table && page === "check" && (
         <Sheet open onClose={() => setPage(null)} label={`Check · Table ${table.no}`} footer={
           <div className="flex gap-2.5">
-            <button onClick={() => notify({ title: "Check printed", text: "Kitchen printer · Hall" })} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
+            <button onClick={() => notify({ title: tr("Bill printed"), text: tr("Hall printer") })} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
               <Printer size={18} strokeWidth={2} /> Print
             </button>
             <button onClick={() => setPage("pay")} className="blue-grad press h-14 flex-[1.6] rounded-full text-[16px] font-semibold">
@@ -435,12 +438,12 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onClose={() => setPage("check")}
           onPaid={(method, tip) => {
             const subtotal = ticketTotal(table.lines);
-            notify({ title: `Table ${table.no} closed`, text: `${METHOD[method].label}${tip ? ` · tip ${money(tip)}` : ""}` });
+            notify({ title: tr("Table {n} is paid", { n: table.no }), text: `${tr(METHOD[method].label)}${tip ? ` · ${tr("tip {sum}", { sum: money(tip) })}` : ""}` });
             setHistory((h) => [{ id: (h[0]?.id ?? 1000) + 1, table: table.no, closedAt: now(), lines: table.lines, subtotal, tip, method, guests: table.guests }, ...h]);
             patch(table.no, (x) => ({ ...x, status: "free", guests: 0, since: undefined, lines: [] }));
             // A freed table goes first to whoever has waited longest and fits.
             const next = bookings.filter((b) => b.day === 0 && b.status === "waiting" && b.guests <= table.seats).sort((a, b) => a.time.localeCompare(b.time))[0];
-            if (next) notify({ title: `Table ${table.no} is free · ${next.name.split(" ")[0]} is waiting`, text: `${next.guests} guests in the queue since ${next.time}`, tone: "green" });
+            if (next) notify({ title: tr("Table {n} is free · {name} is waiting", { n: table.no, name: next.name.split(" ")[0]! }), text: tr("{n} guests, in the queue since {t}", { n: next.guests, t: next.time }), tone: "green" });
           }}
           onDone={() => {
             setPage(null);
@@ -464,7 +467,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onTable={(no) => {
             setScan(false);
             setOpen(no);
-            notify({ title: `Table ${no} scanned`, tone: "blue" });
+            notify({ title: tr("Table {n} scanned", { n: no }), tone: "blue" });
           }}
         />
       )}
@@ -482,7 +485,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             setBookings((bs) => (bs.some((x) => x.id === b.id) ? bs.map((x) => (x.id === b.id ? b : x)) : [...bs, b]));
             if (b.day === 0 && b.table) patch(b.table, (x) => (x.status === "free" ? { ...x, status: "reserved", booking: { name: b.name.split(" ")[0]!, time: b.time } } : x));
             setNewBooking(false);
-            notify({ title: "Booking saved", text: `${b.name} · ${b.guests} guests · ${b.time}` });
+            notify({ title: tr("Booking saved"), text: `${b.name} · ${tr("{n} guest|{n} guests", { n: b.guests })} · ${b.time}` });
           }}
         />
       )}
@@ -544,19 +547,20 @@ export type TableActions = {
   seat: (no: number) => void;
 };
 
-function tableState(x: FloorTable) {
+function tableState(x: FloorTable, tr: (en: string, v?: TrVars) => string) {
   const cooking = x.lines.filter((l) => l.state !== "served" && !l.cancelled).length;
-  if (x.status === "bill") return { text: "Bill asked", dot: "bg-white" };
-  if (x.status === "seated") return { text: "Waiting to order", dot: "bg-[#8fb2ff]" };
-  if (cooking) return { text: `${cooking} cooking`, dot: "bg-g-orange" };
-  return { text: "All served", dot: "bg-[#5ce0a0]" };
+  if (x.status === "bill") return { text: tr("Wants the bill"), dot: "bg-white" };
+  if (x.status === "seated") return { text: tr("Ready to order"), dot: "bg-[#8fb2ff]" };
+  if (cooking) return { text: tr("{n} dish cooking|{n} dishes cooking", { n: cooking }), dot: "bg-g-orange" };
+  return { text: tr("All served"), dot: "bg-[#5ce0a0]" };
 }
 
 function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: number) => string; onTap: () => void; onLong: () => void }) {
   const press = useLongPress(onLong, onTap);
+  const tr = useTr();
   const total = ticketTotal(x.lines);
   const busy = x.status === "seated" || x.status === "ordered";
-  const st = tableState(x);
+  const st = tableState(x, tr);
   const look = x.status === "bill" ? "blue-grad" : busy ? "bg-g-ink text-white" : x.status === "reserved" ? "border-[1.5px] border-dashed border-g-fill-2" : "bg-g-fill";
   return (
     <button {...press} style={{ WebkitTouchCallout: "none" }} className={`press flex aspect-[0.9] flex-col justify-between rounded-[22px] p-3 text-left select-none ${look}`}>
@@ -564,7 +568,7 @@ function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: numb
         <span className="flex items-center gap-1.5">
           <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{x.no}</span>
           {x.lines.some((l) => l.by === "guest") && (
-            <span title="Guest ordered from the QR menu" className={`grid size-5 place-items-center rounded-full ${busy || x.status === "bill" ? "bg-white/20 text-white" : "bg-g-blue-soft text-g-blue"}`}>
+            <span title={tr("Guest ordered from the QR menu")} className={`grid size-5 place-items-center rounded-full ${busy || x.status === "bill" ? "bg-white/20 text-white" : "bg-g-blue-soft text-g-blue"}`}>
               <QrCode size={11} strokeWidth={2.4} />
             </span>
           )}
@@ -574,7 +578,7 @@ function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: numb
         </span>
       </span>
       {x.status === "free" ? (
-        <span className="text-[12px] font-medium text-g-faint">Free</span>
+        <span className="text-[12px] font-medium text-g-faint">{tr("Free")}</span>
       ) : x.status === "reserved" ? (
         <span>
           <span className="live block text-[14px] font-semibold tabular-nums">{x.booking?.time}</span>
@@ -582,7 +586,7 @@ function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: numb
         </span>
       ) : (
         <span>
-          <span className="live block truncate text-[13px] font-semibold tabular-nums">{total ? money(total) : `since ${x.since}`}</span>
+          <span className="live block truncate text-[13px] font-semibold tabular-nums">{total ? money(total) : tr("since {t}", { t: x.since ?? "" })}</span>
           <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-white/75">
             <span className={`size-1.5 shrink-0 rounded-full ${st.dot}`} />
             <span className="live truncate">{st.text}</span>
@@ -606,10 +610,10 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
     <div className="px-5">
       <PageHead
         hidden
-        title="Tables"
-        sub="Samarkand · lunch"
+        title={tr("Tables")}
+        sub={`Samarkand · ${tr("lunch")}`}
         action={
-          <button aria-label="Scan table QR" onClick={actions.scan} className="press grid size-11 place-items-center rounded-full bg-g-fill">
+          <button aria-label={tr("Scan table QR")} onClick={actions.scan} className="press grid size-11 place-items-center rounded-full bg-g-fill">
             <ScanLine size={20} strokeWidth={2} />
           </button>
         }
@@ -622,10 +626,10 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           icon={<Users size={13} strokeWidth={2.4} />}
           labels={["10:00", "11:00", "12:00", "12:45"]}
           values={[1, 3, 6, busy]}
-          format={(v) => `${v} / ${tables.length} ${tr("tables")}`}
+          format={(v) => tr("{v} of {n} tables", { v, n: tables.length })}
         />
-        <IconStat title={tr("Busy now")} fit art={<TablesArt size={84} />} value={`${busy} / ${tables.length}`} sub={tr("tables")} tone="blue" />
-        <IconStat title={tr("Free seats")} fit art={<SeatedArt size={84} />} value={String(seats)} sub={`${tables.filter((x) => x.status === "free").length} ${tr("free tables")}`} tone="green" />
+        <IconStat title={tr("Busy now")} art={<LayoutGrid size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />} value={`${busy} / ${tables.length}`} sub={tr("tables taken")} tone="blue" />
+        <IconStat title={tr("Free seats")} art={<Armchair size={120} strokeWidth={1.4} className="text-g-green opacity-40" />} value={String(seats)} sub={tr("{n} free table|{n} free tables", { n: tables.filter((x) => x.status === "free").length })} tone="green" />
         <ActionListWidget
           className="col-span-2"
           title={tr("Waiting for the bill")}
@@ -635,7 +639,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
             badge: String(x.no),
             badgeLabel: tr("Table"),
             title: money(ticketTotal(x.lines)),
-            sub: `${x.guests} ${tr("guests")} · ${tr("at the table")} ${seatedFor(x.since)}`,
+            sub: `${tr("{n} guest|{n} guests", { n: x.guests })} · ${tr("at the table for {d}", { d: seatedFor(x.since, tr) })}`,
             action: { label: tr("Bill"), onClick: () => actions.check(x.no) },
           }))}
           empty={tr("No one is waiting")}
@@ -652,7 +656,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
             aria-pressed={zone === z}
             className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${zone === z ? "bg-white text-g-ink" : "text-g-muted"}`}
           >
-            {z}
+            {tr(z)}
           </button>
         ))}
       </div>
@@ -661,7 +665,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           <TableTile key={x.no} x={x} money={money} onTap={() => actions.open(x.no)} onLong={() => setPeek(x.no)} />
         ))}
       </Reveal>
-      <p className="mt-4 text-center text-[12px] text-g-faint">Hold a table for quick actions</p>
+      <p className="mt-4 text-center text-[12px] text-g-faint">{tr("Hold a table for quick actions")}</p>
       {peeked && <TablePeek x={peeked} money={money} actions={actions} itemById={itemById} onClose={() => setPeek(null)} />}
     </div>
   );
@@ -669,6 +673,8 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
 
 /** Long-press preview: the table's short story and quick actions, without opening the full page. */
 function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; money: (n: number) => string; actions: TableActions; itemById: Map<string, MenuItem>; onClose: () => void }) {
+  const tr = useTr();
+  const dish = useDish();
   const total = ticketTotal(x.lines);
   const empty = x.status === "free" || x.status === "reserved";
   const run = (f: (no: number) => void) => () => {
@@ -678,49 +684,49 @@ function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; mo
   };
   const items: [string, LucideIcon, () => void][] = empty
     ? [
-        ["Seat guests", Users, run(actions.seat)],
-        ["Open table", LayoutGrid, run(actions.open)],
+        [tr("Seat guests"), Users, run(actions.seat)],
+        [tr("Open the table"), LayoutGrid, run(actions.open)],
       ]
     : [
-        ["Add items", Plus, run(actions.addItems)],
-        [x.status === "bill" ? "Open check" : "Bill", ReceiptText, run(actions.check)],
-        ...(x.lines.some((l) => l.state !== "served") ? [["Mark all served", ChefHat, run(actions.serveAll)] as [string, LucideIcon, () => void]] : []),
-        ["Open table", LayoutGrid, run(actions.open)],
+        [tr("Add dishes"), Plus, run(actions.addItems)],
+        [x.status === "bill" ? tr("Open the bill") : tr("Bring the bill"), ReceiptText, run(actions.check)],
+        ...(x.lines.some((l) => l.state !== "served") ? [[tr("Mark everything served"), ChefHat, run(actions.serveAll)] as [string, LucideIcon, () => void]] : []),
+        [tr("Open the table"), LayoutGrid, run(actions.open)],
       ];
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-6" role="dialog" aria-label={`Table ${x.no} quick actions`}>
+    <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-6" role="dialog" aria-label={tr("Table {n}", { n: x.no })}>
       <ScrollLock />
-      <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
+      <button aria-label={tr("Close")} onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
       <div className="animate-pop relative w-full max-w-[340px]">
         <div className="rounded-[28px] bg-white p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[28px] leading-none font-bold tracking-[-0.03em]">Table {x.no}</p>
+              <p className="text-[28px] leading-none font-bold tracking-[-0.03em]">{tr("Table {n}", { n: x.no })}</p>
               <p className="mt-1.5 text-[13px] text-g-muted">
-                {x.zone} · {empty ? `${x.seats} seats` : `${x.guests} guests · since ${x.since}`}
+                {tr(x.zone)} · {empty ? tr("{n} seat|{n} seats", { n: x.seats }) : `${tr("{n} guest|{n} guests", { n: x.guests })} · ${tr("since {t}", { t: x.since ?? "" })}`}
               </p>
             </div>
-            <span className={`${STATUS[x.status].chip} inline-flex h-7 items-center rounded-full px-3 text-[12px] font-semibold`}>{STATUS[x.status].label}</span>
+            <span className={`${STATUS[x.status].chip} inline-flex h-7 items-center rounded-full px-3 text-[12px] font-semibold`}>{tr(STATUS[x.status].label)}</span>
           </div>
           {!empty && x.lines.length > 0 && (
             <div className="mt-4 grid gap-1.5 border-t border-g-line pt-3.5">
               {x.lines.slice(0, 4).map((l) => (
                 <p key={l.id} className="flex items-center gap-2 text-[14px]">
                   <span className="w-6 text-g-muted tabular-nums">{l.qty}×</span>
-                  <span className="min-w-0 flex-1 truncate">{itemById.get(l.itemId)?.name.en ?? l.itemId}</span>
-                  <span className={`${LINE[l.state].chip} inline-flex h-5 items-center rounded-full px-2 text-[11px] font-semibold`}>{LINE[l.state].label}</span>
+                  <span className="min-w-0 flex-1 truncate">{dish(itemById.get(l.itemId)?.name) || l.itemId}</span>
+                  <span className={`${LINE[l.state].chip} inline-flex h-5 items-center rounded-full px-2 text-[11px] font-semibold`}>{tr(LINE[l.state].label)}</span>
                 </p>
               ))}
-              {x.lines.length > 4 && <p className="text-[13px] text-g-muted">+{x.lines.length - 4} more</p>}
+              {x.lines.length > 4 && <p className="text-[13px] text-g-muted">{tr("and {n} more", { n: x.lines.length - 4 })}</p>}
               <p className="mt-1 flex items-baseline justify-between border-t border-g-line pt-2.5">
-                <span className="text-[13px] text-g-muted">Total</span>
+                <span className="text-[13px] text-g-muted">{tr("Total")}</span>
                 <span className="text-[20px] font-semibold tabular-nums">{money(total)}</span>
               </p>
             </div>
           )}
           {x.status === "reserved" && x.booking && (
             <p className="mt-4 rounded-[16px] bg-g-fill px-3.5 py-2.5 text-[14px]">
-              Booked by <b className="font-semibold">{x.booking.name}</b> for {x.booking.time}
+              {tr("Booked by {name} for {t}", { name: x.booking.name, t: x.booking.time })}
             </p>
           )}
         </div>
@@ -776,6 +782,7 @@ function TablePage({
   onCancelLine: (lineId: string, reason: string) => void;
 }) {
   const tr = useTr();
+  const dish = useDish();
   const [guests, setGuests] = useState(Math.min(2, table.seats));
   // Hold a dish for its menu; cancelling asks for a reason; a cancelled dish shows why.
   const [menu, setMenu] = useState<string | null>(null);
@@ -787,7 +794,7 @@ function TablePage({
     <Sheet
       open
       onClose={onClose}
-      label={`Table ${table.no}`}
+      label={tr("Table {n}", { n: table.no })}
       title={false}
       footer={
         empty ? (
@@ -798,15 +805,15 @@ function TablePage({
             }}
             className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold"
           >
-            {table.status === "reserved" ? "Guests arrived · seat" : "Seat guests"} · {guests}
+            {table.status === "reserved" ? tr("Guests arrived · seat") : tr("Seat guests")} · {guests}
           </button>
         ) : (
           <div className="flex gap-2.5">
             <button onClick={onTakeOrder} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
-              <Plus size={18} strokeWidth={2.25} /> Add items
+              <Plus size={18} strokeWidth={2.25} /> {tr("Add dishes")}
             </button>
             <button disabled={!table.lines.length} onClick={onCheck} className="blue-grad press h-14 flex-[1.3] rounded-full text-[16px] font-semibold disabled:opacity-40">
-              {table.status === "bill" ? "Open check" : "Bill"}
+              {table.status === "bill" ? tr("Open the bill") : tr("Bring the bill")}
             </button>
           </div>
         )
@@ -815,12 +822,12 @@ function TablePage({
       <div className="px-5 pt-2 pb-8">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-[34px] leading-none font-bold tracking-[-0.03em]">Table {table.no}</h2>
+            <h2 className="text-[34px] leading-none font-bold tracking-[-0.03em]">{tr("Table {n}", { n: table.no })}</h2>
             <p className="mt-2 text-[14px] text-g-muted">
-              {table.zone} · {table.seats} seats
+              {tr(table.zone)} · {tr("{n} seat|{n} seats", { n: table.seats })}
             </p>
           </div>
-          <span className={`${STATUS[table.status].chip} mt-1 inline-flex h-7 items-center rounded-full px-3 text-[13px] font-semibold`}>{STATUS[table.status].label}</span>
+          <span className={`${STATUS[table.status].chip} mt-1 inline-flex h-7 items-center rounded-full px-3 text-[13px] font-semibold`}>{tr(STATUS[table.status].label)}</span>
         </div>
 
         {!empty && (
@@ -841,11 +848,11 @@ function TablePage({
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold tabular-nums">
-                <Users size={14} strokeWidth={2.2} className="text-g-blue" /> {table.guests} {tr("guests")}
+                <Users size={14} strokeWidth={2.2} className="text-g-blue" /> {tr("{n} guest|{n} guests", { n: table.guests })}
               </span>
               <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold tabular-nums">
-                <Clock size={14} strokeWidth={2.2} className="text-g-blue" /> {seatedFor(table.since)}
-                <span className="font-medium text-g-muted">· {table.since}</span>
+                <Clock size={14} strokeWidth={2.2} className="text-g-blue" /> {seatedFor(table.since, tr)}
+                <span className="font-medium text-g-muted">· {tr("since {t}", { t: table.since ?? "" })}</span>
               </span>
               {table.lines.some((l) => l.by === "guest") && (
                 <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold">
@@ -860,11 +867,11 @@ function TablePage({
           <section className="mt-8">
             {table.booking && (
               <div className="mb-7 rounded-[22px] bg-g-fill p-4">
-                <p className="text-[13px] font-medium text-g-purple">Booked for {table.booking.time}</p>
+                <p className="text-[13px] font-medium text-g-teal">{tr("Booked for {t}", { t: table.booking.time })}</p>
                 <p className="mt-0.5 text-[17px] font-semibold">{table.booking.name}</p>
               </div>
             )}
-            <StepHead title="Guests" />
+            <StepHead title={tr("Guests")} />
             <div className="flex items-center justify-between">
               <span className="text-[56px] leading-[0.9] font-semibold tracking-[-0.04em] tabular-nums">{guests}</span>
               <Counter value={guests} min={1} max={table.seats + 2} onChange={setGuests} />
@@ -893,7 +900,7 @@ function TablePage({
                           <OrderLineRow
                             key={l.id}
                             line={l}
-                            name={itemById.get(l.itemId) ? t(itemById.get(l.itemId)!.name, "en") : l.itemId}
+                            name={dish(itemById.get(l.itemId)?.name) || l.itemId}
                             money={money}
                             onHold={() => setMenu(l.id)}
                             onStatus={() => (l.cancelled ? setWhy(l.id) : onAdvance(l.id))}
@@ -907,14 +914,14 @@ function TablePage({
             ) : (
               <div className="flex flex-col items-center rounded-[22px] bg-g-fill py-10 text-center">
                 <Armchair size={26} strokeWidth={1.75} className="text-g-blue" />
-                <p className="mt-2 text-[15px] text-g-muted">No order yet. Tap “Add items”.</p>
+                <p className="mt-2 text-[15px] text-g-muted">{tr("No order yet. Tap “Add dishes”.")}</p>
               </div>
             )}
           </section>
         )}
       </div>
       {(() => {
-        const name = (id: string) => itemById.get(table.lines.find((x) => x.id === id)?.itemId ?? "")?.name.en ?? "";
+        const name = (id: string) => dish(itemById.get(table.lines.find((x) => x.id === id)?.itemId ?? "")?.name);
         const m = table.lines.find((x) => x.id === menu);
         const c = table.lines.find((x) => x.id === cancelling);
         const w = table.lines.find((x) => x.id === why);
@@ -987,6 +994,8 @@ let lineSeq = 0;
 const lineId = () => `n${++lineSeq}`;
 
 function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTable; menu: Menu; money: (n: number) => string; onClose: () => void; onSend: (lines: TicketLine[]) => void }) {
+  const tr = useTr();
+  const dish = useDish();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState(menu.categories[0]!.id);
   const [picked, setPicked] = useState<Record<string, number>>({});
@@ -994,7 +1003,7 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
   const [note, setNote] = useState("");
   const simple = (i: MenuItem) => i.price > 0 && !i.variants.length && !i.modifierGroups.some((g) => g.required);
   const query = q.trim().toLowerCase();
-  const list = menu.categories.flatMap((c) => c.items.filter((i) => simple(i) && (query ? (i.name.en ?? "").toLowerCase().includes(query) : c.id === cat)));
+  const list = menu.categories.flatMap((c) => c.items.filter((i) => simple(i) && (query ? Object.values(i.name).some((v) => (v ?? "").toLowerCase().includes(query)) : c.id === cat)));
   const all = allItems(menu);
   const byId = new Map(all.map((i) => [i.id, i]));
   const entries = Object.entries(picked);
@@ -1012,11 +1021,11 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
   const send = () => onSend(entries.map(([itemId, qty]) => ({ id: lineId(), itemId, qty, price: byId.get(itemId)?.price ?? 0, state: "new" as const, by: "waiter" as const })));
   const stepper = (id: string, n: number) => (
     <div className="flex h-10 w-[104px] shrink-0 items-center justify-between rounded-full bg-g-ink px-1 text-white">
-      <button aria-label="Remove one" onClick={() => set(id, n - 1)} className="grid size-8 place-items-center">
+      <button aria-label={tr("One less")} onClick={() => set(id, n - 1)} className="grid size-8 place-items-center">
         <Minus size={16} />
       </button>
       <span className="text-[15px] font-semibold tabular-nums">{n}</span>
-      <button aria-label="Add one" onClick={() => set(id, n + 1)} className="grid size-8 place-items-center">
+      <button aria-label={tr("One more")} onClick={() => set(id, n + 1)} className="grid size-8 place-items-center">
         <Plus size={16} />
       </button>
     </div>
@@ -1026,7 +1035,7 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
       <Sheet
         open
         onClose={onClose}
-        label={`Table ${table.no} · add items`}
+        label={tr("Table {n} · add dishes", { n: table.no })}
         footer={
           count ? (
             <div className="flex gap-2.5">
@@ -1035,21 +1044,21 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
                 <span key={count} className="animate-pop grid size-7 place-items-center rounded-full bg-g-ink text-[13px] text-white tabular-nums">
                   {count}
                 </span>
-                Review
+                {tr("Check order")}
               </button>
               <button onClick={send} className="blue-grad press flex h-14 flex-[1.4] items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums">
-                <Send size={18} strokeWidth={2} /> Send · {money(total)}
+                <Send size={18} strokeWidth={2} /> {tr("Send")} · {money(total)}
               </button>
             </div>
           ) : (
-            <p className="flex h-14 items-center justify-center text-[15px] text-g-muted">Tap + to add dishes</p>
+            <p className="flex h-14 items-center justify-center text-[15px] text-g-muted">{tr("Tap + to add a dish")}</p>
           )
         }
       >
         <div className="px-5 pt-1 pb-6">
           <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-4 text-g-muted">
             <Search size={20} strokeWidth={2} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a dish" className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Find a dish")} className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint" />
           </label>
           {!query && (
             <div className="no-scrollbar -mx-5 mt-3 flex gap-1 overflow-x-auto px-5">
@@ -1062,7 +1071,7 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
                   }}
                   className={`press h-9 shrink-0 rounded-full px-3.5 text-[14px] font-medium whitespace-nowrap ${cat === c.id ? "bg-g-ink text-white" : "text-g-muted"}`}
                 >
-                  {t(c.name, "en")}
+                  {dish(c.name)}
                 </button>
               ))}
             </div>
@@ -1073,13 +1082,13 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
               return (
                 <div key={i.id} className="flex h-16 items-center gap-3">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-medium">{t(i.name, "en")}</span>
+                    <span className="block truncate text-[15px] font-medium">{dish(i.name)}</span>
                     <span className="text-[13px] text-g-muted tabular-nums">{money(i.price)}</span>
                   </span>
                   {n ? (
                     stepper(i.id, n)
                   ) : (
-                    <button aria-label={`Add ${t(i.name, "en")}`} onClick={() => set(i.id, 1)} className="blue-grad press grid size-10 place-items-center rounded-full">
+                    <button aria-label={`Add ${dish(i.name)}`} onClick={() => set(i.id, 1)} className="blue-grad press grid size-10 place-items-center rounded-full">
                       <Plus size={20} strokeWidth={2.25} />
                     </button>
                   )}
@@ -1094,23 +1103,23 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
         <Sheet
           open
           onClose={() => setReview(false)}
-          label={`Review · Table ${table.no}`}
+          label={tr("Check order · table {n}", { n: table.no })}
           footer={
             <button disabled={!count} onClick={send} className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums disabled:opacity-40">
-              <Send size={18} strokeWidth={2} /> Send to kitchen · {money(total)}
+              <Send size={18} strokeWidth={2} /> {tr("Send to the kitchen")} · {money(total)}
             </button>
           }
         >
           <div className="px-5 pt-2 pb-8">
             <p className="text-[14px] text-g-muted">
-              Table {table.no} · {table.guests} guests · new round
+              {tr("Table {n}", { n: table.no })} · {tr("{n} guest|{n} guests", { n: table.guests })} · {tr("new round")}
             </p>
             <p className="text-[40px] leading-tight font-semibold tracking-[-0.03em] tabular-nums">{money(total)}</p>
             <div className="mt-5 divide-y divide-g-line">
               {entries.map(([id, n]) => (
                 <div key={id} className="flex h-16 items-center gap-3">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-medium">{t(byId.get(id)!.name, "en")}</span>
+                    <span className="block truncate text-[15px] font-medium">{dish(byId.get(id)!.name)}</span>
                     <span className="text-[13px] text-g-muted tabular-nums">
                       {n} × {money(byId.get(id)!.price)}
                     </span>
@@ -1119,21 +1128,21 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
                 </div>
               ))}
             </div>
-            {!count && <p className="py-10 text-center text-[15px] text-g-muted">Nothing left. Go back and add dishes.</p>}
+            {!count && <p className="py-10 text-center text-[15px] text-g-muted">{tr("The order is empty. Go back and add dishes.")}</p>}
             {table.lines.length > 0 && (
               <p className="mt-5 rounded-[18px] bg-g-fill px-4 py-3 text-[13px] text-g-muted">
-                Already on the table: {table.lines.reduce((s, l) => s + l.qty, 0)} items · {money(ticketTotal(table.lines))}
+                {tr("Already on the table: {n} item|Already on the table: {n} items", { n: table.lines.reduce((s, l) => s + l.qty, 0) })} · {money(ticketTotal(table.lines))}
               </p>
             )}
             <label className="mt-6 block text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase" htmlFor="kitchen-note">
-              Note for the kitchen
+              {tr("Note for the kitchen")}
             </label>
             <textarea
               id="kitchen-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="No onion, kids portion, serve together…"
+              placeholder={tr("No onion, kids portion, serve together…")}
               className="mt-2 w-full rounded-[16px] bg-g-fill px-4 py-3 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/30"
             />
           </div>
@@ -1198,6 +1207,8 @@ export function Receipt({
   qr?: boolean;
   paid?: PayMethod;
 }) {
+  const tr = useTr();
+  const dish = useDish();
   const subtotal = ticketTotal(lines);
   const service = Math.round(subtotal * 0.05);
   const total = subtotal + service + tip;
@@ -1207,7 +1218,7 @@ export function Receipt({
         <p className="text-[20px] font-bold tracking-[-0.02em]">{venue.name}</p>
         <p className="text-[13px] text-g-muted">{venue.address}</p>
         <p className="mt-3 text-[13px] text-g-muted tabular-nums">
-          Table {table} · {guests} guests · {waiter} · {time}
+          {tr("Table {n}", { n: table })} · {tr("{n} guest|{n} guests", { n: guests })} · {waiter} · {time}
         </p>
       </div>
       <div className="my-4 border-t border-dashed border-g-faint/60" />
@@ -1215,36 +1226,36 @@ export function Receipt({
         {lines.map((l) => (
           <div key={l.id} className={`flex items-baseline gap-2 text-[15px] ${l.cancelled ? "text-g-faint line-through" : ""}`}>
             <span className="w-6 shrink-0 text-g-muted tabular-nums">{l.qty}×</span>
-            <span className="min-w-0 flex-1 truncate">{t(itemById.get(l.itemId)?.name ?? { en: l.itemId }, "en")}</span>
+            <span className="min-w-0 flex-1 truncate">{dish(itemById.get(l.itemId)?.name) || l.itemId}</span>
             <span className="shrink-0 tabular-nums">{l.cancelled ? money(0) : money(l.price * l.qty)}</span>
           </div>
         ))}
       </div>
       <div className="my-4 border-t border-dashed border-g-faint/60" />
       <div className="grid gap-1.5 text-[14px] text-g-muted tabular-nums">
-        <Row label="Subtotal" value={money(subtotal)} />
-        <Row label="Service 5%" value={money(service)} />
-        {tip > 0 && <Row label="Tip" value={money(tip)} />}
+        <Row label={tr("Dishes")} value={money(subtotal)} />
+        <Row label={tr("Service 5%")} value={money(service)} />
+        {tip > 0 && <Row label={tr("Tip")} value={money(tip)} />}
       </div>
       <div className="mt-3 flex items-baseline justify-between">
-        <span className="text-[15px] font-semibold">Total</span>
+        <span className="text-[15px] font-semibold">{tr("Total")}</span>
         <span className="text-[30px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{money(total)}</span>
       </div>
-      <p className="mt-1 text-right text-[12px] text-g-faint">VAT included · e-invoice on request</p>
+      <p className="mt-1 text-right text-[12px] text-g-faint">{tr("VAT included · e-invoice on request")}</p>
       {qr && (
         <div className="mt-5 flex items-center gap-4 rounded-[20px] bg-white p-3.5">
           <span className="text-g-ink">
             <FakeQr seed={table * 97 + subtotal} size={96} />
           </span>
           <span>
-            <span className="block text-[15px] font-semibold">Scan to pay</span>
-            <span className="block text-[13px] text-g-muted">VietQR · any bank app, MoMo, ZaloPay</span>
+            <span className="block text-[15px] font-semibold">{tr("Scan to pay")}</span>
+            <span className="block text-[13px] text-g-muted">{tr("VietQR · any bank app, MoMo, ZaloPay")}</span>
           </span>
         </div>
       )}
       {paid && (
         <p className="chip-green mt-5 flex h-10 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold">
-          Paid · {METHOD[paid].label}
+          {tr("Paid")} · {tr(METHOD[paid].label)}
         </p>
       )}
     </div>
@@ -1263,6 +1274,7 @@ function Row({ label, value }: { label: string; value: string }) {
 /* ---------------------------------------------------------------- Payment */
 
 function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTable; money: (n: number) => string; onClose: () => void; onPaid: (m: PayMethod, tip: number) => void; onDone: () => void }) {
+  const tr = useTr();
   const subtotal = ticketTotal(table.lines);
   const base = subtotal + Math.round(subtotal * 0.05);
   const [method, setMethod] = useState<PayMethod>("vietqr");
@@ -1278,22 +1290,22 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
 
   if (done)
     return (
-      <Sheet open onClose={onDone} label="Paid">
+      <Sheet open onClose={onDone} label={tr("Paid")}>
         <div className="flex flex-col items-center px-6 pt-16 pb-10 text-center">
           <span className="blue-grad animate-pop grid size-24 place-items-center rounded-full">
             <svg viewBox="0 0 24 24" width={44} height={44} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="m5 12.5 4.5 4.5L19 7.5" />
             </svg>
           </span>
-          <h2 className="mt-7 text-[30px] font-bold tracking-[-0.025em]">Paid</h2>
+          <h2 className="mt-7 text-[30px] font-bold tracking-[-0.025em]">{tr("Paid")}</h2>
           <p className="mt-1 text-[44px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{money(done.total)}</p>
           <p className="mt-3 text-[15px] text-g-muted">
-            Table {table.no} · {METHOD[method].label}
-            {done.tip ? ` · tip ${money(done.tip)}` : ""}
+            {tr("Table {n}", { n: table.no })} · {tr(METHOD[method].label)}
+            {done.tip ? ` · ${tr("tip {sum}", { sum: money(done.tip) })}` : ""}
           </p>
-          {done.change > 0 && <p className="chip-blue mt-5 rounded-full px-4 py-2 text-[15px] font-semibold tabular-nums">Change {money(done.change)}</p>}
+          {done.change > 0 && <p className="chip-blue mt-5 rounded-full px-4 py-2 text-[15px] font-semibold tabular-nums">{tr("Change {sum}", { sum: money(done.change) })}</p>}
           <button onClick={onDone} className="press mt-10 h-14 w-full max-w-[320px] rounded-full bg-g-fill text-[16px] font-semibold">
-            Back to tables
+            {tr("Back to tables")}
           </button>
         </div>
       </Sheet>
@@ -1303,7 +1315,7 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
     <Sheet
       open
       onClose={onClose}
-      label={`Payment · Table ${table.no}`}
+      label={tr("Payment · table {n}", { n: table.no })}
       footer={
         <button
           disabled={method === "cash" && (received ?? 0) < total}
@@ -1314,17 +1326,17 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
           }}
           className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold tabular-nums disabled:opacity-40"
         >
-          Close bill · {money(total)}
+          {tr("Close the bill")} · {money(total)}
         </button>
       }
     >
       <div className="px-5 pt-2 pb-8">
-        <p className="text-[14px] font-medium text-g-muted">To pay</p>
+        <p className="text-[14px] font-medium text-g-muted">{tr("To pay")}</p>
         <p className="live text-[48px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{money(total)}</p>
-        {split > 1 && <p className="mt-2 text-[15px] text-g-blue tabular-nums">{money(Math.ceil(total / split / 1000) * 1000)} per guest × {split}</p>}
+        {split > 1 && <p className="mt-2 text-[15px] text-g-blue tabular-nums">{tr("{sum} each × {n}", { sum: money(Math.ceil(total / split / 1000) * 1000), n: split })}</p>}
 
         <section className="mt-9">
-          <StepHead n={1} title="Method" />
+          <StepHead n={1} title={tr("Payment method")} />
           <div className="grid grid-cols-2 gap-2.5">
             {(Object.keys(METHOD) as PayMethod[]).map((m) => {
               const { label, icon: Icon } = METHOD[m];
@@ -1339,7 +1351,7 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
                   aria-pressed={on}
                   className={`press flex h-16 items-center gap-3 rounded-[20px] px-4 text-[15px] font-semibold transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
                 >
-                  <Icon size={20} strokeWidth={1.9} /> {label}
+                  <Icon size={20} strokeWidth={1.9} /> {tr(label)}
                 </button>
               );
             })}
@@ -1349,12 +1361,12 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
               <span className="rounded-[12px] bg-white p-2">
                 <FakeQr seed={table.no * 31 + total} size={88} />
               </span>
-              <span className="text-[14px] text-g-muted">Show this to the guest. Payment confirms automatically when the bank sends the notice.</span>
+              <span className="text-[14px] text-g-muted">{tr("Show this to the guest. Payment confirms automatically when the bank sends the notice.")}</span>
             </div>
           )}
           {method === "cash" && (
             <div className="mt-3">
-              <p className="mb-2 text-[13px] font-medium text-g-muted">Received</p>
+              <p className="mb-2 text-[13px] font-medium text-g-muted">{tr("Guest gives")}</p>
               <div className="flex flex-wrap gap-2">
                 {cashOptions.map((v) => (
                   <button
@@ -1366,17 +1378,17 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
                     aria-pressed={received === v}
                     className={`press h-10 rounded-full px-4 text-[14px] font-semibold tabular-nums ${received === v ? "bg-g-ink text-white" : "bg-g-fill"}`}
                   >
-                    {v === total ? "Exact" : money(v)}
+                    {v === total ? tr("Exact amount") : money(v)}
                   </button>
                 ))}
               </div>
-              {received !== null && received > total && <p className="mt-3 text-[15px] font-semibold text-g-blue tabular-nums">Change {money(received - total)}</p>}
+              {received !== null && received > total && <p className="mt-3 text-[15px] font-semibold text-g-blue tabular-nums">{tr("Change {sum}", { sum: money(received - total) })}</p>}
             </div>
           )}
         </section>
 
         <section className="mt-9">
-          <StepHead n={2} title="Tip" aside="Goes to the team pool" />
+          <StepHead n={2} title={tr("Tip")} aside={tr("Goes to the team pool")} />
           <div className="flex rounded-full bg-g-fill p-1">
             {[0, 5, 10, 15].map((p) => (
               <button
@@ -1388,17 +1400,17 @@ function PaymentPage({ table, money, onClose, onPaid, onDone }: { table: FloorTa
                 aria-pressed={tipPct === p}
                 className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${tipPct === p ? "bg-white text-g-ink" : "text-g-muted"}`}
               >
-                {p ? `${p}%` : "No tip"}
+                {p ? `${p}%` : tr("No tip")}
               </button>
             ))}
           </div>
         </section>
 
         <section className="mt-9">
-          <StepHead n={3} title="Split the bill" aside="Optional" />
+          <StepHead n={3} title={tr("Split the bill")} aside={tr("Optional")} />
           <div className="flex items-center justify-between">
             <span className="text-[15px] text-g-muted">
-              Between <span className="font-semibold text-g-ink tabular-nums">{split}</span> {split === 1 ? "guest" : "guests"}
+              {tr("Split between")} <span className="font-semibold text-g-ink tabular-nums">{tr("{n} guest|{n} guests", { n: split })}</span>
             </span>
             <Counter value={split} min={1} max={Math.max(table.guests, 2)} onChange={setSplit} />
           </div>
@@ -1430,6 +1442,8 @@ function OrdersView({
   onHistory?: () => void;
 }) {
   const tr = useTr();
+  const dish = useDish();
+  const locale = useLocale();
   const [view, setView] = useState<"open" | "closed">("open");
   const open = tables.filter((x) => x.lines.length);
   const dishes = (st: LineState) => open.reduce((n, x) => n + x.lines.filter((l) => l.state === st && !l.cancelled).reduce((q, l) => q + l.qty, 0), 0);
@@ -1440,17 +1454,17 @@ function OrdersView({
     if (!since) return "—";
     const [h, m] = since.split(":").map(Number);
     const d = 12 * 60 + 45 - ((h ?? 0) * 60 + (m ?? 0));
-    return d >= 60 ? `${Math.floor(d / 60)} ${tr("h")} ${String(d % 60).padStart(2, "0")} ${tr("min")}` : `${d} ${tr("min")}`;
+    return d >= 60 ? tr("{h} h {m} min", { h: Math.floor(d / 60), m: d % 60 }) : tr("{n} min", { n: d });
   };
   const groups: [string, FloorTable[]][] = [
-    ["Bill asked", open.filter((x) => x.status === "bill")],
-    ["In the kitchen", open.filter((x) => x.status !== "bill" && x.lines.some((l) => l.state !== "served"))],
-    ["Served", open.filter((x) => x.status !== "bill" && x.lines.every((l) => l.state === "served"))],
+    [tr("Want the bill"), open.filter((x) => x.status === "bill")],
+    [tr("In the kitchen"), open.filter((x) => x.status !== "bill" && x.lines.some((l) => l.state !== "served"))],
+    [tr("All served"), open.filter((x) => x.status !== "bill" && x.lines.every((l) => l.state === "served"))],
   ];
   const takings = history.reduce((s, o) => s + total5(o), 0);
   const tips = history.reduce((s, o) => s + o.tip, 0);
   const summary = (ls: TicketLine[]) => {
-    const names = ls.map((l) => `${l.qty}× ${itemById.get(l.itemId)?.name.en ?? ""}`);
+    const names = ls.map((l) => `${l.qty}× ${dish(itemById.get(l.itemId)?.name)}`);
     return names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "");
   };
   return (
@@ -1461,7 +1475,7 @@ function OrdersView({
           className="col-span-2"
           title={tr("Taken today")}
           icon={<Wallet size={13} strokeWidth={2.4} />}
-          days={lastDays(takings)}
+          days={lastDays(takings, locale)}
           format={compactMoney}
           todayNote={tr("tap a day to compare")}
         />
@@ -1473,7 +1487,7 @@ function OrdersView({
             <p>
               <span className="live text-[30px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{dishes("new") + dishes("cooking")}</span>
               <span className="ml-1.5 text-[14px] text-g-muted">
-                {tr("dishes in work")} · {open.length} {tr("open tables")}
+                {tr("dish in work|dishes in work", { n: dishes("new") + dishes("cooking") })} · {tr("{n} open table|{n} open tables", { n: open.length })}
               </span>
             </p>
           }
@@ -1487,9 +1501,9 @@ function OrdersView({
               icon: <ReceiptText size={14} strokeWidth={2.4} />,
               hint:
                 billTables.length === 1
-                  ? `${tr("Table")} ${billTables[0]!.no} · ${compactMoney(ticketTotal(billTables[0]!.lines))}`
+                  ? `${tr("Table {n}", { n: billTables[0]!.no })} · ${compactMoney(ticketTotal(billTables[0]!.lines))}`
                   : billTables.length
-                    ? `${tr("Tables")} ${billTables.map((x) => x.no).join(", ")}`
+                    ? tr("Tables {list}", { list: billTables.map((x) => x.no).join(", ") })
                     : tr("No one is waiting"),
               // One table: straight to its bill. Several: choose who pays first.
               action: billTables.length
@@ -1500,12 +1514,12 @@ function OrdersView({
                 : undefined,
             },
           ]}
-          footnote={`${history.length} ${tr("paid today")}`}
+          footnote={tr("{n} bill paid today|{n} bills paid today", { n: history.length })}
         />
-        <IconStat title={tr("Tips")} art={<TipsArt size={140} />} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
+        <IconStat title={tr("Tips")} art={<HandCoins size={120} strokeWidth={1.4} className="text-g-green opacity-40" />} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
         <IconStat
           title={tr("Avg check")}
-          art={<CheckArt size={140} />}
+          art={<Banknote size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />}
           value={compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0)}
           sub={tr("per bill today")}
           tone="blue"
@@ -1514,7 +1528,7 @@ function OrdersView({
       <div className="mt-8 flex rounded-full bg-g-fill p-1">
         {(
           [
-            ["open", `Open · ${open.length}`],
+            ["open", `${tr("Open")} · ${open.length}`],
             ["closed", `${tr("Closed today")} · ${history.length}`],
           ] as const
         ).map(([id, label]) => (
@@ -1548,14 +1562,14 @@ function OrdersView({
                       <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline justify-between gap-3">
-                          <span className="text-[16px] font-semibold">Table {x.no}</span>
+                          <span className="text-[16px] font-semibold">{tr("Table {n}", { n: x.no })}</span>
                           <span className="live shrink-0 text-[16px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
                         </span>
                         <span className="live mt-0.5 block truncate text-[14px] text-g-ink-2">{summary(x.lines)}</span>
                         <span className="mt-1.5 flex items-center gap-2 text-[12px] text-g-muted">
-                          {cooking > 0 && <span className="chip-orange inline-flex h-6 items-center rounded-full px-2 font-semibold">{cooking} cooking</span>}
+                          {cooking > 0 && <span className="chip-orange inline-flex h-6 items-center rounded-full px-2 font-semibold">{tr("{n} cooking", { n: cooking })}</span>}
                           <span className="live">
-                            since {x.since} · {x.guests} guests
+                            {tr("since {t}", { t: x.since ?? "" })} · {tr("{n} guest|{n} guests", { n: x.guests })}
                           </span>
                         </span>
                       </span>
@@ -1577,15 +1591,15 @@ function OrdersView({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-3">
-                    <span className="text-[16px] font-semibold">Table {o.table}</span>
+                    <span className="text-[16px] font-semibold">{tr("Table {n}", { n: o.table })}</span>
                     <span className="live shrink-0 text-[16px] font-semibold tabular-nums">{money(total5(o))}</span>
                   </span>
                   <span className="live mt-0.5 block truncate text-[14px] text-g-ink-2">{summary(o.lines)}</span>
                   <span className="mt-1 flex items-center justify-between gap-2 text-[12px] text-g-muted">
                     <span className="live">
-                      #{o.id} · {o.closedAt} · {label}
+                      #{o.id} · {o.closedAt} · {tr(label)}
                     </span>
-                    {o.tip > 0 && <span className="live shrink-0 font-semibold text-g-green tabular-nums">tip {money(o.tip)}</span>}
+                    {o.tip > 0 && <span className="live shrink-0 font-semibold text-g-green tabular-nums">{tr("tip {sum}", { sum: money(o.tip) })}</span>}
                   </span>
                 </span>
               </button>
@@ -1603,7 +1617,7 @@ function OrdersView({
           <div className="flex items-center justify-between gap-3">
             <p className="text-[22px] leading-tight font-bold tracking-[-0.02em]">{tr("Waiting for the bill")}</p>
             <span className="chip-orange rounded-full px-2.5 py-1 text-[12px] font-semibold tabular-nums">
-              {billTables.length} {tr("tables")}
+              {tr("{n} table|{n} tables", { n: billTables.length })}
             </span>
           </div>
           <div className="mt-4 grid gap-2">
@@ -1625,7 +1639,7 @@ function OrdersView({
                   {i === 0 && <span className="mb-1 inline-block rounded-full bg-[#ef6c1a] px-2 py-0.5 text-[10px] font-semibold text-white">{tr("Longest at the table")}</span>}
                   <span className="block text-[17px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
                   <span className="flex items-center gap-1 text-[12px] whitespace-nowrap text-g-muted tabular-nums">
-                    {x.guests} {tr("guests")} · <Clock size={12} strokeWidth={2.2} className="shrink-0" /> {sat(x.since)}
+                    {tr("{n} guest|{n} guests", { n: x.guests })} · <Clock size={12} strokeWidth={2.2} className="shrink-0" /> {sat(x.since)}
                   </span>
                 </span>
                 <span className="shrink-0 rounded-full bg-g-ink px-3.5 py-2 text-[13px] font-semibold text-white">{tr("Pay")}</span>
@@ -1638,7 +1652,7 @@ function OrdersView({
           </p>
         </PeekCard>
       )}
-      {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">No open orders</p>}
+      {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">{tr("No open orders")}</p>}
     </div>
   );
 }
@@ -1736,11 +1750,11 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
 }
 
 /** How long a table has been seated, against the demo clock (12:45). */
-function seatedFor(since?: string) {
+function seatedFor(since: string | undefined, tr: (en: string, v?: TrVars) => string) {
   if (!since) return "—";
   const [h, m] = since.split(":").map(Number);
   const d = Math.max(0, 12 * 60 + 45 - ((h ?? 0) * 60 + (m ?? 0)));
-  return d >= 60 ? `${Math.floor(d / 60)}h ${String(d % 60).padStart(2, "0")}m` : `${d}m`;
+  return d >= 60 ? tr("{h} h {m} min", { h: Math.floor(d / 60), m: d % 60 }) : tr("{n} min", { n: d });
 }
 
 

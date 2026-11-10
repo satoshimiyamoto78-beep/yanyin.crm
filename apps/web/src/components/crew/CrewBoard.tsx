@@ -190,10 +190,10 @@ export function CrewBoard({
         <TipsCarousel
         tips={[
           ...(available[0]
-            ? [{ id: "quest", kicker: tr("Quest of the week"), title: tr(available[0].title), text: tr(available[0].description), icon: Trophy, tone: "blue" as const, action: { label: `${tr("Take")} · +${available[0].reward.xp} XP`, onClick: () => take(available[0]!.id) } }]
+            ? [{ id: "quest", kicker: tr("Quest of the week"), title: tr(available[0].title), text: tr(available[0].description), icon: Trophy, tone: "blue" as const, action: { label: tr("Take · +{n} XP", { n: available[0].reward.xp }), onClick: () => take(available[0]!.id) } }]
             : []),
           { id: "lemonade", kicker: tr("Sell more"), title: tr("Offer tarragon lemonade with plov"), text: tr("Guests who take plov add a drink 2× more often when you suggest one."), icon: TrendingUp, tone: "green" as const },
-          { id: "goal", kicker: tr("Team goal"), title: `${boss}% ${tr("of this week’s goal")}`, text: `${tr(data.boss.endsIn)} · ${tr("reward")} ${data.boss.reward}`, icon: Users, tone: "orange" as const },
+          { id: "goal", kicker: tr("Team goal"), title: tr("{n}% of the weekly goal", { n: boss }), text: `${tr(data.boss.endsIn)} · ${tr("reward {sum}", { sum: tr(data.boss.reward) })}`, icon: Users, tone: "orange" as const },
           { id: "rush", kicker: tr("Peak at 19:00"), title: tr("Pre-set tables 4 and 9 now"), text: tr("Six bookings land between 19:00 and 19:30. Set cutlery and water before the rush."), icon: Clock, tone: "ink" as const },
           { id: "dessert", kicker: tr("Easy XP"), title: tr("Suggest dessert with tea"), text: tr("Each dessert counts toward Sweet finish. Medovik is today’s favourite."), icon: CakeSlice, tone: "blue" as const },
         ]}
@@ -206,7 +206,7 @@ export function CrewBoard({
               <span className="chip-orange grid size-8 place-items-center rounded-full">
                 <Flame size={17} strokeWidth={2} />
               </span>
-              <span className="live">{data.staff.streakDays}{tr("-day streak")}</span>
+              <span className="live">{tr("{n} day in a row|{n} days in a row", { n: data.staff.streakDays })}</span>
             </p>
             <p className="text-[13px] text-g-muted">{tr("On time every shift")}</p>
           </div>
@@ -251,14 +251,14 @@ export function CrewBoard({
                 <CountUp to={boss} />%
               </p>
               <p className="mt-1 text-[13px] text-g-muted">
-                {short(data.boss.progress)} {tr("of")} {short(data.boss.target)} ₫
+                {tr("{a} of {b} ₫", { a: short(data.boss.progress), b: short(data.boss.target) })}
               </p>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2.5">
             <div className="rounded-[18px] bg-white/75 p-3.5 backdrop-blur">
               <p className="text-[12px] text-g-muted">{tr("Reward")}</p>
-              <p className="text-[15px] font-semibold">{data.boss.reward}</p>
+              <p className="text-[15px] font-semibold">{tr(data.boss.reward)}</p>
             </div>
             <div className="rounded-[18px] bg-white/75 p-3.5 backdrop-blur">
               <p className="text-[12px] text-g-muted">{tr("Time left")}</p>
@@ -306,7 +306,7 @@ export function CrewBoard({
           {data.leaderboard.map((p, i) => (
             <li key={p.name} className={`flex items-center gap-4 rounded-[18px] px-4 py-3.5 ${p.me ? "bg-g-blue-soft" : ""}`}>
               <span className={`w-5 text-[15px] font-semibold tabular-nums ${p.me ? "text-g-blue" : "text-g-faint"}`}>{i + 1}</span>
-              <span className={`live min-w-0 flex-1 truncate text-[16px] ${p.me ? "font-semibold text-g-blue" : "font-medium"}`}>{p.me ? `${p.name} (${tr("you")})` : p.name}</span>
+              <span className={`live min-w-0 flex-1 truncate text-[16px] ${p.me ? "font-semibold text-g-blue" : "font-medium"}`}>{p.me ? tr("{name} (you)", { name: p.name }) : p.name}</span>
               <span className="live shrink-0 text-[15px] font-semibold tabular-nums">{p.me ? xp : p.xp} XP</span>
             </li>
           ))}
@@ -322,7 +322,7 @@ export function CrewBoard({
         <NorthSky />
         <div className="mx-auto max-w-[480px]">
           <div className="flex items-center gap-2 px-5">
-            <button aria-label="Profile" onClick={() => onProfile?.()} className="press grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#fff] text-[16px] font-bold text-[#0b0b0f]">
+            <button aria-label={tr("Profile")} onClick={() => onProfile?.()} className="press grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#fff] text-[16px] font-bold text-[#0b0b0f]">
               {/* eslint-disable-next-line @next/next/no-img-element -- a local photo the waiter picked */}
               {photo ? <img src={photo} alt="" className="size-full object-cover" /> : (name ?? data.staff.name)[0]}
             </button>
@@ -330,8 +330,8 @@ export function CrewBoard({
               <Search size={17} strokeWidth={2} />
               <input placeholder={tr("Tables, dishes, guests")} aria-label={tr("Search")} className="min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/70" />
             </label>
-            {onTheme && <ThemeToggle dark={dark} onToggle={onTheme} label="Light or dark theme" />}
-            <button aria-label={unread ? `Notifications, ${unread} new` : "Notifications"} onClick={() => onInbox?.()} className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
+            {onTheme && <ThemeToggle dark={dark} onToggle={onTheme} label={tr("Light or dark theme")} />}
+            <button aria-label={unread ? tr("Notifications, {n} new", { n: unread }) : tr("Notifications")} onClick={() => onInbox?.()} className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
               <Bell size={19} strokeWidth={2} />
               {unread > 0 && <span className="absolute -top-0.5 -right-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-g-orange px-1 text-[10px] font-bold text-white tabular-nums">{unread}</span>}
             </button>
@@ -343,14 +343,14 @@ export function CrewBoard({
                 <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
                 <span className="font-semibold text-white">{tr("On shift")}</span>
                 <span className="text-white/45">·</span>
-                {(name ?? data.staff.name).split(" ")[0]} · {tr("tips")}
+                {tr("{name}'s tips", { name: (name ?? data.staff.name).split(" ")[0]! })}
               </p>
               <button onClick={() => onGo?.("orders")} className="press mt-2 flex items-center gap-1 text-left">
                 <span className="live text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{hidden ? "••• •••" : money(data.today.tips)}</span>
                 <ChevronRight size={22} className="text-white/55" />
               </button>
             </div>
-            <button aria-label={hidden ? "Show amounts" : "Hide amounts"} onClick={() => setHidden((v) => !v)} className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
+            <button aria-label={hidden ? tr("Show amounts") : tr("Hide amounts")} onClick={() => setHidden((v) => !v)} className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white">
               {hidden ? <Eye size={19} strokeWidth={2} /> : <EyeOff size={19} strokeWidth={2} />}
             </button>
           </div>
@@ -359,14 +359,14 @@ export function CrewBoard({
             <StripBig
               onClick={() => onGo?.("tables")}
               icon={<LayoutGrid size={19} strokeWidth={2} />}
-              title={hot ? `${hot.busy}/${hot.tables} ${tr("tables")}` : tr("Tables")}
-              sub={hot?.bills ? `${hot.bills} ${tr("asking for the bill")}` : tr("all calm")}
+              title={hot ? tr("{a} of {b} tables", { a: hot.busy, b: hot.tables }) : tr("Tables")}
+              sub={hot?.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm")}
               tone={hot?.bills ? "orange" : "muted"}
             />
             <StripSquare icon={<ScanLine size={21} strokeWidth={1.9} />} label={tr("Scan")} onClick={() => onScan?.()} />
             <StripSquare icon={<Coffee size={21} strokeWidth={1.9} />} label={tr("Break")} onClick={() => onNotify?.(tr("Break started"), tr("Tables see “back in 10 min”"))} />
             <StripBig onClick={() => onGo?.("orders")} icon={<TrendingUp size={19} strokeWidth={2} />} title={hidden ? "•••" : `${short(data.today.sales)} ₫`} sub={`${tr("Sales today")} · +12%`} />
-            <StripBig icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">{tr("Level")} {level.level}</span>} title={tr(level.title)} wide>
+            <StripBig icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">{tr("Level {n}", { n: level.level })}</span>} title={tr(level.title)} wide>
               <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-g-fill">
                 <span className="live bar-grad block h-full rounded-full" style={{ width: `${pct}%` }} />
               </span>
@@ -390,7 +390,7 @@ export function CrewBoard({
               {editing && (
                 <button
                   data-nodrag
-                  aria-label={`${tr("Hide")} ${tr(HOME_BLOCKS[b.id].label)}`}
+                  aria-label={tr("Hide “{name}”", { name: tr(HOME_BLOCKS[b.id].label) })}
                   onClick={() => {
                     haptic("light");
                     setLayout(layout.map((x) => (x.id === b.id ? { ...x, on: false } : x)));
@@ -486,7 +486,7 @@ export function CrewBoard({
           <div className="mt-4 grid grid-cols-2 gap-2">
             <div className="rounded-[16px] bg-g-fill p-3">
               <p className="text-[12px] text-g-muted">{tr("Reward")}</p>
-              <p className="text-[15px] font-semibold">{data.boss.reward}</p>
+              <p className="text-[15px] font-semibold">{tr(data.boss.reward)}</p>
             </div>
             <div className="rounded-[16px] bg-g-fill p-3">
               <p className="text-[12px] text-g-muted">{tr("Time left")}</p>
@@ -516,7 +516,7 @@ export function CrewBoard({
             {q.state !== "available" && (
               <div className="mt-4">
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-g-muted">Progress</span>
+                  <span className="text-g-muted">{tr("Progress")}</span>
                   <span className="font-semibold tabular-nums">
                     {q.progress}/{q.target}
                   </span>
@@ -528,16 +528,16 @@ export function CrewBoard({
             )}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="rounded-[16px] bg-g-fill p-3">
-                <p className="text-[12px] text-g-muted">Reward</p>
+                <p className="text-[12px] text-g-muted">{tr("Reward")}</p>
                 <p className="text-[15px] font-semibold">+{q.reward.xp} XP{q.reward.bonus ? ` · ${money(q.reward.bonus)}` : ""}</p>
               </div>
               <div className="rounded-[16px] bg-g-fill p-3">
-                <p className="text-[12px] text-g-muted">Deadline</p>
+                <p className="text-[12px] text-g-muted">{tr("Deadline")}</p>
                 <p className="text-[15px] font-semibold">{q.endsAt.replace(/^Ends /, "")}</p>
               </div>
             </div>
             {q.reward.perk && <p className="mt-2 text-[13px] text-g-muted">Bonus: {q.reward.perk}</p>}
-            <p className="mt-3 text-[12px] text-g-faint">Progress counts automatically from your orders.</p>
+            <p className="mt-3 text-[12px] text-g-faint">{tr("Progress counts by itself from your orders.")}</p>
           </PeekCard>
         );
       })()}
@@ -651,7 +651,7 @@ export function QuestRow({ q, money, action, onPeek }: { q: CrewQuest; money: (n
               <p className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-g-muted">
                 <Clock size={12} strokeWidth={2} className="shrink-0" />
                 {tr(q.endsAt)}
-                {q.reward.perk ? ` · ${tr("bonus")}: ${tr(q.reward.perk).toLowerCase()}` : ""}
+                {q.reward.perk ? ` · ${tr("bonus: {perk}", { perk: tr(q.reward.perk).toLowerCase() })}` : ""}
               </p>
             </div>
             {action}
@@ -684,7 +684,7 @@ export function BadgePeek({ b, onClose }: { b: CrewData["badges"][number]; onClo
           <div className="h-1.5 overflow-hidden rounded-full bg-g-fill">
             <div className="bar-grad h-full rounded-full" style={{ width: `${info.progress}%` }} />
           </div>
-          <p className="mt-1.5 text-[12px] text-g-muted">{info.progress}% {tr("there")}</p>
+          <p className="mt-1.5 text-[12px] text-g-muted">{tr("{n}% done", { n: info.progress })}</p>
         </div>
       )}
     </PeekCard>

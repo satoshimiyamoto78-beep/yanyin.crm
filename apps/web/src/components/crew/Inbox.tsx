@@ -46,10 +46,10 @@ const NEWS = [
   { id: "n3", icon: Sparkles, from: "yanyin", title: "Dark theme and a new home", text: "Switch the theme from the header, and customize your main screen at the bottom of Home.", when: "Mon" },
 ];
 
-const timeOf = (at: number, now: number, tr: (s: string) => string) => {
+const timeOf = (at: number, now: number, tr: (s: string, v?: Record<string, number>) => string) => {
   const d = Math.round((now - at) / MIN);
   if (d < 1) return tr("now");
-  if (d < 60) return `${d} ${tr("min")}`;
+  if (d < 60) return tr("{n} min ago", { n: d });
   return new Date(at).toTimeString().slice(0, 5);
 };
 const dayOf = (at: number, now: number) => (new Date(at).toDateString() === new Date(now).toDateString() ? "Today" : "Earlier");

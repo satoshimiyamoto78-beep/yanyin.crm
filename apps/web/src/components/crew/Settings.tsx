@@ -96,7 +96,7 @@ export function ProfilePage({
         <section className="mt-6 rounded-[24px] bg-g-fill p-4">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-[16px] font-semibold">
-              {tr("Level")} {level.level} <span className="font-medium text-g-muted">· {tr(level.title)}</span>
+              {tr("Level {n}", { n: level.level })} <span className="font-medium text-g-muted">· {tr(level.title)}</span>
             </p>
             <p className="text-[13px] text-g-muted tabular-nums">
               {level.xpIntoLevel} / {level.xpForNext} XP
@@ -176,7 +176,7 @@ export function ProfilePage({
         </Group>
 
         <Group title={tr("Notifications")}>
-          <Row icon={BellRing} label={tr("Notifications")} hint={`${on} ${tr("of")} ${total} ${tr("on")} · ${prefs.notify.sound ? tr("sound") : tr("silent")}`} onClick={() => setSub("notifications")}>
+          <Row icon={BellRing} label={tr("Notifications")} hint={`${tr("{a} of {b} on", { a: on, b: total })} · ${prefs.notify.sound ? tr("sound") : tr("silent")}`} onClick={() => setSub("notifications")}>
             <ChevronRight size={18} className="text-g-faint" />
           </Row>
         </Group>
@@ -469,6 +469,7 @@ export function Avatar({ me, size }: { me: Me; size: number }) {
 
 /** Personal info: photo, first and last name, phone and email. */
 export function PersonalInfoPage({ me, onSave, onClose }: { me: Me; onSave: (m: Me) => void; onClose: () => void }) {
+  const { tr } = usePrefs();
   const [d, setD] = useState(me);
   const changed = JSON.stringify(d) !== JSON.stringify(me);
   const ok = d.first.trim().length > 0 && d.phone.trim().length > 5 && /.+@.+\..+/.test(d.email);
@@ -478,10 +479,10 @@ export function PersonalInfoPage({ me, onSave, onClose }: { me: Me; onSave: (m: 
     <Sheet
       open
       onClose={onClose}
-      label="Personal info"
+      label={tr("Personal info")}
       footer={
         <button disabled={!changed || !ok} onClick={() => onSave({ ...d, first: d.first.trim(), last: d.last.trim() })} className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold disabled:opacity-40">
-          Save
+          {tr("Save")}
         </button>
       }
     >
@@ -490,7 +491,7 @@ export function PersonalInfoPage({ me, onSave, onClose }: { me: Me; onSave: (m: 
           <Avatar me={d} size={104} />
           <div className="mt-4 flex gap-2">
             <label className="press flex h-10 cursor-pointer items-center gap-2 rounded-full bg-g-fill px-4 text-[14px] font-semibold">
-              <Camera size={16} strokeWidth={2} /> {d.photo ? "Change photo" : "Add photo"}
+              <Camera size={16} strokeWidth={2} /> {d.photo ? tr("Change photo") : tr("Add photo")}
               <input
                 type="file"
                 accept="image/*"
@@ -510,15 +511,15 @@ export function PersonalInfoPage({ me, onSave, onClose }: { me: Me; onSave: (m: 
         </div>
         <div className="mt-8 grid gap-4">
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-semibold text-g-muted">First name</span>
+            <span className="mb-1.5 block text-[13px] font-semibold text-g-muted">{tr("First name")}</span>
             <input value={d.first} onChange={set("first")} autoComplete="given-name" className={field} />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-semibold text-g-muted">Last name</span>
+            <span className="mb-1.5 block text-[13px] font-semibold text-g-muted">{tr("Last name")}</span>
             <input value={d.last} onChange={set("last")} autoComplete="family-name" className={field} />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-semibold text-g-muted">Phone or Zalo</span>
+            <span className="mb-1.5 block text-[13px] font-semibold text-g-muted">{tr("Phone or Zalo")}</span>
             <input value={d.phone} onChange={set("phone")} inputMode="tel" autoComplete="tel" className={field} />
           </label>
           <label className="block">
@@ -526,7 +527,7 @@ export function PersonalInfoPage({ me, onSave, onClose }: { me: Me; onSave: (m: 
             <input value={d.email} onChange={set("email")} inputMode="email" autoComplete="email" className={field} />
           </label>
         </div>
-        <p className="mt-4 text-[13px] text-g-muted">Your role and venue are set by the manager.</p>
+        <p className="mt-4 text-[13px] text-g-muted">{tr("Your role and venue are set by the manager.")}</p>
       </div>
     </Sheet>
   );

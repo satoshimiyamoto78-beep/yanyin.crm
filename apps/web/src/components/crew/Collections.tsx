@@ -85,7 +85,7 @@ export function QuestsPage({
       <div className="px-5 pt-1 pb-10">
         <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Quests")}</h2>
         <p className="mt-1 text-[14px] text-g-muted">
-          {active.length} {tr("in progress")} · {available.length} {tr("on the board")}
+          {tr("{n} in progress", { n: active.length })} · {tr("{n} on the board", { n: available.length })}
         </p>
         <div className="mt-5">
           <Tabs
@@ -174,7 +174,7 @@ export function BadgesPage({ badges, onClose }: { badges: CrewData["badges"]; on
       <div className="px-5 pt-1 pb-10">
         <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Badges")}</h2>
         <p className="mt-1 text-[14px] text-g-muted">
-          {earned} {tr("of")} {badges.length} {tr("earned")}
+          {tr("{a} of {b} earned", { a: earned, b: badges.length })}
         </p>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-g-fill">
           <div className="bar-grad h-full rounded-full" style={{ width: `${(earned / badges.length) * 100}%` }} />
@@ -204,7 +204,7 @@ export function BadgesPage({ badges, onClose }: { badges: CrewData["badges"]; on
                 <div className="bar-grad h-full rounded-full" style={{ width: `${info.progress}%` }} />
               </div>
               <p className="mt-1.5 text-[12px] text-g-muted">
-                {info.progress}% {tr("there")}
+                {tr("{n}% done", { n: info.progress })}
               </p>
             </div>
           )}

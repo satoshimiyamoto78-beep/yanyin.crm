@@ -11,7 +11,7 @@ import { Sheet } from "@/components/guest/ui";
 import { BarsWidget, HeroStat, IconStat, RingWidget } from "@/components/system/Widgets";
 import { BADGE_ICON, BADGE_TIER } from "./CrewBoard";
 import { BadgeEmblem } from "./Emblems";
-import { useTr } from "./prefs";
+import { useDish, useLocale, useTr } from "./prefs";
 
 /*
  * The waiter's cabinet: everything about their own work beyond today's floor.
@@ -23,11 +23,11 @@ import { useTr } from "./prefs";
 export type PastOrder = ClosedOrder & { day: number };
 
 const DAY = 86_400_000;
-const dayName = (d: number, tr: (s: string) => string, now: number) => {
+const dayName = (d: number, tr: (s: string) => string, now: number, locale: string) => {
   if (d === 0) return tr("Today");
   if (d === 1) return tr("Yesterday");
   const date = new Date(now - d * DAY);
-  return date.toLocaleDateString("en", { weekday: "short", day: "numeric", month: "short" });
+  return date.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
 };
 
 /** Demo history for the past three weeks, built from today's real orders (the backend replaces this). */
@@ -72,6 +72,7 @@ export function CabinetView({
   onQuests: () => void;
 }) {
   const tr = useTr();
+  const locale = useLocale();
   const [page, setPage] = useState<"history" | string | null>(null);
   // Read the clock once per visit.
   const [now] = useState(() => Date.now());
@@ -94,7 +95,10 @@ export function CabinetView({
       <header>
         <h1 className="text-[30px] leading-tight font-bold tracking-[-0.025em]">{tr("Cabinet")}</h1>
         <p className="mt-0.5 text-[14px] text-g-muted">
-          {data.staff.name} · {new Date(now).toLocaleDateString("en", { month: "long", year: "numeric" })}
+          {data.staff.name} · {(() => {
+            const m = new Date(now).toLocaleDateString(locale, { month: "long", year: "numeric" }).replace(" г.", "");
+            return m.charAt(0).toUpperCase() + m.slice(1);
+          })()}
         </p>
       </header>
 
@@ -110,7 +114,7 @@ export function CabinetView({
           referenceName={tr("Last month")}
           format={k}
         />
-        <IconStat title={tr("Shifts")} art={<Clock size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />} value={`${shifts}`} sub={`${shifts * 8} ${tr("hours this month")}`} tone="blue" />
+        <IconStat title={tr("Shifts")} art={<Clock size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />} value={`${shifts}`} sub={tr("{n} hour this month|{n} hours this month", { n: shifts * 8 })} tone="blue" />
         <IconStat title={tr("Orders")} art={<ReceiptIcon size={120} strokeWidth={1.4} className="text-g-orange opacity-40" />} value={`${orders}`} sub={tr("served this month")} tone="orange" />
         <BarsWidget
           className="col-span-2"
@@ -155,7 +159,7 @@ export function CabinetView({
             <span className="min-w-0 flex-1">
               <span className="block text-[16px] font-semibold">{tr("Badges")}</span>
               <span className="block text-[13px] text-g-muted">
-                {data.badges.filter((b) => b.earned).length} {tr("of")} {data.badges.length} {tr("earned")}
+                {tr("{a} of {b} earned", { a: data.badges.filter((b) => b.earned).length, b: data.badges.length })}
               </span>
             </span>
             <ChevronRight size={18} className="text-g-faint" />
@@ -164,7 +168,7 @@ export function CabinetView({
             <Trophy size={22} className="text-g-blue" />
             <span>
               <span className="block text-[16px] font-semibold">{tr("Quests")}</span>
-              <span className="block text-[13px] text-g-muted">{data.quests.filter((q) => q.state !== "available").length} {tr("in progress")}</span>
+              <span className="block text-[13px] text-g-muted">{tr("{n} in progress", { n: data.quests.filter((q) => q.state !== "available").length })}</span>
             </span>
           </button>
           <div className="flex flex-col justify-between gap-6 rounded-[26px] bg-g-tint-green p-4">
@@ -232,7 +236,8 @@ export function CabinetView({
 
 function OrderRow({ o, itemById, money, onOpen }: { o: PastOrder; itemById: Map<string, MenuItem>; money: (n: number) => string; onOpen: () => void }) {
   const tr = useTr();
-  const names = o.lines.map((l) => `${l.qty}× ${itemById.get(l.itemId)?.name.en ?? ""}`);
+  const dish = useDish();
+  const names = o.lines.map((l) => `${l.qty}× ${dish(itemById.get(l.itemId)?.name)}`);
   const total = o.subtotal + o.tip;
   return (
     <button
@@ -246,14 +251,14 @@ function OrderRow({ o, itemById, money, onOpen }: { o: PastOrder; itemById: Map<
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">
           <span className="truncate text-[15px] font-semibold">
-            {tr("Table")} {o.table} · #{o.id}
+            {tr("Table {n}", { n: o.table })} · #{o.id}
           </span>
           <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(total)}</span>
         </span>
         <span className="block truncate text-[13px] text-g-muted">{names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "")}</span>
         <span className="block text-[12px] text-g-faint tabular-nums">
-          {o.closedAt} · {o.guests} {tr("guests")}
-          {o.tip ? ` · ${tr("tip")} ${money(o.tip)}` : ""}
+          {o.closedAt} · {tr("{n} guest|{n} guests", { n: o.guests })}
+          {o.tip ? ` · ${tr("tip {sum}", { sum: money(o.tip) })}` : ""}
         </span>
       </span>
     </button>
@@ -263,6 +268,7 @@ function OrderRow({ o, itemById, money, onOpen }: { o: PastOrder; itemById: Map<
 /** Every order the waiter closed: search by table or dish, filter by period, grouped by day. */
 function HistoryPage({ history, itemById, money, onOpen, onClose }: { history: PastOrder[]; itemById: Map<string, MenuItem>; money: (n: number) => string; onOpen: (o: ClosedOrder) => void; onClose: () => void }) {
   const tr = useTr();
+  const locale = useLocale();
   const [now] = useState(() => Date.now());
   const [q, setQ] = useState("");
   const [range, setRange] = useState<"today" | "yesterday" | "week" | "all">("all");
@@ -270,7 +276,7 @@ function HistoryPage({ history, itemById, money, onOpen, onClose }: { history: P
     const max = { today: 0, yesterday: 1, week: 6, all: 99 }[range];
     const min = range === "yesterday" ? 1 : 0;
     const needle = q.trim().toLowerCase();
-    return history.filter((o) => o.day >= min && o.day <= max && (!needle || String(o.table) === needle || String(o.id).includes(needle) || o.lines.some((l) => (itemById.get(l.itemId)?.name.en ?? "").toLowerCase().includes(needle))));
+    return history.filter((o) => o.day >= min && o.day <= max && (!needle || String(o.table) === needle || String(o.id).includes(needle) || o.lines.some((l) => Object.values(itemById.get(l.itemId)?.name ?? {}).some((v) => (v ?? "").toLowerCase().includes(needle)))));
   }, [history, q, range, itemById]);
   const days = [...new Set(list.map((o) => o.day))];
   return (
@@ -278,7 +284,7 @@ function HistoryPage({ history, itemById, money, onOpen, onClose }: { history: P
       <div className="px-5 pt-1 pb-10">
         <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Order history")}</h2>
         <p className="mt-1 text-[14px] text-g-muted">
-          {list.length} {tr("orders")} · {money(list.reduce((n, o) => n + o.subtotal + o.tip, 0))}
+          {tr("{n} order|{n} orders", { n: list.length })} · {money(list.reduce((n, o) => n + o.subtotal + o.tip, 0))}
         </p>
         <label className="mt-4 flex h-12 items-center gap-2 rounded-full bg-g-fill px-4 text-g-faint">
           <Search size={18} strokeWidth={2} />
@@ -311,7 +317,7 @@ function HistoryPage({ history, itemById, money, onOpen, onClose }: { history: P
           return (
             <section key={d} className="mt-6">
               <h3 className="flex items-baseline justify-between text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">
-                <span>{dayName(d, tr, now)}</span>
+                <span>{dayName(d, tr, now, locale)}</span>
                 <span className="tracking-normal normal-case tabular-nums">{money(dayList.reduce((n, o) => n + o.subtotal + o.tip, 0))}</span>
               </h3>
               <div className="mt-1 divide-y divide-g-line">

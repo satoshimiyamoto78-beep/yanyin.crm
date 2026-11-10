@@ -74,7 +74,7 @@ export function TipsCarousel({
         </h2>
         {aside ?? (
           <span className="text-[13px] text-g-muted tabular-nums">
-            {at + 1} {tr("of")} {tips.length}
+            {tr("{a} of {b}", { a: at + 1, b: tips.length })}
           </span>
         )}
       </div>
@@ -131,14 +131,14 @@ export function TipsCarousel({
       <div
         className="mt-3 flex justify-center gap-1.5"
         role="tablist"
-        aria-label="Tips"
+        aria-label={tr("Tips")}
       >
         {tips.map((t, i) => (
           <button
             key={t.id}
             role="tab"
             aria-selected={i === at}
-            aria-label={`Tip ${i + 1}`}
+            aria-label={tr("Tip {n}", { n: i + 1 })}
             onClick={() => go(i)}
             className={`h-1.5 rounded-full transition-all duration-300 ${i === at ? "w-5 bg-g-ink" : "w-1.5 bg-g-fill-2"}`}
           />

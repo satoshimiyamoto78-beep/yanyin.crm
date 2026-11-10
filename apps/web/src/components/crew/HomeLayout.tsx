@@ -74,7 +74,7 @@ export function CustomizePage({ layout, onChange, onClose }: { layout: HomeLayou
             <div className={`flex items-center gap-3 border-b border-g-line py-3.5 transition-[opacity,background-color] ${b.on ? "" : "opacity-50"} ${dragging ? "rounded-[18px] bg-g-fill" : "bg-white"}`}>
               <button
                 data-nodrag
-                aria-label={b.on ? `${tr("Hide")} ${tr(HOME_BLOCKS[b.id].label)}` : `${tr("Show")} ${tr(HOME_BLOCKS[b.id].label)}`}
+                aria-label={tr(b.on ? "Hide “{name}”" : "Show “{name}”", { name: tr(HOME_BLOCKS[b.id].label) })}
                 onClick={() => {
                   haptic("tick");
                   onChange(layout.map((x) => (x.id === b.id ? { ...x, on: !x.on } : x)));

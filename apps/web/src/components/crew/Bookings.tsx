@@ -1,23 +1,26 @@
 "use client";
 
-import { ChevronRight, History, ListOrdered, LogOut, Plus, UserRound, Armchair, Ban, CalendarDays, CalendarPlus, Check, Pencil, Phone, StickyNote, Users } from "lucide-react";
+import { UserCheck, ChevronRight, History, ListOrdered, LogOut, Plus, UserRound, Armchair, Ban, CalendarDays, CalendarPlus, Check, Pencil, Phone, StickyNote, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
 import { loadIfChanged, PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
 import { ChoiceChip, Sheet } from "@/components/guest/ui";
 import { Counter } from "./CrewApp";
-import { useTr } from "./prefs";
+import { useLocale, useTr, type TrVars } from "./prefs";
+
+type Tr = (en: string, vars?: TrVars) => string;
 import { IconStat, WidgetCard } from "@/components/system/Widgets";
 import { TimeWheel } from "@/components/system/WheelPicker";
 import { PeekActions, PeekHeader, prettyPhone } from "@/components/system/PeekParts";
-import { GuestsArt, SeatedArt } from "./Illustrations";
 
-const DAY_NAMES = ["Today", "Tomorrow"];
-const dayLabel = (d: number) => {
-  if (d < 2) return DAY_NAMES[d]!;
+/** "Today", "Tomorrow", then "Thu 12" in the waiter's language. */
+const dayLabel = (d: number, tr: Tr, locale: string) => {
+  if (d === 0) return tr("Today");
+  if (d === 1) return tr("Tomorrow");
   const date = new Date(Date.now() + d * 86_400_000);
-  return `${date.toLocaleDateString("en", { weekday: "short" })} ${date.getDate()}`;
+  const wd = date.toLocaleDateString(locale, { weekday: "short" }).replace(".", "");
+  return `${wd.charAt(0).toUpperCase()}${wd.slice(1)} ${date.getDate()}`;
 };
 /** Times guests ask for most, as quick picks under the wheel. */
 const POPULAR = ["12:00", "12:30", "13:00", "18:30", "19:00", "19:30", "20:00"];
@@ -38,11 +41,12 @@ const NOW = mins("12:45");
 const hhmm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.round(m % 60)).padStart(2, "0")}`;
 /** Minutes a queued guest has waited, by the demo clock. */
 const waited = (time: string) => Math.max(0, NOW - mins(time));
-const relative = (time: string) => {
+const relative = (time: string, tr: Tr) => {
   const d = mins(time) - NOW;
-  if (d < -5) return `${-d} min late`;
-  if (d <= 5) return "now";
-  return d < 60 ? `in ${d} min` : `in ${Math.floor(d / 60)}h${d % 60 ? `${d % 60}m` : ""}`;
+  if (d < -5) return tr("{n} min late", { n: -d });
+  if (d <= 5) return tr("arriving now");
+  if (d < 60) return tr("in {n} min", { n: d });
+  return d % 60 ? tr("in {h} h {m} min", { h: Math.floor(d / 60), m: d % 60 }) : tr("in {h} h", { h: d / 60 });
 };
 
 export function BookingsView({
@@ -75,6 +79,7 @@ export function BookingsView({
   const upcoming = list.filter((b) => b.status !== "seated");
   const next = day === 0 ? upcoming.find((b) => mins(b.time) >= NOW - 5) : upcoming[0];
   const tr = useTr();
+  const locale = useLocale();
   return (
     <div className="px-5">
       {/* When guests arrive (bars), how many are already seated (ring), who waits for a table (meter). */}
@@ -82,12 +87,12 @@ export function BookingsView({
         <BookingRuler className="col-span-2" list={list} today={day === 0} initial={next?.id} />
         <IconStat
           title={tr("Seated")}
-          fit art={<SeatedArt size={84} />}
+          art={<UserCheck size={120} strokeWidth={1.4} className="text-g-green opacity-40" />}
           value={`${list.filter((b) => b.status === "seated").length} / ${list.length}`}
-          sub={tr("bookings arrived")}
+          sub={tr("bookings have arrived")}
           tone="green"
         />
-        <IconStat title={tr("Guests")} fit art={<GuestsArt size={84} />} value={String(guests)} sub={tr("expected today")} tone="blue" />
+        <IconStat title={tr("Guests")} art={<Users size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />} value={String(guests)} sub={tr("expected today")} tone="blue" />
         {day === 0 && (
           <WaitingList
             className="col-span-2"
@@ -109,14 +114,14 @@ export function BookingsView({
         <History size={18} strokeWidth={2.2} className="text-g-blue" />
         <span className="flex-1 text-[15px] font-semibold">{tr("Booking history")}</span>
         <span className="text-[13px] text-g-muted tabular-nums">
-          {bookings.filter((b) => b.status === "cancelled").length} {tr("cancelled")}
+          {tr("{n} cancelled", { n: bookings.filter((b) => b.status === "cancelled").length })}
         </span>
         <ChevronRight size={18} className="text-g-faint" />
       </button>
       <div className="no-scrollbar -mx-5 mt-8 flex gap-2 overflow-x-auto px-5">
         {[0, 1, 2, 3, 4, 5, 6].map((d) => (
           <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); loadIfChanged(`bookings:${d}`, JSON.stringify(bookings.filter((b) => b.day === d).map((b) => [b.id, b.status])), 450); }} icon={<span />}>
-            {dayLabel(d)}
+            {dayLabel(d, tr, locale)}
           </ChoiceChip>
         ))}
       </div>
@@ -141,7 +146,7 @@ export function BookingsView({
         }}
         className="blue-grad press fixed bottom-[calc(max(8px,env(safe-area-inset-bottom))+76px)] left-1/2 z-30 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-6 text-[15px] font-semibold"
       >
-        <CalendarPlus size={18} strokeWidth={2} /> New booking
+        <CalendarPlus size={18} strokeWidth={2} /> {tr("New booking")}
       </button>
     </div>
   );
@@ -149,6 +154,7 @@ export function BookingsView({
 
 export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: FloorTable[]; initial?: Booking; onClose: () => void; onSave: (b: Booking) => void }) {
   const tr = useTr();
+  const locale = useLocale();
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [guests, setGuests] = useState(initial?.guests ?? 2);
@@ -178,7 +184,7 @@ export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: F
         >
           <span>{initial ? tr("Save changes") : tr("Save booking")}</span>
           <span className="tabular-nums">
-            {dayLabel(day)} · {time} · {guests}
+            {dayLabel(day, tr, locale)} · {time} · {guests}
           </span>
         </button>
       }
@@ -197,7 +203,7 @@ export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: F
           </div>
           <div className="mt-3 flex items-center justify-between">
             <span className="flex items-center gap-2 text-[15px] font-semibold">
-              <Users size={17} strokeWidth={2.2} className="text-g-muted" /> {guests} {tr("guests")}
+              <Users size={17} strokeWidth={2.2} className="text-g-muted" /> {tr("{n} guest|{n} guests", { n: guests })}
             </span>
             <Counter value={guests} min={1} max={20} onChange={setGuests} />
           </div>
@@ -219,7 +225,7 @@ export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: F
                 aria-pressed={day === d}
                 className={`press h-10 shrink-0 rounded-full px-4 text-[14px] font-semibold whitespace-nowrap ${day === d ? "bg-g-ink text-white" : "bg-white"}`}
               >
-                {dayLabel(d)}
+                {dayLabel(d, tr, locale)}
               </button>
             ))}
           </div>
@@ -265,7 +271,7 @@ export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: F
                 >
                   <span className="text-[17px] leading-none font-semibold tabular-nums">{x.no}</span>
                   <span className={`mt-1 text-[10px] ${table === x.no ? "text-white/75" : "text-g-muted"}`}>
-                    {x.seats} {tr("seats")}
+                    {tr("{n} seat|{n} seats", { n: x.seats })}
                   </span>
                 </button>
               ))}
@@ -322,7 +328,7 @@ function BookingCard({ b, today, onSeat, onHold }: { b: Booking; today: boolean;
       <div className="flex items-start gap-3.5">
         <div className="min-w-[60px] shrink-0">
           <p className="text-[22px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{b.time}</p>
-          {today && !seated && <p className={`mt-1 text-[11px] font-semibold whitespace-nowrap tabular-nums ${soon ? "text-g-blue" : "text-g-muted"}`}>{relative(b.time)}</p>}
+          {today && !seated && <p className={`mt-1 text-[11px] font-semibold whitespace-nowrap tabular-nums ${soon ? "text-g-blue" : "text-g-muted"}`}>{relative(b.time, tr)}</p>}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
@@ -334,7 +340,7 @@ function BookingCard({ b, today, onSeat, onHold }: { b: Booking; today: boolean;
               <Users size={14} strokeWidth={2} className="text-g-muted" /> {b.guests}
             </span>
             <span className={`flex items-center gap-1 ${b.table ? "" : "font-semibold text-g-orange"}`}>
-              <Armchair size={14} strokeWidth={2} className={b.table ? "text-g-muted" : ""} /> {b.table ? `${tr("Table")} ${b.table}` : tr("No table")}
+              <Armchair size={14} strokeWidth={2} className={b.table ? "text-g-muted" : ""} /> {b.table ? tr("Table {n}", { n: b.table }) : tr("No table")}
             </span>
             <span className="flex items-center gap-1 text-g-muted tabular-nums">
               <Phone size={13} strokeWidth={2} /> ··{b.phone.replace(/\D/g, "").slice(-4)}
@@ -383,12 +389,12 @@ function BookingMenu({ b, today, tables, onClose, onSeat, onQueue, onEdit, onCan
   return (
     <PeekCard label={b.name} onClose={onClose}>
       <PeekHeader
-        kicker={`${b.time}${today && b.status !== "seated" ? ` · ${relative(b.time)}` : ""}`}
+        kicker={`${b.time}${today && b.status !== "seated" ? ` · ${relative(b.time, tr)}` : ""}`}
         title={b.name}
         aside={<span className={`${STATE[b.status].chip} mt-1 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold`}>{tr(STATE[b.status].label)}</span>}
         facts={[
-          { icon: Users, text: `${b.guests} ${tr("guests")}` },
-          b.table ? { icon: Armchair, text: `${tr("Table")} ${b.table}` } : { icon: Armchair, text: tr("No table"), tone: "warn" },
+          { icon: Users, text: tr("{n} guest|{n} guests", { n: b.guests }) },
+          b.table ? { icon: Armchair, text: tr("Table {n}", { n: b.table }) } : { icon: Armchair, text: tr("No table"), tone: "warn" },
           { icon: Phone, text: prettyPhone(b.phone) },
         ]}
       />
@@ -403,7 +409,7 @@ function BookingMenu({ b, today, tables, onClose, onSeat, onQueue, onEdit, onCan
         <PeekActions
           items={[
             ...(today && b.status !== "seated"
-              ? [{ icon: Check, label: ownReady ? `${tr("Seat at table")} ${b.table}` : tr("Guests arrived · seat"), onClick: () => (ownReady ? onSeat() : setSeating(true)), tone: "good" as const }]
+              ? [{ icon: Check, label: ownReady ? tr("Seat at table {n}", { n: b.table ?? 0 }) : tr("Guests arrived · seat"), onClick: () => (ownReady ? onSeat() : setSeating(true)), tone: "good" as const }]
               : []),
             { icon: Phone, label: tr("Call"), href: `tel:${b.phone.replace(/\s/g, "")}` },
             { icon: Pencil, label: tr("Edit booking"), onClick: onEdit },
@@ -506,7 +512,7 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
       icon={<CalendarDays size={13} strokeWidth={2.4} />}
       aside={
         <span className="text-[13px] text-g-muted tabular-nums">
-          {list.length} · {list.reduce((n, b) => n + b.guests, 0)} {tr("guests")}
+          {tr("{n} booking|{n} bookings", { n: list.length })} · {tr("{n} guest|{n} guests", { n: list.reduce((n, b) => n + b.guests, 0) })}
         </span>
       }
     >
@@ -519,9 +525,9 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
               <span className="block truncate text-[16px] font-semibold">{near.name}</span>
               <span className="flex flex-wrap gap-x-1 text-[12px] leading-snug text-g-muted tabular-nums">
                 <span className="whitespace-nowrap">
-                  {near.guests} {tr("guests")} · {near.table ? `${tr("Table")} ${near.table}` : tr("No table")}
+                  {tr("{n} guest|{n} guests", { n: near.guests })} · {near.table ? tr("Table {n}", { n: near.table }) : tr("No table")}
                 </span>
-                {today && near.status !== "seated" && <span className="whitespace-nowrap">· {relative(near.time)}</span>}
+                {today && near.status !== "seated" && <span className="whitespace-nowrap">· {relative(near.time, tr)}</span>}
               </span>
             </span>
             <span className={`${STATE[near.status].chip} shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold`}>{tr(STATE[near.status].label)}</span>
@@ -591,7 +597,7 @@ function BookingHistory({ bookings, onClose }: { bookings: Booking[]; onClose: (
   const past = bookings.filter((b) => b.status === "seated" || (b.day < 0 && b.status !== "cancelled"));
   const cancelled = bookings.filter((b) => b.status === "cancelled");
   const list = (tab === "past" ? past : cancelled).sort((a, b) => b.day - a.day || b.time.localeCompare(a.time));
-  const dayName = (d: number) => (d === 0 ? tr("Today") : d === -1 ? tr("Yesterday") : `${-d} ${tr("days ago")}`);
+  const dayName = (d: number) => (d === 0 ? tr("Today") : d === -1 ? tr("Yesterday") : tr("{n} day ago|{n} days ago", { n: -d }));
   return (
     <Sheet open onClose={onClose} label={tr("Booking history")} title={false}>
       <div className="px-5 pt-1 pb-10">
@@ -627,14 +633,14 @@ function BookingHistory({ bookings, onClose }: { bookings: Booking[]; onClose: (
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-semibold">{b.name}</span>
                   <span className="block text-[12px] text-g-muted tabular-nums">
-                    {b.guests} {tr("guests")} · {b.table ? `${tr("Table")} ${b.table}` : tr("No table")}
+                    {tr("{n} guest|{n} guests", { n: b.guests })} · {b.table ? tr("Table {n}", { n: b.table }) : tr("No table")}
                   </span>
                 </span>
                 <span className={`${STATE[b.status].chip} shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold`}>{tr(STATE[b.status].label)}</span>
               </div>
               {b.cancelled && (
                 <p className="mt-2 rounded-[12px] bg-white px-3 py-2 text-[12px] text-g-ink-2">
-                  {tr("Cancelled at")} {b.cancelled.at}
+                  {tr("Cancelled at {t}", { t: b.cancelled.at })}
                   {b.cancelled.reason ? ` · ${tr(b.cancelled.reason)}` : ""}
                 </p>
               )}
@@ -666,7 +672,7 @@ function WaitingList({ list, tables, onSeat, onAdd, onLeave, className = "" }: {
       className={className}
       title={tr("Queue now")}
       icon={<ListOrdered size={13} strokeWidth={2.4} />}
-      aside={list.length ? <span className="text-[12px] text-g-muted tabular-nums">{`${tr("longest")} ${longest} ${tr("min")}`}</span> : undefined}
+      aside={list.length ? <span className="text-[12px] text-g-muted tabular-nums">{tr("longest wait {n} min", { n: longest })}</span> : undefined}
     >
       <p className="mt-1.5 text-[13px] leading-snug text-g-muted">{tr("Guests on site without a free table. A fitting table frees up: the name turns green.")}</p>
       <div className="mt-3.5 flex flex-wrap gap-2">
@@ -686,9 +692,9 @@ function WaitingList({ list, tables, onSeat, onAdd, onLeave, className = "" }: {
       {cur && (
         <PeekCard label={cur.name} onClose={() => setOpen(null)}>
           <PeekHeader
-            kicker={`${tr("In the queue")} · ${waited(cur.time)} ${tr("min")}`}
+            kicker={tr("Waiting {n} min", { n: waited(cur.time) })}
             title={cur.name}
-            facts={[{ icon: Users, text: `${cur.guests} ${tr("guests")}` }, ...(cur.phone ? [{ icon: Phone, text: prettyPhone(cur.phone) }] : [])]}
+            facts={[{ icon: Users, text: tr("{n} guest|{n} guests", { n: cur.guests }) }, ...(cur.phone ? [{ icon: Phone, text: prettyPhone(cur.phone) }] : [])]}
           />
           <SeatPicker
             guests={cur.guests}
@@ -744,7 +750,7 @@ function WaitingPill({ b, ready, onOpen }: { b: Booking; ready: boolean; onOpen:
         {b.guests}
       </span>
       <span className="text-[14px] font-semibold">{b.name.split(" ")[0]}</span>
-      <span className={`text-[12px] tabular-nums ${ready ? "font-semibold text-g-green" : "text-g-muted"}`}>{ready ? tr("table free") : `${waited(b.time)} ${tr("min")}`}</span>
+      <span className={`text-[12px] tabular-nums ${ready ? "font-semibold text-g-green" : "text-g-muted"}`}>{ready ? tr("table free") : tr("{n} min", { n: waited(b.time) })}</span>
     </button>
   );
 }
@@ -757,7 +763,7 @@ function SeatPicker({ guests, tables, onPick, onQueue }: { guests: number; table
     return (
       <div className="mt-4">
         <p className="rounded-[16px] bg-g-fill px-3.5 py-3 text-[13px] leading-snug text-g-ink-2">
-          {tr("No free table for")} {guests} {tr("guests")}. {onQueue ? tr("Put them in the queue: you will get a message when a table frees up.") : tr("You will get a message when a table frees up.")}
+          {tr("No free table for {n} guest.|No free table for {n} guests.", { n: guests })} {onQueue ? tr("Put them in the queue: you will get a message when a table frees up.") : tr("You will get a message when a table frees up.")}
         </p>
         {onQueue && (
           <button
@@ -811,7 +817,7 @@ function QueueAdd({ onClose, onAdd }: { onClose: () => void; onAdd: (name: strin
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Guest name")} className={field} />
         <div className="flex items-center justify-between py-1 pl-1">
           <span className="flex items-center gap-2 text-[15px] font-semibold">
-            <Users size={16} className="text-g-muted" /> <span className="tabular-nums">{guests}</span> {tr("guests")}
+            <Users size={16} className="text-g-muted" /> <span className="tabular-nums">{tr("{n} guest|{n} guests", { n: guests })}</span>
           </span>
           <Counter value={guests} min={1} max={20} onChange={setGuests} />
         </div>
