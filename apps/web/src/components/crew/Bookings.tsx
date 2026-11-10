@@ -1,12 +1,14 @@
 "use client";
 
-import { CalendarDays, CalendarPlus, Check, Clock, Hourglass, Phone, StickyNote, Users } from "lucide-react";
+import { CalendarPlus, Check, Hourglass, Phone, StickyNote, Users } from "lucide-react";
 import { useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
 import { loadIfChanged, Reveal } from "@/components/guest/motion";
 import { ChoiceChip, Sheet, StepHead } from "@/components/guest/ui";
-import { Counter, Dash } from "./CrewApp";
+import { Counter } from "./CrewApp";
+import { useTr } from "./prefs";
+import { BarsWidget, MeterWidget, RingWidget } from "@/components/system/Widgets";
 
 const DAY_NAMES = ["Today", "Tomorrow"];
 const dayLabel = (d: number) => {
@@ -14,6 +16,8 @@ const dayLabel = (d: number) => {
   const date = new Date(Date.now() + d * 86_400_000);
   return `${date.toLocaleDateString("en", { weekday: "short" })} ${date.getDate()}`;
 };
+/** Hours shown in the guests-by-hour chart. */
+const HOURS = [11, 12, 13, 14, 15, 17, 18, 19, 20, 21];
 const SLOTS = ["12:00", "12:30", "13:00", "13:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00"];
 
 const STATE: Record<Booking["status"], { label: string; chip: string }> = {
@@ -41,16 +45,50 @@ export function BookingsView({ bookings, onNew, onSeat }: { bookings: Booking[];
   const guests = list.reduce((s, b) => s + b.guests, 0);
   const upcoming = list.filter((b) => b.status !== "seated");
   const next = day === 0 ? upcoming.find((b) => mins(b.time) >= NOW - 5) : upcoming[0];
+  const tr = useTr();
   return (
     <div className="px-5">
-      <Dash
-        items={[
-          { label: "Next", value: next?.time ?? "—", sub: next ? `${next.name.split(" ")[0]} · ${next.guests} guests${day === 0 ? ` · ${relative(next.time)}` : ""}` : "nothing planned", icon: Clock, hot: Boolean(next) },
-          { label: "Bookings", value: String(list.length), sub: `${list.filter((b) => b.status === "seated").length} seated`, icon: CalendarDays },
-          { label: "Guests", value: String(guests), sub: "expected", icon: Users, tone: "green" },
-          { label: "Waiting list", value: String(list.filter((b) => b.status === "waiting").length), sub: "need a table", icon: Hourglass, tone: "orange" },
-        ]}
-      />
+      {/* When guests arrive (bars), how many are already seated (ring), who waits for a table (meter). */}
+      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+        <BarsWidget
+          className="col-span-2"
+          title={tr("Guests by hour")}
+          icon={<Users size={13} strokeWidth={2.4} />}
+          labels={HOURS.map((h) => String(h))}
+          values={HOURS.map((h) => list.filter((b) => Number(b.time.slice(0, 2)) === h).reduce((n, b) => n + b.guests, 0))}
+          unit={tr("guests")}
+          now={day === 0 ? HOURS.indexOf(12) : undefined}
+          initial={next ? Math.max(0, HOURS.indexOf(Number(next.time.slice(0, 2)))) : 0}
+          headline={
+            <p className="mt-2">
+              <span className="text-[13px] text-g-muted">{tr("Next")}</span>
+              <span className="live block text-[26px] leading-tight font-semibold tracking-[-0.03em]">
+                {next ? `${next.time} · ${next.name.split(" ")[0]}` : "—"}
+              </span>
+              {next && (
+                <span className="block text-[13px] text-g-muted">
+                  {next.guests} {tr("guests")}
+                  {day === 0 ? ` · ${relative(next.time)}` : ""}
+                </span>
+              )}
+            </p>
+          }
+        />
+        <RingWidget title={tr("Seated")} icon={<Check size={13} strokeWidth={2.6} />} value={`${list.filter((b) => b.status === "seated").length}/${list.length}`} unit={tr("bookings")} part={list.length ? list.filter((b) => b.status === "seated").length / list.length : 0} tone="green" />
+        <RingWidget title={tr("Guests")} icon={<Users size={13} strokeWidth={2.4} />} value={String(guests)} unit={tr("expected")} part={guests / 40} />
+        <MeterWidget
+          className="col-span-2"
+          title={tr("Waiting list")}
+          icon={<Hourglass size={13} strokeWidth={2.4} />}
+          value={String(list.filter((b) => b.status === "waiting").length)}
+          unit={tr("need a table")}
+          level={list.filter((b) => b.status === "waiting").length / 5}
+          low={tr("None")}
+          high={tr("Many")}
+          word={list.some((b) => b.status === "waiting") ? tr("Find a table") : tr("Calm")}
+          tone={list.some((b) => b.status === "waiting") ? "orange" : "green"}
+        />
+      </Reveal>
       <div className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
         {[0, 1, 2, 3, 4, 5, 6].map((d) => (
           <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); loadIfChanged(`bookings:${d}`, JSON.stringify(bookings.filter((b) => b.day === d).map((b) => [b.id, b.status])), 450); }} icon={<span />}>

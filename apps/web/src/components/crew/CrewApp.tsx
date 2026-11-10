@@ -4,7 +4,6 @@ import { allItems, formatMoney, t, type Menu, type MenuItem } from "@yanyin/doma
 import {
   Armchair,
   Banknote,
-  CalendarDays,
   ChefHat,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +35,7 @@ import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
 import { BookingsArt, OrdersArt, TablesArt } from "./Illustrations";
+import { HeroStat, LineWidget, MeterWidget, RingWidget, StepsWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
 import { Scanner } from "./Scanner";
@@ -515,12 +515,12 @@ function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: numb
 }
 
 function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]; money: (n: number) => string; actions: TableActions; itemById: Map<string, MenuItem> }) {
+  const tr = useTr();
   const [zone, setZone] = useState<"All" | FloorTable["zone"]>("All");
   const [peek, setPeek] = useState<number | null>(null);
   const shown = tables.filter((x) => zone === "All" || x.zone === zone);
   const busy = tables.filter((x) => x.status !== "free" && x.status !== "reserved").length;
   const bills = tables.filter((x) => x.status === "bill");
-  const reserved = tables.filter((x) => x.status === "reserved").sort((a, b) => (a.booking?.time ?? "").localeCompare(b.booking?.time ?? ""));
   const seats = tables.reduce((n, x) => n + (x.status === "free" ? x.seats : 0), 0);
   const peeked = tables.find((x) => x.no === peek) ?? null;
   return (
@@ -535,14 +535,31 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           </button>
         }
       />
-      <Dash
-        items={[
-          { label: "Busy", value: `${busy}/${tables.length}`, icon: Users, bar: busy / tables.length },
-          { label: "Bill asked", value: String(bills.length), sub: bills.length ? `Table ${bills.map((b) => b.no).join(", ")}` : "none", icon: ReceiptText, tone: "orange", hot: bills.length > 0 },
-          { label: "Free now", value: String(tables.filter((x) => x.status === "free").length), sub: `${seats} seats`, icon: Armchair, tone: "green" },
-          { label: "Reserved", value: String(reserved.length), sub: reserved[0] ? `next ${reserved[0].booking?.time}` : "none today", icon: CalendarDays, tone: "plain" },
-        ]}
-      />
+      {/* Different forms for different questions: how the hall filled up, how full it is now, who waits for the bill. */}
+      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+        <LineWidget
+          className="col-span-2"
+          title={tr("Hall occupancy")}
+          icon={<Users size={13} strokeWidth={2.4} />}
+          labels={["10:00", "11:00", "12:00", "12:45"]}
+          values={[1, 3, 6, busy]}
+          format={(v) => `${v} / ${tables.length} ${tr("tables")}`}
+        />
+        <RingWidget title={tr("Busy now")} icon={<Armchair size={13} strokeWidth={2.4} />} value={`${busy}/${tables.length}`} unit={tr("tables")} part={busy / tables.length} />
+        <RingWidget title={tr("Free seats")} icon={<Armchair size={13} strokeWidth={2.4} />} value={String(seats)} unit={`${tables.filter((x) => x.status === "free").length} ${tr("free tables")}`} part={seats / Math.max(1, tables.reduce((n, x) => n + x.seats, 0))} tone="green" />
+        <MeterWidget
+          className="col-span-2"
+          title={tr("Waiting for the bill")}
+          icon={<ReceiptText size={13} strokeWidth={2.4} />}
+          value={String(bills.length)}
+          unit={bills.length ? `${tr("Table")} ${bills.map((b) => b.no).join(", ")}` : tr("tables")}
+          level={bills.length / 4}
+          low={tr("None")}
+          high={tr("Many")}
+          word={bills.length ? tr("Go now") : tr("Calm")}
+          tone={bills.length ? "orange" : "green"}
+        />
+      </Reveal>
       <div className="mt-5 flex rounded-full bg-g-fill p-1">
         {(["All", "Hall", "Terrace"] as const).map((z) => (
           <button
@@ -1261,6 +1278,7 @@ function OrdersView({
   onOpenTable: (no: number) => void;
   onReceipt: (o: ClosedOrder) => void;
 }) {
+  const tr = useTr();
   const [view, setView] = useState<"open" | "closed">("open");
   const open = tables.filter((x) => x.lines.length);
   const groups: [string, FloorTable[]][] = [
@@ -1276,14 +1294,38 @@ function OrdersView({
   };
   return (
     <div className="px-5">
-      <Dash
-        items={[
-          { label: "Taken today", value: compactMoney(takings), sub: `${history.length} bills closed`, icon: Wallet, hot: true },
-          { label: "Tips", value: compactMoney(tips), sub: "team pool", icon: Banknote, tone: "green" },
-          { label: "Open now", value: String(open.length), sub: `${open.reduce((n, x) => n + x.lines.filter((l) => l.state !== "served").length, 0)} dishes in kitchen`, icon: ChefHat, tone: "orange" },
-          { label: "Avg check", value: compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0), sub: "per bill today", icon: ReceiptText, tone: "plain" },
-        ]}
-      />
+      {/* The day's money as a hero, the live pipeline of orders, then two small rings. */}
+      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+        <HeroStat
+          className="col-span-2"
+          title={tr("Taken today")}
+          icon={<Wallet size={13} strokeWidth={2.4} />}
+          value={compactMoney(takings)}
+          delta="12%"
+          deltaLabel={`${tr("vs last")} ${tr("Monday")} · ${history.length} ${tr("bills closed")}`}
+          series={[0, 0.35, 0.8, 1.6, 2.9, 3.6, takings / 1_000_000]}
+        />
+        <StepsWidget
+          className="col-span-2"
+          title={tr("Orders now")}
+          icon={<ChefHat size={13} strokeWidth={2.4} />}
+          steps={[
+            { label: tr("New"), count: open.reduce((n, x) => n + x.lines.filter((l) => l.state === "new").length, 0) },
+            { label: tr("Cooking"), count: open.reduce((n, x) => n + x.lines.filter((l) => l.state === "cooking").length, 0) },
+            { label: tr("Served"), count: open.reduce((n, x) => n + x.lines.filter((l) => l.state === "served").length, 0) },
+            { label: tr("Bill"), count: open.filter((x) => x.status === "bill").length },
+            { label: tr("Paid"), count: history.length },
+          ]}
+        />
+        <RingWidget title={tr("Tips")} icon={<Banknote size={13} strokeWidth={2.4} />} value={compactMoney(tips)} unit={tr("team pool")} part={tips / 400_000} tone="green" />
+        <RingWidget
+          title={tr("Avg check")}
+          icon={<ReceiptText size={13} strokeWidth={2.4} />}
+          value={compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0)}
+          unit={tr("per bill today")}
+          part={history.length ? takings / history.length / 1_500_000 : 0}
+        />
+      </Reveal>
       <div className="mt-4 flex rounded-full bg-g-fill p-1">
         {(
           [
