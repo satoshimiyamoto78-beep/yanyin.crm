@@ -358,6 +358,26 @@ body {
   animation: island-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
+/* The spark at the tip of the live-order fuse flickers. */
+@keyframes fuse-glow {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 0.6; transform: scale(1.25); }
+}
+.fuse-glow {
+  animation: fuse-glow 0.7s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* QR scanner sweep line. */
+@keyframes scan-line {
+  0%, 100% { top: 14px; }
+  50% { top: calc(100% - 16px); }
+}
+.scan-line {
+  animation: scan-line 2.2s ease-in-out infinite;
+}
+
 /* Idle roulette wheel turns slowly. */
 @keyframes wheel-idle {
   to { transform: rotate(360deg); }

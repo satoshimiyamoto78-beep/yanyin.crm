@@ -32,6 +32,7 @@ import { venueBrand, type VenueBrand } from "@/lib/visual";
 import { RouletteSheet } from "./RouletteSheet";
 import {
   AboutSheet,
+  BillSheet,
   CartSheet,
   ItemSheet,
   LangSheet,
@@ -42,7 +43,7 @@ import {
 } from "./sheets";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { Island, Reveal, RouletteWheel, startLoading, type IslandNotice } from "./motion";
+import { Island, LiveIsland, Reveal, RouletteWheel, startLoading, type IslandNotice } from "./motion";
 import { ActionCircle, ItemCard } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
@@ -59,6 +60,7 @@ type SheetName =
   | "lang"
   | "roulette"
   | "yan"
+  | "bill"
   | null;
 
 type Notice = IslandNotice;
@@ -306,7 +308,17 @@ export function GuestApp({ menu }: { menu: Menu }) {
           <ActionCircle
             icon={<ReceiptText size={22} strokeWidth={1.9} />}
             label={ui(lang, "qaBill")}
-            onClick={() => say("billAsked", <ReceiptText size={16} strokeWidth={2.25} />)}
+            onClick={() => {
+              // No order yet: nothing to pay. With orders: open the bill page.
+              if (!orders.length)
+                flash({
+                  title: ui(lang, "billNone"),
+                  text: ui(lang, "billNoneHint"),
+                  tone: "orange",
+                  icon: <ReceiptText size={16} strokeWidth={2.25} />,
+                });
+              else setSheet("bill");
+            }}
           />
           <ActionCircle
             label={ui(lang, "qaRoulette")}
@@ -398,6 +410,48 @@ export function GuestApp({ menu }: { menu: Menu }) {
       )}
 
       <Island notice={notice} />
+
+      {/* Live order: the bottom island with a burning fuse while the kitchen works. */}
+      {(() => {
+        const last = orders[orders.length - 1];
+        if (!last || sheet) return null;
+        const stage = orderStage(last, now);
+        const since = (now - last.placedAt) / 1000;
+        if (stage === 3 && since > 55) return null;
+        const keys: UiKey[] = ["liveSent", "liveAccepted", "liveCooking", "liveReady"];
+        return (
+          <LiveIsland
+            label={ui(lang, keys[stage]!)}
+            progress={Math.min(1, since / 45)}
+            done={stage === 3}
+            onClick={() => setSheet("orders")}
+            bottom={
+              count > 0
+                ? "calc(max(16px, env(safe-area-inset-bottom)) + 76px)"
+                : "max(20px, env(safe-area-inset-bottom))"
+            }
+          />
+        );
+      })()}
+
+      <BillSheet
+        open={sheet === "bill"}
+        onClose={() => setSheet(null)}
+        lang={lang}
+        currency={currency}
+        orders={orders}
+        itemById={itemById}
+        table={table}
+        onRequest={(_, method) => {
+          setSheet(null);
+          flash({
+            title: ui(lang, "billRequested"),
+            text: `${ui(lang, "billRequestedHint")} · ${method}`,
+            tone: "orange",
+            icon: <ReceiptText size={16} strokeWidth={2.25} />,
+          });
+        }}
+      />
 
       <ItemSheet
         item={item}

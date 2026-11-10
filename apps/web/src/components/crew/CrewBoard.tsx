@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
-import { CakeSlice, CalendarDays, Check, Clock, CookingPot, LayoutGrid, ReceiptText, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import { Bell, CakeSlice, CalendarDays, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, Plus, ReceiptText, ScanLine, Search, X, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
@@ -93,14 +93,18 @@ export function CrewBoard({
   hot,
   onGo,
   onNotify,
+  onScan,
 }: {
   data: CrewData;
   embedded?: boolean;
   /** Live counters for the hot buttons (tables, orders, bookings). */
   hot?: CrewHot;
-  onGo?: (tab: "tables" | "orders" | "bookings") => void;
+  onGo?: (tab: "tables" | "orders" | "bookings" | "settings") => void;
   onNotify?: (title: string, text?: string) => void;
+  onScan?: () => void;
 }) {
+  const [hidden, setHidden] = useState(false);
+  const [banner, setBanner] = useState(true);
   const [xp, setXp] = useState(data.staff.xp);
   const [quests, setQuests] = useState(data.quests);
   const [done, setDone] = useState<CrewQuest | null>(null);
@@ -127,59 +131,135 @@ export function CrewBoard({
 
   return (
     <main className={`overflow-x-hidden bg-white text-g-ink ${embedded ? "" : "min-h-dvh"}`}>
-      <div className="mx-auto max-w-[480px] px-5 pt-[max(20px,env(safe-area-inset-top))] pb-16">
-        {/* Header */}
-        <header className="flex items-center gap-3.5">
-          <span className="ink-grad grid size-[52px] shrink-0 place-items-center rounded-[18px] text-[20px] font-bold">{data.staff.name[0]}</span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] text-g-muted">Good shift,</p>
-            <h1 className="truncate text-[24px] leading-tight font-bold tracking-[-0.02em]">{data.staff.name}</h1>
+      {/* Top: the banking-app pattern. Avatar, search and bell; the shift's money big; a strip of cards. */}
+      <section className="rounded-b-[32px] bg-[linear-gradient(180deg,#e9efff_0%,#f3f6ff_70%,#f7f9ff_100%)] pt-[max(14px,env(safe-area-inset-top))] pb-6">
+        <div className="mx-auto max-w-[480px] px-5">
+          <div className="flex items-center gap-2.5">
+            <button aria-label="Profile" onClick={() => onGo?.("settings")} className="ink-grad grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold">
+              {data.staff.name[0]}
+            </button>
+            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/80 px-3.5 text-g-faint">
+              <Search size={17} strokeWidth={2} />
+              <input placeholder="Tables, dishes, guests" aria-label="Search" className="min-w-0 flex-1 bg-transparent text-[15px] text-g-ink outline-none placeholder:text-g-faint" />
+            </label>
+            <button aria-label="Scan QR" onClick={onScan} className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/80 text-g-ink">
+              <ScanLine size={19} strokeWidth={2} />
+            </button>
+            <button aria-label="Notifications" onClick={() => onNotify?.("No new alerts", "Kitchen and tables are quiet")} className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/80 text-g-ink">
+              <Bell size={19} strokeWidth={2} />
+              {hot && hot.bills > 0 && <span className="absolute top-2 right-2.5 size-2 rounded-full border-2 border-white bg-g-orange" />}
+            </button>
           </div>
-          <span className="chip-green inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold">
-            <span className="size-1.5 rounded-full bg-g-green" /> On shift · 10:00
-          </span>
-        </header>
 
-        {/* Hot buttons: round, labelled, with a count; the one that needs attention is blue. */}
-        {hot && onGo && (
-          <div className="mt-6 flex justify-around">
-            <ActionCircle icon={<LayoutGrid size={22} strokeWidth={1.9} />} label="Tables" badge={hot.bills || undefined} accent={hot.bills > 0} onClick={() => onGo("tables")} />
-            <ActionCircle icon={<ReceiptText size={22} strokeWidth={1.9} />} label="Orders" badge={hot.openOrders || undefined} onClick={() => onGo("orders")} />
-            <ActionCircle icon={<CalendarDays size={22} strokeWidth={1.9} />} label="Bookings" badge={hot.bookings || undefined} onClick={() => onGo("bookings")} />
-          </div>
-        )}
-        {hot && (
-          <p className="mt-3 text-center text-[13px] text-g-muted">
-            <span className="live">
-              {hot.busy}/{hot.tables} tables busy{hot.bills ? ` · ${hot.bills} bill asked` : ""}
-              {hot.nextBooking ? ` · next booking ${hot.nextBooking}` : ""}
-            </span>
-          </p>
-        )}
-
-        {/* Level */}
-        <Reveal as="section" delay={70} className="mesh-lilac mt-6 rounded-[28px] p-5">
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="mt-6 flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[13px] font-medium text-g-muted">Level {level.level}</p>
-              <p className="live text-[30px] leading-tight font-semibold tracking-[-0.02em]">{level.title}</p>
+              <p className="text-[14px] text-g-muted">
+                {data.staff.name} · tips this shift
+              </p>
+              <button onClick={() => onGo?.("orders")} className="press mt-1 flex items-center gap-1 text-left">
+                <span className="live text-[32px] leading-none font-bold tracking-[-0.03em] tabular-nums">{hidden ? "••• •••" : money(data.today.tips)}</span>
+                <ChevronRight size={22} className="text-g-faint" />
+              </button>
             </div>
-            <p className="live shrink-0 text-[15px] font-semibold tabular-nums">
-              <CountUp to={level.xpIntoLevel} />
-              <span className="text-g-muted"> / {level.xpForNext} XP</span>
-            </p>
+            <div className="flex shrink-0 items-center gap-1 pb-1">
+              <button aria-label={hidden ? "Show amounts" : "Hide amounts"} onClick={() => setHidden((v) => !v)} className="press grid size-9 place-items-center rounded-full text-g-ink">
+                {hidden ? <Eye size={20} strokeWidth={1.9} /> : <EyeOff size={20} strokeWidth={1.9} />}
+              </button>
+              <span className="chip-green inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold">
+                <span className="size-1.5 rounded-full bg-g-green" /> On shift
+              </span>
+            </div>
           </div>
-          <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/70">
-            <div className="live bar-grad animate-grow h-full rounded-full" style={{ width: `${pct}%` }} />
-          </div>
-        </Reveal>
 
-        {/* Today */}
-        <Reveal as="section" delay={140} className="mt-3 grid grid-cols-3 gap-2.5">
-          <Stat label="Sales" value={data.today.sales} trend={12} />
-          <Stat label="Tips" value={data.today.tips} trend={8} />
-          <Stat label="Avg check" value={data.today.avgCheck} trend={-3} />
-        </Reveal>
+          <Reveal className="no-scrollbar -mx-5 mt-5 flex gap-2.5 overflow-x-auto px-5">
+            <div className="grid shrink-0 gap-2.5">
+              <button aria-label="Scan table QR" onClick={onScan} className="press grid size-[66px] place-items-center rounded-[20px] bg-white text-g-ink">
+                <ScanLine size={26} strokeWidth={1.8} />
+              </button>
+              <button aria-label="Take a break" onClick={() => onNotify?.("Break started", "Tables see “back in 10 min”")} className="press grid size-[66px] place-items-center rounded-[20px] bg-white text-g-ink">
+                <Coffee size={24} strokeWidth={1.8} />
+              </button>
+            </div>
+            <button onClick={() => onGo?.("orders")} className="press flex h-[142px] w-[150px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-4 text-left">
+              <span className="blue-grad grid size-9 place-items-center rounded-[12px]">
+                <TrendingUp size={18} strokeWidth={2} />
+              </span>
+              <span>
+                <span className="live block text-[20px] leading-tight font-semibold tabular-nums">{hidden ? "•••" : `${short(data.today.sales)} ₫`}</span>
+                <span className="block text-[13px] text-g-muted">Sales today · +12%</span>
+              </span>
+            </button>
+            <button onClick={() => onGo?.("tables")} className="press flex h-[142px] w-[150px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-4 text-left">
+              <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
+                <LayoutGrid size={18} strokeWidth={2} />
+              </span>
+              <span>
+                <span className="live block text-[20px] leading-tight font-semibold tabular-nums">{hot ? `${hot.busy}/${hot.tables}` : "—"} tables</span>
+                <span className={`block text-[13px] ${hot?.bills ? "font-medium text-g-orange" : "text-g-muted"}`}>{hot?.bills ? `${hot.bills} asking for the bill` : "all calm"}</span>
+              </span>
+            </button>
+            <div className="flex h-[142px] w-[170px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-4">
+              <span className="flex items-center justify-between">
+                <span className="chip-purple grid size-9 place-items-center rounded-[12px]">
+                  <Trophy size={18} strokeWidth={2} />
+                </span>
+                <span className="text-[12px] font-medium text-g-muted">Level {level.level}</span>
+              </span>
+              <span>
+                <span className="live block text-[20px] leading-tight font-semibold">{level.title}</span>
+                <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-g-fill">
+                  <span className="live bar-grad block h-full rounded-full" style={{ width: `${pct}%` }} />
+                </span>
+                <span className="mt-1 block text-[12px] text-g-muted tabular-nums">
+                  {level.xpIntoLevel} / {level.xpForNext} XP
+                </span>
+              </span>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-[480px] px-5 pb-16">
+        {/* Banner: the quest of the week, closable. */}
+        {banner && available[0] && (
+          <div className="relative mt-5 flex items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(120deg,#eaf0ff_0%,#f3efff_100%)] p-4 pr-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[16px] leading-snug font-semibold">{available[0].title}</p>
+              <p className="mt-1 text-[13px] leading-snug text-g-muted">{available[0].description}</p>
+              <button
+                onClick={() => {
+                  haptic("light");
+                  take(available[0]!.id);
+                }}
+                className="press mt-3 h-8 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
+              >
+                Take quest · +{available[0].reward.xp} XP
+              </button>
+            </div>
+            <span className="blue-grad grid size-16 shrink-0 rotate-6 place-items-center rounded-[20px]">
+              <Trophy size={30} strokeWidth={1.8} />
+            </span>
+            <button aria-label="Hide" onClick={() => setBanner(false)} className="absolute top-2.5 right-2.5 grid size-7 place-items-center rounded-full text-g-faint">
+              <X size={16} strokeWidth={2.25} />
+            </button>
+          </div>
+        )}
+
+        {/* Quick actions, like "transfers" in a bank app. */}
+        {hot && onGo && (
+          <>
+            <h2 className="mt-8 flex items-baseline justify-between text-[22px] font-bold tracking-[-0.02em]">
+              Quick actions
+            </h2>
+            <div className="mt-4 flex justify-between">
+              <ActionCircle icon={<Plus size={24} strokeWidth={2.25} />} label="New order" accent onClick={() => onGo("tables")} />
+              <ActionCircle icon={<LayoutGrid size={22} strokeWidth={1.9} />} label="Tables" badge={hot.bills || undefined} onClick={() => onGo("tables")} />
+              <ActionCircle icon={<ReceiptText size={22} strokeWidth={1.9} />} label="Orders" badge={hot.openOrders || undefined} onClick={() => onGo("orders")} />
+              <ActionCircle icon={<CalendarDays size={22} strokeWidth={1.9} />} label="Bookings" badge={hot.bookings || undefined} onClick={() => onGo("bookings")} />
+              <ActionCircle icon={<ScanLine size={22} strokeWidth={1.9} />} label="Scan QR" onClick={() => onScan?.()} />
+            </div>
+          </>
+        )}
 
         {/* Streak */}
         <Reveal as="section" delay={210} className="card mt-3 rounded-[28px] p-5">
@@ -346,23 +426,6 @@ function SectionTitle({ title, count }: { title: string; count?: number }) {
   );
 }
 
-function Stat({ label, value, trend }: { label: string; value: number; trend: number }) {
-  const v = useCountUp(value);
-  return (
-    <div className="card min-w-0 rounded-[22px] p-3.5">
-      <p className="truncate text-[12px] font-medium text-g-muted">{label}</p>
-      <p className="live mt-1 truncate text-[22px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">
-        {short(v)}
-        <span className="ml-0.5 text-[13px] font-medium text-g-muted">₫</span>
-      </p>
-      <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${trend >= 0 ? "chip-green" : "chip-orange"}`}>
-        <TrendingUp size={12} strokeWidth={2.25} className={trend < 0 ? "-scale-y-100" : ""} />
-        {trend >= 0 ? "+" : ""}
-        {trend}%
-      </span>
-    </div>
-  );
-}
 
 function CountUp({ to }: { to: number }) {
   return <>{useCountUp(to)}</>;

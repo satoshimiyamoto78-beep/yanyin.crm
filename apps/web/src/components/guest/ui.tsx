@@ -316,10 +316,10 @@ export function ActionCircle({
         haptic("light");
         onClick();
       }}
-      className="press flex w-[76px] flex-col items-center gap-2"
+      className="press flex w-[68px] flex-col items-center gap-2"
     >
       <span className="relative">
-        <span className={`grid size-[58px] place-items-center overflow-hidden rounded-full ${accent ? "blue-grad" : art ? "mesh-blue" : "bg-g-fill text-g-blue"}`}>{art ?? icon}</span>
+        <span className={`grid size-[56px] place-items-center overflow-hidden rounded-full ${accent ? "blue-grad" : art ? "mesh-blue" : "bg-g-fill text-g-blue"}`}>{art ?? icon}</span>
         {badge ? (
           <span className="absolute -top-0.5 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-g-ink px-1.5 text-[11px] font-bold text-white ring-2 ring-white tabular-nums">{badge}</span>
         ) : null}

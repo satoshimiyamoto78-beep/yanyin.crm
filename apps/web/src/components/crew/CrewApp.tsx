@@ -17,6 +17,7 @@ import {
   ReceiptText,
   Search,
   Send,
+  ScanLine,
   Settings,
   Users,
   Wallet,
@@ -30,6 +31,7 @@ import { Island, loadIfChanged, markShown, Reveal, type IslandNotice } from "@/c
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
+import { Scanner } from "./Scanner";
 import { SettingsView } from "./Settings";
 
 type Tab = "me" | "tables" | "orders" | "bookings" | "settings";
@@ -69,6 +71,7 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   const [page, setPage] = useState<"picker" | "check" | "pay" | null>(null);
   const [receipt, setReceipt] = useState<ClosedOrder | null>(null);
   const [newBooking, setNewBooking] = useState(false);
+  const [scan, setScan] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const items = useMemo(() => allItems(menu), [menu]);
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
@@ -126,6 +129,7 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
             money={money}
             itemById={itemById}
             actions={{
+              scan: () => setScan(true),
               open: setOpen,
               addItems: (no) => {
                 setOpen(no);
@@ -163,7 +167,7 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
             }}
           />
         )}
-        {tab === "me" && <CrewBoard data={data} embedded hot={hot} onGo={go} onNotify={(title, text) => notify({ title, text })} />}
+        {tab === "me" && <CrewBoard data={data} embedded hot={hot} onGo={go} onNotify={(title, text) => notify({ title, text })} onScan={() => setScan(true)} />}
         {tab === "settings" && <SettingsView onNotify={(title, text) => notify({ title, text })} />}
       </div>
 
@@ -277,6 +281,18 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
         </Sheet>
       )}
 
+      {scan && (
+        <Scanner
+          tables={tables.map((x) => x.no)}
+          onClose={() => setScan(false)}
+          onTable={(no) => {
+            setScan(false);
+            setOpen(no);
+            notify({ title: `Table ${no} scanned`, tone: "blue" });
+          }}
+        />
+      )}
+
       {newBooking && (
         <NewBookingPage
           tables={tables}
@@ -364,6 +380,7 @@ function useLongPress(onLong: () => void, onTap: () => void) {
 /* ---------------------------------------------------------------- Tables */
 
 export type TableActions = {
+  scan: () => void;
   open: (no: number) => void;
   addItems: (no: number) => void;
   check: (no: number) => void;
@@ -424,7 +441,15 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
   const peeked = tables.find((x) => x.no === peek) ?? null;
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-      <PageHead title="Tables" sub="Samarkand · lunch" />
+      <PageHead
+        title="Tables"
+        sub="Samarkand · lunch"
+        action={
+          <button aria-label="Scan table QR" onClick={actions.scan} className="press grid size-11 place-items-center rounded-full bg-g-fill">
+            <ScanLine size={20} strokeWidth={2} />
+          </button>
+        }
+      />
       <Dash
         items={[
           { label: "Busy", value: `${busy}/${tables.length}`, icon: Users, bar: busy / tables.length },

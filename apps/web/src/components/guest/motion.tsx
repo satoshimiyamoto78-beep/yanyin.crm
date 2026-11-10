@@ -354,3 +354,93 @@ export function Island({ notice }: { notice: IslandNotice | null }) {
     </div>
   );
 }
+
+/* ---------------------------------------------------------------- Live order island */
+
+const LW = 290;
+const LH = 52;
+
+/** Point at fraction f (0..1) along the capsule outline, in SVG rect path order (from the top-left start of the top edge, clockwise). */
+function stadiumPoint(f: number): [number, number] {
+  const w = LW - 2;
+  const h = LH - 2;
+  const r = h / 2;
+  const straight = w - 2 * r;
+  const arc = Math.PI * r;
+  const total = 2 * straight + 2 * arc;
+  let d = f * total;
+  const x0 = 1;
+  const y0 = 1;
+  if (d <= straight) return [x0 + r + d, y0];
+  d -= straight;
+  if (d <= arc) {
+    const a = -Math.PI / 2 + d / r;
+    return [x0 + w - r + r * Math.cos(a), y0 + r + r * Math.sin(a)];
+  }
+  d -= arc;
+  if (d <= straight) return [x0 + w - r - d, y0 + h];
+  d -= straight;
+  const a = Math.PI / 2 + d / r;
+  return [x0 + r + r * Math.cos(a), y0 + r + r * Math.sin(a)];
+}
+
+/**
+ * The bottom Dynamic Island for a live order: a black capsule whose outline
+ * is a fuse in our blue gradient. As the order cooks the fuse burns down, a
+ * glowing spark marking the tip. No percentages, only the story in the middle.
+ */
+export function LiveIsland({ label, progress, done, onClick, bottom }: { label: string; progress: number; done?: boolean; onClick: () => void; bottom: string }) {
+  const remaining = done ? 0 : Math.max(0.02, 1 - progress);
+  const tip = stadiumPoint(remaining);
+  return (
+    <button
+      onClick={() => {
+        haptic("light");
+        onClick();
+      }}
+      aria-label={label}
+      className="island-in press fixed left-1/2 z-40 -translate-x-1/2"
+      style={{ bottom, width: LW, height: LH }}
+    >
+      <span className="absolute inset-0 rounded-full bg-[#0b0b0f]" />
+      <svg viewBox={`-2 -2 ${LW + 4} ${LH + 4}`} className="pointer-events-none absolute -inset-[2px] overflow-visible" width={LW + 4} height={LH + 4} aria-hidden>
+        <defs>
+          <linearGradient id="fuse" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#8fb2ff" />
+            <stop offset="50%" stopColor="#2f6bff" />
+            <stop offset="100%" stopColor="#6c96ff" />
+          </linearGradient>
+        </defs>
+        {/* track */}
+        <rect x={1} y={1} width={LW - 2} height={LH - 2} rx={(LH - 2) / 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={2} />
+        {/* the fuse: starts at the top centre, burns back toward it */}
+        <rect
+          x={1}
+          y={1}
+          width={LW - 2}
+          height={LH - 2}
+          rx={(LH - 2) / 2}
+          fill="none"
+          stroke={done ? "#22c55e" : "url(#fuse)"}
+          strokeWidth={3}
+          strokeLinecap="round"
+          pathLength={100}
+          strokeDasharray={`${remaining * 100} 100`}
+          style={{ transition: "stroke-dasharray 1s linear, stroke 0.4s" }}
+        />
+        {!done && (
+          <g style={{ transform: `translate(${tip[0]}px, ${tip[1]}px)`, transition: "transform 1s linear" }}>
+            <circle r={7} fill="#8fb2ff" opacity={0.35} className="fuse-glow" />
+            <circle r={3} fill="#ffffff" />
+          </g>
+        )}
+      </svg>
+      <span className="relative flex h-full items-center justify-center gap-2 px-6 text-[14px] font-semibold text-white">
+        {done ? <span className="size-2 rounded-full bg-[#22c55e]" /> : <span className="size-2 animate-pulse rounded-full bg-[#8fb2ff]" />}
+        <span key={label} className="island-content truncate">
+          {label}
+        </span>
+      </span>
+    </button>
+  );
+}

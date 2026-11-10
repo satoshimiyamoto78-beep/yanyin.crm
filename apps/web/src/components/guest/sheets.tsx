@@ -928,3 +928,140 @@ export function LangSheet({ open, onClose, lang, onPick }: { open: boolean; onCl
     </Sheet>
   );
 }
+
+/* ---------------------------------------------------------------- Bill */
+
+/** The guest's bill for the table: everything ordered, service, tip, how they'll pay, then ask. */
+export function BillSheet({
+  open,
+  onClose,
+  lang,
+  currency,
+  orders,
+  itemById,
+  table,
+  onRequest,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lang: Lang;
+  currency: Currency;
+  orders: PlacedOrder[];
+  itemById: Map<string, MenuItem>;
+  table: string | null;
+  onRequest: (total: number, method: string) => void;
+}) {
+  const [tip, setTip] = useState(0);
+  const [method, setMethod] = useState<UiKey>("billQr");
+  const lines = orders.flatMap((o) => o.lines);
+  const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
+  const service = Math.round(subtotal * 0.05);
+  const tipAmount = Math.round((subtotal * tip) / 100 / 1000) * 1000;
+  const total = subtotal + service + tipAmount;
+  const money = (n: number) => formatMoney(n, currency, lang);
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      label={ui(lang, "billTitle")}
+      title={false}
+      footer={
+        <button
+          onClick={() => {
+            haptic("success");
+            onRequest(total, ui(lang, method));
+          }}
+          className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold tabular-nums"
+        >
+          {ui(lang, "billRequest")} · {money(total)}
+        </button>
+      }
+    >
+      <div className="px-5 pt-1 pb-8">
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "billTitle")}</h2>
+        {table && (
+          <p className="mt-1 text-[14px] text-g-muted">
+            {ui(lang, "table")} {table.padStart(2, "0")} · {orders.length} × {ui(lang, "order").toLowerCase()}
+          </p>
+        )}
+        <div className="mt-5 rounded-[24px] bg-g-fill px-5 py-4">
+          <div className="grid gap-2.5">
+            {lines.map((l) => {
+              const it = itemById.get(l.itemId);
+              return (
+                <div key={l.key + l.qty} className="flex items-baseline gap-2 text-[15px]">
+                  <span className="w-6 shrink-0 text-g-muted tabular-nums">{l.qty}×</span>
+                  <span className="min-w-0 flex-1 truncate">{it ? t(it.name, lang) : l.itemId}</span>
+                  <span className="shrink-0 tabular-nums">{money(l.unitPrice * l.qty)}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="my-3.5 border-t border-dashed border-g-faint/60" />
+          <div className="grid gap-1.5 text-[14px] text-g-muted tabular-nums">
+            <p className="flex justify-between">
+              <span>{ui(lang, "billSubtotal")}</span>
+              <span className="text-g-ink">{money(subtotal)}</span>
+            </p>
+            <p className="flex justify-between">
+              <span>{ui(lang, "billService")}</span>
+              <span className="text-g-ink">{money(service)}</span>
+            </p>
+            {tipAmount > 0 && (
+              <p className="flex justify-between">
+                <span>{ui(lang, "billTip")}</span>
+                <span className="text-g-ink">{money(tipAmount)}</span>
+              </p>
+            )}
+          </div>
+          <p className="mt-3 flex items-baseline justify-between">
+            <span className="text-[15px] font-semibold">{ui(lang, "total")}</span>
+            <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{money(total)}</span>
+          </p>
+        </div>
+
+        <section className="mt-8">
+          <StepHeadline>{ui(lang, "billTip")}</StepHeadline>
+          <div className="flex rounded-full bg-g-fill p-1">
+            {[0, 5, 10, 15].map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  haptic("tick");
+                  setTip(p);
+                }}
+                aria-pressed={tip === p}
+                className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${tip === p ? "bg-white text-g-ink" : "text-g-muted"}`}
+              >
+                {p ? `${p}%` : ui(lang, "billNoTip")}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <StepHeadline>{ui(lang, "billMethod")}</StepHeadline>
+          <div className="grid grid-cols-3 gap-2">
+            {(["billQr", "billCard", "billCash"] as UiKey[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => {
+                  haptic("light");
+                  setMethod(m);
+                }}
+                aria-pressed={method === m}
+                className={`press h-14 rounded-[18px] text-[15px] font-semibold transition-colors ${method === m ? "bg-g-ink text-white" : "bg-g-fill"}`}
+              >
+                {ui(lang, m)}
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    </Sheet>
+  );
+}
+
+function StepHeadline({ children }: { children: React.ReactNode }) {
+  return <h3 className="mb-3 text-[17px] font-semibold">{children}</h3>;
+}
