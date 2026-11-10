@@ -7,7 +7,8 @@ import { allItems, type Menu, type MenuItem } from "@yanyin/domain";
 export type TableStatus = "free" | "seated" | "ordered" | "bill" | "reserved";
 export type LineState = "new" | "cooking" | "served";
 
-export type TicketLine = { id: string; itemId: string; qty: number; price: number; state: LineState };
+/** `by`: who put the line on the ticket, the guest from the QR menu or the waiter. */
+export type TicketLine = { id: string; itemId: string; qty: number; price: number; state: LineState; by?: "guest" | "waiter" };
 
 export type FloorTable = {
   no: number;
@@ -59,7 +60,7 @@ export function demoFloor(menu: Menu): FloorData {
   const items = allItems(menu).filter((i) => i.price > 0 && !i.variants.length && !i.modifierGroups.some((g) => g.required));
   const find = (re: RegExp) => items.find((i) => re.test(i.name.en ?? "")) ?? items[0]!;
   let seq = 0;
-  const line = (it: MenuItem, qty: number, state: LineState): TicketLine => ({ id: `l${++seq}`, itemId: it.id, qty, price: it.price, state });
+  const line = (it: MenuItem, qty: number, state: LineState, by: "guest" | "waiter" = "waiter"): TicketLine => ({ id: `l${++seq}`, itemId: it.id, qty, price: it.price, state, by });
 
   const plov = find(/plov/i);
   const shashlik = find(/lamb shashlik/i);
@@ -74,12 +75,12 @@ export function demoFloor(menu: Menu): FloorData {
 
   const tables: FloorTable[] = [
     { no: 1, seats: 2, zone: "Hall", status: "free", guests: 0, lines: [] },
-    { no: 2, seats: 4, zone: "Hall", status: "ordered", guests: 3, since: "12:10", lines: [line(plov, 2, "served"), line(salad, 1, "served"), line(tea, 1, "cooking")] },
+    { no: 2, seats: 4, zone: "Hall", status: "ordered", guests: 3, since: "12:10", lines: [line(plov, 2, "served", "guest"), line(salad, 1, "served", "guest"), line(tea, 1, "cooking")] },
     { no: 3, seats: 4, zone: "Hall", status: "reserved", guests: 0, lines: [], booking: { name: "Nguyen", time: "13:30" } },
-    { no: 4, seats: 6, zone: "Hall", status: "bill", guests: 5, since: "11:40", lines: [line(shashlik, 3, "served"), line(beef, 2, "served"), line(bread, 2, "served"), line(juice, 5, "served"), line(dessert, 2, "served")] },
+    { no: 4, seats: 6, zone: "Hall", status: "bill", guests: 5, since: "11:40", lines: [line(shashlik, 3, "served", "guest"), line(beef, 2, "served", "guest"), line(bread, 2, "served"), line(juice, 5, "served", "guest"), line(dessert, 2, "served")] },
     { no: 5, seats: 2, zone: "Hall", status: "seated", guests: 2, since: "12:42", lines: [] },
     { no: 6, seats: 4, zone: "Hall", status: "free", guests: 0, lines: [] },
-    { no: 7, seats: 4, zone: "Hall", status: "ordered", guests: 2, since: "12:25", lines: [line(soup, 2, "cooking"), line(samsa, 2, "new"), line(tea, 1, "served")] },
+    { no: 7, seats: 4, zone: "Hall", status: "ordered", guests: 2, since: "12:25", lines: [line(soup, 2, "cooking"), line(samsa, 2, "new", "guest"), line(tea, 1, "served")] },
     { no: 8, seats: 8, zone: "Hall", status: "free", guests: 0, lines: [] },
     { no: 10, seats: 2, zone: "Terrace", status: "ordered", guests: 2, since: "12:30", lines: [line(shashlik, 2, "cooking"), line(juice, 2, "served")] },
     { no: 11, seats: 4, zone: "Terrace", status: "free", guests: 0, lines: [] },

@@ -25,6 +25,7 @@ import {
   Send,
   ScanLine,
   Users,
+  UserRound,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -359,6 +360,16 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             notify({ title: next === "served" ? `${name} served` : `${name} is cooking`, text: `Table ${table.no} · ${l.qty}×` });
           }}
           onTakeOrder={() => setPage("picker")}
+          onEditLine={(lineId, qty) => {
+            const l = table.lines.find((x) => x.id === lineId);
+            patch(table.no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === lineId ? { ...y, qty } : y)) }));
+            notify({ title: `${itemById.get(l?.itemId ?? "")?.name.en ?? "Item"} · ${qty}×`, text: `Table ${table.no} · order updated` });
+          }}
+          onRemoveLine={(lineId, reason) => {
+            const l = table.lines.find((x) => x.id === lineId);
+            patch(table.no, (x) => ({ ...x, lines: x.lines.filter((y) => y.id !== lineId) }));
+            notify({ title: `${itemById.get(l?.itemId ?? "")?.name.en ?? "Item"} removed`, text: reason ? `Table ${table.no} · ${reason}` : `Table ${table.no}`, tone: "orange" });
+          }}
           onCheck={() => {
             if (table.status !== "bill") notify({ title: `Check opened · Table ${table.no}`, text: "Show the QR or take payment" });
             patch(table.no, (x) => ({ ...x, status: "bill" }));
@@ -520,7 +531,14 @@ function TableTile({ x, money, onTap, onLong }: { x: FloorTable; money: (n: numb
   return (
     <button {...press} style={{ WebkitTouchCallout: "none" }} className={`press flex aspect-[0.9] flex-col justify-between rounded-[22px] p-3 text-left select-none ${look}`}>
       <span className="flex items-start justify-between">
-        <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{x.no}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{x.no}</span>
+          {x.lines.some((l) => l.by === "guest") && (
+            <span title="Guest ordered from the QR menu" className={`grid size-5 place-items-center rounded-full ${busy || x.status === "bill" ? "bg-white/20 text-white" : "bg-g-blue-soft text-g-blue"}`}>
+              <QrCode size={11} strokeWidth={2.4} />
+            </span>
+          )}
+        </span>
         <span className={`flex items-center gap-0.5 text-[12px] font-medium ${busy || x.status === "bill" ? "text-white/70" : "text-g-muted"}`}>
           <Users size={12} strokeWidth={2} /> {busy || x.status === "bill" ? x.guests : x.seats}
         </span>
@@ -711,6 +729,8 @@ function TablePage({
   onAdvance,
   onTakeOrder,
   onCheck,
+  onEditLine,
+  onRemoveLine,
 }: {
   table: FloorTable;
   itemById: Map<string, MenuItem>;
@@ -720,8 +740,12 @@ function TablePage({
   onAdvance: (lineId: string) => void;
   onTakeOrder: () => void;
   onCheck: () => void;
+  onEditLine: (lineId: string, qty: number) => void;
+  onRemoveLine: (lineId: string, reason?: string) => void;
 }) {
+  const tr = useTr();
   const [guests, setGuests] = useState(Math.min(2, table.seats));
+  const [editing, setEditing] = useState<string | null>(null);
   const total = ticketTotal(table.lines);
   const empty = table.status === "free" || table.status === "reserved";
   return (
@@ -765,22 +789,35 @@ function TablePage({
         </div>
 
         {!empty && (
-          <div className="mt-6 grid grid-cols-[0.8fr_0.8fr_1.5fr] divide-x divide-g-line rounded-[22px] bg-g-fill py-3.5">
-            {[
-              [Users, "Guests", String(table.guests)],
-              [Clock, "Since", table.since ?? "—"],
-              [ReceiptText, "Total", total ? money(total) : "—"],
-            ].map(([Icon, label, value]) => {
-              const I = Icon as LucideIcon;
-              return (
-                <div key={label as string} className="px-3.5">
-                  <p className="flex items-center gap-1 text-[12px] font-medium text-g-muted">
-                    <I size={13} strokeWidth={2} /> {label as string}
-                  </p>
-                  <p className="mt-1 truncate text-[16px] font-semibold tabular-nums">{value as string}</p>
-                </div>
-              );
-            })}
+          // The table at a glance: the total big, the share per guest, then guests, time seated and where the order came from.
+          <div className="mt-6 rounded-[24px] bg-g-fill p-4">
+            <div className="flex items-end justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block text-[13px] font-medium text-g-muted">{tr("Total")}</span>
+                <span className="block text-[32px] leading-tight font-semibold tracking-[-0.035em] tabular-nums">{total ? money(total) : "—"}</span>
+              </span>
+              {total > 0 && table.guests > 0 && (
+                <span className="shrink-0 pb-1.5 text-right text-[12px] text-g-muted tabular-nums">
+                  ≈ {compactMoney(Math.round(total / table.guests / 1000) * 1000)}
+                  <br />
+                  {tr("per guest")}
+                </span>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold tabular-nums">
+                <Users size={14} strokeWidth={2.2} className="text-g-blue" /> {table.guests} {tr("guests")}
+              </span>
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold tabular-nums">
+                <Clock size={14} strokeWidth={2.2} className="text-g-blue" /> {seatedFor(table.since)}
+                <span className="font-medium text-g-muted">· {table.since}</span>
+              </span>
+              {table.lines.some((l) => l.by === "guest") && (
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold">
+                  <QrCode size={14} strokeWidth={2.2} className="text-g-blue" /> {tr("QR menu")}
+                </span>
+              )}
+            </div>
           </div>
         )}
 
@@ -800,27 +837,53 @@ function TablePage({
           </section>
         ) : (
           <section className="mt-8">
-            <StepHead title="Order" aside={table.lines.length ? "Tap a status to move it on" : undefined} />
+            <StepHead title={tr("Order")} aside={table.lines.length ? tr("Tap a dish to edit") : undefined} />
             {table.lines.length ? (
-              <div className="divide-y divide-g-line">
-                {table.lines.map((l) => {
-                  const it = itemById.get(l.itemId);
+              <div className="grid gap-5">
+                {(
+                  [
+                    ["guest", tr("Guest · QR menu"), QrCode],
+                    ["waiter", tr("Added by the waiter"), UserRound],
+                  ] as const
+                ).map(([by, label, Icon]) => {
+                  const ls = table.lines.filter((l) => (l.by ?? "waiter") === by);
+                  if (!ls.length) return null;
                   return (
-                    <div key={l.id} className="flex items-center gap-3 py-3.5">
-                      <span className="w-7 shrink-0 text-[15px] font-semibold text-g-muted tabular-nums">{l.qty}×</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-medium">{it ? t(it.name, "en") : l.itemId}</span>
-                        <span className="text-[13px] text-g-muted tabular-nums">{money(l.price * l.qty)}</span>
-                      </span>
-                      <button
-                        onClick={() => {
-                          haptic("light");
-                          onAdvance(l.id);
-                        }}
-                        className={`${LINE[l.state].chip} press h-8 shrink-0 rounded-full px-3 text-[12px] font-semibold`}
-                      >
-                        {LINE[l.state].label}
-                      </button>
+                    <div key={by}>
+                      <p className="flex items-center gap-1.5 text-[12px] font-semibold tracking-[0.04em] text-g-muted uppercase">
+                        <Icon size={13} strokeWidth={2.4} className="text-g-blue" /> {label}
+                      </p>
+                      <div className="mt-1 divide-y divide-g-line">
+                        {ls.map((l) => {
+                          const it = itemById.get(l.itemId);
+                          return (
+                            <div key={l.id} className="flex items-center gap-3 py-3">
+                              <button
+                                onClick={() => {
+                                  haptic("light");
+                                  setEditing(l.id);
+                                }}
+                                className="press flex min-w-0 flex-1 items-center gap-3 text-left"
+                              >
+                                <span className="w-7 shrink-0 text-[15px] font-semibold text-g-muted tabular-nums">{l.qty}×</span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-[15px] font-medium">{it ? t(it.name, "en") : l.itemId}</span>
+                                  <span className="text-[13px] text-g-muted tabular-nums">{money(l.price * l.qty)}</span>
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  haptic("light");
+                                  onAdvance(l.id);
+                                }}
+                                className={`${LINE[l.state].chip} press h-8 shrink-0 rounded-full px-3 text-[12px] font-semibold`}
+                              >
+                                {tr(LINE[l.state].label)}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
@@ -834,6 +897,12 @@ function TablePage({
           </section>
         )}
       </div>
+      {editing &&
+        (() => {
+          const l = table.lines.find((x) => x.id === editing);
+          if (!l) return null;
+          return <LineEditor line={l} name={itemById.get(l.itemId)?.name.en ?? ""} money={money} onClose={() => setEditing(null)} onSave={(q) => { onEditLine(l.id, q); setEditing(null); }} onRemove={(r) => { onRemoveLine(l.id, r); setEditing(null); }} />;
+        })()}
     </Sheet>
   );
 }
@@ -891,7 +960,7 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
       return next;
     });
   };
-  const send = () => onSend(entries.map(([itemId, qty]) => ({ id: lineId(), itemId, qty, price: byId.get(itemId)?.price ?? 0, state: "new" as const })));
+  const send = () => onSend(entries.map(([itemId, qty]) => ({ id: lineId(), itemId, qty, price: byId.get(itemId)?.price ?? 0, state: "new" as const, by: "waiter" as const })));
   const stepper = (id: string, n: number) => (
     <div className="flex h-10 w-[104px] shrink-0 items-center justify-between rounded-full bg-g-ink px-1 text-white">
       <button aria-label="Remove one" onClick={() => set(id, n - 1)} className="grid size-8 place-items-center">
@@ -1614,5 +1683,96 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
       <ChevronRight size={18} className={`absolute text-g-faint ${big ? "top-5 right-5" : "bottom-4 right-4"}`} />
     </button>
   
+  );
+}
+
+/** How long a table has been seated, against the demo clock (12:45). */
+function seatedFor(since?: string) {
+  if (!since) return "—";
+  const [h, m] = since.split(":").map(Number);
+  const d = Math.max(0, 12 * 60 + 45 - ((h ?? 0) * 60 + (m ?? 0)));
+  return d >= 60 ? `${Math.floor(d / 60)}h ${String(d % 60).padStart(2, "0")}m` : `${d}m`;
+}
+
+/**
+ * Edit one line of the order: change the quantity or remove it. A dish that is
+ * already cooking or served can only be removed with a reason (the kitchen and
+ * the manager see it).
+ */
+function LineEditor({ line, name, money, onClose, onSave, onRemove }: { line: TicketLine; name: string; money: (n: number) => string; onClose: () => void; onSave: (qty: number) => void; onRemove: (reason?: string) => void }) {
+  const tr = useTr();
+  const [qty, setQty] = useState(line.qty);
+  const [reason, setReason] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const started = line.state !== "new";
+  return (
+    <PeekCard label={name} onClose={onClose}>
+      <p className="text-[12px] font-semibold tracking-[0.04em] text-g-muted uppercase">{line.by === "guest" ? tr("Guest · QR menu") : tr("Added by the waiter")}</p>
+      <p className="mt-1 text-[22px] leading-tight font-bold tracking-[-0.02em]">{name}</p>
+      <p className="mt-1 text-[14px] text-g-muted tabular-nums">
+        {money(line.price)} · {tr(LINE[line.state].label)}
+      </p>
+      {!removing ? (
+        <>
+          <div className="mt-5 flex items-center justify-between rounded-[20px] bg-g-fill p-3">
+            <span className="text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{qty}</span>
+            <Counter value={qty} min={1} max={20} onChange={setQty} />
+          </div>
+          <p className="mt-2 text-right text-[14px] font-semibold tabular-nums">{money(line.price * qty)}</p>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => {
+                haptic("light");
+                if (started) setRemoving(true);
+                else onRemove();
+              }}
+              className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold text-[#e5484d]"
+            >
+              {tr("Remove")}
+            </button>
+            <button
+              disabled={qty === line.qty}
+              onClick={() => {
+                haptic("success");
+                onSave(qty);
+              }}
+              className="blue-grad press h-12 flex-[1.4] rounded-full text-[15px] font-semibold disabled:opacity-40"
+            >
+              {tr("Save")}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-5 text-[15px] font-semibold">{tr("Why remove it?")}</p>
+          <p className="mt-0.5 text-[13px] text-g-muted">{tr("It is already in the kitchen; the manager will see the reason.")}</p>
+          <div className="mt-3 grid gap-2">
+            {["Guest changed their mind", "Wrong order", "Problem in the kitchen"].map((r) => (
+              <button
+                key={r}
+                onClick={() => {
+                  haptic("tick");
+                  setReason(r);
+                }}
+                aria-pressed={reason === r}
+                className={`press h-11 rounded-full text-[14px] font-semibold ${reason === r ? "bg-g-blue-soft text-g-blue ring-2 ring-g-blue" : "bg-g-fill"}`}
+              >
+                {tr(r)}
+              </button>
+            ))}
+          </div>
+          <button
+            disabled={!reason}
+            onClick={() => {
+              haptic("success");
+              onRemove(reason ?? undefined);
+            }}
+            className="press mt-4 h-12 w-full rounded-full bg-[#e5484d] text-[15px] font-semibold text-white disabled:opacity-40"
+          >
+            {tr("Remove from the order")}
+          </button>
+        </>
+      )}
+    </PeekCard>
   );
 }
