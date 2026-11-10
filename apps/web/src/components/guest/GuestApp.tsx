@@ -634,7 +634,10 @@ export function GuestApp({ menu }: { menu: Menu }) {
         orders={orders}
         now={now}
         itemById={itemById}
+        menu={menu}
+        table={table ?? undefined}
         onOrderMore={() => setSheet(null)}
+        onBill={() => setSheet("bill")}
       />
       <SearchSheet
         open={sheet === "search"}
@@ -989,35 +992,44 @@ function CategoryTabs({
     });
     return () => io.disconnect();
   }, [menu]);
-  // The ring turns the current section to its centre once the page comes to rest:
-  // turning it during the page scroll made two animations fight for every frame.
-  const activeRef = useRef(active);
+  // The ring follows the page at once: the moment a new section takes the top,
+  // its label glides to the centre. The glide is our own short ease on
+  // scrollLeft (cheap, one property per frame), so it never waits for the page
+  // to come to rest and never fights the page scroll. A finger on the ring wins.
   useEffect(() => {
-    activeRef.current = active;
-  }, [active]);
-  useEffect(() => {
-    let idle: ReturnType<typeof setTimeout> | undefined;
-    const follow = () => {
-      const bar = tabsRef.current;
-      const tab = bar?.querySelector<HTMLElement>(
-        `[data-tab="${activeRef.current}"]`,
-      );
-      if (bar && tab)
-        bar.scrollTo({
-          left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2,
-          behavior: "smooth",
-        });
+    const bar = tabsRef.current;
+    const tab = bar?.querySelector<HTMLElement>(`[data-tab="${active}"]`);
+    if (!bar || !tab) return;
+    const target = Math.max(0, Math.min(bar.scrollWidth - bar.clientWidth, tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2));
+    let raf = 0;
+    let stopped = false;
+    const snap = bar.style.scrollSnapType;
+    bar.style.scrollSnapType = "none"; // snapping would tug against the glide
+    const stop = () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+      bar.style.scrollSnapType = snap;
     };
-    const onScroll = () => {
-      clearTimeout(idle);
-      idle = setTimeout(follow, 140);
+    const step = () => {
+      if (stopped) return;
+      const d = target - bar.scrollLeft;
+      if (Math.abs(d) < 1) {
+        bar.scrollLeft = target;
+        stop();
+        return;
+      }
+      bar.scrollLeft += d * 0.22;
+      raf = requestAnimationFrame(step);
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    raf = requestAnimationFrame(step);
+    bar.addEventListener("touchstart", stop, { passive: true, once: true });
+    bar.addEventListener("pointerdown", stop, { passive: true, once: true });
     return () => {
-      clearTimeout(idle);
-      window.removeEventListener("scroll", onScroll);
+      stop();
+      bar.removeEventListener("touchstart", stop);
+      bar.removeEventListener("pointerdown", stop);
     };
-  }, []);
+  }, [active]);
   useRing(tabsRef, [menu, lang]);
   return (
     <nav

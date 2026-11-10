@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney, moodsFor, spinRoulette, t, type CategoryRole, type Lang, type Menu, type MenuItem, type Mood, type RouletteResult } from "@yanyin/domain";
-import { Compass, Dices, Flame, Leaf, Minus, Plus, Wind, type LucideIcon } from "lucide-react";
+import { CakeSlice, CupSoda, Dices, Flame, Leaf, Minus, Plus, RefreshCw, Sandwich, Soup, Sparkles, Users, UtensilsCrossed, Wind, type LucideIcon } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { ui, type UiKey } from "@/lib/ui-strings";
@@ -9,11 +9,27 @@ import { CountMoney, RouletteWheel, useWheelSpin } from "./motion";
 import { ChoiceChip, DishTile, Sheet, StepHead, TrackSlider } from "./ui";
 
 const MOODS: Record<Mood, { key: UiKey; icon: LucideIcon }> = {
-  hungry: { key: "moodHungry", icon: Flame },
+  hungry: { key: "moodHungry", icon: UtensilsCrossed },
   light: { key: "moodLight", icon: Leaf },
-  adventurous: { key: "moodAdventurous", icon: Compass },
+  adventurous: { key: "moodAdventurous", icon: Sparkles },
   chill: { key: "moodChill", icon: Wind },
+  meat: { key: "moodMeat", icon: Flame },
+  soup: { key: "moodSoup", icon: Soup },
+  sweet: { key: "moodSweet", icon: CakeSlice },
+  snack: { key: "moodSnack", icon: Sandwich },
+  drinks: { key: "moodDrinks", icon: CupSoda },
+  share: { key: "moodShare", icon: Users },
 };
+
+/** Budget per guest as quick picks, from modest to a feast. */
+const LEVELS: [UiKey, number][] = [
+  ["budgetModest", 150_000],
+  ["budgetUsual", 300_000],
+  ["budgetGenerous", 500_000],
+  ["budgetFeast", 800_000],
+];
+const PER_MIN = 100_000;
+const PER_MAX = 1_000_000;
 
 /**
  * Food Roulette as a configurator page in the same language as the hookah page:
@@ -39,7 +55,10 @@ export function RouletteSheet({
   const { currency } = menu.venue;
 
   const [guests, setGuests] = useState(2);
-  const [budget, setBudget] = useState(lounge ? 900_000 : 700_000);
+  // The budget is kept per guest, so adding a guest grows the table's budget with it.
+  const [per, setPer] = useState(lounge ? 450_000 : 350_000);
+  const [halal, setHalal] = useState(false);
+  const hasHalal = useMemo(() => menu.categories.some((c) => c.items.some((i) => i.tags.includes("halal"))), [menu]);
   const [mood, setMood] = useState<Mood>(moods[0]!);
   const [veg, setVeg] = useState(false);
   const [alcohol, setAlcohol] = useState(lounge);
@@ -47,14 +66,35 @@ export function RouletteSheet({
   const [round, setRound] = useState(0);
   const wheel = useWheelSpin();
   const top = useRef<HTMLDivElement>(null);
-  const min = 100_000 * guests;
-  const value = Math.max(min, budget);
+  const value = per * guests;
+  const tags = [...(veg ? ["vegetarian"] : []), ...(halal ? ["halal"] : [])];
+
+  // Swap one dish of the set for another of the same kind that still fits the budget.
+  const swap = (it: MenuItem) => {
+    if (!result) return;
+    const role = roleOf.get(it.id);
+    const drink = role === "drink" || role === "hot_drink" || role === "alcohol";
+    const room = per - result.perGuest + it.price;
+    const options = menu.categories
+      .filter((c) => c.role === role)
+      .flatMap((c) => c.items)
+      .filter((o) => o.price > 0 && o.price <= room && !result.items.some((x) => x.id === o.id) && (drink || tags.every((tag) => o.tags.includes(tag))));
+    if (!options.length) {
+      haptic("tick");
+      return;
+    }
+    haptic("light");
+    const next = options[Math.floor(Math.random() * options.length)]!;
+    const items = result.items.map((x) => (x.id === it.id ? next : x));
+    const perGuest = items.reduce((n, x) => n + x.price, 0);
+    setResult({ items, perGuest, total: perGuest * guests });
+  };
 
   const spin = () => {
     if (wheel.spinning) return;
     haptic("light");
     top.current?.closest(".overflow-y-auto")?.scrollTo({ top: 0, behavior: "smooth" });
-    const r = spinRoulette({ menu, budget: value, guests, mood, includeAlcohol: alcohol, requireTags: veg ? ["vegetarian"] : undefined });
+    const r = spinRoulette({ menu, budget: value, guests, mood, includeAlcohol: alcohol, requireTags: tags.length ? tags : undefined });
     setResult(undefined);
     wheel.spin(() => {
       setResult(r);
@@ -85,8 +125,13 @@ export function RouletteSheet({
             </button>
           </div>
         ) : (
-          <button onClick={spin} disabled={wheel.spinning} className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold">
-            <Dices size={20} strokeWidth={2} /> {ui(lang, "spin")}
+          <button onClick={spin} disabled={wheel.spinning} className="blue-grad press flex h-14 w-full items-center justify-between gap-2 rounded-full px-6 text-[16px] font-semibold">
+            <span className="flex items-center gap-2">
+              <Dices size={20} strokeWidth={2} /> {ui(lang, "spin")}
+            </span>
+            <span className="flex items-center gap-1.5 text-white/85 tabular-nums">
+              <Users size={15} strokeWidth={2.2} /> {guests} · {formatMoney(value, currency, lang)}
+            </span>
           </button>
         )
       }
@@ -95,8 +140,8 @@ export function RouletteSheet({
         <h2 className="text-[28px] leading-[1.1] font-bold tracking-[-0.02em]">{ui(lang, "roulette")}</h2>
         <p className="mt-1.5 text-[15px] text-g-muted">{ui(lang, "rouletteHint")}</p>
 
-        <div className="mt-7 flex justify-center">
-          <RouletteWheel spinRef={wheel.ref} pointerRef={wheel.pointer} won={wheel.won} idle={wheel.idle} size={264} />
+        <div className="mt-6 flex justify-center">
+          <RouletteWheel spinRef={wheel.ref} pointerRef={wheel.pointer} won={wheel.won} idle={wheel.idle} size={232} />
         </div>
 
         {result === null && <p className="mt-6 text-center text-[15px] text-g-muted">{ui(lang, "nothingFits")}</p>}
@@ -112,6 +157,9 @@ export function RouletteSheet({
                   <DishTile item={it} role={roleOf.get(it.id) ?? "main"} photoScale={0.9} glyph={0.5} className="size-14 shrink-0 rounded-[16px]" />
                   <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{t(it.name, lang)}</span>
                   <span className="shrink-0 text-[15px] text-g-muted tabular-nums">{formatMoney(it.price, currency, lang)}</span>
+                  <button aria-label={ui(lang, "swapDish")} onClick={() => swap(it)} className="press grid size-9 shrink-0 place-items-center rounded-full bg-g-fill text-g-blue">
+                    <RefreshCw size={15} strokeWidth={2.2} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -126,9 +174,10 @@ export function RouletteSheet({
           </div>
         )}
 
-        <section className="mt-10">
-          <StepHead n={1} title={ui(lang, "mood")} />
-          <div className="flex flex-wrap gap-2">
+        {/* Mood: two rows that scroll sideways, so ten moods take the room of two lines. */}
+        <section className="mt-9">
+          <StepHead title={ui(lang, "mood")} />
+          <div className="no-scrollbar -mx-5 grid grid-flow-col grid-rows-2 justify-start gap-2 overflow-x-auto px-5 [grid-auto-columns:max-content]">
             {moods.map((m) => {
               const { key, icon: Icon } = MOODS[m];
               return (
@@ -140,54 +189,79 @@ export function RouletteSheet({
           </div>
         </section>
 
-        <section className="mt-9">
-          <StepHead n={2} title={ui(lang, "guests")} />
+        {/* Guests and budget live in one card: the budget is per guest, the total follows. */}
+        <section className="mt-8 rounded-[24px] bg-g-fill p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[56px] leading-[0.9] font-semibold tracking-[-0.04em] tabular-nums">{guests}</span>
-            <div className="flex h-12 items-center gap-1 rounded-full bg-g-fill px-1.5">
-              {(
-                [
-                  [-1, Minus, "Fewer guests"],
-                  [1, Plus, "More guests"],
-                ] as const
-              ).map(([d, Icon, label]) => (
-                <button
-                  key={d}
-                  aria-label={label}
-                  onClick={() => {
-                    haptic("tick");
-                    setGuests((g) => Math.min(12, Math.max(1, g + d)));
-                  }}
-                  className="press grid size-10 place-items-center rounded-full"
-                >
-                  <Icon size={18} />
-                </button>
-              ))}
+            <span className="flex items-center gap-2 text-[15px] font-semibold">
+              <Users size={17} strokeWidth={2.2} className="text-g-blue" /> {ui(lang, "guests")}
+            </span>
+            <div className="flex h-11 items-center gap-1 rounded-full bg-white px-1">
+              <button
+                aria-label="Fewer guests"
+                onClick={() => {
+                  haptic("tick");
+                  setGuests((g) => Math.max(1, g - 1));
+                }}
+                className="press grid size-9 place-items-center rounded-full"
+              >
+                <Minus size={17} />
+              </button>
+              <span className="w-7 text-center text-[18px] font-semibold tabular-nums">{guests}</span>
+              <button
+                aria-label="More guests"
+                onClick={() => {
+                  haptic("tick");
+                  setGuests((g) => Math.min(12, g + 1));
+                }}
+                className="press grid size-9 place-items-center rounded-full"
+              >
+                <Plus size={17} />
+              </button>
             </div>
           </div>
+          <div className="my-4 border-t border-g-line" />
+          <div className="flex items-end justify-between gap-3">
+            <span>
+              <span className="block text-[13px] font-medium text-g-muted">{ui(lang, "budget")}</span>
+              <span className="block text-[32px] leading-tight font-semibold tracking-[-0.03em] tabular-nums">{formatMoney(value, currency, lang)}</span>
+            </span>
+            <span className="pb-1.5 text-right text-[13px] text-g-muted tabular-nums">
+              {formatMoney(per, currency, lang)}
+              <br />
+              {ui(lang, "perGuest")}
+            </span>
+          </div>
+          <div className="mt-3">
+            <TrackSlider value={per} min={PER_MIN} max={PER_MAX} step={25_000} onChange={setPer} label={ui(lang, "budget")} valueText={formatMoney(value, currency, lang)} />
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-1.5">
+            {LEVELS.map(([key, v]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  haptic("tick");
+                  setPer(v);
+                }}
+                aria-pressed={per === v}
+                className={`press h-9 rounded-full text-[13px] font-semibold ${per === v ? "bg-g-ink text-white" : "bg-white"}`}
+              >
+                {ui(lang, key)}
+              </button>
+            ))}
+          </div>
         </section>
 
-        <section className="mt-9">
-          <StepHead n={3} title={ui(lang, "budget")} />
-          <p className="text-[40px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{formatMoney(value, currency, lang)}</p>
-          <p className="mt-1.5 text-[14px] text-g-muted tabular-nums">
-            {formatMoney(Math.floor(value / guests), currency, lang)} {ui(lang, "perGuest")}
-          </p>
-          <div className="mt-5">
-            <TrackSlider value={value} min={min} max={3_000_000} step={50_000} onChange={setBudget} label={ui(lang, "budget")} valueText={formatMoney(value, currency, lang)} />
-          </div>
-          <div className="mt-1 flex justify-between text-[12px] font-medium text-g-faint tabular-nums">
-            <span>{formatMoney(min, currency, lang)}</span>
-            <span>{formatMoney(3_000_000, currency, lang)}</span>
-          </div>
-        </section>
-
-        <section className="mt-9">
-          <StepHead n={4} title={ui(lang, "preferences")} aside={ui(lang, "optional")} />
+        <section className="mt-8">
+          <StepHead title={ui(lang, "preferences")} aside={ui(lang, "optional")} />
           <div className="flex flex-wrap gap-2">
             <ChoiceChip on={veg} onClick={() => setVeg((v) => !v)}>
               {ui(lang, "vegetarian")}
             </ChoiceChip>
+            {hasHalal && (
+              <ChoiceChip on={halal} onClick={() => setHalal((v) => !v)}>
+                {ui(lang, "halalOnly")}
+              </ChoiceChip>
+            )}
             <ChoiceChip on={alcohol} onClick={() => setAlcohol((v) => !v)}>
               {ui(lang, "alcohol")}
             </ChoiceChip>

@@ -1,15 +1,30 @@
 import { allItems } from "./normalize";
 import type { CategoryRole, Menu, MenuItem } from "./types";
 
-export type Mood = "hungry" | "light" | "adventurous" | "chill";
+export type Mood = "hungry" | "light" | "adventurous" | "chill" | "meat" | "soup" | "sweet" | "snack" | "drinks" | "share";
 
 /** Which course slots a mood fills, in order. Each slot lists acceptable category roles. */
 const SLOTS: Record<Mood, CategoryRole[][]> = {
-  hungry: [["main", "grill"], ["side", "salad", "pastry"], ["drink"]],
+  hungry: [["main", "grill", "pasta"], ["side", "salad", "pastry"], ["drink"]],
   light: [["salad", "soup"], ["drink", "hot_drink"]],
-  adventurous: [["main", "grill", "soup"], ["starter", "salad", "pastry"], ["dessert"], ["drink", "hot_drink"]],
+  adventurous: [["main", "grill", "soup", "pasta"], ["starter", "salad", "pastry"], ["dessert"], ["drink", "hot_drink"]],
   chill: [["hookah"], ["drink", "alcohol"], ["snack"]],
+  // Grill first, something fresh next to it.
+  meat: [["grill"], ["salad", "side"], ["pastry", "side"], ["drink", "alcohol"]],
+  // A bowl of something hot, bread or a pastry, tea.
+  soup: [["soup"], ["pastry", "side"], ["hot_drink", "drink"]],
+  // Dessert and a hot drink.
+  sweet: [["dessert"], ["hot_drink", "drink"]],
+  // A quick bite, no full meal.
+  snack: [["pastry", "starter", "snack"], ["drink", "hot_drink"]],
+  // Only something to drink.
+  drinks: [["drink", "alcohol"], ["hot_drink", "drink"]],
+  // Plates for the middle of the table.
+  share: [["starter", "snack", "pastry"], ["salad", "side"], ["main", "grill"], ["drink"]],
 };
+
+/** The order moods are offered in. */
+const MOOD_ORDER: Mood[] = ["hungry", "light", "adventurous", "meat", "soup", "share", "snack", "sweet", "drinks"];
 
 export type RouletteInput = {
   menu: Menu;
@@ -27,13 +42,16 @@ export type RouletteInput = {
 
 export type RouletteResult = { items: MenuItem[]; total: number; perGuest: number } | null;
 
-/** Moods that make sense for the venue (a shisha lounge gets "chill"). */
+/**
+ * Moods that make sense for the venue: a mood is offered when the menu can
+ * fill its leading course (a shisha lounge gets "chill" first, a venue with no
+ * desserts gets no "sweet").
+ */
 export function moodsFor(menu: Menu): Mood[] {
-  const roles = new Set(menu.categories.map((c) => c.role));
-  const moods: Mood[] = [];
-  if (roles.has("main") || roles.has("grill")) moods.push("hungry", "adventurous");
-  if (roles.has("salad") || roles.has("soup")) moods.push("light");
-  if (roles.has("hookah")) moods.unshift("chill");
+  const roles = new Set(menu.categories.filter((c) => c.items.some((i) => i.price > 0)).map((c) => c.role));
+  const can = (m: Mood) => SLOTS[m][0]!.some((r) => roles.has(r));
+  const moods = MOOD_ORDER.filter(can);
+  if (can("chill")) moods.unshift("chill");
   return moods.length ? moods : ["hungry"];
 }
 
@@ -69,7 +87,7 @@ export function spinRoulette(input: RouletteInput): RouletteResult {
     const pick: MenuItem[] = [];
     let total = 0;
     for (const options of usable) {
-      const affordable = options.filter((o) => total + o.price <= perGuestBudget);
+      const affordable = options.filter((o) => total + o.price <= perGuestBudget && !pick.includes(o));
       if (!affordable.length) continue;
       const choice = affordable[Math.floor(rng() * affordable.length)]!;
       pick.push(choice);

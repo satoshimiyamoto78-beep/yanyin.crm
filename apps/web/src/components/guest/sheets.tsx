@@ -14,7 +14,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { Check, ChevronRight, Clock, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { BellRing, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -533,6 +533,20 @@ export function orderStage(order: PlacedOrder, now: number): number {
   return s < 6 ? 0 : s < 15 ? 1 : s < 45 ? 2 : 3;
 }
 
+const STEPS: { key: UiKey; icon: LucideIcon }[] = [
+  { key: "stepSent", icon: Send },
+  { key: "stepAccepted", icon: Check },
+  { key: "stepCooking", icon: CookingPot },
+  { key: "stepReady", icon: BellRing },
+];
+const clock = (at: number) => new Date(at).toTimeString().slice(0, 5);
+
+/**
+ * The guest's orders. The newest one is the hero: its status in words, the
+ * time left, and four steps with icons that light up one by one. Dishes show
+ * with their photos. Earlier orders fold into compact rows; the table's
+ * running total sits at the bottom with a way to ask for the bill.
+ */
 export function OrdersSheet({
   open,
   onClose,
@@ -541,7 +555,10 @@ export function OrdersSheet({
   orders,
   now,
   itemById,
+  menu,
+  table,
   onOrderMore,
+  onBill,
 }: {
   open: boolean;
   onClose: () => void;
@@ -550,61 +567,166 @@ export function OrdersSheet({
   orders: PlacedOrder[];
   now: number;
   itemById: Map<string, MenuItem>;
+  menu: Menu;
+  table?: string | number;
   onOrderMore: () => void;
+  onBill?: () => void;
 }) {
   const list = [...orders].reverse();
+  const roleOf = useMemo(() => new Map(menu.categories.flatMap((c) => c.items.map((i) => [i.id, c.role] as const))), [menu]);
+  const [openId, setOpenId] = useState<number | null>(null);
+  const sum = orders.reduce((n, o) => n + o.total, 0);
+  const money = (n: number) => formatMoney(n, currency, lang);
+  const dishes = (o: PlacedOrder, big: boolean) => (
+    <ul className={big ? "grid gap-3" : "mt-3 grid gap-2.5"}>
+      {o.lines.map((l) => {
+        const it = itemById.get(l.itemId)!;
+        return (
+          <li key={l.key} className="flex items-center gap-3">
+            <DishTile item={it} role={roleOf.get(it.id) ?? "main"} photoScale={0.9} glyph={0.5} className={`${big ? "size-12 rounded-[14px]" : "size-10 rounded-[12px]"} shrink-0`} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-medium">{t(it.name, lang)}</span>
+              <span className="block text-[13px] text-g-muted tabular-nums">
+                {l.qty} × {money(l.unitPrice)}
+              </span>
+            </span>
+            <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(l.unitPrice * l.qty)}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
   return (
     <Sheet
       open={open}
       onClose={onClose}
       label={ui(lang, "orders")}
+      title={false}
       footer={
-        <button onClick={onOrderMore} className="press h-12 w-full rounded-full bg-g-fill text-[16px] font-semibold">
-          {ui(lang, "orderMore")}
-        </button>
+        <div className="flex gap-2.5">
+          {onBill && list.length > 0 && (
+            <button onClick={onBill} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
+              <ReceiptText size={18} strokeWidth={2} /> {ui(lang, "billRequest")}
+            </button>
+          )}
+          <button onClick={onOrderMore} className="blue-grad press flex h-14 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-semibold">
+            <Plus size={18} strokeWidth={2.4} /> {ui(lang, "orderMore")}
+          </button>
+        </div>
       }
     >
-      <div className="px-5 pt-8 pb-4">
-        <h2 className="text-[26px] font-bold tracking-[-0.02em]">{ui(lang, "orders")}</h2>
-        {!list.length && <p className="py-12 text-center text-[15px] text-g-muted">{ui(lang, "noOrdersBody")}</p>}
+      <div className="px-5 pt-2 pb-6">
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "orders")}</h2>
+          {table !== undefined && (
+            <span className="mb-1 rounded-full bg-g-fill px-3 py-1 text-[13px] font-semibold">
+              {ui(lang, "table")} {table}
+            </span>
+          )}
+        </div>
+
+        {!list.length && (
+          <div className="mt-6 flex flex-col items-center rounded-[28px] bg-g-fill px-6 py-12 text-center">
+            <span className="chip-blue grid size-16 place-items-center rounded-full">
+              <ReceiptText size={28} strokeWidth={1.8} />
+            </span>
+            <p className="mt-4 text-[18px] font-semibold">{ui(lang, "noOrders")}</p>
+            <p className="mt-1 text-[14px] leading-snug text-g-muted">{ui(lang, "noOrdersBody")}</p>
+          </div>
+        )}
+
         {list.map((o, i) => {
           const stage = orderStage(o, now);
+          const ready = stage === 3;
           const minsLeft = Math.max(1, Math.ceil(15 - ((now - o.placedAt) / 1000 / 45) * 15));
+          if (i > 0) {
+            // Earlier orders: one compact row each; tap to see the dishes.
+            const on = openId === o.id;
+            return (
+              <div key={o.id}>
+                {i === 1 && <p className="mt-7 text-[12px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "earlierOrders")}</p>}
+                <article className="mt-2.5 rounded-[22px] bg-g-fill p-4">
+                  <button
+                    onClick={() => {
+                      haptic("tick");
+                      setOpenId(on ? null : o.id);
+                    }}
+                    aria-expanded={on}
+                    className="flex w-full items-center gap-3 text-left"
+                  >
+                    <span className={`grid size-10 shrink-0 place-items-center rounded-full ${ready ? "chip-green" : "chip-blue"}`}>{ready ? <Check size={18} strokeWidth={2.4} /> : <CookingPot size={18} strokeWidth={2} />}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px] font-semibold">
+                        №{String(o.id).padStart(3, "0")} · {ui(lang, ready ? "served" : STEPS[stage]!.key)}
+                      </span>
+                      <span className="block truncate text-[13px] text-g-muted">
+                        {clock(o.placedAt)} · {o.lines.map((l) => `${l.qty}× ${t(itemById.get(l.itemId)!.name, lang)}`).join(", ")}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(o.total)}</span>
+                    <ChevronDown size={17} className={`shrink-0 text-g-faint transition-transform ${on ? "rotate-180" : ""}`} />
+                  </button>
+                  {on && dishes(o, false)}
+                </article>
+              </div>
+            );
+          }
           return (
-            <article key={o.id} className={`mt-4 rounded-[28px] p-5 ${i === 0 ? "mesh-blue" : "border-[1.5px] border-g-faint/50"}`}>
-              <p className="text-[13px] font-medium text-g-muted">
-                {ui(lang, "order")} №{String(o.id).padStart(3, "0")}
-              </p>
-              <div className="mt-1 flex items-baseline justify-between gap-4">
-                <h3 className="text-[22px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, STAGES[stage]!)}</h3>
-                {stage < 3 && (
-                  <span className="shrink-0 text-[22px] font-bold tracking-[-0.02em] tabular-nums">
-                    {minsLeft} {ui(lang, "min")}
-                  </span>
+            <article key={o.id} className="mesh-blue mt-5 rounded-[28px] p-5">
+              <div className="flex items-center justify-between text-[13px] font-medium text-g-muted">
+                <span>
+                  {ui(lang, "order")} №{String(o.id).padStart(3, "0")} · {clock(o.placedAt)}
+                </span>
+                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold ${ready ? "chip-green" : "bg-white text-g-blue"}`}>
+                  {!ready && <span className="size-1.5 animate-pulse rounded-full bg-g-blue" />}
+                  {ready ? ui(lang, "stepReady") : ui(lang, "eta").replace("{n}", String(minsLeft))}
+                </span>
+              </div>
+              <h3 className="mt-3 text-[26px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, STAGES[stage]!)}</h3>
+
+              {/* Four steps on one line: done ones filled, the current one ringed. */}
+              <div className="relative mt-5 grid grid-cols-4">
+                <span aria-hidden className="absolute top-[18px] right-[12.5%] left-[12.5%] h-[3px] rounded-full bg-white" />
+                <span aria-hidden className={`absolute top-[18px] left-[12.5%] h-[3px] rounded-full transition-[width] duration-700 ${ready ? "green-grad" : "bar-grad"}`} style={{ width: `${(stage / 3) * 75}%` }} />
+                {STEPS.map((st, k) => {
+                  const done = k <= stage;
+                  return (
+                    <span key={st.key} className="relative flex flex-col items-center gap-1.5">
+                      <span className={`grid size-9 place-items-center rounded-full transition-colors duration-500 ${done ? (ready ? "green-grad text-white" : "blue-grad") : "bg-white text-g-faint"} ${k === stage && !ready ? "ring-4 ring-g-blue/15" : ""}`}>
+                        <st.icon size={16} strokeWidth={2.2} />
+                      </span>
+                      <span className={`text-[11px] font-semibold ${done ? "text-g-ink" : "text-g-faint"}`}>{ui(lang, st.key)}</span>
+                    </span>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 rounded-[20px] bg-white/70 p-3.5">
+                {dishes(o, true)}
+                {o.note && (
+                  <p className="mt-3 flex items-start gap-2 rounded-[14px] bg-g-tint-note px-3 py-2 text-[13px] leading-snug">
+                    <StickyNote size={14} className="mt-0.5 shrink-0 text-g-orange" /> {o.note}
+                  </p>
                 )}
-              </div>
-              <div className="mt-4 grid grid-cols-4 gap-1.5" aria-hidden>
-                {STAGES.map((_, s) => (
-                  <span key={s} className={`h-1.5 rounded-full transition-colors duration-700 ${s <= stage ? (stage === 3 ? "green-grad" : "bar-grad") : "bg-g-fill-2"}`} />
-                ))}
-              </div>
-              <ul className="mt-5 space-y-2">
-                {o.lines.map((l) => (
-                  <li key={l.key} className="flex items-baseline gap-3 text-[15px]">
-                    <span className="w-6 shrink-0 font-semibold tabular-nums">{l.qty}×</span>
-                    <span className="min-w-0 flex-1 truncate">{t(itemById.get(l.itemId)!.name, lang)}</span>
-                    <span className="shrink-0 tabular-nums text-g-muted">{formatMoney(l.unitPrice * l.qty, currency, lang)}</span>
-                  </li>
-                ))}
-              </ul>
-              {o.note && <p className="mt-3 text-[13px] text-g-muted">{o.note}</p>}
-              <div className="mt-4 flex items-baseline justify-between border-t border-g-fill-2 pt-3">
-                <span className="text-[15px] text-g-muted">{ui(lang, "total")}</span>
-                <span className="text-[17px] font-semibold tabular-nums">{formatMoney(o.total, currency, lang)}</span>
+                <div className="mt-3 flex items-baseline justify-between border-t border-g-line pt-3">
+                  <span className="text-[14px] text-g-muted">{ui(lang, "total")}</span>
+                  <span className="text-[20px] font-semibold tracking-[-0.02em] tabular-nums">{money(o.total)}</span>
+                </div>
               </div>
             </article>
           );
         })}
+
+        {list.length > 0 && (
+          <div className="mt-6 flex items-center justify-between rounded-[22px] bg-g-fill px-4 py-3.5">
+            <span>
+              <span className="block text-[15px] font-semibold">{ui(lang, "tableTotal")}</span>
+              <span className="block text-[13px] text-g-muted">{ui(lang, "ordersCount").replace("{n}", String(orders.length))}</span>
+            </span>
+            <span className="text-[22px] font-semibold tracking-[-0.02em] tabular-nums">{money(sum)}</span>
+          </div>
+        )}
+        {list.length > 0 && <p className="mt-2 text-[12px] text-g-faint">{ui(lang, "serviceNote")}</p>}
       </div>
     </Sheet>
   );
