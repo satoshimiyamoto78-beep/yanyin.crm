@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/onest";
 import "./globals.css";
+import { AppFeel } from "@/components/AppFeel";
 
 export const metadata: Metadata = {
   title: { default: "yanyin.crm", template: "%s · yanyin" },
@@ -17,7 +18,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <AppFeel />
+        {children}
+      </body>
     </html>
   );
 }

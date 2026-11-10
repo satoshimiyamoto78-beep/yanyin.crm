@@ -52,6 +52,35 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * Native-app feel: no text selection, no long-press callout (copy, look up,
+ * save image), no image dragging, no double-tap zoom on controls. Fields where
+ * people type keep selection and paste.
+ */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea,
+select,
+[contenteditable],
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+img,
+svg {
+  -webkit-user-drag: none;
+}
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
 body {
   font-family: var(--font-sans);
   background: var(--g-bg);
