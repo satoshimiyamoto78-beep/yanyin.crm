@@ -1,12 +1,11 @@
 "use client";
 
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
-import { Bell, CakeSlice, CalendarDays, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, Plus, ReceiptText, ScanLine, Search, X, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import { Sparkles, Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
-import { Reveal } from "@/components/guest/motion";
-import { ActionCircle } from "@/components/guest/ui";
+import { PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -104,7 +103,7 @@ export function CrewBoard({
   onScan?: () => void;
 }) {
   const [hidden, setHidden] = useState(false);
-  const [banner, setBanner] = useState(true);
+  const [peek, setPeek] = useState<{ kind: "badge" | "quest"; id: string } | null>(null);
   const [xp, setXp] = useState(data.staff.xp);
   const [quests, setQuests] = useState(data.quests);
   const [done, setDone] = useState<CrewQuest | null>(null);
@@ -220,46 +219,50 @@ export function CrewBoard({
       </section>
 
       <div className="mx-auto max-w-[480px] px-5 pb-16">
-        {/* Banner: the quest of the week, closable. */}
-        {banner && available[0] && (
-          <div className="relative mt-5 flex items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(120deg,#eaf0ff_0%,#f3efff_100%)] p-4 pr-3">
+        {/* Helper cards, swipeable: the quest of the week, a tip from Yan, the team goal. */}
+        <div className="no-scrollbar -mx-5 mt-5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5">
+          {available[0] && (
+            <div className="relative flex w-[88%] shrink-0 snap-start items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(120deg,#eaf0ff_0%,#f3efff_100%)] p-4 pr-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-semibold tracking-[0.06em] text-g-blue uppercase">Quest of the week</p>
+                <p className="mt-1 text-[16px] leading-snug font-semibold">{available[0].title}</p>
+                <p className="mt-0.5 text-[13px] leading-snug text-g-muted">{available[0].description}</p>
+                <button
+                  onClick={() => {
+                    haptic("light");
+                    take(available[0]!.id);
+                  }}
+                  className="press mt-3 h-8 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
+                >
+                  Take · +{available[0].reward.xp} XP
+                </button>
+              </div>
+              <span className="blue-grad grid size-14 shrink-0 rotate-6 place-items-center rounded-[18px]">
+                <Trophy size={26} strokeWidth={1.8} />
+              </span>
+            </div>
+          )}
+          <div className="flex w-[88%] shrink-0 snap-start items-center gap-4 rounded-[24px] bg-[linear-gradient(120deg,#e9f8ef_0%,#eef6ff_100%)] p-4 pr-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[16px] leading-snug font-semibold">{available[0].title}</p>
-              <p className="mt-1 text-[13px] leading-snug text-g-muted">{available[0].description}</p>
-              <button
-                onClick={() => {
-                  haptic("light");
-                  take(available[0]!.id);
-                }}
-                className="press mt-3 h-8 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
-              >
-                Take quest · +{available[0].reward.xp} XP
-              </button>
+              <p className="text-[12px] font-semibold tracking-[0.06em] text-g-green uppercase">Yan tip</p>
+              <p className="mt-1 text-[16px] leading-snug font-semibold">Offer tarragon lemonade with plov</p>
+              <p className="mt-0.5 text-[13px] leading-snug text-g-muted">Guests who take plov add a drink 2× more often when you suggest one.</p>
             </div>
-            <span className="blue-grad grid size-16 shrink-0 rotate-6 place-items-center rounded-[20px]">
-              <Trophy size={30} strokeWidth={1.8} />
+            <span className="grid size-14 shrink-0 -rotate-6 place-items-center rounded-[18px] bg-white text-g-green">
+              <Sparkles size={24} strokeWidth={1.8} />
             </span>
-            <button aria-label="Hide" onClick={() => setBanner(false)} className="absolute top-2.5 right-2.5 grid size-7 place-items-center rounded-full text-g-faint">
-              <X size={16} strokeWidth={2.25} />
-            </button>
           </div>
-        )}
-
-        {/* Quick actions, like "transfers" in a bank app. */}
-        {hot && onGo && (
-          <>
-            <h2 className="mt-8 flex items-baseline justify-between text-[22px] font-bold tracking-[-0.02em]">
-              Quick actions
-            </h2>
-            <div className="mt-4 flex justify-between">
-              <ActionCircle icon={<Plus size={24} strokeWidth={2.25} />} label="New order" accent onClick={() => onGo("tables")} />
-              <ActionCircle icon={<LayoutGrid size={22} strokeWidth={1.9} />} label="Tables" badge={hot.bills || undefined} onClick={() => onGo("tables")} />
-              <ActionCircle icon={<ReceiptText size={22} strokeWidth={1.9} />} label="Orders" badge={hot.openOrders || undefined} onClick={() => onGo("orders")} />
-              <ActionCircle icon={<CalendarDays size={22} strokeWidth={1.9} />} label="Bookings" badge={hot.bookings || undefined} onClick={() => onGo("bookings")} />
-              <ActionCircle icon={<ScanLine size={22} strokeWidth={1.9} />} label="Scan QR" onClick={() => onScan?.()} />
+          <div className="flex w-[88%] shrink-0 snap-start items-center gap-4 rounded-[24px] bg-[linear-gradient(120deg,#fff4ea_0%,#f3efff_100%)] p-4 pr-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-semibold tracking-[0.06em] text-g-orange uppercase">Team goal</p>
+              <p className="mt-1 text-[16px] leading-snug font-semibold">{boss}% of this week’s goal</p>
+              <p className="mt-0.5 text-[13px] leading-snug text-g-muted">{data.boss.endsIn} · reward {data.boss.reward}</p>
             </div>
-          </>
-        )}
+            <span className="grid size-14 shrink-0 rotate-6 place-items-center rounded-[18px] bg-white text-g-orange">
+              <Users size={24} strokeWidth={1.8} />
+            </span>
+          </div>
+        </div>
 
         {/* Streak */}
         <Reveal as="section" delay={210} className="card mt-3 rounded-[28px] p-5">
@@ -325,6 +328,7 @@ export function CrewBoard({
               key={q.id}
               q={q}
               money={money}
+              onPeek={() => setPeek({ kind: "quest", id: q.id })}
               action={
                 q.state === "done" ? (
                   <button
@@ -353,6 +357,7 @@ export function CrewBoard({
                   key={q.id}
                   q={q}
                   money={money}
+                  onPeek={() => setPeek({ kind: "quest", id: q.id })}
                   action={
                     <button
                       onClick={() => {
@@ -373,18 +378,11 @@ export function CrewBoard({
         {/* Badges */}
         <SectionTitle title="Badges" count={data.badges.filter((b) => b.earned).length} />
         <div className="grid grid-cols-4 gap-2.5">
-          {data.badges.map((b) => {
-            const Icon = BADGE_ICON[b.id] ?? Trophy;
-            return (
-              <div key={b.id} className="flex flex-col items-center gap-2 text-center">
-                <span className={`grid aspect-square w-full place-items-center rounded-[22px] ${b.earned ? "card text-g-blue" : "border-[1.5px] border-dashed border-g-fill-2 text-g-faint"}`}>
-                  <Icon size={24} strokeWidth={1.75} />
-                </span>
-                <span className={`text-[12px] leading-tight ${b.earned ? "text-g-ink-2" : "text-g-faint"}`}>{b.name}</span>
-              </div>
-            );
-          })}
+          {data.badges.map((b) => (
+            <BadgeTile key={b.id} b={b} onPeek={() => setPeek({ kind: "badge", id: b.id })} />
+          ))}
         </div>
+        <p className="mt-2 text-center text-[12px] text-g-faint">Hold a badge or a quest to see what it is</p>
 
         {/* Leaderboard */}
         <SectionTitle title="This week" />
@@ -401,6 +399,78 @@ export function CrewBoard({
         <p className="mt-10 text-center text-[13px] text-g-faint">Progress counts automatically from orders · leaderboards can be turned off by the venue</p>
       </div>
 
+      {peek?.kind === "badge" && (() => {
+        const b = data.badges.find((x) => x.id === peek.id)!;
+        const info = BADGE_INFO[b.id] ?? { what: "", how: "", progress: 0 };
+        const Icon = BADGE_ICON[b.id] ?? Trophy;
+        return (
+          <PeekCard label={b.name} onClose={() => setPeek(null)}>
+            <span className={`mx-auto grid size-20 place-items-center rounded-[26px] ${b.earned ? "blue-grad" : "bg-g-fill text-g-faint"}`}>
+              <Icon size={36} strokeWidth={1.7} />
+            </span>
+            <p className="mt-4 text-center text-[22px] font-bold tracking-[-0.02em]">{b.name}</p>
+            <p className={`mt-1 text-center text-[13px] font-semibold ${b.earned ? "text-g-green" : "text-g-muted"}`}>{b.earned ? "Earned" : "Not yet"}</p>
+            <p className="mt-4 text-[15px] leading-snug text-g-ink-2">{info.what}</p>
+            <p className="mt-3 rounded-[16px] bg-g-fill px-3.5 py-2.5 text-[14px] leading-snug">
+              <span className="font-semibold">How to get it: </span>
+              {info.how}
+            </p>
+            {!b.earned && (
+              <div className="mt-4">
+                <div className="h-1.5 overflow-hidden rounded-full bg-g-fill">
+                  <div className="bar-grad h-full rounded-full" style={{ width: `${info.progress}%` }} />
+                </div>
+                <p className="mt-1.5 text-[12px] text-g-muted">{info.progress}% there</p>
+              </div>
+            )}
+          </PeekCard>
+        );
+      })()}
+      {peek?.kind === "quest" && (() => {
+        const q = quests.find((x) => x.id === peek.id);
+        if (!q) return null;
+        const Icon = QUEST_ICON[q.id] ?? Trophy;
+        return (
+          <PeekCard label={q.title} onClose={() => setPeek(null)}>
+            <div className="flex items-center gap-3.5">
+              <span className="chip-blue grid size-14 shrink-0 place-items-center rounded-[18px]">
+                <Icon size={26} strokeWidth={1.7} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[20px] leading-tight font-bold tracking-[-0.02em]">{q.title}</p>
+                <p className="text-[13px] text-g-muted">{q.mode === "race" ? "Race · first to finish wins" : "Solo quest"}</p>
+              </div>
+            </div>
+            <p className="mt-4 text-[15px] leading-snug text-g-ink-2">{q.description}</p>
+            {q.state !== "available" && (
+              <div className="mt-4">
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-g-muted">Progress</span>
+                  <span className="font-semibold tabular-nums">
+                    {q.progress}/{q.target}
+                  </span>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-g-fill">
+                  <div className="bar-grad h-full rounded-full" style={{ width: `${questPercent(q.progress, q.target)}%` }} />
+                </div>
+              </div>
+            )}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="rounded-[16px] bg-g-fill p-3">
+                <p className="text-[12px] text-g-muted">Reward</p>
+                <p className="text-[15px] font-semibold">+{q.reward.xp} XP{q.reward.bonus ? ` · ${money(q.reward.bonus)}` : ""}</p>
+              </div>
+              <div className="rounded-[16px] bg-g-fill p-3">
+                <p className="text-[12px] text-g-muted">Deadline</p>
+                <p className="text-[15px] font-semibold">{q.endsAt.replace(/^Ends /, "")}</p>
+              </div>
+            </div>
+            {q.reward.perk && <p className="mt-2 text-[13px] text-g-muted">Bonus: {q.reward.perk}</p>}
+            <p className="mt-3 text-[12px] text-g-faint">Progress counts automatically from your orders.</p>
+          </PeekCard>
+        );
+      })()}
+
       {done && (
         <div role="status" className="animate-fade fixed inset-0 z-50 grid place-items-center bg-g-bg/90 p-6 backdrop-blur-md">
           <div className="animate-pop text-center">
@@ -414,6 +484,27 @@ export function CrewBoard({
         </div>
       )}
     </main>
+  );
+}
+
+const BADGE_INFO: Record<string, { what: string; how: string; progress: number }> = {
+  upsell: { what: "For waiters who make every table a little happier: a drink with the meal, a dessert after it.", how: "Sell 20 add-ons (drinks, desserts, extras) in one week.", progress: 100 },
+  speed: { what: "For quick hands: food reaches the table while it is hot.", how: "Serve 10 tables in under 12 minutes from order to plate.", progress: 100 },
+  fav: { what: "Guests remember you and say it in reviews.", how: "Collect 10 five-star reviews that mention you.", progress: 70 },
+  waste: { what: "Nothing comes back to the kitchen: orders are taken right the first time.", how: "A full week with no returned or remade dishes.", progress: 40 },
+};
+
+/** A badge you can hold to peek at its story. */
+function BadgeTile({ b, onPeek }: { b: CrewData["badges"][number]; onPeek: () => void }) {
+  const press = useLongPress(onPeek, onPeek);
+  const Icon = BADGE_ICON[b.id] ?? Trophy;
+  return (
+    <button {...press} style={{ WebkitTouchCallout: "none" }} className="press flex flex-col items-center gap-2 text-center select-none">
+      <span className={`grid aspect-square w-full place-items-center rounded-[22px] ${b.earned ? "card text-g-blue" : "border-[1.5px] border-dashed border-g-fill-2 text-g-faint"}`}>
+        <Icon size={24} strokeWidth={1.75} />
+      </span>
+      <span className={`text-[12px] leading-tight ${b.earned ? "text-g-ink-2" : "text-g-faint"}`}>{b.name}</span>
+    </button>
   );
 }
 
@@ -435,13 +526,14 @@ function CountUp({ to }: { to: number }) {
  * One quest as a flat row: icon, title and description; progress with numbers;
  * a footer with the reward, deadline and one small action.
  */
-function QuestRow({ q, money, action }: { q: CrewQuest; money: (n: number) => string; action?: React.ReactNode }) {
+function QuestRow({ q, money, action, onPeek }: { q: CrewQuest; money: (n: number) => string; action?: React.ReactNode; onPeek?: () => void }) {
+  const press = useLongPress(() => onPeek?.());
   const Icon = QUEST_ICON[q.id] ?? Trophy;
   const pct = questPercent(q.progress, q.target);
   const done = q.state === "done";
   const reward = [`+${q.reward.xp} XP`, q.reward.bonus ? money(q.reward.bonus) : null].filter(Boolean).join(" · ");
   return (
-    <div className="py-5">
+    <div className="py-5 select-none" {...press} style={{ WebkitTouchCallout: "none" }}>
       <div className="flex gap-3.5">
         <span className={`grid size-11 shrink-0 place-items-center rounded-[14px] ${done ? "chip-green" : "chip-blue"}`}>
           {done ? <Check size={20} strokeWidth={2.5} /> : <Icon size={20} strokeWidth={1.8} />}

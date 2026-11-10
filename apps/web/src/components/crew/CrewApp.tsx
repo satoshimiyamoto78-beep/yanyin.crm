@@ -23,11 +23,11 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
-import { Island, loadIfChanged, markShown, Reveal, type IslandNotice } from "@/components/guest/motion";
+import { Island, loadIfChanged, markShown, Reveal, useLongPress, type IslandNotice } from "@/components/guest/motion";
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
@@ -348,41 +348,6 @@ export function Dash({ items }: { items: DashItem[] }) {
 }
 
 /* ---------------------------------------------------------------- Long press */
-
-/** Long press (≈0.45 s) with a haptic tick, like the iOS / One UI context menu; a short tap stays a tap. */
-function useLongPress(onLong: () => void, onTap: () => void) {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fired = useRef(false);
-  const start = useRef<[number, number]>([0, 0]);
-  const clear = () => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
-  };
-  return {
-    onPointerDown: (e: React.PointerEvent) => {
-      fired.current = false;
-      start.current = [e.clientX, e.clientY];
-      clear();
-      timer.current = setTimeout(() => {
-        fired.current = true;
-        haptic("success");
-        onLong();
-      }, 450);
-    },
-    onPointerMove: (e: React.PointerEvent) => {
-      if (Math.hypot(e.clientX - start.current[0], e.clientY - start.current[1]) > 8) clear();
-    },
-    onPointerUp: clear,
-    onPointerLeave: clear,
-    onPointerCancel: clear,
-    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
-    onClick: () => {
-      if (fired.current) return;
-      haptic("light");
-      onTap();
-    },
-  };
-}
 
 /* ---------------------------------------------------------------- Tables */
 

@@ -508,3 +508,54 @@ function BellIcon() {
     </svg>
   );
 }
+
+/* ---------------------------------------------------------------- Long press and peek */
+
+/** Long press (≈0.45 s) with a haptic tick, like the iOS / One UI context menu; a short tap stays a tap. */
+export function useLongPress(onLong: () => void, onTap?: () => void) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fired = useRef(false);
+  const start = useRef<[number, number]>([0, 0]);
+  const clear = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      fired.current = false;
+      start.current = [e.clientX, e.clientY];
+      clear();
+      timer.current = setTimeout(() => {
+        fired.current = true;
+        haptic("success");
+        onLong();
+      }, 450);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (Math.hypot(e.clientX - start.current[0], e.clientY - start.current[1]) > 8) clear();
+    },
+    onPointerUp: clear,
+    onPointerLeave: clear,
+    onPointerCancel: clear,
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    onClick: () => {
+      if (fired.current || !onTap) return;
+      haptic("light");
+      onTap();
+    },
+  };
+}
+
+
+/**
+ * iOS-style peek: the screen blurs and a card pops up with a short story about
+ * the thing that was held. Tap outside to close.
+ */
+export function PeekCard({ onClose, label, children }: { onClose: () => void; label: string; children: ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center px-6" role="dialog" aria-label={label}>
+      <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
+      <div className="animate-pop relative w-full max-w-[340px] rounded-[28px] bg-white p-5 text-g-ink">{children}</div>
+    </div>
+  );
+}

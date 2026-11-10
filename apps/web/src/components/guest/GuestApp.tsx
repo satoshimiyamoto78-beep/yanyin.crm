@@ -20,6 +20,8 @@ import {
   BellRing,
   Check,
   ChefHat,
+  ChevronRight,
+  Wifi,
   Dices,
   Flame,
   Plus,
@@ -44,7 +46,7 @@ import {
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
 import { Island, LiveIsland, Reveal, RouletteWheel, startLoading, type IslandNotice } from "./motion";
-import { ActionCircle, ItemCard } from "./ui";
+import { ItemCard } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
 function initialLang(): Lang {
@@ -182,8 +184,6 @@ export function GuestApp({ menu }: { menu: Menu }) {
 
   const count = cartCount(lines);
   const total = cartTotal(lines);
-  const live =
-    orders.length > 0 && orderStage(orders[orders.length - 1]!, now) < 3;
   const hasCoals = menu.categories.some((c) =>
     c.serviceCalls.some((s) => s.id === "change_coals"),
   );
@@ -200,75 +200,135 @@ export function GuestApp({ menu }: { menu: Menu }) {
   return (
     <div className="min-h-dvh bg-g-bg text-g-ink">
       <div className="mx-auto max-w-[480px] pb-32">
-        {/* Header: venue on the left, one grouped control pill on the right */}
-        <header className="flex items-center gap-3 px-5 pt-[max(16px,env(safe-area-inset-top))]">
-          <button
-            onClick={() => setSheet("about")}
-            className="press flex min-w-0 flex-1 items-center gap-3 text-left"
-          >
-            <span className="ink-grad grid size-[52px] shrink-0 place-items-center rounded-[18px] text-[20px] font-bold">
+        {/* Top: the banking-app pattern, same as the waiter's home. */}
+        <section className="rounded-b-[32px] bg-[linear-gradient(180deg,#e9efff_0%,#f3f6ff_70%,#f7f9ff_100%)] pt-[max(14px,env(safe-area-inset-top))] pb-5">
+          <div className="flex items-center gap-2.5 px-5">
+            <button
+              onClick={() => setSheet("about")}
+              aria-label={ui(lang, "about")}
+              className="ink-grad grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold"
+            >
               {brand.mark}
-            </span>
-            <span className="min-w-0">
-              <span className="flex min-w-0 items-center gap-1.5 text-[13px]">
-                {table && (
-                  <>
-                    <span className="size-1.5 shrink-0 rounded-full bg-g-blue" />
-                    <span className="shrink-0 font-semibold text-g-blue">
-                      {`${ui(lang, "table")} ${table.padStart(2, "0")}`}
-                    </span>
-                    <span className="text-g-faint">·</span>
-                  </>
-                )}
-                <span className="truncate text-g-muted">
-                  {brand.cuisine[lang as "en"] ?? brand.cuisine.en}
-                </span>
-              </span>
-              <span className="block truncate text-[22px] leading-tight font-bold tracking-[-0.02em]">
-                {menu.venue.name}
-              </span>
-            </span>
-          </button>
-          <div className="flex h-11 shrink-0 items-center rounded-full bg-g-fill px-1">
+            </button>
+            <button
+              onClick={() => setSheet("search")}
+              className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/80 px-3.5 text-left text-[15px] text-g-faint"
+            >
+              <Search size={17} strokeWidth={2} />
+              <span className="truncate">{ui(lang, "search")}</span>
+            </button>
+            <button
+              aria-label={ui(lang, "language")}
+              onClick={() => setSheet("lang")}
+              className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/80 text-[13px] font-bold uppercase"
+            >
+              {lang}
+            </button>
             <button
               aria-label={ui(lang, "yanAsk")}
               onClick={() => {
                 haptic("light");
                 setSheet("yan");
               }}
-              className="press grid size-9 place-items-center rounded-full"
+              className="press grid size-10 shrink-0 place-items-center rounded-full"
             >
-              <YanOrb size={30} />
-            </button>
-            {orders.length > 0 && (
-              <button
-                aria-label={ui(lang, "orders")}
-                onClick={() => setSheet("orders")}
-                className="press relative grid size-9 place-items-center rounded-full"
-              >
-                <ReceiptText size={19} strokeWidth={1.75} />
-                {live && (
-                  <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-g-fill bg-g-blue" />
-                )}
-              </button>
-            )}
-            <button
-              aria-label={ui(lang, "language")}
-              onClick={() => setSheet("lang")}
-              className="press grid h-9 min-w-9 place-items-center rounded-full px-1.5 text-[13px] font-bold uppercase"
-            >
-              {lang}
-            </button>
-            <span className="mx-0.5 h-5 w-px bg-g-fill-2" aria-hidden />
-            <button
-              aria-label={ui(lang, "search")}
-              onClick={() => setSheet("search")}
-              className="press grid size-9 place-items-center rounded-full"
-            >
-              <Search size={19} strokeWidth={1.75} />
+              <YanOrb size={40} />
             </button>
           </div>
-        </header>
+
+          <div className="mt-5 px-5">
+            <p className="flex min-w-0 items-center gap-1.5 text-[14px] text-g-muted">
+              {table && (
+                <>
+                  <span className="size-1.5 shrink-0 rounded-full bg-g-blue" />
+                  <span className="shrink-0 font-semibold text-g-blue">
+                    {`${ui(lang, "table")} ${table.padStart(2, "0")}`}
+                  </span>
+                  <span className="text-g-faint">·</span>
+                </>
+              )}
+              <span className="truncate">
+                {orders.length ? ui(lang, "billTitle") : (brand.cuisine[lang as "en"] ?? brand.cuisine.en)}
+              </span>
+            </p>
+            <button
+              onClick={() => (orders.length ? setSheet("bill") : setSheet("about"))}
+              className="press mt-1 flex max-w-full items-center gap-1 text-left"
+            >
+              <span className="truncate text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">
+                {orders.length
+                  ? formatMoney(orders.reduce((n, o) => n + o.total, 0), currency, lang)
+                  : menu.venue.name}
+              </span>
+              <ChevronRight size={22} className="shrink-0 text-g-faint" />
+            </button>
+          </div>
+
+          {/* Strip: two small service buttons, then cards. */}
+          <div className="no-scrollbar mt-4 flex gap-2.5 overflow-x-auto px-5">
+            <div className="grid shrink-0 gap-2.5">
+              <button
+                aria-label={ui(lang, "qaWaiter")}
+                onClick={() => say("waiterCalled")}
+                className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink"
+              >
+                <BellRing size={21} strokeWidth={1.9} />
+                <span className="text-[10px] font-semibold">{ui(lang, "qaWaiter")}</span>
+              </button>
+              <button
+                aria-label={ui(lang, "qaBill")}
+                onClick={() => {
+                  if (!orders.length)
+                    flash({
+                      title: ui(lang, "billNone"),
+                      text: ui(lang, "billNoneHint"),
+                      tone: "orange",
+                      icon: <ReceiptText size={16} strokeWidth={2.25} />,
+                    });
+                  else setSheet("bill");
+                }}
+                className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink"
+              >
+                <ReceiptText size={21} strokeWidth={1.9} />
+                <span className="text-[10px] font-semibold">{ui(lang, "qaBill")}</span>
+              </button>
+            </div>
+            <TopCard
+              onClick={() => setSheet("roulette")}
+              art={<RouletteWheel size={40} bare />}
+              title={ui(lang, "qaRoulette")}
+              sub={ui(lang, "qaRouletteShort")}
+            />
+            <TopCard
+              onClick={() => setSheet("yan")}
+              art={<YanOrb size={36} />}
+              title={ui(lang, "yanAsk")}
+              sub={ui(lang, "yanQHalal")}
+            />
+            {hasCoals && (
+              <TopCard
+                onClick={() => say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)}
+                art={
+                  <span className="chip-orange grid size-9 place-items-center rounded-[12px]">
+                    <Flame size={18} strokeWidth={2} />
+                  </span>
+                }
+                title={ui(lang, "qaCoalsDo")}
+                sub={ui(lang, "qaCoalsSub")}
+              />
+            )}
+            <TopCard
+              onClick={() => setSheet("about")}
+              art={
+                <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
+                  <Wifi size={18} strokeWidth={2} />
+                </span>
+              }
+              title="Wi-Fi"
+              sub={ui(lang, "about")}
+            />
+          </div>
+        </section>
 
         {/* Hero */}
         <Reveal key={`hero-${lang}`}>
@@ -291,42 +351,6 @@ export function GuestApp({ menu }: { menu: Menu }) {
         </Reveal>
 
         {/* Quick actions */}
-        {/* Quick actions: one compact row of round buttons, the same as on the waiter's home. */}
-        <div className="mt-5 flex justify-around px-3">
-          <ActionCircle
-            icon={<BellRing size={22} strokeWidth={1.9} />}
-            label={ui(lang, "qaWaiter")}
-            onClick={() => say("waiterCalled")}
-          />
-          {hasCoals && (
-            <ActionCircle
-              icon={<Flame size={22} strokeWidth={1.9} />}
-              label={ui(lang, "qaCoalsDo")}
-              onClick={() => say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)}
-            />
-          )}
-          <ActionCircle
-            icon={<ReceiptText size={22} strokeWidth={1.9} />}
-            label={ui(lang, "qaBill")}
-            onClick={() => {
-              // No order yet: nothing to pay. With orders: open the bill page.
-              if (!orders.length)
-                flash({
-                  title: ui(lang, "billNone"),
-                  text: ui(lang, "billNoneHint"),
-                  tone: "orange",
-                  icon: <ReceiptText size={16} strokeWidth={2.25} />,
-                });
-              else setSheet("bill");
-            }}
-          />
-          <ActionCircle
-            label={ui(lang, "qaRoulette")}
-            onClick={() => setSheet("roulette")}
-            art={<RouletteWheel size={46} bare />}
-          />
-        </div>
-
         {/* Category tabs */}
         <nav
           aria-label={ui(lang, "categories")}
@@ -628,6 +652,25 @@ export function GuestApp({ menu }: { menu: Menu }) {
   );
 }
 
+/** A card in the top strip: a small illustration, a title and one line. */
+function TopCard({ onClick, art, title, sub }: { onClick: () => void; art: React.ReactNode; title: string; sub: string }) {
+  return (
+    <button
+      onClick={() => {
+        haptic("light");
+        onClick();
+      }}
+      className="press flex h-[134px] w-[136px] shrink-0 flex-col justify-between rounded-[22px] bg-white p-3.5 text-left"
+    >
+      <span className="grid size-10 place-items-center">{art}</span>
+      <span className="min-w-0">
+        <span className="block truncate text-[16px] leading-tight font-semibold">{title}</span>
+        <span className="mt-0.5 block truncate text-[12px] text-g-muted">{sub}</span>
+      </span>
+    </button>
+  );
+}
+
 /** Label, name, description and the action row, all laid over the hero image. */
 function HeroCaption({
   chip,
@@ -643,20 +686,20 @@ function HeroCaption({
   children: React.ReactNode;
 }) {
   return (
-    <span className="absolute inset-x-0 bottom-0 block bg-gradient-to-t from-[#0b1636] via-[#0b1636]/70 to-transparent px-5 pt-24 pb-5">
+    <span className="absolute inset-x-0 bottom-0 block bg-gradient-to-t from-[#0b1636] via-[#0b1636]/70 to-transparent px-5 pt-20 pb-4">
       <span className="inline-flex h-6 items-center gap-1 rounded-full bg-white/15 px-2.5 text-[12px] font-semibold text-white backdrop-blur-md">
         {icon}
         {chip}
       </span>
-      <span className="live mt-2.5 block text-[26px] leading-[1.1] font-bold tracking-[-0.02em] text-white">
+      <span className="live mt-2.5 block text-[20px] leading-[1.15] font-bold tracking-[-0.02em] text-white">
         {title}
       </span>
       {text && (
-        <span className="live mt-1.5 line-clamp-2 block text-[14px] leading-snug text-white/75">
+        <span className="live mt-1 line-clamp-1 block text-[13px] leading-snug text-white/75">
           {text}
         </span>
       )}
-      <span className="mt-4 flex h-12 items-center justify-between gap-3">
+      <span className="mt-3 flex h-10 items-center justify-between gap-3">
         {children}
       </span>
     </span>
@@ -704,11 +747,11 @@ function Hero({
                 tabIndex={0}
                 onClick={onRoulette}
                 onKeyDown={(e) => e.key === "Enter" && onRoulette()}
-                className="aurora block h-[372px] w-full cursor-pointer rounded-[30px] text-left"
+                className="aurora block h-[300px] w-full cursor-pointer rounded-[26px] text-left"
                 aria-label={ui(lang, "roulette")}
               >
-                <span className="absolute -top-14 -right-20">
-                  <RouletteWheel tone="dark" size={330} />
+                <span className="absolute -top-16 -right-16">
+                  <RouletteWheel tone="dark" size={270} />
                 </span>
                 <HeroCaption
                   chip={ui(lang, "roulette")}
@@ -716,7 +759,7 @@ function Hero({
                   title={ui(lang, "rouletteTitle")}
                   text={ui(lang, "rouletteHint")}
                 >
-                  <span className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-[16px] font-semibold text-[#1d3fd6]">
+                  <span className="press flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-[14px] font-semibold text-[#1d3fd6]">
                     <Dices size={18} strokeWidth={2} /> {ui(lang, "rouletteCta")}
                   </span>
                 </HeroCaption>
@@ -731,7 +774,7 @@ function Hero({
                     tabIndex={0}
                     onClick={() => onOpen(it)}
                     onKeyDown={(e) => e.key === "Enter" && onOpen(it)}
-                    className="relative block h-[372px] w-full cursor-pointer overflow-hidden rounded-[30px] bg-[#0b1636] text-left text-white"
+                    className="relative block h-[300px] w-full cursor-pointer overflow-hidden rounded-[26px] bg-[#0b1636] text-left text-white"
                     aria-label={t(it.name, lang)}
                   >
                     {/* Full-bleed photo, a soft scrim for the text, nothing else on top of the food. */}
@@ -752,23 +795,23 @@ function Hero({
                       {s.kicker[lang as "en"] ?? s.kicker.en}
                     </span>
                     <span className="absolute inset-x-0 bottom-0 block px-5 pb-5">
-                      <span className="live block text-[24px] leading-[1.1] font-bold tracking-[-0.025em]">
+                      <span className="live block text-[20px] leading-[1.15] font-bold tracking-[-0.02em]">
                         {t(it.name, lang)}
                       </span>
-                      <span className="live mt-1.5 line-clamp-2 text-[14px] leading-[1.4] text-white/80">
+                      <span className="live mt-1 line-clamp-1 text-[13px] leading-[1.4] text-white/80">
                         {s.blurb[lang as "en"] ?? s.blurb.en}
                       </span>
                       <span className="mt-3 flex flex-wrap gap-1.5">
                         {s.facts.map((f) => (
                           <span
                             key={f.en}
-                            className="inline-flex h-6 items-center rounded-full border border-white/25 px-2.5 text-[12px] font-medium text-white/90"
+                            className="inline-flex h-5 items-center rounded-full border border-white/25 px-2 text-[11px] font-medium text-white/90"
                           >
                             {f[lang as "en"] ?? f.en}
                           </span>
                         ))}
                       </span>
-                      <span className="mt-3 flex h-12 items-center justify-between gap-3 border-t border-white/15 pt-3 box-content">
+                      <span className="mt-2.5 flex h-10 items-center justify-between gap-3 border-t border-white/15 pt-2.5 box-content">
                         <span className="live text-[24px] font-semibold tracking-[-0.02em] tabular-nums">
                           {builder && it.variants.length === 0 && (
                             <span className="mr-1 text-[14px] font-medium text-white/70">
@@ -784,7 +827,7 @@ function Hero({
                             if (builder) onOpen(it);
                             else onAdd(it);
                           }}
-                          className="press flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#1d3fd6]"
+                          className="press flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-semibold text-[#1d3fd6]"
                         >
                           {!builder && <Plus size={18} strokeWidth={2.25} />}
                           {s.cta ? (s.cta[lang as "en"] ?? s.cta.en) : ui(lang, "add")}
