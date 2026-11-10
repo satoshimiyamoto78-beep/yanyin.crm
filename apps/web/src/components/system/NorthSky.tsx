@@ -3,21 +3,36 @@
 import { useEffect, useRef } from "react";
 
 /*
- * The yanyin header sky: northern lights in the Nomad blue.
+ * The yanyin header sky: a light, airy azure sky that melts into the page
+ * through a soft band of drifting mist (reference: a wallet onboarding screen).
  *
- * What is drawn: a deep blue sky with two soft glows, then two aurora
- * curtains. Each curtain is a wavy band that sways slowly: silky strands of
- * light (a bundle of thin glowing curves) along its crest, and faint vertical
- * rays hanging below it, the way a real aurora looks. Painted on a small canvas
- * (≈300×196) that the browser stretches smoothly over the header, so the light
- * stays soft and each frame stays cheap. ~25 fps, pauses off screen and in
- * background tabs, a single still frame for reduced motion.
+ * What is drawn: a saturated azure at the top (deeper blue on the left, cyan on
+ * the right), slow clouds of light and deeper blue that drift across it, and a
+ * misty edge of page-coloured clouds where the sky dissolves. Everything is soft
+ * gradients on a small canvas the browser stretches over the header, so it is
+ * smooth and cheap; the motion is slow but clearly alive. ~20 fps, pauses off
+ * screen and in background tabs, a single still frame for reduced motion.
  */
 
-type Scheme = { base: [string, string, string]; glow: [string, string]; light: [number, number, number]; ray: number; strand: number };
+type Rgba = [number, number, number, number];
+type Scheme = { top: [string, string]; mid: string; deep: Rgba; cyan: Rgba; light: Rgba; mist: Rgba };
 
-const LIGHT: Scheme = { base: ["#4f7dff", "#2f5bef", "#2441c9"], glow: ["rgba(150,190,255,0.55)", "rgba(28,40,150,0.55)"], light: [214, 230, 255], ray: 0.16, strand: 0.5 };
-const DARK: Scheme = { base: ["#2a4fe0", "#1d36b8", "#121f7c"], glow: ["rgba(110,150,255,0.45)", "rgba(10,16,80,0.65)"], light: [190, 212, 255], ray: 0.14, strand: 0.45 };
+const LIGHT: Scheme = {
+  top: ["#2f6dff", "#2fb4ff"],
+  mid: "#6cbcff",
+  deep: [32, 92, 245, 0.55],
+  cyan: [80, 210, 255, 0.5],
+  light: [205, 235, 255, 0.3],
+  mist: [255, 255, 255, 0.85],
+};
+const DARK: Scheme = {
+  top: ["#1f4fe6", "#1c86e6"],
+  mid: "#2a5fb8",
+  deep: [18, 50, 190, 0.6],
+  cyan: [40, 150, 230, 0.45],
+  light: [120, 175, 255, 0.3],
+  mist: [12, 13, 16, 0.9],
+};
 
 export function NorthSky() {
   const wrap = useRef<HTMLDivElement>(null);
@@ -27,8 +42,8 @@ export function NorthSky() {
     const canvas = cv.current;
     const ctx = canvas?.getContext("2d");
     if (!el || !canvas || !ctx) return;
-    const W = 300;
-    const H = 196;
+    const W = 96;
+    const H = 120;
     canvas.width = W;
     canvas.height = H;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -37,89 +52,58 @@ export function NorthSky() {
     let last = 0;
     const t0 = performance.now();
 
-    // One soft vertical ray, drawn once and stamped many times per frame.
-    const ray = document.createElement("canvas");
-    ray.width = 1;
-    ray.height = 64;
-    const rc = ray.getContext("2d")!;
-    const rg = rc.createLinearGradient(0, 0, 0, 64);
-    rg.addColorStop(0, "rgba(255,255,255,0)");
-    rg.addColorStop(0.08, "rgba(255,255,255,1)");
-    rg.addColorStop(0.35, "rgba(255,255,255,0.45)");
-    rg.addColorStop(1, "rgba(255,255,255,0)");
-    rc.fillStyle = rg;
-    rc.fillRect(0, 0, 1, 64);
-
-    const glow = (x: number, y: number, r: number, color: string) => {
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, color);
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
+    const cloud = (x: number, y: number, rx: number, ry: number, [r, g, b, a]: Rgba) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(1, ry / rx);
+      const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+      gr.addColorStop(0, `rgba(${r},${g},${b},${a})`);
+      gr.addColorStop(0.5, `rgba(${r},${g},${b},${a * 0.5})`);
+      gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = gr;
+      ctx.fillRect(-rx, -rx, rx * 2, rx * 2);
+      ctx.restore();
     };
-
-    // The crest of a curtain: a slow, uneven wave across the sky.
-    const crest = (x: number, t: number, k: number) =>
-      H * (0.3 + 0.2 * k) +
-      H * 0.12 * Math.sin(x * 0.016 + t * 0.3 + k * 2.1) +
-      H * 0.05 * Math.sin(x * 0.041 - t * 0.42 + k);
 
     const draw = (now: number) => {
       const s = document.documentElement.dataset.scheme === "dark" ? DARK : LIGHT;
-      const [lr, lg, lb] = s.light;
       const t = (now - t0) / 1000;
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 1;
-      const base = ctx.createLinearGradient(0, 0, W * 0.5, H);
-      base.addColorStop(0, s.base[0]);
-      base.addColorStop(0.55, s.base[1]);
-      base.addColorStop(1, s.base[2]);
-      ctx.fillStyle = base;
+      // Azure: deep blue on the left, cyan on the right, lighter lower down.
+      const h = ctx.createLinearGradient(0, 0, W, H * 0.25);
+      h.addColorStop(0, s.top[0]);
+      h.addColorStop(1, s.top[1]);
+      ctx.fillStyle = h;
       ctx.fillRect(0, 0, W, H);
-      glow(W * (0.22 + 0.1 * Math.sin(t * 0.13)), H * 0.1, W * 0.6, s.glow[0]);
-      glow(W * (0.85 + 0.08 * Math.cos(t * 0.11)), H * 0.95, W * 0.6, s.glow[1]);
-
-      ctx.globalCompositeOperation = "lighter";
-      for (let k = 0; k < 2; k++) {
-        const strength = k === 0 ? 1 : 0.6;
-        // Rays hanging from the crest: brighter where the curtain folds, flickering slowly.
-        for (let x = 0; x < W; x += 2) {
-          const y = crest(x, t, k);
-          const fold = 0.5 + 0.5 * Math.sin(x * 0.03 + t * 0.55 + k * 3);
-          const flicker = 0.6 + 0.4 * Math.sin(x * 0.21 + t * 1.1 + Math.sin(x * 0.05 + t * 0.4) * 2);
-          const len = H * (0.22 + 0.2 * fold);
-          ctx.globalAlpha = s.ray * strength * (0.35 + 0.65 * fold) * flicker;
-          ctx.drawImage(ray, x, y - len * 0.08, 2.4, len);
-        }
-        ctx.globalAlpha = 1;
-        // Silky strands along the crest: soft glowing curves, each drawn as three
-        // strokes (wide and faint, medium, thin and bright) so it glows instead of edging.
-        for (let j = 0; j < 4; j++) {
-          const off = (j - 1.5) * 2.6;
-          ctx.beginPath();
-          for (let x = -6; x <= W + 6; x += 3) {
-            const y = crest(x, t, k) + off + Math.sin(x * 0.03 + j * 1.3 + t * 0.6) * 2;
-            if (x === -6) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          const a = s.strand * strength * (j === 1 || j === 2 ? 1 : 0.55);
-          for (const [w, f] of [
-            [10, 0.06],
-            [4.5, 0.14],
-            [1.6, 0.42],
-          ] as const) {
-            ctx.strokeStyle = `rgba(${lr},${lg},${lb},${a * f})`;
-            ctx.lineWidth = w;
-            ctx.stroke();
-          }
-        }
+      const v = ctx.createLinearGradient(0, 0, 0, H);
+      v.addColorStop(0, "rgba(0,0,0,0)");
+      v.addColorStop(0.55, s.mid);
+      v.addColorStop(1, s.mid);
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = v;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+      // Clouds of colour drifting slowly across the sky.
+      cloud(W * (0.15 + 0.14 * Math.sin(t * 0.23)), H * (0.12 + 0.05 * Math.cos(t * 0.19)), W * 0.55, H * 0.28, s.deep);
+      cloud(W * (0.85 + 0.12 * Math.cos(t * 0.21)), H * (0.18 + 0.06 * Math.sin(t * 0.27)), W * 0.5, H * 0.26, s.cyan);
+      cloud(W * (0.5 + 0.25 * Math.sin(t * 0.17 + 1)), H * (0.4 + 0.05 * Math.sin(t * 0.31)), W * 0.45, H * 0.16, s.light);
+      // The misty edge: page-coloured clouds rolling along where the sky dissolves.
+      for (let i = 0; i < 6; i++) {
+        const sp = 0.12 + i * 0.035;
+        const x = ((i / 6 + t * sp * 0.08) % 1.4) * W * 1.1 - W * 0.2;
+        const y = H * (0.78 + 0.04 * Math.sin(t * 0.35 + i * 1.7) + (i % 2) * 0.04);
+        cloud(x, y, W * (0.28 + 0.06 * Math.sin(i * 2.3)), H * (0.12 + 0.03 * (i % 3)), s.mist);
       }
-      ctx.globalCompositeOperation = "source-over";
+      const fog = ctx.createLinearGradient(0, H * 0.74, 0, H);
+      fog.addColorStop(0, `rgba(${s.mist[0]},${s.mist[1]},${s.mist[2]},0)`);
+      fog.addColorStop(0.45, `rgba(${s.mist[0]},${s.mist[1]},${s.mist[2]},0.85)`);
+      fog.addColorStop(1, `rgba(${s.mist[0]},${s.mist[1]},${s.mist[2]},1)`);
+      ctx.fillStyle = fog;
+      ctx.fillRect(0, H * 0.74, W, H * 0.26);
     };
 
     const loop = (now: number) => {
       raf = 0;
-      if (now - last > 40) {
+      if (now - last > 50) {
         last = now;
         draw(now);
       }
