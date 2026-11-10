@@ -615,33 +615,6 @@ body {
   }
 }
 
-/*
- * Edge filter for horizontal strips: a static frame, it never moves or
- * animates. The strip runs the full screen width while its items rest on the
- * 20 px page gutter, so at rest nothing sits under the filter and it is
- * invisible. When an item slides into the margin it softly blurs (a static
- * progressive backdrop blur) and fades (a static mask), like passing behind
- * frosted glass at the screen edge.
- */
-.edge-wrap {
-  position: relative;
-}
-.edge-fade {
-  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0.25) 6px, rgba(0, 0, 0, 0.7) 13px, #000 20px, #000 calc(100% - 20px), rgba(0, 0, 0, 0.7) calc(100% - 13px), rgba(0, 0, 0, 0.25) calc(100% - 6px), rgba(0, 0, 0, 0) 100%);
-  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0.25) 6px, rgba(0, 0, 0, 0.7) 13px, #000 20px, #000 calc(100% - 20px), rgba(0, 0, 0, 0.7) calc(100% - 13px), rgba(0, 0, 0, 0.25) calc(100% - 6px), rgba(0, 0, 0, 0) 100%);
-}
-.edge-wrap::before,
-.edge-wrap::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 20px;
-  z-index: 2;
-  pointer-events: none;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
 .edge-wrap::before {
   left: 0;
   -webkit-mask-image: linear-gradient(90deg, #000, transparent);

@@ -5,6 +5,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { useTr } from "./prefs";
+import { useEdgeSoften } from "@/components/system/useEdgeSoften";
 
 export type Tip = {
   id: string;
@@ -46,6 +47,7 @@ export function TipsCarousel({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const tr = useTr();
+  useEdgeSoften(ref);
   const [at, setAt] = useState(0);
 
   const onScroll = () => {
@@ -79,11 +81,11 @@ export function TipsCarousel({
         )}
       </div>
 
-      <div className="edge-wrap -mx-5 mt-3">
+      <div className="-mx-5 mt-3">
         <div
           ref={ref}
           onScroll={onScroll}
-          className="no-scrollbar edge-fade flex snap-x snap-mandatory scroll-px-5 gap-2.5 px-5 overflow-x-auto overscroll-x-contain [scroll-behavior:smooth]"
+          className="no-scrollbar flex snap-x snap-mandatory scroll-px-5 gap-2.5 px-5 overflow-x-auto overscroll-x-contain [scroll-behavior:smooth]"
         >
           {tips.map((t) => {
             const tone = TONE[t.tone];

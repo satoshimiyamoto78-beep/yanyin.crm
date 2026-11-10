@@ -515,7 +515,7 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
       <div className="relative -mx-4 mt-3">
         {/* The needle: starts under the booking bubbles and runs through the scale. */}
         <span aria-hidden className="pointer-events-none absolute top-[40px] bottom-5 left-1/2 z-10 w-[3px] -translate-x-1/2 rounded-full bg-[linear-gradient(180deg,#6c96ff,#2f5bff_60%,#2530b0)]" />
-        <div ref={ref} className="no-scrollbar edge-fade overflow-x-auto overscroll-x-contain select-none">
+        <div ref={ref} className="no-scrollbar overflow-x-auto overscroll-x-contain select-none">
           <div className="relative h-[108px]" style={{ width: width + vw }}>
             {/* Open hours, softly tinted; the past greyed out. */}
             <span className="absolute top-[46px] h-[30px] rounded-[8px] bg-g-blue/5" style={{ left: x(start), width }} />

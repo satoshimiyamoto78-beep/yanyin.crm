@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { useEdgeSoften } from "./useEdgeSoften";
 import { haptic } from "@/lib/haptics";
 
 /*
@@ -10,11 +11,13 @@ import { haptic } from "@/lib/haptics";
  * everywhere, so both apps read as one product.
  */
 
-/** Full-width strip; items rest on the page gutter and soften as they pass the static edge filter. */
+/** Full-width strip; items rest on the page gutter and blur and fade by themselves near the screen edges. */
 export function Strip({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEdgeSoften(ref);
   return (
-    <div className="edge-wrap mt-7">
-      <div className="no-scrollbar edge-fade grid scroll-px-5 grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">{children}</div>
+    <div ref={ref} className="no-scrollbar mt-7 grid scroll-px-5 grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">
+      {children}
     </div>
   );
 }
