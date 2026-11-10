@@ -135,6 +135,10 @@ export function demoCrew(menu: Menu): CrewData {
       { id: "speed", name: "Speed Demon", emoji: "⚡", earned: true },
       { id: "fav", name: "Guest Favorite", emoji: "💛", earned: false },
       { id: "waste", name: "Zero Waste", emoji: "♻️", earned: false },
+      { id: "team", name: "Team Player", emoji: "🤝", earned: true },
+      { id: "night", name: "Night Owl", emoji: "🌙", earned: false },
+      { id: "roulette", name: "Roulette Host", emoji: "🎲", earned: false },
+      { id: "sommelier", name: "Drinks Pro", emoji: "🍹", earned: false },
     ],
     leaderboard: [
       { name: "Minh", xp: 1_520 },

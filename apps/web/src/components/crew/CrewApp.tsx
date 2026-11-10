@@ -18,7 +18,6 @@ import {
   Search,
   Send,
   ScanLine,
-  Settings,
   Users,
   Wallet,
   type LucideIcon,
@@ -33,9 +32,12 @@ import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
 import { Scanner } from "./Scanner";
-import { SettingsView } from "./Settings";
+import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
+import { InboxPage, kindOf, seedInbox, type InboxItem } from "./Inbox";
+import { BadgesPage } from "./Collections";
+import { levelFromXp } from "@yanyin/domain";
 
-type Tab = "me" | "tables" | "orders" | "bookings" | "settings";
+type Tab = "me" | "tables" | "orders" | "bookings";
 
 const STATUS: Record<FloorTable["status"], { label: string; chip: string }> = {
   free: { label: "Free", chip: "chip-gray" },
@@ -67,6 +69,16 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
   const [tab, setTab] = useState<Tab>("me");
   // The same light/dark choice as the guest menu: one system, one preference.
   const scheme = useScheme();
+  // Profile (from the avatar), personal info, all badges and the notification inbox are full pages.
+  const [me, setMe] = useState<Me>({ first: data.staff.name, last: "Nguyen", phone: "+84 905 123 456", email: "linh@samarkand.vn", role: "Waiter · Samarkand" });
+  const [profile, setProfile] = useState<"profile" | "personal" | "badges" | null>(null);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- seed the demo history once, with the real clock
+    setInbox(seedInbox(Date.now()));
+  }, []);
+  const unread = inbox.filter((i) => !i.read).length;
   const [tables, setTables] = useState(floor.tables);
   const [bookings, setBookings] = useState(floor.bookings);
   const [history, setHistory] = useState(floor.history);
@@ -88,6 +100,8 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
     const n: Notice = { ...raw, tone, icon: raw.icon ?? <ChefHat size={16} strokeWidth={2.25} /> };
     setNotice(n);
     setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), 2600);
+    // Every notification is kept in the inbox history.
+    setInbox((xs) => [{ id: `i${Date.now()}${xs.length}`, kind: kindOf(raw.title), title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at: Date.now(), read: false }, ...xs].slice(0, 80));
   }, []);
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));
   const now = () => new Date().toTimeString().slice(0, 5);
@@ -110,9 +124,7 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
         ? JSON.stringify([history.length, tables.map((x) => [x.no, x.status, x.lines.map((l) => l.qty + l.state).join("")])])
         : t === "bookings"
           ? JSON.stringify(bookings.map((b) => [b.id, b.status, b.table]))
-          : t === "me"
-            ? JSON.stringify([history.length])
-            : "settings";
+          : JSON.stringify([history.length]);
   const hot = {
     busy: tables.filter((x) => x.status !== "free" && x.status !== "reserved").length,
     tables: tables.length,
@@ -170,35 +182,81 @@ export function CrewApp({ data, floor, menu }: { data: CrewData; floor: FloorDat
             }}
           />
         )}
-        {tab === "me" && <CrewBoard data={data} embedded hot={hot} onGo={go} onNotify={(title, text) => notify({ title, text })} onScan={() => setScan(true)} dark={scheme.dark} onTheme={scheme.toggle} />}
-        {tab === "settings" && <SettingsView onNotify={(title, text) => notify({ title, text })} dark={scheme.dark} onTheme={scheme.toggle} />}
+        {tab === "me" && (
+          <CrewBoard
+            data={data}
+            embedded
+            hot={hot}
+            onGo={(t) => (t === "settings" ? setProfile("profile") : go(t))}
+            onNotify={(title, text) => notify({ title, text })}
+            onScan={() => setScan(true)}
+            dark={scheme.dark}
+            onTheme={scheme.toggle}
+            onProfile={() => setProfile("profile")}
+            onInbox={() => setInboxOpen(true)}
+            unread={unread}
+            photo={me.photo}
+            name={`${me.first} ${me.last}`}
+          />
+        )}
       </div>
 
-      {/* Tab bar */}
-      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-40 border-t border-g-line bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto grid max-w-[480px] grid-cols-5 px-1 pt-1.5 pb-[max(8px,env(safe-area-inset-bottom))]">
+      {/* Tab bar: a floating capsule, the current tab sits on a soft pill that slides between tabs. */}
+      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
+        <div className="relative mx-auto grid h-[64px] max-w-[440px] grid-cols-4 rounded-full bg-white/95 p-1.5 ring-1 ring-black/5 backdrop-blur-xl">
+          <span
+            aria-hidden
+            className="absolute top-1.5 bottom-1.5 left-1.5 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{ width: "calc((100% - 12px) / 4)", transform: `translateX(${["me", "tables", "orders", "bookings"].indexOf(tab) * 100}%)` }}
+          />
           {(
             [
               ["me", "Home", House, 0],
               ["tables", "Tables", LayoutGrid, billCount],
               ["orders", "Orders", ReceiptText, 0],
               ["bookings", "Bookings", CalendarDays, 0],
-              ["settings", "Settings", Settings, 0],
             ] as const
           ).map(([id, label, Icon, badge]) => (
             <button
               key={id}
               onClick={() => go(id)}
               aria-current={tab === id ? "page" : undefined}
-              className={`press relative flex h-14 flex-col items-center justify-center gap-1 text-[11px] font-semibold ${tab === id ? "text-g-ink" : "text-g-faint"}`}
+              className={`relative z-10 flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors ${tab === id ? "text-g-ink" : "text-g-faint"}`}
             >
-              <Icon size={22} strokeWidth={tab === id ? 2.1 : 1.75} />
+              <Icon size={21} strokeWidth={tab === id ? 2.1 : 1.8} />
               {label}
               {badge > 0 && <span className="blue-grad absolute top-1 left-[calc(50%+6px)] grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold">{badge}</span>}
             </button>
           ))}
         </div>
       </nav>
+
+      {profile === "profile" && (
+        <ProfilePage
+          me={me}
+          level={levelFromXp(data.staff.xp)}
+          badges={data.badges}
+          onPersonal={() => setProfile("personal")}
+          onAllBadges={() => setProfile("badges")}
+          onClose={() => setProfile(null)}
+          onNotify={(title, text) => notify({ title, text })}
+          dark={scheme.dark}
+          onTheme={scheme.toggle}
+        />
+      )}
+      {profile === "personal" && (
+        <PersonalInfoPage
+          me={me}
+          onClose={() => setProfile("profile")}
+          onSave={(m) => {
+            setMe(m);
+            setProfile("profile");
+            notify({ title: "Profile saved", text: `${m.first} ${m.last}` });
+          }}
+        />
+      )}
+      {profile === "badges" && <BadgesPage badges={data.badges} onClose={() => setProfile("profile")} />}
+      {inboxOpen && <InboxPage items={inbox} onClose={() => setInboxOpen(false)} onReadAll={() => setInbox((xs) => xs.map((i) => ({ ...i, read: true })))} />}
 
       <Island notice={notice} />
 
@@ -1206,7 +1264,7 @@ function OrdersView({
                   const cooking = x.lines.filter((l) => l.state !== "served").length;
                   return (
                     <button key={x.no} onClick={() => onOpenTable(x.no)} className="press flex w-full gap-3.5 py-4 text-left">
-                      <span className={`grid size-12 shrink-0 place-items-center rounded-[16px] text-[18px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
+                      <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline justify-between gap-3">
                           <span className="text-[16px] font-semibold">Table {x.no}</span>
@@ -1233,7 +1291,7 @@ function OrdersView({
             const { icon: Icon, label } = METHOD[o.method];
             return (
               <button key={o.id} onClick={() => onReceipt(o)} className="press flex w-full gap-3.5 py-4 text-left">
-                <span className="grid size-12 shrink-0 place-items-center rounded-[16px] bg-g-fill text-g-blue">
+                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-g-fill text-g-blue">
                   <Icon size={20} strokeWidth={1.8} />
                 </span>
                 <span className="min-w-0 flex-1">

@@ -109,7 +109,7 @@ export function Scanner({ tables, onClose, onTable }: { tables: number[]; onClos
                 setFound(no);
                 setTimeout(() => onTable(no), 450);
               }}
-              className="press grid h-12 min-w-12 shrink-0 place-items-center rounded-[16px] bg-white/12 px-3 text-[16px] font-semibold backdrop-blur-md tabular-nums"
+              className="press grid h-12 min-w-12 shrink-0 place-items-center rounded-full bg-white/12 px-3 text-[16px] font-semibold backdrop-blur-md tabular-nums"
             >
               {no}
             </button>

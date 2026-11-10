@@ -224,13 +224,19 @@ body {
   --g-tint-note: #2a2114;
 }
 [data-scheme="dark"] .bg-white { background-color: var(--g-card); }
+/* Strip tiles over the night sky: a lifted grey, not black. */
+[data-scheme="dark"] .strip-tile { background-color: #2a2d35; }
+/* Soft blue highlight blocks (team goal, roulette art) at night. */
+[data-scheme="dark"] .mesh-blue,
+[data-scheme="dark"] .mesh-lilac,
+[data-scheme="dark"] .blue-grad-soft { background: linear-gradient(160deg, #1a2342 0%, #141a30 100%); }
 [data-scheme="dark"] .bg-g-ink,
 [data-scheme="dark"] .ink-grad { background-color: #2c2f37; background-image: none; }
 [data-scheme="dark"] .bg-white\/75,
 [data-scheme="dark"] .bg-white\/80 { background-color: rgb(36 39 46 / 0.82); }
 [data-scheme="dark"] .bg-white\/95 { background-color: rgb(16 17 21 / 0.94); }
-[data-scheme="dark"] .border-white { border-color: var(--g-bg); }
-[data-scheme="dark"] .ring-white { --tw-ring-color: var(--g-bg); }
+[data-scheme="dark"] .border-white { border-color: var(--g-card); }
+[data-scheme="dark"] .ring-white { --tw-ring-color: var(--g-card); }
 [data-scheme="dark"] .chip-blue { background: #1c2647; color: #8fb0ff; }
 [data-scheme="dark"] .chip-green { background: #0f2a1d; color: #4cd18a; }
 [data-scheme="dark"] .chip-orange { background: #2e1d10; color: #ff9a55; }

@@ -22,7 +22,7 @@ const tap = (fn: () => void) => () => {
 /** One action, icon over a short label. */
 export function StripSquare({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button aria-label={label} onClick={tap(onClick)} className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink">
+    <button aria-label={label} onClick={tap(onClick)} className="press flex size-[62px] flex-col items-center justify-center gap-0.5 rounded-[20px] bg-white text-g-ink strip-tile">
       {icon}
       <span className="max-w-full truncate px-1 text-[10px] font-semibold">{label}</span>
     </button>
@@ -35,7 +35,7 @@ export function StripSquare({ icon, label, onClick }: { icon: ReactNode; label: 
  */
 export function StripWide({ onClick, art, corner, title, sub }: { onClick: () => void; art?: ReactNode; corner?: ReactNode; title: string; sub: string }) {
   return (
-    <button onClick={tap(onClick)} className={`press relative flex h-[62px] w-[158px] items-center gap-2.5 overflow-hidden rounded-[20px] bg-white pr-3 text-left text-g-ink ${corner ? "pl-[64px]" : "pl-2.5"}`}>
+    <button onClick={tap(onClick)} className={`press relative flex h-[62px] w-[158px] items-center gap-2.5 strip-tile overflow-hidden rounded-[20px] bg-white pr-3 text-left text-g-ink ${corner ? "pl-[64px]" : "pl-2.5"}`}>
       {corner}
       {art && <span className="grid size-10 shrink-0 place-items-center">{art}</span>}
       <span className="relative min-w-0">
@@ -79,7 +79,7 @@ export function StripBig({
       </span>
     </>
   );
-  const cls = `row-span-2 flex h-[134px] ${wide ? "w-[170px]" : "w-[148px]"} flex-col justify-between rounded-[22px] bg-white p-3.5 text-left text-g-ink`;
+  const cls = `row-span-2 flex h-[134px] ${wide ? "w-[170px]" : "w-[148px]"} flex-col justify-between rounded-[22px] bg-white p-3.5 text-left text-g-ink strip-tile`;
   return onClick ? (
     <button onClick={tap(onClick)} className={`press ${cls}`}>
       {body}
