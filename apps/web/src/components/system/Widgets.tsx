@@ -405,7 +405,7 @@ export function FlowWidget({
  * corner, cropped by the card and a little transparent, so it sets the mood
  * without competing with the number (like the wheel in the roulette button).
  */
-export function IconStat({ title, art, value, sub, tone = "blue", className = "" }: { title: string; art: ReactNode; value: string; sub: string; tone?: "green" | "blue" | "orange"; className?: string }) {
+export function IconStat({ title, art, value, sub, tone = "blue", fit = false, className = "" }: { title: string; art: ReactNode; value: string; sub: string; tone?: "green" | "blue" | "orange"; /** Show the whole illustration inside the corner instead of cropping it. */ fit?: boolean; className?: string }) {
   const t = {
     green: { card: "bg-g-tint-green", label: "text-g-green" },
     blue: { card: "bg-g-tint-blue", label: "text-g-blue" },
@@ -413,7 +413,7 @@ export function IconStat({ title, art, value, sub, tone = "blue", className = ""
   }[tone];
   return (
     <section className={`relative isolate flex min-h-[124px] flex-col justify-between overflow-hidden rounded-[24px] p-4 ${t.card} ${className}`}>
-      <span aria-hidden className="pointer-events-none absolute -top-7 -right-9 -z-10 opacity-75">
+      <span aria-hidden className={`pointer-events-none absolute -z-10 ${fit ? "top-2.5 right-2.5" : "-top-7 -right-9 opacity-75"}`}>
         {art}
       </span>
       <span className={`text-[13px] font-semibold ${t.label}`}>{title}</span>

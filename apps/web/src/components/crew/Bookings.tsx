@@ -73,12 +73,12 @@ export function BookingsView({
         <BookingRuler className="col-span-2" list={list} today={day === 0} initial={next?.id} />
         <IconStat
           title={tr("Seated")}
-          art={<SeatedArt size={130} />}
+          fit art={<SeatedArt size={84} />}
           value={`${list.filter((b) => b.status === "seated").length} / ${list.length}`}
           sub={tr("bookings arrived")}
           tone="green"
         />
-        <IconStat title={tr("Guests")} art={<GuestsArt size={130} />} value={String(guests)} sub={tr("expected today")} tone="blue" />
+        <IconStat title={tr("Guests")} fit art={<GuestsArt size={84} />} value={String(guests)} sub={tr("expected today")} tone="blue" />
         <ActionListWidget
           className="col-span-2"
           title={tr("Waiting list")}

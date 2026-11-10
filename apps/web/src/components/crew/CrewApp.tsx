@@ -616,7 +616,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           format={(v) => `${v} / ${tables.length} ${tr("tables")}`}
         />
         <IconStat title={tr("Busy now")} art={<TablesArt size={128} />} value={`${busy} / ${tables.length}`} sub={tr("tables")} tone="blue" />
-        <IconStat title={tr("Free seats")} art={<SeatedArt size={128} />} value={String(seats)} sub={`${tables.filter((x) => x.status === "free").length} ${tr("free tables")}`} tone="green" />
+        <IconStat title={tr("Free seats")} fit art={<SeatedArt size={84} />} value={String(seats)} sub={`${tables.filter((x) => x.status === "free").length} ${tr("free tables")}`} tone="green" />
         <ActionListWidget
           className="col-span-2"
           title={tr("Waiting for the bill")}

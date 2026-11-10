@@ -141,77 +141,76 @@ export function CheckArt({ size = 150 }: { size?: number }) {
   );
 }
 
-/** Seated: a café table for two, side view: a round top with a cup and a vase, two bentwood chairs. */
+/** Seated: a chair pulled up to a round café table, whole and centred, soft shadow. */
 export function SeatedArt({ size = 150 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
+    <svg viewBox="0 0 120 120" width={size} height={size} aria-hidden>
       <defs>
-        <linearGradient id="yy-seat-top" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#8ee6b4" />
-          <stop offset="1" stopColor="#1fae5e" />
+        <linearGradient id="yy-s-wood" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#7ddda6" />
+          <stop offset="1" stopColor="#14a35a" />
         </linearGradient>
-        <linearGradient id="yy-seat-leg" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#1a9c55" />
-          <stop offset="1" stopColor="#0f7a40" />
+        <linearGradient id="yy-s-dark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#1fae5e" />
+          <stop offset="1" stopColor="#0e7c41" />
+        </linearGradient>
+        <linearGradient id="yy-s-top" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#a6efc6" />
+          <stop offset="1" stopColor="#3cc479" />
         </linearGradient>
       </defs>
-      <ellipse cx="80" cy="146" rx="62" ry="6" fill="#12a150" opacity="0.15" />
-      {/* Chairs, behind the table: a curved back, a seat, two legs. */}
-      {[-1, 1].map((d) => (
-        <g key={d} transform={`translate(${80 + d * 46} 0) scale(${d} 1)`}>
-          <path d="M14 64c0-14 4-22 12-22" fill="none" stroke="#3cc479" strokeWidth="7" strokeLinecap="round" />
-          <path d="M14 64v34" stroke="#3cc479" strokeWidth="7" strokeLinecap="round" />
-          <rect x="8" y="94" width="34" height="9" rx="4.5" fill="#2fbb6c" />
-          <path d="M14 103l-4 40M38 103l4 40" stroke="#1a9c55" strokeWidth="5" strokeLinecap="round" />
-        </g>
-      ))}
-      {/* Table. */}
-      <path d="M77 82h6l3 54h-12z" fill="url(#yy-seat-leg)" />
-      <ellipse cx="80" cy="140" rx="20" ry="5" fill="#0f7a40" />
-      <ellipse cx="80" cy="80" rx="40" ry="9" fill="#0f8a47" />
-      <ellipse cx="80" cy="77" rx="40" ry="9" fill="url(#yy-seat-top)" />
-      {/* A cup and a small vase on top. */}
-      <path d="M62 64h13l-1.5 10h-10z" fill="#fff" />
-      <path d="M75 66.5a3.5 3.5 0 0 1 0 6" fill="none" stroke="#fff" strokeWidth="2" />
-      <path d="M92 74c-3 0-4-3-4-6s2-5 4-8c2 3 4 5 4 8s-1 6-4 6z" fill="#fff" fillOpacity="0.9" />
-      <path d="M92 60v-9" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="92" cy="48" r="4" fill="#ffd66b" />
+      <ellipse cx="62" cy="110" rx="48" ry="5" fill="#12a150" opacity="0.14" />
+      {/* Chair: a rounded back, seat and four legs (two visible). */}
+      <rect x="14" y="30" width="10" height="52" rx="5" fill="url(#yy-s-wood)" />
+      <rect x="14" y="30" width="30" height="10" rx="5" fill="url(#yy-s-wood)" />
+      <rect x="12" y="68" width="40" height="11" rx="5.5" fill="url(#yy-s-top)" />
+      <rect x="15" y="77" width="7" height="31" rx="3.5" fill="url(#yy-s-dark)" />
+      <rect x="42" y="77" width="7" height="31" rx="3.5" fill="url(#yy-s-dark)" />
+      {/* Table: round top, a pedestal and a foot. */}
+      <rect x="76" y="58" width="8" height="46" rx="4" fill="url(#yy-s-dark)" />
+      <rect x="64" y="102" width="32" height="7" rx="3.5" fill="url(#yy-s-dark)" />
+      <ellipse cx="80" cy="58" rx="30" ry="7" fill="#0e8a45" />
+      <ellipse cx="80" cy="55" rx="30" ry="7" fill="url(#yy-s-top)" />
+      {/* Cup with steam. */}
+      <rect x="72" y="42" width="12" height="10" rx="3" fill="#fff" />
+      <path d="M84 45a3 3 0 0 1 0 5" fill="none" stroke="#fff" strokeWidth="2" />
+      <path d="M75 37c-2-2 2-3 0-6M80 37c-2-2 2-3 0-6" fill="none" stroke="#12a150" strokeOpacity="0.45" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
 
-/** Guests: a small group in the brand blue, the front person larger, soft shapes, no faces. */
+/** Guests: three people, rounded heads and bodies with soft corners, the front one in the brand blue. */
 export function GuestsArt({ size = 150 }: { size?: number }) {
+  const person = (cx: number, top: number, scale: number, fill: string, key: string) => {
+    const r = 13 * scale; // head
+    const w = 44 * scale; // body width
+    const h = 38 * scale; // body height
+    return (
+      <g key={key}>
+        <circle cx={cx} cy={top + r} r={r} fill={fill} />
+        <rect x={cx - w / 2} y={top + r * 2 + 4 * scale} width={w} height={h} rx={16 * scale} fill={fill} />
+      </g>
+    );
+  };
   return (
-    <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
+    <svg viewBox="0 0 120 120" width={size} height={size} aria-hidden>
       <defs>
-        <linearGradient id="yy-g-front" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="yy-g-f" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#8fb2ff" />
           <stop offset="0.55" stopColor="#2f6bff" />
           <stop offset="1" stopColor="#2530b0" />
         </linearGradient>
-        <linearGradient id="yy-g-back" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#c7d8ff" />
-          <stop offset="1" stopColor="#8fb2ff" />
+        <linearGradient id="yy-g-b" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#d3e0ff" />
+          <stop offset="1" stopColor="#9dbbff" />
         </linearGradient>
       </defs>
-      {/* Two friends behind. */}
-      {[
-        [40, 52],
-        [120, 52],
-      ].map(([x, y]) => (
-        <g key={x}>
-          <circle cx={x} cy={y} r="16" fill="url(#yy-g-back)" />
-          <path d={`M${x - 28} 120c0-20 12-34 28-34s28 14 28 34z`} fill="url(#yy-g-back)" />
-        </g>
-      ))}
-      {/* The guest in front. */}
-      <circle cx="80" cy="62" r="21" fill="url(#yy-g-front)" />
-      <path d="M40 146c0-28 18-48 40-48s40 20 40 48z" fill="url(#yy-g-front)" />
-      <path d="M66 54a15 15 0 0 1 18-10" fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="4" strokeLinecap="round" />
-      {/* A little "+" for more to come. */}
-      <circle cx="126" cy="112" r="14" fill="#fff" />
-      <path d="M126 105v14M119 112h14" stroke="#2f6bff" strokeWidth="3.5" strokeLinecap="round" />
+      <ellipse cx="60" cy="112" rx="46" ry="4.5" fill="#2f5bff" opacity="0.12" />
+      {person(28, 26, 0.8, "url(#yy-g-b)", "l")}
+      {person(92, 26, 0.8, "url(#yy-g-b)", "r")}
+      {person(60, 30, 1, "url(#yy-g-f)", "f")}
+      {/* Soft highlight on the front head. */}
+      <path d="M52 37a9 9 0 0 1 9-6" fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }
