@@ -1,8 +1,6 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
-import { useEdgeSoften, useMoreSides } from "./useEdgeSoften";
-import { EdgeBlur } from "./EdgeBlur";
+import { type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 
 /*
@@ -12,17 +10,11 @@ import { haptic } from "@/lib/haptics";
  * everywhere, so both apps read as one product.
  */
 
-/** Full-width strip; items rest on the page gutter and blur and fade by themselves near the screen edges. */
+/** Full-width strip; items rest on the page gutter and scroll plainly to the screen edges. */
 export function Strip({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEdgeSoften(ref);
-  useMoreSides(ref);
   return (
-    <div className="edge-host mt-7">
-      <div ref={ref} className="no-scrollbar grid scroll-px-5 grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">
-        {children}
-      </div>
-      <EdgeBlur />
+    <div className="no-scrollbar mt-7 grid scroll-px-5 grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">
+      {children}
     </div>
   );
 }

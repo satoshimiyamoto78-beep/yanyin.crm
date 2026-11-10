@@ -615,17 +615,6 @@ body {
   }
 }
 
-.edge-wrap::before {
-  left: 0;
-  -webkit-mask-image: linear-gradient(90deg, #000, transparent);
-  mask-image: linear-gradient(90deg, #000, transparent);
-}
-.edge-wrap::after {
-  right: 0;
-  -webkit-mask-image: linear-gradient(270deg, #000, transparent);
-  mask-image: linear-gradient(270deg, #000, transparent);
-}
-
 /* Home edit mode (hold a block): blocks jiggle gently inside a dashed frame, the lifted one floats. */
 .edit-block {
   position: relative;
@@ -660,25 +649,4 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .halo { animation: none; opacity: 0.3; }
-}
-
-/* Progressive edge blur (see EdgeBlur): five stacked layers, fade in when that side has more content. */
-.edge-host { position: relative; }
-.edge-blur {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 44px;
-  z-index: 3;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-.edge-blur > span { position: absolute; inset: 0; }
-.edge-blur-l { left: 0; }
-.edge-blur-r { right: 0; }
-.edge-host[data-more-l="true"] .edge-blur-l,
-.edge-host[data-more-r="true"] .edge-blur-r { opacity: 1; }
-@media (prefers-reduced-transparency: reduce) {
-  .edge-blur { display: none; }
 }
