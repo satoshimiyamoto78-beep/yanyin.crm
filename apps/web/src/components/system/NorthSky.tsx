@@ -3,39 +3,21 @@
 import { useEffect, useRef } from "react";
 
 /*
- * The yanyin header sky: a soft, slowly flowing aurora in the Nomad blue.
+ * The yanyin header sky: northern lights in the Nomad blue.
  *
- * How it stays premium and cheap: the light is painted on a tiny canvas
- * (about 80×50 px) and the browser stretches it over the header. Stretching a
- * tiny image is a free, perfect blur, so there are no hard rings or blobs, and
- * each frame costs a few gradient fills on 4,000 pixels. It runs at ~30 fps,
- * pauses off screen and in background tabs, and draws a single still frame for
- * reduced motion. Shared by the guest menu and the waiter app.
+ * What is drawn: a deep blue sky with two soft glows, then two aurora
+ * curtains. Each curtain is a wavy band that sways slowly: silky strands of
+ * light (a bundle of thin glowing curves) along its crest, and faint vertical
+ * rays hanging below it, the way a real aurora looks. Painted on a small canvas
+ * (≈300×196) that the browser stretches smoothly over the header, so the light
+ * stays soft and each frame stays cheap. ~25 fps, pauses off screen and in
+ * background tabs, a single still frame for reduced motion.
  */
 
-type Scheme = { base: [string, string, string]; glows: [number, number, number, number][]; veil: string };
+type Scheme = { base: [string, string, string]; glow: [string, string]; light: [number, number, number]; ray: number; strand: number };
 
-// Glows are [r, g, b, alpha]: light sky blue, the brand blue, deep indigo, ice white.
-const LIGHT: Scheme = {
-  base: ["#5f8dff", "#3c68f5", "#2f4fd6"],
-  glows: [
-    [150, 190, 255, 0.85],
-    [47, 91, 255, 0.75],
-    [37, 48, 176, 0.7],
-    [225, 236, 255, 0.55],
-  ],
-  veil: "rgba(230,238,255,0.22)",
-};
-const DARK: Scheme = {
-  base: ["#2c55ee", "#2240cc", "#172596"],
-  glows: [
-    [110, 150, 255, 0.75],
-    [40, 80, 240, 0.7],
-    [20, 28, 120, 0.8],
-    [180, 205, 255, 0.4],
-  ],
-  veil: "rgba(200,215,255,0.16)",
-};
+const LIGHT: Scheme = { base: ["#4f7dff", "#2f5bef", "#2441c9"], glow: ["rgba(150,190,255,0.55)", "rgba(28,40,150,0.55)"], light: [214, 230, 255], ray: 0.16, strand: 0.5 };
+const DARK: Scheme = { base: ["#2a4fe0", "#1d36b8", "#121f7c"], glow: ["rgba(110,150,255,0.45)", "rgba(10,16,80,0.65)"], light: [190, 212, 255], ray: 0.14, strand: 0.45 };
 
 export function NorthSky() {
   const wrap = useRef<HTMLDivElement>(null);
@@ -45,8 +27,8 @@ export function NorthSky() {
     const canvas = cv.current;
     const ctx = canvas?.getContext("2d");
     if (!el || !canvas || !ctx) return;
-    const W = 80;
-    const H = 52;
+    const W = 300;
+    const H = 196;
     canvas.width = W;
     canvas.height = H;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -55,46 +37,89 @@ export function NorthSky() {
     let last = 0;
     const t0 = performance.now();
 
-    const glow = (x: number, y: number, r: number, [cr, cg, cb, a]: [number, number, number, number]) => {
+    // One soft vertical ray, drawn once and stamped many times per frame.
+    const ray = document.createElement("canvas");
+    ray.width = 1;
+    ray.height = 64;
+    const rc = ray.getContext("2d")!;
+    const rg = rc.createLinearGradient(0, 0, 0, 64);
+    rg.addColorStop(0, "rgba(255,255,255,0)");
+    rg.addColorStop(0.08, "rgba(255,255,255,1)");
+    rg.addColorStop(0.35, "rgba(255,255,255,0.45)");
+    rg.addColorStop(1, "rgba(255,255,255,0)");
+    rc.fillStyle = rg;
+    rc.fillRect(0, 0, 1, 64);
+
+    const glow = (x: number, y: number, r: number, color: string) => {
       const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`);
-      g.addColorStop(0.55, `rgba(${cr},${cg},${cb},${a * 0.35})`);
-      g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+      g.addColorStop(0, color);
+      g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
     };
 
+    // The crest of a curtain: a slow, uneven wave across the sky.
+    const crest = (x: number, t: number, k: number) =>
+      H * (0.3 + 0.2 * k) +
+      H * 0.12 * Math.sin(x * 0.016 + t * 0.3 + k * 2.1) +
+      H * 0.05 * Math.sin(x * 0.041 - t * 0.42 + k);
+
     const draw = (now: number) => {
       const s = document.documentElement.dataset.scheme === "dark" ? DARK : LIGHT;
+      const [lr, lg, lb] = s.light;
       const t = (now - t0) / 1000;
-      const base = ctx.createLinearGradient(0, 0, W * 0.6, H);
-      base.addColorStop(0, s.base[0]);
-      base.addColorStop(0.5, s.base[1]);
-      base.addColorStop(1, s.base[2]);
       ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+      const base = ctx.createLinearGradient(0, 0, W * 0.5, H);
+      base.addColorStop(0, s.base[0]);
+      base.addColorStop(0.55, s.base[1]);
+      base.addColorStop(1, s.base[2]);
       ctx.fillStyle = base;
       ctx.fillRect(0, 0, W, H);
-      // Large glows drifting on slow, unrelated loops, so the sky never repeats visibly.
-      glow(W * (0.2 + 0.18 * Math.sin(t * 0.21)), H * (0.15 + 0.12 * Math.cos(t * 0.17)), W * 0.55, s.glows[0]!);
-      glow(W * (0.85 + 0.12 * Math.cos(t * 0.13)), H * (0.55 + 0.2 * Math.sin(t * 0.19)), W * 0.5, s.glows[1]!);
-      glow(W * (0.5 + 0.3 * Math.sin(t * 0.11 + 2)), H * (0.95 + 0.1 * Math.sin(t * 0.23)), W * 0.5, s.glows[2]!);
-      // The aurora curtain: a band of light that bends and breathes across the sky.
+      glow(W * (0.22 + 0.1 * Math.sin(t * 0.13)), H * 0.1, W * 0.6, s.glow[0]);
+      glow(W * (0.85 + 0.08 * Math.cos(t * 0.11)), H * 0.95, W * 0.6, s.glow[1]);
+
       ctx.globalCompositeOperation = "lighter";
-      for (let i = 0; i <= 14; i++) {
-        const u = i / 14;
-        const x = W * (-0.1 + 1.2 * u);
-        const y = H * (0.32 + 0.14 * Math.sin(u * 3.2 + t * 0.35) + 0.06 * Math.sin(u * 7 - t * 0.5));
-        const a = s.glows[3]![3] * (0.35 + 0.65 * Math.max(0, Math.sin(u * Math.PI))) * (0.75 + 0.25 * Math.sin(t * 0.4 + u * 4));
-        glow(x, y, W * 0.16, [s.glows[3]![0], s.glows[3]![1], s.glows[3]![2], a * 0.32]);
+      for (let k = 0; k < 2; k++) {
+        const strength = k === 0 ? 1 : 0.6;
+        // Rays hanging from the crest: brighter where the curtain folds, flickering slowly.
+        for (let x = 0; x < W; x += 2) {
+          const y = crest(x, t, k);
+          const fold = 0.5 + 0.5 * Math.sin(x * 0.03 + t * 0.55 + k * 3);
+          const flicker = 0.6 + 0.4 * Math.sin(x * 0.21 + t * 1.1 + Math.sin(x * 0.05 + t * 0.4) * 2);
+          const len = H * (0.22 + 0.2 * fold);
+          ctx.globalAlpha = s.ray * strength * (0.35 + 0.65 * fold) * flicker;
+          ctx.drawImage(ray, x, y - len * 0.08, 2.4, len);
+        }
+        ctx.globalAlpha = 1;
+        // Silky strands along the crest: soft glowing curves, each drawn as three
+        // strokes (wide and faint, medium, thin and bright) so it glows instead of edging.
+        for (let j = 0; j < 4; j++) {
+          const off = (j - 1.5) * 2.6;
+          ctx.beginPath();
+          for (let x = -6; x <= W + 6; x += 3) {
+            const y = crest(x, t, k) + off + Math.sin(x * 0.03 + j * 1.3 + t * 0.6) * 2;
+            if (x === -6) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          const a = s.strand * strength * (j === 1 || j === 2 ? 1 : 0.55);
+          for (const [w, f] of [
+            [10, 0.06],
+            [4.5, 0.14],
+            [1.6, 0.42],
+          ] as const) {
+            ctx.strokeStyle = `rgba(${lr},${lg},${lb},${a * f})`;
+            ctx.lineWidth = w;
+            ctx.stroke();
+          }
+        }
       }
       ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = s.veil;
-      ctx.fillRect(0, 0, W, H * 0.12);
     };
 
     const loop = (now: number) => {
       raf = 0;
-      if (now - last > 33) {
+      if (now - last > 40) {
         last = now;
         draw(now);
       }
