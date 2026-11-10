@@ -6,6 +6,8 @@ import {
   Banknote,
   CalendarDays,
   ChefHat,
+  ChevronLeft,
+  ChevronRight,
   CalendarPlus,
   Clock,
   CreditCard,
@@ -33,6 +35,7 @@ import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
+import { BookingsArt, OrdersArt, TablesArt } from "./Illustrations";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
 import { Scanner } from "./Scanner";
@@ -41,8 +44,8 @@ import { InboxPage, kindOf, seedInbox, type InboxItem } from "./Inbox";
 import { BadgesPage } from "./Collections";
 import { levelFromXp } from "@yanyin/domain";
 
-type Tab = "me" | "tables" | "orders" | "bookings";
-type HallSeg = Exclude<Tab, "me">;
+type Tab = "me" | "hall" | "tables" | "orders" | "bookings";
+type HallSeg = "tables" | "orders" | "bookings";
 
 const STATUS: Record<FloorTable["status"], { label: string; chip: string }> = {
   free: { label: "Free", chip: "chip-gray" },
@@ -80,8 +83,6 @@ export function CrewApp(props: { data: CrewData; floor: FloorData; menu: Menu })
 
 function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData; menu: Menu }) {
   const [tab, setTab] = useState<Tab>("me");
-  // Hall remembers which of its sections was open last.
-  const [hallSeg, setHallSeg] = useState<HallSeg>("tables");
   const tr = useTr();
   // The same light/dark choice as the guest menu: one system, one preference.
   const scheme = useScheme();
@@ -128,7 +129,6 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const inHall = tab !== "me";
   const go = (t: Tab) => {
     haptic("tick");
-    if (t !== "me") setHallSeg(t);
     setTab(t);
     window.scrollTo({ top: 0 });
     loadIfChanged(`tab:${t}`, signatureOf(t)); // only new or changed data blurs and pulls into focus
@@ -156,17 +156,28 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   return (
     <div className="min-h-dvh bg-white text-g-ink">
       <div key={tab} className="animate-tab mx-auto max-w-[480px] pb-28">
-        {inHall && (
-          <HallHead
-            seg={tab as HallSeg}
-            onSeg={(t) => go(t)}
-            counts={{ tables: `${hot.busy}/${hot.tables}`, orders: String(hot.openOrders), bookings: String(hot.bookings) }}
+        {tab === "hall" && (
+          <HallHome
+            sections={[
+              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? `${hot.bills} ${tr("asking for the bill")}` : tr("all calm"), hot: hot.bills > 0, art: TablesArt },
+              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: `${hot.inKitchen} ${tr("dishes in kitchen")}`, art: OrdersArt },
+              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? `${tr("next")} ${hot.nextBooking}` : tr("nothing planned"), art: BookingsArt },
+            ]}
+            onOpen={(id) => go(id)}
             actions={[
               { icon: ScanLine, label: tr("Scan"), onClick: () => setScan(true) },
               { icon: CalendarPlus, label: tr("New booking"), onClick: () => setNewBooking(true) },
               { icon: ReceiptText, label: tr("Bills"), onClick: () => go("orders") },
               { icon: ChefHat, label: tr("Kitchen"), onClick: () => notify({ title: tr("Kitchen pinged"), text: tr("The pass sees your call") }) },
             ]}
+          />
+        )}
+        {(tab === "tables" || tab === "orders" || tab === "bookings") && (
+          <SectionHead
+            title={tr(tab === "tables" ? "Tables" : tab === "orders" ? "Orders" : "Bookings")}
+            sub={tab === "tables" ? `Samarkand · ${tr("lunch")}` : tab === "orders" ? tr("Today") : tr("Today and the week ahead")}
+            art={tab === "tables" ? TablesArt : tab === "orders" ? OrdersArt : BookingsArt}
+            onBack={() => go("hall")}
           />
         )}
         {tab === "tables" && (
@@ -244,7 +255,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             {(
               [
                 ["me", tr("Home"), House, 0],
-                [hallSeg, tr("Hall"), LayoutGrid, billCount],
+                ["hall", tr("Hall"), LayoutGrid, billCount],
               ] as const
             ).map(([id, label, Icon, badge], i) => {
               const on = i === 0 ? !inHall : inHall;
@@ -1361,25 +1372,30 @@ function OrdersView({
 }
 
 /**
- * The Hall: one place for the floor. Title and quick services on top, then the
- * three sections (tables, orders, bookings), each with its own dashboard.
+ * The Hall: one place for the floor. Three big illustrated sections on top
+ * (tables, orders, bookings), each opening its own page; quick services below.
  */
-function HallHead({
-  seg,
-  onSeg,
-  counts,
+function HallHome({
+  sections,
+  onOpen,
   actions,
 }: {
-  seg: HallSeg;
-  onSeg: (s: HallSeg) => void;
-  counts: Record<HallSeg, string>;
+  sections: HallSection[];
+  onOpen: (s: HallSeg) => void;
   actions: { icon: LucideIcon; label: string; onClick: () => void }[];
 }) {
   const tr = useTr();
+  const [first, ...rest] = sections;
   return (
     <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
       <PageHead title={tr("Hall")} sub={`Samarkand · ${tr("lunch")}`} />
-      <div className="mt-4 grid grid-cols-4 gap-2">
+      <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
+        {first && <HallCard s={first} big onOpen={onOpen} />}
+        {rest.map((s) => (
+          <HallCard key={s.id} s={s} onOpen={onOpen} />
+        ))}
+      </Reveal>
+      <div className="mt-6 grid grid-cols-4 gap-2">
         {actions.map((a) => (
           <button
             key={a.label}
@@ -1392,30 +1408,57 @@ function HallHead({
             <span className="chip-blue grid size-12 place-items-center rounded-full">
               <a.icon size={20} strokeWidth={2} />
             </span>
-            <span className="text-[12px] font-semibold">{a.label}</span>
+            <span className="text-center text-[12px] leading-tight font-semibold">{a.label}</span>
           </button>
         ))}
       </div>
-      <div className="mt-5 flex rounded-full bg-g-fill p-1">
-        {(
-          [
-            ["tables", tr("Tables")],
-            ["orders", tr("Orders")],
-            ["bookings", tr("Bookings")],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => onSeg(id)}
-            aria-pressed={seg === id}
-            className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors ${seg === id ? "bg-white text-g-ink" : "text-g-muted"}`}
-          >
-            {label}
-            <span className={`text-[12px] tabular-nums ${seg === id ? "text-g-blue" : "text-g-faint"}`}>{counts[id]}</span>
-          </button>
-        ))}
-      </div>
-      <div className="h-4" />
     </div>
+  );
+}
+
+/** Header of a Hall section: back to the Hall, the section's illustration, title and context. */
+function SectionHead({ title, sub, art: Art, onBack }: { title: string; sub: string; art: (p: { size?: number }) => ReactNode; onBack: () => void }) {
+  const tr = useTr();
+  return (
+    <div className="px-5 pt-[max(14px,env(safe-area-inset-top))]">
+      <button onClick={onBack} aria-label={tr("Hall")} className="press flex h-10 items-center gap-1 rounded-full bg-g-fill pr-4 pl-2 text-[14px] font-semibold">
+        <ChevronLeft size={20} strokeWidth={2.2} /> {tr("Hall")}
+      </button>
+      <div className="mt-4 flex items-center gap-4 rounded-[28px] bg-g-tint-blue p-4 pr-3">
+        <span className="min-w-0 flex-1 pl-1">
+          <span className="block text-[30px] leading-tight font-bold tracking-[-0.03em]">{title}</span>
+          <span className="mt-0.5 block text-[14px] text-g-muted">{sub}</span>
+        </span>
+        <Art size={92} />
+      </div>
+    </div>
+  );
+}
+
+type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: (p: { size?: number }) => ReactNode };
+
+/** One Hall section as a big illustrated button. */
+function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSeg) => void }) {
+  return (
+    <button
+      onClick={() => {
+        haptic("light");
+        onOpen(s.id);
+      }}
+      className={`press relative flex overflow-hidden rounded-[28px] bg-g-tint-blue text-left ${big ? "col-span-2 h-[150px] items-center gap-4 p-5" : "h-[188px] flex-col justify-between p-4"}`}
+    >
+      <span className={big ? "min-w-0 flex-1" : "contents"}>
+        <span className={big ? "block" : "order-2 block"}>
+          <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
+          <span className="live mt-0.5 block text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
+          <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
+        </span>
+      </span>
+      <span className={big ? "shrink-0" : "order-1 -mt-1 -mr-1 self-end"}>
+        <s.art size={big ? 104 : 84} />
+      </span>
+      <ChevronRight size={18} className={`absolute text-g-faint ${big ? "top-5 right-5" : "bottom-4 right-4"}`} />
+    </button>
+  
   );
 }

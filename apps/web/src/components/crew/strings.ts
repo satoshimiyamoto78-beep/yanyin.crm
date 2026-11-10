@@ -1,5 +1,6 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Today and the week ahead": "Сегодня и на неделю вперёд",
   "+300k ₫ each": "+300 тыс. ₫ каждому",
   "-day streak": "-дневная серия",
   "10 tables served under 12 minutes": "10 столов быстрее 12 минут",
@@ -288,6 +289,7 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Today and the week ahead": "Hôm nay và tuần tới",
   "+300k ₫ each": "+300k ₫ mỗi người",
   "-day streak": " ngày liên tiếp",
   "10 tables served under 12 minutes": "10 bàn phục vụ dưới 12 phút",

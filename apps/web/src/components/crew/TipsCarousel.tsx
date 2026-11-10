@@ -4,7 +4,6 @@ import { type LucideIcon } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 import { YanOrb } from "@/components/guest/YanSheet";
-import { useEdges } from "@/components/system/useEdges";
 import { useTr } from "./prefs";
 
 export type Tip = {
@@ -20,8 +19,16 @@ export type Tip = {
 
 const TONE: Record<Tip["tone"], { bg: string; ink: string; icon: string }> = {
   blue: { bg: "bg-g-tint-blue", ink: "text-g-blue", icon: "blue-grad" },
-  green: { bg: "bg-g-tint-green", ink: "text-g-green", icon: "bg-g-green text-white" },
-  orange: { bg: "bg-g-tint-orange", ink: "text-g-orange", icon: "bg-g-orange text-white" },
+  green: {
+    bg: "bg-g-tint-green",
+    ink: "text-g-green",
+    icon: "bg-g-green text-white",
+  },
+  orange: {
+    bg: "bg-g-tint-orange",
+    ink: "text-g-orange",
+    icon: "bg-g-orange text-white",
+  },
   ink: { bg: "bg-g-fill", ink: "text-g-ink-2", icon: "bg-g-ink text-white" },
 };
 
@@ -30,9 +37,14 @@ const TONE: Record<Tip["tone"], { bg: string; ink: string; icon: string }> = {
  * one card per swipe, the next one peeks in; dots follow the scroll and every
  * landing ticks the haptics.
  */
-export function TipsCarousel({ tips, aside }: { tips: Tip[]; aside?: ReactNode }) {
+export function TipsCarousel({
+  tips,
+  aside,
+}: {
+  tips: Tip[];
+  aside?: ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-  useEdges(ref);
   const tr = useTr();
   const [at, setAt] = useState(0);
 
@@ -60,49 +72,67 @@ export function TipsCarousel({ tips, aside }: { tips: Tip[]; aside?: ReactNode }
         <h2 className="flex items-center gap-2 text-[17px] font-semibold">
           <YanOrb size={24} /> {tr("Yan suggests")}
         </h2>
-        {aside ?? <span className="text-[13px] text-g-muted tabular-nums">{at + 1} {tr("of")} {tips.length}</span>}
+        {aside ?? (
+          <span className="text-[13px] text-g-muted tabular-nums">
+            {at + 1} {tr("of")} {tips.length}
+          </span>
+        )}
+      </div>
+
+      <div className="edge-wrap -mx-5 mt-3">
+        <div
+          ref={ref}
+          onScroll={onScroll}
+          className="no-scrollbar edge-fade flex snap-x snap-mandatory scroll-px-5 gap-2.5 px-5 overflow-x-auto overscroll-x-contain [scroll-behavior:smooth]"
+        >
+          {tips.map((t) => {
+            const tone = TONE[t.tone];
+            const Icon = t.icon;
+            return (
+              <article
+                key={t.id}
+                className={`${tone.bg} flex h-[164px] w-[82%] shrink-0 snap-start snap-always flex-col rounded-[24px] p-4`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`${tone.icon} grid size-8 shrink-0 place-items-center rounded-full`}
+                  >
+                    <Icon size={16} strokeWidth={2} />
+                  </span>
+                  <span className={`text-[13px] font-semibold ${tone.ink}`}>
+                    {t.kicker}
+                  </span>
+                </div>
+                <p className="mt-3 line-clamp-2 text-[16px] leading-snug font-semibold">
+                  {t.title}
+                </p>
+                <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-g-muted">
+                  {t.text}
+                </p>
+                {t.action && (
+                  <button
+                    onClick={() => {
+                      haptic("light");
+                      t.action!.onClick();
+                    }}
+                    className="press mt-auto h-8 self-start rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
+                  >
+                    {t.action.label}
+                  </button>
+                )}
+              </article>
+            );
+          })}
+          {/* Lets the last card land on the gutter too. */}
+          <span aria-hidden className="w-[calc(18%-10px)] shrink-0" />
+        </div>
       </div>
 
       <div
-        ref={ref}
-        onScroll={onScroll}
-        className="no-scrollbar edge-fade -mx-3 mt-3 flex snap-x snap-mandatory scroll-px-3 gap-2.5 px-3 overflow-x-auto overscroll-x-contain [scroll-behavior:smooth]"
+        className="mt-3 flex justify-center gap-1.5"
+        role="tablist"
+        aria-label="Tips"
       >
-        {tips.map((t) => {
-          const tone = TONE[t.tone];
-          const Icon = t.icon;
-          return (
-            <article
-              key={t.id}
-              className={`${tone.bg} flex h-[164px] w-[82%] shrink-0 snap-start snap-always flex-col rounded-[24px] p-4`}
-            >
-              <div className="flex items-center gap-2.5">
-                <span className={`${tone.icon} grid size-8 shrink-0 place-items-center rounded-full`}>
-                  <Icon size={16} strokeWidth={2} />
-                </span>
-                <span className={`text-[13px] font-semibold ${tone.ink}`}>{t.kicker}</span>
-              </div>
-              <p className="mt-3 line-clamp-2 text-[16px] leading-snug font-semibold">{t.title}</p>
-              <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-g-muted">{t.text}</p>
-              {t.action && (
-                <button
-                  onClick={() => {
-                    haptic("light");
-                    t.action!.onClick();
-                  }}
-                  className="press mt-auto h-8 self-start rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
-                >
-                  {t.action.label}
-                </button>
-              )}
-            </article>
-          );
-        })}
-        {/* Lets the last card land on the gutter too. */}
-        <span aria-hidden className="w-[calc(18%-10px)] shrink-0" />
-      </div>
-
-      <div className="mt-3 flex justify-center gap-1.5" role="tablist" aria-label="Tips">
         {tips.map((t, i) => (
           <button
             key={t.id}
