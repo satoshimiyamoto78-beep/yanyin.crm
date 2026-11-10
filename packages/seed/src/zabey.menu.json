@@ -454,9 +454,10 @@
             "strength",
             "extras"
           ],
+          "cover": "/dishes/hookah/spiced-chai.webp",
           "description": {
-            "en": "Darkside · blackcurrant, grape, mint",
-            "ru": "Darkside · чёрная смородина, виноград, мята"
+            "en": "Darkside · spiced chai, cinnamon, star anise",
+            "ru": "Darkside · пряный чай, корица, бадьян"
           }
         },
         {
@@ -465,15 +466,16 @@
             "ru": "Ледяной тропик",
             "vi": "Nhiệt đới băng"
           },
-          "price": 400000,
+          "price": 450000,
           "status": "suggested",
           "modifier_groups": [
             "strength",
             "extras"
           ],
+          "cover": "/dishes/hookah/rising-star.webp",
           "description": {
-            "en": "Musthave · mango, passion fruit, ice",
-            "ru": "Musthave · манго, маракуйя, лёд"
+            "en": "Black Burn Rising Star · mango, passion fruit, star fruit, ice",
+            "ru": "Black Burn Rising Star · манго, маракуйя, карамбола, лёд"
           }
         },
         {
@@ -482,32 +484,126 @@
             "ru": "Ягодный холодок",
             "vi": "Mát quả mọng"
           },
-          "price": 400000,
+          "price": 450000,
           "status": "suggested",
           "modifier_groups": [
             "strength",
             "extras"
           ],
+          "cover": "/dishes/hookah/something-berry.webp",
           "description": {
-            "en": "Element · berry mix, mint",
-            "ru": "Element · ягодный микс, мята"
+            "en": "Black Burn Something Berry · blackberry, raspberry, gooseberry",
+            "ru": "Black Burn Something Berry · ежевика, малина, крыжовник"
           }
         },
         {
           "name": {
-            "en": "Double Apple Classic",
-            "ru": "Двойное яблоко",
-            "vi": "Táo đôi cổ điển"
+            "en": "Famous Apple",
+            "ru": "Зелёное яблоко",
+            "vi": "Táo xanh"
           },
-          "price": 350000,
+          "price": 450000,
           "status": "suggested",
           "modifier_groups": [
             "strength",
             "extras"
           ],
+          "cover": "/dishes/hookah/famous-apple.webp",
           "description": {
-            "en": "Al Fakher · the classic double apple",
-            "ru": "Al Fakher · классическое двойное яблоко"
+            "en": "Black Burn Famous Apple · crisp green apple on ice",
+            "ru": "Black Burn Famous Apple · хрустящее зелёное яблоко со льдом"
+          }
+        },
+        {
+          "name": {
+            "en": "Strawberry Ice Cream",
+            "ru": "Клубничное мороженое",
+            "vi": "Kem dâu"
+          },
+          "price": 400000,
+          "status": "suggested",
+          "modifier_groups": [
+            "extras"
+          ],
+          "cover": "/dishes/hookah/strawberry-ice-cream.webp",
+          "description": {
+            "en": "Plazma steam stones · strawberry and cream, nicotine-free",
+            "ru": "Plazma, паровые камни · клубника со сливками, без никотина"
+          },
+          "tags": [
+            "nicotine-free"
+          ]
+        },
+        {
+          "name": {
+            "en": "Barberry Shock",
+            "ru": "Барбарис шок",
+            "vi": "Barberry Shock"
+          },
+          "price": 450000,
+          "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
+          "cover": "/dishes/hookah/barberry-shock.webp",
+          "description": {
+            "en": "Black Burn Shock · sour barberry candy",
+            "ru": "Black Burn Shock · кислые барбарисовые леденцы"
+          }
+        },
+        {
+          "name": {
+            "en": "Lemon Shock",
+            "ru": "Лимон шок",
+            "vi": "Lemon Shock"
+          },
+          "price": 450000,
+          "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
+          "cover": "/dishes/hookah/lemon-shock.webp",
+          "description": {
+            "en": "Black Burn Shock · sharp sour lemon",
+            "ru": "Black Burn Shock · яркий кислый лимон"
+          }
+        },
+        {
+          "name": {
+            "en": "Peach Killer",
+            "ru": "Персик",
+            "vi": "Peach Killer"
+          },
+          "price": 450000,
+          "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
+          "cover": "/dishes/hookah/peach-killer.webp",
+          "description": {
+            "en": "Black Burn Peach Killer · ripe juicy peach",
+            "ru": "Black Burn Peach Killer · спелый сочный персик"
+          }
+        },
+        {
+          "name": {
+            "en": "Red Orange",
+            "ru": "Красный апельсин",
+            "vi": "Cam đỏ"
+          },
+          "price": 450000,
+          "status": "suggested",
+          "modifier_groups": [
+            "strength",
+            "extras"
+          ],
+          "cover": "/dishes/hookah/red-orange.webp",
+          "description": {
+            "en": "Black Burn Red Orange · blood orange",
+            "ru": "Black Burn Red Orange · красный сицилийский апельсин"
           }
         },
         {

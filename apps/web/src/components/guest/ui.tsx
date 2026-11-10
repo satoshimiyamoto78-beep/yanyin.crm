@@ -98,7 +98,8 @@ export function ItemChips({ item, lang }: { item: MenuItem; lang: Lang }) {
   const veg = item.tags.includes("vegan") || item.tags.includes("vegetarian");
   const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(item.name.en ?? "");
   const halal = item.tags.includes("halal");
-  if (!veg && !spicy && !halal && item.status !== "suggested") return null;
+  const noNicotine = item.tags.includes("nicotine-free");
+  if (!veg && !spicy && !halal && !noNicotine && item.status !== "suggested") return null;
   return (
     <span className="flex flex-wrap gap-1.5">
       {veg && (
@@ -109,6 +110,11 @@ export function ItemChips({ item, lang }: { item: MenuItem; lang: Lang }) {
       {spicy && (
         <Chip tone="orange" icon={<Flame size={12} strokeWidth={2.25} />}>
           Spicy
+        </Chip>
+      )}
+      {noNicotine && (
+        <Chip tone="green" icon={<Leaf size={12} strokeWidth={2.25} />}>
+          Nicotine-free
         </Chip>
       )}
       {halal && (
@@ -136,6 +142,9 @@ export function DishTile({ item, role, className = "", photoScale = 0.88, glyph 
     <div className={`hero-grad relative grid place-items-center overflow-hidden ${className}`}>
       {item.photo ? (
         <Image src={item.photo} alt="" width={360} height={240} className="dish-shadow h-auto object-contain" style={{ width: `${photoScale * 100}%` }} />
+      ) : item.cover ? (
+        // A photo with its own background (hookah sets): fill the tile.
+        <Image src={item.cover} alt="" fill sizes="240px" className="object-cover" />
       ) : (
         <span
           className="grid aspect-square place-items-center rounded-full bg-white text-g-blue"
