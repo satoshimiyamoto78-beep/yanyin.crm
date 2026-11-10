@@ -26,6 +26,7 @@ import {
   Printer,
   QrCode,
   ReceiptText,
+  CalendarCheck,
   Search,
   Send,
   ScanLine,
@@ -44,7 +45,6 @@ import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
-import { BookingsArt, OrdersArt, TablesArt } from "./Illustrations";
 import { CabinetView, pastOrders } from "./Cabinet";
 import { noticeMeta } from "./notices";
 import { PeekActions, PeekHeader } from "@/components/system/PeekParts";
@@ -194,9 +194,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         {tab === "hall" && (
           <HallHome
             sections={[
-              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: TablesArt },
-              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: OrdersArt },
-              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: BookingsArt },
+              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: LayoutGrid },
+              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: ReceiptText },
+              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: CalendarCheck },
             ]}
             onOpen={(id) => go(id)}
             actions={[
@@ -211,7 +211,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           <SectionHead
             title={tr(tab === "tables" ? "Tables" : tab === "orders" ? "Orders" : "Bookings")}
             sub={tab === "tables" ? `Samarkand · ${tr("lunch")}` : tab === "orders" ? tr("Today") : tr("Today and the week ahead")}
-            art={tab === "tables" ? TablesArt : tab === "orders" ? OrdersArt : BookingsArt}
+            art={tab === "tables" ? LayoutGrid : tab === "orders" ? ReceiptText : CalendarCheck}
             onBack={() => go("hall")}
           />
         )}
@@ -344,7 +344,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
                 haptic("light");
                 setYan({});
               }}
-              className="press absolute bottom-[calc(100%+10px)] left-1/2 grid -translate-x-1/2 place-items-center rounded-full shadow-[0_8px_24px_-8px_rgba(47,91,255,0.55)] ring-4 ring-white/90"
+              className="press absolute bottom-[calc(100%+10px)] left-1/2 grid -translate-x-1/2 place-items-center rounded-full shadow-[0_8px_24px_-8px_rgba(47,91,255,0.55)] ring-4 ring-[var(--g-bg)]"
             >
               <YanOrb size={48} />
             </button>
@@ -1763,27 +1763,27 @@ function HallHome({
 }
 
 /** Header of a Hall section: back to the Hall, the section's illustration, title and context. */
-function SectionHead({ title, sub, art: Art, onBack }: { title: string; sub: string; art: (p: { size?: number }) => ReactNode; onBack: () => void }) {
+function SectionHead({ title, sub, art: Art, onBack }: { title: string; sub: string; art: LucideIcon; onBack: () => void }) {
   const tr = useTr();
   return (
     <div className="px-5 pt-[max(14px,env(safe-area-inset-top))]">
       <button onClick={onBack} aria-label={tr("Hall")} className="press flex h-10 items-center gap-1 rounded-full bg-g-fill pr-4 pl-2 text-[14px] font-semibold">
         <ChevronLeft size={20} strokeWidth={2.2} /> {tr("Hall")}
       </button>
-      <div className="mt-5 flex items-center gap-4 rounded-[28px] bg-g-tint-blue p-5 pr-4">
-        <span className="min-w-0 flex-1 pl-1">
+      <div className="relative mt-5 flex h-[112px] items-center overflow-hidden rounded-[28px] bg-g-tint-blue p-5">
+        <Art aria-hidden size={150} strokeWidth={1.3} className="pointer-events-none absolute -top-5 -right-8 text-g-blue opacity-30" />
+        <span className="relative min-w-0 flex-1 pl-1">
           <span className="block text-[30px] leading-tight font-bold tracking-[-0.03em]">{title}</span>
           <span className="mt-0.5 block text-[14px] text-g-muted">{sub}</span>
         </span>
-        <Art size={92} />
       </div>
     </div>
   );
 }
 
-type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: (p: { size?: number }) => ReactNode };
+type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: LucideIcon };
 
-/** One Hall section as a big illustrated button. */
+/** One Hall section as a big button; its line icon is drawn large and cropped by the card corner, as in the Cabinet. */
 function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSeg) => void }) {
   return (
     <button
@@ -1791,19 +1791,17 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
         haptic("light");
         onOpen(s.id);
       }}
-      className={`press relative flex overflow-hidden rounded-[28px] bg-g-tint-blue text-left ${big ? "col-span-2 h-[150px] items-center gap-4 p-5" : "h-[188px] flex-col justify-between p-4"}`}
+      className={`press relative flex overflow-hidden rounded-[28px] bg-g-tint-blue text-left ${big ? "col-span-2 h-[150px] items-end p-5" : "h-[188px] flex-col justify-end p-4"}`}
     >
-      <span className={big ? "min-w-0 flex-1" : "contents"}>
-        <span className={big ? "block" : "order-2 block"}>
+      <s.art aria-hidden size={big ? 190 : 150} strokeWidth={1.3} className={`pointer-events-none absolute text-g-blue opacity-30 ${big ? "-top-6 -right-9" : "-top-7 -right-9"}`} />
+      <span className="relative min-w-0">
+        <span className="block">
           <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
           <span className="live mt-0.5 block text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
           <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
         </span>
       </span>
-      <span className={big ? "shrink-0" : "order-1 -mt-1 -mr-1 self-end"}>
-        <s.art size={big ? 104 : 84} />
-      </span>
-      <ChevronRight size={18} className={`absolute text-g-faint ${big ? "top-5 right-5" : "bottom-4 right-4"}`} />
+      <ChevronRight size={18} className="absolute right-4 bottom-4 text-g-faint" />
     </button>
   
   );

@@ -3,35 +3,49 @@
 import { useEffect, useRef } from "react";
 
 /*
- * The yanyin header sky: a light, airy azure sky that melts into the page
- * through a soft band of drifting mist (reference: a wallet onboarding screen).
+ * The yanyin header sky: a clean azure that deepens to royal blue at the top
+ * and thins to a pale horizon before it dissolves into the page.
  *
- * What is drawn: a saturated azure at the top (deeper blue on the left, cyan on
- * the right), slow clouds of light and deeper blue that drift across it, and a
- * misty edge of page-coloured clouds where the sky dissolves. Everything is soft
- * gradients on a small canvas the browser stretches over the header, so it is
- * smooth and cheap; the motion is slow but clearly alive. ~20 fps, pauses off
- * screen and in background tabs, a single still frame for reduced motion.
+ * Quality comes from three things. The base is one long vertical gradient with
+ * many stops, so there is no visible band. Colour moves through it as three
+ * very large, very soft glows (deep blue, cyan, a pale bloom) that drift
+ * slowly, never as distinct blobs. And the sky ends by an eased mask in CSS,
+ * so the page shows through evenly in light and dark instead of painted fog.
+ * A fine static grain on top hides 8-bit banding on phone screens.
+ *
+ * Drawn on a small canvas the browser stretches (the stretch is the blur),
+ * ~30 fps, paused off screen and in background tabs, one still frame for
+ * reduced motion.
  */
 
 type Rgba = [number, number, number, number];
-type Scheme = { top: [string, string]; mid: string; deep: Rgba; cyan: Rgba; light: Rgba; mist: Rgba };
+type Scheme = { stops: [number, string][]; deep: Rgba; cyan: Rgba; bloom: Rgba };
 
 const LIGHT: Scheme = {
-  top: ["#2f6dff", "#2fb4ff"],
-  mid: "#6cbcff",
-  deep: [32, 92, 245, 0.55],
-  cyan: [80, 210, 255, 0.5],
-  light: [205, 235, 255, 0.3],
-  mist: [255, 255, 255, 0.85],
+  stops: [
+    [0, "#1f4fe8"],
+    [0.22, "#2a63f6"],
+    [0.45, "#3a82ff"],
+    [0.66, "#58a6ff"],
+    [0.84, "#86c6ff"],
+    [1, "#b4dcff"],
+  ],
+  deep: [24, 60, 215, 0.6],
+  cyan: [70, 200, 255, 0.42],
+  bloom: [225, 242, 255, 0.34],
 };
 const DARK: Scheme = {
-  top: ["#1f4fe6", "#1c86e6"],
-  mid: "#2a5fb8",
-  deep: [18, 50, 190, 0.6],
-  cyan: [40, 150, 230, 0.45],
-  light: [120, 175, 255, 0.3],
-  mist: [12, 13, 16, 0.9],
+  stops: [
+    [0, "#1437c4"],
+    [0.25, "#1b4ad6"],
+    [0.5, "#2060d8"],
+    [0.72, "#2468c4"],
+    [0.9, "#235a9e"],
+    [1, "#1f4a7e"],
+  ],
+  deep: [10, 28, 150, 0.6],
+  cyan: [40, 150, 235, 0.36],
+  bloom: [130, 185, 255, 0.22],
 };
 
 export function NorthSky() {
@@ -42,8 +56,8 @@ export function NorthSky() {
     const canvas = cv.current;
     const ctx = canvas?.getContext("2d");
     if (!el || !canvas || !ctx) return;
-    const W = 96;
-    const H = 120;
+    const W = 144;
+    const H = 180;
     canvas.width = W;
     canvas.height = H;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -52,14 +66,18 @@ export function NorthSky() {
     let last = 0;
     const t0 = performance.now();
 
-    const cloud = (x: number, y: number, rx: number, ry: number, [r, g, b, a]: Rgba) => {
+    // A glow with a long, eased falloff: no edge the eye can find.
+    const glow = (x: number, y: number, rx: number, ry: number, [r, g, b, a]: Rgba) => {
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(1, ry / rx);
       const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
-      gr.addColorStop(0, `rgba(${r},${g},${b},${a})`);
-      gr.addColorStop(0.5, `rgba(${r},${g},${b},${a * 0.5})`);
-      gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      const c = (k: number) => `rgba(${r},${g},${b},${(a * k).toFixed(3)})`;
+      gr.addColorStop(0, c(1));
+      gr.addColorStop(0.25, c(0.82));
+      gr.addColorStop(0.5, c(0.5));
+      gr.addColorStop(0.75, c(0.18));
+      gr.addColorStop(1, c(0));
       ctx.fillStyle = gr;
       ctx.fillRect(-rx, -rx, rx * 2, rx * 2);
       ctx.restore();
@@ -68,42 +86,19 @@ export function NorthSky() {
     const draw = (now: number) => {
       const s = document.documentElement.dataset.scheme === "dark" ? DARK : LIGHT;
       const t = (now - t0) / 1000;
-      // Azure: deep blue on the left, cyan on the right, lighter lower down.
-      const h = ctx.createLinearGradient(0, 0, W, H * 0.25);
-      h.addColorStop(0, s.top[0]);
-      h.addColorStop(1, s.top[1]);
-      ctx.fillStyle = h;
+      const base = ctx.createLinearGradient(0, 0, 0, H);
+      for (const [at, colour] of s.stops) base.addColorStop(at, colour);
+      ctx.fillStyle = base;
       ctx.fillRect(0, 0, W, H);
-      const v = ctx.createLinearGradient(0, 0, 0, H);
-      v.addColorStop(0, "rgba(0,0,0,0)");
-      v.addColorStop(0.55, s.mid);
-      v.addColorStop(1, s.mid);
-      ctx.globalAlpha = 0.55;
-      ctx.fillStyle = v;
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 1;
-      // Clouds of colour drifting slowly across the sky.
-      cloud(W * (0.15 + 0.14 * Math.sin(t * 0.23)), H * (0.12 + 0.05 * Math.cos(t * 0.19)), W * 0.55, H * 0.28, s.deep);
-      cloud(W * (0.85 + 0.12 * Math.cos(t * 0.21)), H * (0.18 + 0.06 * Math.sin(t * 0.27)), W * 0.5, H * 0.26, s.cyan);
-      cloud(W * (0.5 + 0.25 * Math.sin(t * 0.17 + 1)), H * (0.4 + 0.05 * Math.sin(t * 0.31)), W * 0.45, H * 0.16, s.light);
-      // The misty edge: page-coloured clouds rolling along where the sky dissolves.
-      for (let i = 0; i < 6; i++) {
-        const sp = 0.12 + i * 0.035;
-        const x = ((i / 6 + t * sp * 0.08) % 1.4) * W * 1.1 - W * 0.2;
-        const y = H * (0.78 + 0.04 * Math.sin(t * 0.35 + i * 1.7) + (i % 2) * 0.04);
-        cloud(x, y, W * (0.28 + 0.06 * Math.sin(i * 2.3)), H * (0.12 + 0.03 * (i % 3)), s.mist);
-      }
-      const fog = ctx.createLinearGradient(0, H * 0.74, 0, H);
-      fog.addColorStop(0, `rgba(${s.mist[0]},${s.mist[1]},${s.mist[2]},0)`);
-      fog.addColorStop(0.45, `rgba(${s.mist[0]},${s.mist[1]},${s.mist[2]},0.85)`);
-      fog.addColorStop(1, `rgba(${s.mist[0]},${s.mist[1]},${s.mist[2]},1)`);
-      ctx.fillStyle = fog;
-      ctx.fillRect(0, H * 0.74, W, H * 0.26);
+      // Deep blue pools top-left, cyan lifts the right, a pale bloom wanders between them.
+      glow(W * (0.08 + 0.1 * Math.sin(t * 0.11)), H * (0.06 + 0.04 * Math.cos(t * 0.09)), W * 0.95, H * 0.5, s.deep);
+      glow(W * (0.95 + 0.1 * Math.cos(t * 0.1)), H * (0.2 + 0.05 * Math.sin(t * 0.13)), W * 0.85, H * 0.46, s.cyan);
+      glow(W * (0.5 + 0.3 * Math.sin(t * 0.08 + 1)), H * (0.5 + 0.06 * Math.sin(t * 0.12)), W * 0.8, H * 0.3, s.bloom);
     };
 
     const loop = (now: number) => {
       raf = 0;
-      if (now - last > 50) {
+      if (now - last > 32) {
         last = now;
         draw(now);
       }
@@ -133,6 +128,7 @@ export function NorthSky() {
   return (
     <div ref={wrap} className="north-sky" aria-hidden>
       <canvas ref={cv} className="size-full" />
+      <span className="north-grain" />
     </div>
   );
 }
