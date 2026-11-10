@@ -1,11 +1,12 @@
 "use client";
 
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
-import { Sparkles, Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import { Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, Crown, Dices, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
 import { haptic } from "@/lib/haptics";
 import { PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
+import { TipsCarousel } from "./TipsCarousel";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -219,50 +220,18 @@ export function CrewBoard({
       </section>
 
       <div className="mx-auto max-w-[480px] px-5 pb-16">
-        {/* Helper cards, swipeable: the quest of the week, a tip from Yan, the team goal. */}
-        <div className="no-scrollbar -mx-5 mt-5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5">
-          {available[0] && (
-            <div className="relative flex w-[88%] shrink-0 snap-start items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(120deg,#eaf0ff_0%,#f3efff_100%)] p-4 pr-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-semibold tracking-[0.06em] text-g-blue uppercase">Quest of the week</p>
-                <p className="mt-1 text-[16px] leading-snug font-semibold">{available[0].title}</p>
-                <p className="mt-0.5 text-[13px] leading-snug text-g-muted">{available[0].description}</p>
-                <button
-                  onClick={() => {
-                    haptic("light");
-                    take(available[0]!.id);
-                  }}
-                  className="press mt-3 h-8 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
-                >
-                  Take · +{available[0].reward.xp} XP
-                </button>
-              </div>
-              <span className="blue-grad grid size-14 shrink-0 rotate-6 place-items-center rounded-[18px]">
-                <Trophy size={26} strokeWidth={1.8} />
-              </span>
-            </div>
-          )}
-          <div className="flex w-[88%] shrink-0 snap-start items-center gap-4 rounded-[24px] bg-[linear-gradient(120deg,#e9f8ef_0%,#eef6ff_100%)] p-4 pr-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold tracking-[0.06em] text-g-green uppercase">Yan tip</p>
-              <p className="mt-1 text-[16px] leading-snug font-semibold">Offer tarragon lemonade with plov</p>
-              <p className="mt-0.5 text-[13px] leading-snug text-g-muted">Guests who take plov add a drink 2× more often when you suggest one.</p>
-            </div>
-            <span className="grid size-14 shrink-0 -rotate-6 place-items-center rounded-[18px] bg-white text-g-green">
-              <Sparkles size={24} strokeWidth={1.8} />
-            </span>
-          </div>
-          <div className="flex w-[88%] shrink-0 snap-start items-center gap-4 rounded-[24px] bg-[linear-gradient(120deg,#fff4ea_0%,#f3efff_100%)] p-4 pr-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold tracking-[0.06em] text-g-orange uppercase">Team goal</p>
-              <p className="mt-1 text-[16px] leading-snug font-semibold">{boss}% of this week’s goal</p>
-              <p className="mt-0.5 text-[13px] leading-snug text-g-muted">{data.boss.endsIn} · reward {data.boss.reward}</p>
-            </div>
-            <span className="grid size-14 shrink-0 rotate-6 place-items-center rounded-[18px] bg-white text-g-orange">
-              <Users size={24} strokeWidth={1.8} />
-            </span>
-          </div>
-        </div>
+        {/* Yan's tips for the shift: quest of the week, sales hints, the team goal. */}
+        <TipsCarousel
+          tips={[
+            ...(available[0]
+              ? [{ id: "quest", kicker: "Quest of the week", title: available[0].title, text: available[0].description, icon: Trophy, tone: "blue" as const, action: { label: `Take · +${available[0].reward.xp} XP`, onClick: () => take(available[0]!.id) } }]
+              : []),
+            { id: "lemonade", kicker: "Sell more", title: "Offer tarragon lemonade with plov", text: "Guests who take plov add a drink 2× more often when you suggest one.", icon: TrendingUp, tone: "green" as const },
+            { id: "goal", kicker: "Team goal", title: `${boss}% of this week’s goal`, text: `${data.boss.endsIn} · reward ${data.boss.reward}`, icon: Users, tone: "orange" as const },
+            { id: "rush", kicker: "Peak at 19:00", title: "Pre-set tables 4 and 9 now", text: "Six bookings land between 19:00 and 19:30. Set cutlery and water before the rush.", icon: Clock, tone: "ink" as const },
+            { id: "dessert", kicker: "Easy XP", title: "Suggest dessert with tea", text: "Each dessert counts toward Sweet finish. Medovik is today’s favourite.", icon: CakeSlice, tone: "blue" as const },
+          ]}
+        />
 
         {/* Streak */}
         <Reveal as="section" delay={210} className="card mt-3 rounded-[28px] p-5">
