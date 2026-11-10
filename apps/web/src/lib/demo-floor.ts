@@ -41,6 +41,7 @@ export type Booking = {
   time: string;
   table?: number;
   note?: string;
+  /** `waiting` is the live queue: guests on site now with no fitting table free. */
   status: "confirmed" | "seated" | "waiting" | "cancelled";
   /** When the booking was cancelled: the time and the reason. */
   cancelled?: { at: string; reason?: string };
@@ -102,7 +103,9 @@ export function demoFloor(menu: Menu): FloorData {
   const bookings: Booking[] = [
     { id: "b1", name: "Nguyen Van An", phone: "+84 905 123 456", guests: 4, day: 0, time: "13:30", table: 3, status: "confirmed" },
     { id: "b2", name: "Alex Petrov", phone: "+7 916 555 12 34", guests: 3, day: 0, time: "19:00", table: 12, note: "Birthday, needs a cake candle", status: "confirmed" },
-    { id: "b3", name: "Kim Ji-woo", phone: "+82 10 2345 6789", guests: 2, day: 0, time: "20:30", status: "waiting" },
+    // The live queue: on site now, no fitting table free; `time` is when they joined.
+    { id: "b3", name: "Kim Ji-woo", phone: "+82 10 2345 6789", guests: 2, day: 0, time: "12:31", status: "waiting" },
+    { id: "w1", name: "Ivan", phone: "", guests: 9, day: 0, time: "12:38", status: "waiting" },
     { id: "b4", name: "Sarah Miller", phone: "+1 415 555 0182", guests: 6, day: 1, time: "18:30", table: 8, note: "Halal only", status: "confirmed" },
     { id: "b5", name: "Dmitry", phone: "+84 935 777 001", guests: 2, day: 1, time: "21:00", status: "confirmed" },
     { id: "b6", name: "Tran Thi Mai", phone: "+84 912 345 678", guests: 5, day: 0, time: "17:00", table: 8, status: "confirmed" },

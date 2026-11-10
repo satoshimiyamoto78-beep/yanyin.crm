@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, History, ListOrdered, UserRound, Armchair, Ban, CalendarCheck, CalendarDays, CalendarPlus, Check, Hourglass, Pencil, Phone, StickyNote, Users } from "lucide-react";
+import { ChevronRight, History, ListOrdered, LogOut, Plus, UserRound, Armchair, Ban, CalendarDays, CalendarPlus, Check, Pencil, Phone, StickyNote, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
@@ -24,7 +24,7 @@ const POPULAR = ["12:00", "12:30", "13:00", "18:30", "19:00", "19:30", "20:00"];
 
 const STATE: Record<Booking["status"], { label: string; chip: string }> = {
   confirmed: { label: "Confirmed", chip: "chip-blue" },
-  waiting: { label: "Waiting list", chip: "chip-orange" },
+  waiting: { label: "In the queue", chip: "chip-orange" },
   seated: { label: "Seated", chip: "chip-green" },
   cancelled: { label: "Cancelled", chip: "chip-red" },
 };
@@ -35,6 +35,9 @@ const mins = (hhmm: string) => {
 };
 /** "in 45 min", "in 2 h", "now", "15 min late" — relative to the demo clock (12:45). */
 const NOW = mins("12:45");
+const hhmm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.round(m % 60)).padStart(2, "0")}`;
+/** Minutes a queued guest has waited, by the demo clock. */
+const waited = (time: string) => Math.max(0, NOW - mins(time));
 const relative = (time: string) => {
   const d = mins(time) - NOW;
   if (d < -5) return `${-d} min late`;
@@ -50,18 +53,23 @@ export function BookingsView({
   onEdit,
   onUpdate,
   onCancel,
+  onQueue,
 }: {
   bookings: Booking[];
   tables: FloorTable[];
   onNew: () => void;
   onSeat: (b: Booking) => void;
+  /** Adds a walk-in to the queue, or moves an arrived booking there. */
+  onQueue: (b: Booking) => void;
   onEdit: (b: Booking) => void;
   onUpdate: (b: Booking) => void;
   onCancel: (b: Booking) => void;
 }) {
   const [day, setDay] = useState(0);
   const [menu, setMenu] = useState<string | null>(null);
-  const list = bookings.filter((b) => b.day === day && b.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time));
+  const list = bookings.filter((b) => b.day === day && b.status !== "cancelled" && b.status !== "waiting").sort((a, b) => a.time.localeCompare(b.time));
+  // The queue lives only in the present: guests on site with no fitting table free.
+  const queue = bookings.filter((b) => b.day === 0 && b.status === "waiting").sort((a, b) => a.time.localeCompare(b.time));
   const [history, setHistory] = useState(false);
   const guests = list.reduce((s, b) => s + b.guests, 0);
   const upcoming = list.filter((b) => b.status !== "seated");
@@ -80,7 +88,16 @@ export function BookingsView({
           tone="green"
         />
         <IconStat title={tr("Guests")} fit art={<GuestsArt size={84} />} value={String(guests)} sub={tr("expected today")} tone="blue" />
-        <WaitingList className="col-span-2" list={list.filter((b) => b.status === "waiting")} tables={tables} today={day === 0} onSeat={(b, no) => onSeat({ ...b, table: no })} />
+        {day === 0 && (
+          <WaitingList
+            className="col-span-2"
+            list={queue}
+            tables={tables}
+            onSeat={(b, no) => onSeat({ ...b, table: no })}
+            onAdd={onQueue}
+            onLeave={(b) => onCancel({ ...b, cancelled: { at: hhmm(NOW), reason: "Left the queue" } })}
+          />
+        )}
       </Reveal>
       <button
         onClick={() => {
@@ -112,7 +129,7 @@ export function BookingsView({
       </Reveal>
       {(() => {
         const m = list.find((b) => b.id === menu);
-        return m ? <BookingMenu b={m} today={day === 0} onClose={() => setMenu(null)} onSeat={() => { setMenu(null); onSeat(m); }} onEdit={() => { setMenu(null); onEdit(m); }} onUpdate={(nb) => { setMenu(null); onUpdate(nb); }} onCancel={() => { setMenu(null); onCancel(m); }} /> : null;
+        return m ? <BookingMenu b={m} today={day === 0} tables={tables} onClose={() => setMenu(null)} onSeat={(no) => { setMenu(null); onSeat({ ...m, table: no ?? m.table }); }} onQueue={() => { setMenu(null); onQueue({ ...m, status: "waiting", time: hhmm(NOW), table: undefined }); }} onEdit={() => { setMenu(null); onEdit(m); }} onUpdate={(nb) => { setMenu(null); onUpdate(nb); }} onCancel={() => { setMenu(null); onCancel(m); }} /> : null;
       })()}
       {history && <BookingHistory bookings={bookings} onClose={() => setHistory(false)} />}
 
@@ -155,7 +172,7 @@ export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: F
           disabled={!ok}
           onClick={() => {
             haptic("success");
-            onSave({ id: initial?.id ?? `b${Date.now()}`, name: name.trim(), phone: phone.trim(), guests, day, time, table, note: note.trim() || undefined, status: initial?.status ?? (table || fits.length ? "confirmed" : "waiting") });
+            onSave({ id: initial?.id ?? `b${Date.now()}`, name: name.trim(), phone: phone.trim(), guests, day, time, table, note: note.trim() || undefined, status: initial?.status ?? "confirmed" });
           }}
           className="blue-grad press flex h-14 w-full items-center justify-between rounded-full px-6 text-[16px] font-semibold disabled:opacity-40"
         >
@@ -254,8 +271,8 @@ export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: F
               ))}
             </div>
           ) : (
-            <p className="mt-3 flex items-center gap-2 rounded-[16px] bg-g-tint-orange px-3 py-2.5 text-[13px] text-g-ink-2">
-              <Hourglass size={15} className="shrink-0 text-g-orange" /> {tr("No free table for this party now: the booking goes to the waiting list.")}
+            <p className="mt-3 flex items-center gap-2 rounded-[16px] bg-white px-3 py-2.5 text-[13px] text-g-ink-2">
+              <Armchair size={15} className="shrink-0 text-g-blue" /> {tr("No free table for this party right now. Save the booking and pick a table when the guests arrive.")}
             </p>
           )}
         </section>
@@ -352,10 +369,17 @@ function BookingCard({ b, today, onSeat, onHold }: { b: Booking; today: boolean;
   );
 }
 
-/** Hold a booking: its details on top, then call, edit, confirm or move to the waiting list, cancel. */
-function BookingMenu({ b, today, onClose, onSeat, onEdit, onUpdate, onCancel }: { b: Booking; today: boolean; onClose: () => void; onSeat: () => void; onEdit: () => void; onUpdate: (b: Booking) => void; onCancel: () => void }) {
+/**
+ * Hold a booking: its details on top, then seat, call, edit, cancel. Seating
+ * goes straight to the booked table when it is ready; otherwise the free
+ * tables that fit show up, and with none free the guests join the queue.
+ */
+function BookingMenu({ b, today, tables, onClose, onSeat, onQueue, onEdit, onCancel }: { b: Booking; today: boolean; tables: FloorTable[]; onClose: () => void; onSeat: (table?: number) => void; onQueue: () => void; onEdit: () => void; onUpdate: (b: Booking) => void; onCancel: () => void }) {
   const tr = useTr();
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [seating, setSeating] = useState(false);
+  const own = tables.find((x) => x.no === b.table);
+  const ownReady = !!own && (own.status === "free" || own.status === "reserved");
   return (
     <PeekCard label={b.name} onClose={onClose}>
       <PeekHeader
@@ -373,17 +397,16 @@ function BookingMenu({ b, today, onClose, onSeat, onEdit, onUpdate, onCancel }: 
           <StickyNote size={14} className="shrink-0 text-g-orange" /> {b.note}
         </p>
       )}
-      {!confirmCancel ? (
+      {seating ? (
+        <SeatPicker guests={b.guests} tables={tables} onPick={(no) => onSeat(no)} onQueue={onQueue} />
+      ) : !confirmCancel ? (
         <PeekActions
           items={[
-            ...(today && b.status !== "seated" ? [{ icon: Check, label: tr("Seat now"), onClick: onSeat, tone: "good" as const }] : []),
+            ...(today && b.status !== "seated"
+              ? [{ icon: Check, label: ownReady ? `${tr("Seat at table")} ${b.table}` : tr("Guests arrived · seat"), onClick: () => (ownReady ? onSeat() : setSeating(true)), tone: "good" as const }]
+              : []),
             { icon: Phone, label: tr("Call"), href: `tel:${b.phone.replace(/\s/g, "")}` },
             { icon: Pencil, label: tr("Edit booking"), onClick: onEdit },
-            ...(b.status === "waiting"
-              ? [{ icon: CalendarCheck, label: tr("Confirm booking"), onClick: () => onUpdate({ ...b, status: "confirmed" }) }]
-              : b.status === "confirmed"
-                ? [{ icon: Hourglass, label: tr("Move to waiting list"), onClick: () => onUpdate({ ...b, status: "waiting", table: undefined }) }]
-                : []),
             { icon: Ban, label: tr("Cancel booking"), onClick: () => setConfirmCancel(true), tone: "danger" as const },
           ]}
         />
@@ -436,7 +459,6 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
   const [center, setCenter] = useState(firstFocus ? mins(firstFocus.time) : start);
   const lastMark = useRef(-1);
   const near = list.reduce<Booking | undefined>((best, b) => (Math.abs(mins(b.time) - center) <= step / 2 && (!best || Math.abs(mins(b.time) - center) < Math.abs(mins(best.time) - center)) ? b : best), undefined);
-  const hhmm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.round(m % 60)).padStart(2, "0")}`;
   const x = (m: number) => (m - start) * PX + vw / 2; // position inside the scrolled strip
 
   useEffect(() => {
@@ -537,9 +559,8 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
             {list.map((b) => {
               const on = near?.id === b.id;
               const seated = b.status === "seated";
-              const waiting = b.status === "waiting";
-              const look = seated ? "bg-g-green/15 text-g-green" : waiting ? "bg-g-orange text-white" : on ? "blue-grad" : "bg-[#fff] text-g-blue";
-              const tail = seated ? "border-t-g-green/15" : waiting ? "border-t-g-orange" : on ? "border-t-[#2a45d0]" : "border-t-[#fff]";
+              const look = seated ? "bg-g-green/15 text-g-green" : on ? "blue-grad" : "bg-[#fff] text-g-blue";
+              const tail = seated ? "border-t-g-green/15" : on ? "border-t-[#2a45d0]" : "border-t-[#fff]";
               return (
                 <button
                   key={b.id}
@@ -627,92 +648,185 @@ function BookingHistory({ bookings, onClose }: { bookings: Booking[]; onClose: (
 }
 
 /**
- * Guests waiting for a table, as name pills. Hold a pill for the free tables
- * that fit the party; tap one to seat them there. Nothing else on the card.
+ * The live queue: guests already in the venue with no fitting table free
+ * (walk-ins, or a booking that came while its table is still busy). Not a
+ * booking list: no times ahead, only who waits and for how long. A pill turns
+ * green as soon as a free table fits its party; tap or hold it to seat them.
+ * When a table is paid and freed, the app tells the waiter whom it fits.
  */
-function WaitingList({ list, tables, today, onSeat, className = "" }: { list: Booking[]; tables: FloorTable[]; today: boolean; onSeat: (b: Booking, table: number) => void; className?: string }) {
+function WaitingList({ list, tables, onSeat, onAdd, onLeave, className = "" }: { list: Booking[]; tables: FloorTable[]; onSeat: (b: Booking, table: number) => void; onAdd: (b: Booking) => void; onLeave: (b: Booking) => void; className?: string }) {
   const tr = useTr();
   const [open, setOpen] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const cur = list.find((b) => b.id === open);
+  const fitsFor = (n: number) => tables.some((x) => x.status === "free" && x.seats >= n);
+  const longest = list.length ? Math.max(...list.map((b) => waited(b.time))) : 0;
   return (
     <WidgetCard
       className={className}
-      title={tr("Waiting list")}
+      title={tr("Queue now")}
       icon={<ListOrdered size={13} strokeWidth={2.4} />}
-      aside={list.length ? <span className="text-[12px] text-g-muted">{tr("Hold a name to seat")}</span> : undefined}
+      aside={list.length ? <span className="text-[12px] text-g-muted tabular-nums">{`${tr("longest")} ${longest} ${tr("min")}`}</span> : undefined}
     >
-      {list.length ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {list.map((b) => (
-            <WaitingPill key={b.id} b={b} onHold={() => setOpen(b.id)} />
-          ))}
-        </div>
-      ) : (
-        <p className="mt-3 flex items-center gap-2 text-[14px] text-g-muted">
-          <span className="size-2 rounded-full bg-g-green" /> {tr("No one is waiting for a table")}
-        </p>
-      )}
+      <p className="mt-1.5 text-[13px] leading-snug text-g-muted">{tr("Guests on site without a free table. A fitting table frees up: the name turns green.")}</p>
+      <div className="mt-3.5 flex flex-wrap gap-2">
+        {list.map((b) => (
+          <WaitingPill key={b.id} b={b} ready={fitsFor(b.guests)} onOpen={() => setOpen(b.id)} />
+        ))}
+        <button
+          onClick={() => {
+            haptic("light");
+            setAdding(true);
+          }}
+          className="press flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-g-faint px-3.5 text-[14px] font-semibold text-g-blue"
+        >
+          <Plus size={16} strokeWidth={2.4} /> {tr("Add to queue")}
+        </button>
+      </div>
       {cur && (
         <PeekCard label={cur.name} onClose={() => setOpen(null)}>
           <PeekHeader
-            kicker={`${cur.time}${today ? ` · ${relative(cur.time)}` : ""}`}
+            kicker={`${tr("In the queue")} · ${waited(cur.time)} ${tr("min")}`}
             title={cur.name}
-            facts={[
-              { icon: Users, text: `${cur.guests} ${tr("guests")}` },
-              { icon: Phone, text: prettyPhone(cur.phone) },
+            facts={[{ icon: Users, text: `${cur.guests} ${tr("guests")}` }, ...(cur.phone ? [{ icon: Phone, text: prettyPhone(cur.phone) }] : [])]}
+          />
+          <SeatPicker
+            guests={cur.guests}
+            tables={tables}
+            onPick={(no) => {
+              setOpen(null);
+              onSeat(cur, no);
+            }}
+          />
+          <PeekActions
+            items={[
+              ...(cur.phone ? [{ icon: Phone, label: tr("Call the guest"), href: `tel:${cur.phone.replace(/\s/g, "")}` }] : []),
+              {
+                icon: LogOut,
+                label: tr("Left without a table"),
+                tone: "danger" as const,
+                onClick: () => {
+                  setOpen(null);
+                  onLeave(cur);
+                },
+              },
             ]}
           />
-          {(() => {
-            const fits = tables.filter((x) => x.status === "free" && x.seats >= cur.guests).sort((p, q) => p.seats - q.seats);
-            return fits.length ? (
-              <>
-                <p className="mt-4 text-[13px] font-semibold text-g-muted">{tr("Seat at a free table")}</p>
-                <div className="mt-2 grid grid-cols-4 gap-2">
-                  {fits.map((x, i) => (
-                    <button
-                      key={x.no}
-                      disabled={!today}
-                      onClick={() => {
-                        haptic("success");
-                        setOpen(null);
-                        onSeat(cur, x.no);
-                      }}
-                      className={`press flex h-16 flex-col items-center justify-center rounded-[18px] disabled:opacity-40 ${i === 0 ? "blue-grad" : "bg-g-fill"}`}
-                    >
-                      <span className="text-[20px] leading-none font-bold tabular-nums">{x.no}</span>
-                      <span className={`mt-1 flex items-center gap-0.5 text-[11px] ${i === 0 ? "text-white/80" : "text-g-muted"}`}>
-                        <Users size={10} strokeWidth={2.4} /> {x.seats}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-2 text-[12px] text-g-muted">{tr("The best fit is highlighted")}</p>
-              </>
-            ) : (
-              <PeekActions items={[{ icon: Phone, label: tr("No free table yet · call the guest"), href: `tel:${cur.phone.replace(/\s/g, "")}` }]} />
-            );
-          })()}
         </PeekCard>
+      )}
+      {adding && (
+        <QueueAdd
+          onClose={() => setAdding(false)}
+          onAdd={(name, guests, phone) => {
+            setAdding(false);
+            onAdd({ id: `w${Date.now()}`, name, phone, guests, day: 0, time: hhmm(NOW), status: "waiting" });
+          }}
+        />
       )}
     </WidgetCard>
   );
 }
 
-function WaitingPill({ b, onHold }: { b: Booking; onHold: () => void }) {
-  const press = useLongPress(onHold);
-  const initials = b.name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+function WaitingPill({ b, ready, onOpen }: { b: Booking; ready: boolean; onOpen: () => void }) {
+  const press = useLongPress(onOpen);
+  const tr = useTr();
   return (
-    <button {...press} style={{ WebkitTouchCallout: "none" }} className="flex h-11 items-center gap-2 rounded-full bg-white py-1 pr-3.5 pl-1 select-none">
-      <span className="chip-orange grid size-9 place-items-center rounded-full text-[12px] font-bold">{initials}</span>
-      <span className="text-[14px] font-semibold">{b.name.split(" ")[0]}</span>
-      <span className="flex items-center gap-0.5 text-[12px] text-g-muted tabular-nums">
-        <Users size={12} strokeWidth={2.2} /> {b.guests} · {b.time}
+    <button
+      {...press}
+      onClick={() => {
+        haptic("light");
+        onOpen();
+      }}
+      style={{ WebkitTouchCallout: "none" }}
+      className={`press flex h-11 items-center gap-2 rounded-full py-1 pr-3.5 pl-1 select-none ${ready ? "bg-g-tint-green" : "bg-white"}`}
+    >
+      <span className={`grid h-9 min-w-9 place-items-center rounded-full px-2 text-[13px] font-bold tabular-nums ${ready ? "bg-g-green text-white" : "chip-orange"}`}>
+        {b.guests}
       </span>
+      <span className="text-[14px] font-semibold">{b.name.split(" ")[0]}</span>
+      <span className={`text-[12px] tabular-nums ${ready ? "font-semibold text-g-green" : "text-g-muted"}`}>{ready ? tr("table free") : `${waited(b.time)} ${tr("min")}`}</span>
     </button>
+  );
+}
+
+/** Free tables that fit the party, smallest first; the best fit is highlighted. */
+function SeatPicker({ guests, tables, onPick, onQueue }: { guests: number; tables: FloorTable[]; onPick: (table: number) => void; onQueue?: () => void }) {
+  const tr = useTr();
+  const fits = tables.filter((x) => x.status === "free" && x.seats >= guests).sort((p, q) => p.seats - q.seats);
+  if (!fits.length)
+    return (
+      <div className="mt-4">
+        <p className="rounded-[16px] bg-g-fill px-3.5 py-3 text-[13px] leading-snug text-g-ink-2">
+          {tr("No free table for")} {guests} {tr("guests")}. {onQueue ? tr("Put them in the queue: you will get a message when a table frees up.") : tr("You will get a message when a table frees up.")}
+        </p>
+        {onQueue && (
+          <button
+            onClick={() => {
+              haptic("success");
+              onQueue();
+            }}
+            className="blue-grad press mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold"
+          >
+            <ListOrdered size={17} strokeWidth={2.2} /> {tr("Put in the queue")}
+          </button>
+        )}
+      </div>
+    );
+  return (
+    <>
+      <p className="mt-4 text-[13px] font-semibold text-g-muted">{tr("Seat at a free table")}</p>
+      <div className="mt-2 grid grid-cols-4 gap-2">
+        {fits.map((x, i) => (
+          <button
+            key={x.no}
+            onClick={() => {
+              haptic("success");
+              onPick(x.no);
+            }}
+            className={`press flex h-16 flex-col items-center justify-center rounded-[18px] ${i === 0 ? "blue-grad" : "bg-g-fill"}`}
+          >
+            <span className="text-[20px] leading-none font-bold tabular-nums">{x.no}</span>
+            <span className={`mt-1 flex items-center gap-0.5 text-[11px] ${i === 0 ? "text-white/80" : "text-g-muted"}`}>
+              <Users size={10} strokeWidth={2.4} /> {x.seats}
+            </span>
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-[12px] text-g-muted">{tr("The best fit is highlighted")}</p>
+    </>
+  );
+}
+
+/** Quick add to the queue: a name and the party size; the phone is optional. */
+function QueueAdd({ onClose, onAdd }: { onClose: () => void; onAdd: (name: string, guests: number, phone: string) => void }) {
+  const tr = useTr();
+  const [name, setName] = useState("");
+  const [guests, setGuests] = useState(2);
+  const [phone, setPhone] = useState("");
+  const field = "h-12 w-full rounded-[16px] bg-g-fill px-4 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/30";
+  return (
+    <PeekCard label={tr("Add to queue")} onClose={onClose}>
+      <PeekHeader kicker={tr("Queue now")} title={tr("Add to queue")} />
+      <div className="mt-4 grid gap-2.5">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Guest name")} className={field} />
+        <div className="flex items-center justify-between py-1 pl-1">
+          <span className="flex items-center gap-2 text-[15px] font-semibold">
+            <Users size={16} className="text-g-muted" /> <span className="tabular-nums">{guests}</span> {tr("guests")}
+          </span>
+          <Counter value={guests} min={1} max={20} onChange={setGuests} />
+        </div>
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder={tr("Phone, optional")} className={field} />
+      </div>
+      <button
+        disabled={name.trim().length < 2}
+        onClick={() => {
+          haptic("success");
+          onAdd(name.trim(), guests, phone.trim());
+        }}
+        className="blue-grad press mt-4 h-12 w-full rounded-full text-[15px] font-semibold disabled:opacity-40"
+      >
+        {tr("Add to queue")}
+      </button>
+    </PeekCard>
   );
 }

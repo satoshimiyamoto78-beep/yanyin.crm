@@ -159,7 +159,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     window.scrollTo({ top: 0 });
     loadIfChanged(`tab:${t}`, signatureOf(t)); // only new or changed data blurs and pulls into focus
   };
-  const todays = bookings.filter((b) => b.day === 0 && b.status !== "seated" && b.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time));
+  const todays = bookings.filter((b) => b.day === 0 && b.status === "confirmed").sort((a, b) => a.time.localeCompare(b.time));
   // Fingerprint of what each section shows: same data means no loading animation.
   const signatureOf = (t: Tab) =>
     t === "tables"
@@ -252,12 +252,16 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             onEdit={setEditBooking}
             onUpdate={(b) => {
               setBookings((bs) => bs.map((x) => (x.id === b.id ? b : x)));
-              notify({ title: b.status === "waiting" ? `${b.name.split(" ")[0]} · waiting list` : `Booking confirmed`, text: `${b.time} · ${b.guests} guests` });
+              notify({ title: `Booking confirmed`, text: `${b.time} · ${b.guests} guests` });
+            }}
+            onQueue={(b) => {
+              setBookings((bs) => (bs.some((x) => x.id === b.id) ? bs.map((x) => (x.id === b.id ? b : x)) : [...bs, b]));
+              notify({ title: `${b.name.split(" ")[0]} · in the queue`, text: `${b.guests} guests · you will hear when a table frees up` });
             }}
             onCancel={(b) => {
               setBookings((bs) => bs.map((x) => (x.id === b.id ? { ...x, status: "cancelled", cancelled: { at: now(), reason: "Cancelled by the waiter" } } : x)));
               if (b.day === 0 && b.table) patch(b.table, (x) => (x.status === "reserved" ? { ...x, status: "free", booking: undefined } : x));
-              notify({ title: `Booking cancelled`, text: `${b.name} · ${b.time}`, tone: "orange" });
+              notify(b.status === "waiting" ? { title: `${b.name.split(" ")[0]} left the queue`, text: `${b.guests} guests`, tone: "orange" } : { title: `Booking cancelled`, text: `${b.name} · ${b.time}`, tone: "orange" });
             }}
           />
         )}
@@ -434,6 +438,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             notify({ title: `Table ${table.no} closed`, text: `${METHOD[method].label}${tip ? ` · tip ${money(tip)}` : ""}` });
             setHistory((h) => [{ id: (h[0]?.id ?? 1000) + 1, table: table.no, closedAt: now(), lines: table.lines, subtotal, tip, method, guests: table.guests }, ...h]);
             patch(table.no, (x) => ({ ...x, status: "free", guests: 0, since: undefined, lines: [] }));
+            // A freed table goes first to whoever has waited longest and fits.
+            const next = bookings.filter((b) => b.day === 0 && b.status === "waiting" && b.guests <= table.seats).sort((a, b) => a.time.localeCompare(b.time))[0];
+            if (next) notify({ title: `Table ${table.no} is free · ${next.name.split(" ")[0]} is waiting`, text: `${next.guests} guests in the queue since ${next.time}`, tone: "green" });
           }}
           onDone={() => {
             setPage(null);

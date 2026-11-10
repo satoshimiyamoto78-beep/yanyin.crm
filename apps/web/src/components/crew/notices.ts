@@ -1,10 +1,13 @@
-import { ChefHat, Armchair, Award, Ban, Bell, BellRing, CalendarCheck, Check, CheckCheck, Coffee, CookingPot, CreditCard, DoorOpen, LifeBuoy, LogOut, MapPin, Pencil, Printer, ReceiptText, ScanLine, Send, Trash2, Trophy, UserRound, type LucideIcon } from "lucide-react";
+import { ChefHat, Armchair, Award, Ban, Bell, BellRing, CalendarCheck, Check, CheckCheck, Coffee, CookingPot, CreditCard, DoorOpen, LifeBuoy, ListOrdered, LogOut, MapPin, Pencil, Printer, ReceiptText, ScanLine, Send, Trash2, Trophy, UserRound, type LucideIcon } from "lucide-react";
 
 /**
  * Icon and colour for a waiter notification, read from its title. Each kind of
  * event gets its own icon, so the island says what happened at a glance.
  */
 const NOTICE_RULES: [RegExp, LucideIcon, "blue" | "green" | "orange"][] = [
+  [/is free|свобод|trống/i, Armchair, "green"],
+  [/left the queue|ушли из очереди|rời hàng/i, ListOrdered, "orange"],
+  [/queue|очеред|hàng chờ/i, ListOrdered, "blue"],
   [/cancel|отмен|hủy/i, Ban, "orange"],
   [/remov|удал|xóa/i, Trash2, "orange"],
   [/closed|paid|payment|оплат|закрыт|thanh toán|đã đóng/i, CreditCard, "green"],
