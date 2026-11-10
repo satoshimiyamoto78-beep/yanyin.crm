@@ -391,25 +391,137 @@ export function FlowWidget({
   );
 }
 
-/** A single figure led by a big coloured icon on a matching tinted card: tips in green, checks in blue. */
-export function IconStat({ title, icon, value, sub, tone = "blue", className = "" }: { title: string; icon: ReactNode; value: string; sub: string; tone?: "green" | "blue" | "orange"; className?: string }) {
+/**
+ * A single figure on a tinted card with a big illustration tucked into the top
+ * corner, cropped by the card and a little transparent, so it sets the mood
+ * without competing with the number (like the wheel in the roulette button).
+ */
+export function IconStat({ title, art, value, sub, tone = "blue", className = "" }: { title: string; art: ReactNode; value: string; sub: string; tone?: "green" | "blue" | "orange"; className?: string }) {
   const t = {
-    green: { card: "bg-g-tint-green", disc: "linear-gradient(145deg,#4cd18a,#12a150)", label: "text-g-green" },
-    blue: { card: "bg-g-tint-blue", disc: "linear-gradient(145deg,#6c96ff,#2f6bff 55%,#2530b0)", label: "text-g-blue" },
-    orange: { card: "bg-g-tint-orange", disc: "linear-gradient(145deg,#ffb067,#ef6c1a)", label: "text-g-orange" },
+    green: { card: "bg-g-tint-green", label: "text-g-green" },
+    blue: { card: "bg-g-tint-blue", label: "text-g-blue" },
+    orange: { card: "bg-g-tint-orange", label: "text-g-orange" },
   }[tone];
   return (
-    <section className={`flex flex-col justify-between rounded-[26px] p-4 ${t.card} ${className}`}>
-      <span className="flex items-start justify-between gap-2">
-        <span className={`pt-1 text-[14px] font-semibold ${t.label}`}>{title}</span>
-        <span className="grid size-14 shrink-0 place-items-center rounded-full text-white" style={{ background: t.disc }}>
-          {icon}
-        </span>
+    <section className={`relative isolate flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[26px] p-4 ${t.card} ${className}`}>
+      <span aria-hidden className="pointer-events-none absolute -top-7 -right-9 -z-10 opacity-75">
+        {art}
       </span>
-      <span className="mt-3 block">
+      <span className={`text-[14px] font-semibold ${t.label}`}>{title}</span>
+      <span className="block">
         <span className="live block text-[26px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
         <span className="mt-1 block truncate text-[12px] text-g-muted">{sub}</span>
       </span>
     </section>
+  );
+}
+
+/**
+ * Today against any of the last few days. One point per day (today last), a
+ * smooth line through them; tap a day to compare with it: the chip shows the
+ * change and the colour follows it (up green, down red, within ±2% grey).
+ */
+export function DaysCompareWidget({
+  title,
+  icon,
+  days,
+  format,
+  todayNote,
+  className = "",
+}: {
+  title: string;
+  icon?: ReactNode;
+  /** Oldest first; the last one is today. */
+  days: { short: string; date: string; value: number }[];
+  format: (v: number) => string;
+  todayNote?: string;
+  className?: string;
+}) {
+  const id = useId();
+  const on = useEntered();
+  const n = days.length;
+  const today = days[n - 1]!;
+  const [pick, setPick] = useState(n - 2);
+  const ref = days[pick]!;
+  const change = ref.value ? (today.value - ref.value) / ref.value : 0;
+  const trend = change > 0.02 ? "up" : change < -0.02 ? "down" : "flat";
+  const color = { up: "#12a150", down: "#e5484d", flat: "#8b909a" }[trend];
+  const chip = { up: "chip-green", down: "chip-red", flat: "chip-gray" }[trend];
+  const arrow = { up: "↑", down: "↓", flat: "≈" }[trend];
+  const max = Math.max(...days.map((d) => d.value), 1) * 1.15;
+  const min = Math.min(...days.map((d) => d.value)) * 0.6;
+  // Points sit in the middle of each day's column so the labels line up under them.
+  const X = (i: number) => ((i + 0.5) / n) * 300;
+  const Y = (v: number) => 90 - ((v - min) / (max - min)) * 78;
+  const pts = days.map((d, i) => [X(i), Y(d.value)] as [number, number]);
+  const path = smooth(pts);
+  const choose = (i: number) => {
+    if (i === n - 1 || i === pick) return;
+    haptic("tick");
+    setPick(i);
+  };
+  return (
+    <WidgetCard title={title} icon={icon} className={className}>
+      <p className="live mt-3 text-[44px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{format(today.value)}</p>
+      <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px]">
+        <span key={pick} className={`animate-pop rounded-md px-1.5 py-0.5 font-semibold tabular-nums ${chip}`}>
+          {arrow} {Math.abs(Math.round(change * 100))}%
+        </span>
+        <span className="text-g-muted">
+          {ref.short} {ref.date} · {format(ref.value)}
+        </span>
+      </p>
+      <div className="relative mt-4 h-[96px] select-none">
+        <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
+          <defs>
+            <linearGradient id={`dc${id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor={color} stopOpacity="0.24" />
+              <stop offset="1" stopColor={color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={`${path} L${X(n - 1)},100 L${X(0)},100 Z`} fill={`url(#dc${id})`} style={{ opacity: on ? 1 : 0, transition: "opacity 0.8s ease 0.4s" }} />
+          <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray="1" strokeDashoffset={on ? 0 : 1} style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1), stroke 0.3s" }} />
+        </svg>
+        {/* The day we compare with: a dashed hairline and a ring. */}
+        <span className="pointer-events-none absolute top-0 bottom-0 w-0 border-l-[1.5px] border-dashed border-g-faint transition-[left] duration-300" style={{ left: `${(X(pick) / 300) * 100}%` }} />
+        {days.map((d, i) => (
+          <span
+            key={d.date}
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-300"
+            style={{
+              left: `${(X(i) / 300) * 100}%`,
+              top: `${Y(d.value)}%`,
+              width: i === pick ? 14 : i === n - 1 ? 12 : 7,
+              height: i === pick ? 14 : i === n - 1 ? 12 : 7,
+              background: i === pick ? "var(--g-fill)" : i === n - 1 ? color : "var(--g-faint)",
+              border: i === pick ? `3px solid ${color}` : i === n - 1 ? "2px solid #fff" : "none",
+            }}
+          />
+        ))}
+        <span className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${(X(n - 1) / 300) * 100}%`, top: `${Y(today.value)}%` }}>
+          <span className="absolute inset-0 m-auto size-6 animate-ping rounded-full opacity-30" style={{ background: color }} />
+        </span>
+      </div>
+      {/* The days: tap one to compare today with it. */}
+      <div className="mt-2 grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+        {days.map((d, i) => {
+          const isToday = i === n - 1;
+          const sel = i === pick;
+          return (
+            <button
+              key={d.date}
+              onClick={() => choose(i)}
+              disabled={isToday}
+              aria-pressed={sel}
+              className={`press mx-0.5 flex flex-col items-center rounded-[14px] py-1.5 transition-colors ${sel ? "bg-white" : ""}`}
+            >
+              <span className={`text-[11px] ${sel || isToday ? "font-semibold text-g-ink" : "text-g-muted"}`}>{d.short}</span>
+              <span className={`text-[15px] font-semibold tabular-nums ${sel || isToday ? "text-g-ink" : "text-g-muted"}`}>{d.date}</span>
+            </button>
+          );
+        })}
+      </div>
+      {todayNote && <p className="mt-2 text-[12px] text-g-muted">{todayNote}</p>}
+    </WidgetCard>
   );
 }

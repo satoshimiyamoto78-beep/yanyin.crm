@@ -1,5 +1,9 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "tap a day to compare": "нажмите на день, чтобы сравнить",
+  "Who pays first?": "Кто платит первым?",
+  "Longest at the table first": "Сначала те, кто дольше за столом",
+  "since": "с",
   "Cabinet": "Кабинет",
   "Tips this month": "Чаевые за месяц",
   "Last month": "Прошлый месяц",
@@ -359,6 +363,10 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "tap a day to compare": "chạm vào ngày để so sánh",
+  "Who pays first?": "Ai thanh toán trước?",
+  "Longest at the table first": "Bàn ngồi lâu nhất trước",
+  "since": "từ",
   "Cabinet": "Cá nhân",
   "Tips this month": "Tip tháng này",
   "Last month": "Tháng trước",

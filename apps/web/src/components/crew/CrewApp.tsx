@@ -5,6 +5,9 @@ import {
   Armchair,
   Banknote,
   ChefHat,
+  Hourglass,
+  CookingPot,
+  ClipboardList,
   ChevronLeft,
   ChevronRight,
   BriefcaseBusiness,
@@ -20,7 +23,6 @@ import {
   ReceiptText,
   Search,
   Send,
-  Check,
   ScanLine,
   Users,
   Wallet,
@@ -31,14 +33,14 @@ import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
-import { Island, loadIfChanged, markShown, Reveal, useLongPress, type IslandNotice } from "@/components/guest/motion";
+import { Island, loadIfChanged, markShown, PeekCard, Reveal, useLongPress, type IslandNotice } from "@/components/guest/motion";
 import { Sheet, StepHead } from "@/components/guest/ui";
 import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
-import { BookingsArt, OrdersArt, TablesArt } from "./Illustrations";
+import { BookingsArt, CheckArt, OrdersArt, TablesArt, TipsArt } from "./Illustrations";
 import { CabinetView, pastOrders } from "./Cabinet";
-import { FlowWidget, HeroStat, IconStat, LineWidget, MeterWidget, RingWidget } from "@/components/system/Widgets";
+import { DaysCompareWidget, FlowWidget, IconStat, LineWidget, MeterWidget, RingWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
 import { Scanner } from "./Scanner";
@@ -50,10 +52,15 @@ import { levelFromXp } from "@yanyin/domain";
 type Tab = "me" | "hall" | "tables" | "orders" | "bookings" | "cabinet";
 type HallSeg = "tables" | "orders" | "bookings";
 
-/** Demo running totals (million ₫) by hour; the backend will supply real ones. */
-const DAY_HOURS = ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"];
-const LAST_MONDAY_RUN = [0, 0.6, 2.4, 4.2, 5.1, 5.6, 6.0, 6.6, 8.1, 10.2, 12.0, 13.1, 13.6];
-const TODAY_RUN = [0, 0.7, 2.6, 4.71];
+/** The last five days of takings, today last (earlier days are demo until the backend). */
+const PAST_TAKINGS = [3_900_000, 5_200_000, 4_300_000, 4_200_000];
+function lastDays(today: number) {
+  return [...PAST_TAKINGS, today].map((value, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (4 - i));
+    return { short: d.toLocaleDateString("en", { weekday: "short" }), date: String(d.getDate()), value };
+  });
+}
 
 const STATUS: Record<FloorTable["status"], { label: string; chip: string }> = {
   free: { label: "Free", chip: "chip-gray" },
@@ -1308,7 +1315,8 @@ function OrdersView({
   const [view, setView] = useState<"open" | "closed">("open");
   const open = tables.filter((x) => x.lines.length);
   const dishes = (st: LineState) => open.reduce((n, x) => n + x.lines.filter((l) => l.state === st).reduce((q, l) => q + l.qty, 0), 0);
-  const billTables = open.filter((x) => x.status === "bill");
+  const billTables = open.filter((x) => x.status === "bill").sort((a, b) => (a.since ?? "").localeCompare(b.since ?? ""));
+  const [pickBill, setPickBill] = useState(false);
   const groups: [string, FloorTable[]][] = [
     ["Bill asked", open.filter((x) => x.status === "bill")],
     ["In the kitchen", open.filter((x) => x.status !== "bill" && x.lines.some((l) => l.state !== "served"))],
@@ -1324,22 +1332,18 @@ function OrdersView({
     <div className="px-5">
       {/* The day's money as a hero, the live pipeline of orders, then two small rings. */}
       <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
-        <HeroStat
+        <DaysCompareWidget
           className="col-span-2"
           title={tr("Taken today")}
           icon={<Wallet size={13} strokeWidth={2.4} />}
-          value={compactMoney(takings)}
-          labels={DAY_HOURS}
-          today={TODAY_RUN.slice(0, -1).concat(takings / 1_000_000)}
-          reference={LAST_MONDAY_RUN}
-          referenceName={tr("Last Monday")}
-          format={(v) => `${v.toFixed(2)}M ₫`}
-          footnote={`${history.length} ${tr("bills closed")} · ${tr("dashed line: last Monday")}`}
+          days={lastDays(takings)}
+          format={compactMoney}
+          todayNote={`${history.length} ${tr("bills closed")} · ${tr("tap a day to compare")}`}
         />
         <FlowWidget
           className="col-span-2"
           title={tr("Orders now")}
-          icon={<ChefHat size={13} strokeWidth={2.4} />}
+          icon={<ClipboardList size={13} strokeWidth={2.4} />}
           headline={
             <p>
               <span className="live text-[30px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{dishes("new") + dishes("cooking")}</span>
@@ -1349,24 +1353,34 @@ function OrdersView({
             </p>
           }
           stages={[
-            { label: tr("New"), count: dishes("new"), color: "#8fb2ff", icon: <Send size={14} strokeWidth={2.4} />, hint: tr("Sent, waiting for the kitchen") },
-            { label: tr("Cooking"), count: dishes("cooking"), color: "#2f5bff", icon: <ChefHat size={14} strokeWidth={2.4} />, hint: tr("In the kitchen now") },
-            { label: tr("Served"), count: dishes("served"), color: "#12a150", icon: <Check size={14} strokeWidth={2.6} />, hint: tr("On the tables") },
+            { label: tr("New"), count: dishes("new"), color: "#8fb2ff", icon: <Hourglass size={14} strokeWidth={2.4} />, hint: tr("Sent, waiting for the kitchen") },
+            { label: tr("Cooking"), count: dishes("cooking"), color: "#2f5bff", icon: <CookingPot size={14} strokeWidth={2.4} />, hint: tr("In the kitchen now") },
             {
               label: tr("Bill"),
               count: billTables.length,
               color: "#ef6c1a",
               icon: <ReceiptText size={14} strokeWidth={2.4} />,
-              hint: billTables.length ? `${tr("Table")} ${billTables.map((x) => x.no).join(", ")} ${tr("wants to pay")}` : tr("No one is waiting"),
-              action: billTables[0] ? { label: tr("Take payment"), onClick: () => onOpenTable(billTables[0]!.no) } : undefined,
+              hint:
+                billTables.length === 1
+                  ? `${tr("Table")} ${billTables[0]!.no} · ${compactMoney(ticketTotal(billTables[0]!.lines))}`
+                  : billTables.length
+                    ? `${tr("Tables")} ${billTables.map((x) => x.no).join(", ")}`
+                    : tr("No one is waiting"),
+              // One table: straight to its bill. Several: choose who pays first.
+              action: billTables.length
+                ? {
+                    label: billTables.length > 1 ? `${tr("Take payment")} · ${billTables.length}` : tr("Take payment"),
+                    onClick: () => (billTables.length > 1 ? setPickBill(true) : onOpenTable(billTables[0]!.no)),
+                  }
+                : undefined,
             },
           ]}
           footnote={`${history.length} ${tr("paid today")}`}
         />
-        <IconStat title={tr("Tips")} icon={<Banknote size={26} strokeWidth={2} />} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
+        <IconStat title={tr("Tips")} art={<TipsArt size={140} />} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
         <IconStat
           title={tr("Avg check")}
-          icon={<ReceiptText size={26} strokeWidth={2} />}
+          art={<CheckArt size={140} />}
           value={compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0)}
           sub={tr("per bill today")}
           tone="blue"
@@ -1458,6 +1472,34 @@ function OrdersView({
             </button>
           )}
         </Reveal>
+      )}
+      {pickBill && (
+        <PeekCard label={tr("Who pays first?")} onClose={() => setPickBill(false)}>
+          <p className="text-[22px] font-bold tracking-[-0.02em]">{tr("Who pays first?")}</p>
+          <p className="mt-1 text-[14px] text-g-muted">{tr("Longest at the table first")}</p>
+          <div className="mt-3 divide-y divide-g-line">
+            {billTables.map((x) => (
+              <button
+                key={x.no}
+                onClick={() => {
+                  haptic("light");
+                  setPickBill(false);
+                  onOpenTable(x.no);
+                }}
+                className="press flex w-full items-center gap-3 py-3 text-left"
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#ef6c1a] text-[16px] font-semibold text-white tabular-nums">{x.no}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[16px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
+                  <span className="block text-[13px] text-g-muted">
+                    {x.guests} {tr("guests")} · {tr("since")} {x.since}
+                  </span>
+                </span>
+                <ChevronRight size={18} className="text-g-faint" />
+              </button>
+            ))}
+          </div>
+        </PeekCard>
       )}
       {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">No open orders</p>}
     </div>

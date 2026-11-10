@@ -78,3 +78,65 @@ export function BookingsArt({ size = 96 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Tips: a fan of banknotes with a coin, for the corner of the tips card. */
+export function TipsArt({ size = 150 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
+      <defs>
+        <linearGradient id="yy-tips-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#7fe0a8" />
+          <stop offset="1" stopColor="#12a150" />
+        </linearGradient>
+        <linearGradient id="yy-tips-b" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#b4f0cd" />
+          <stop offset="1" stopColor="#3cc479" />
+        </linearGradient>
+        <radialGradient id="yy-tips-coin" cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#fff6c8" />
+          <stop offset="0.6" stopColor="#ffc73a" />
+          <stop offset="1" stopColor="#d98a0a" />
+        </radialGradient>
+      </defs>
+      {[-22, -6, 10].map((a, i) => (
+        <g key={a} transform={`rotate(${a} 80 96)`}>
+          <rect x="22" y="58" width="116" height="66" rx="12" fill={i === 2 ? "url(#yy-tips-a)" : "url(#yy-tips-b)"} />
+          <rect x="30" y="66" width="100" height="50" rx="8" fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="2" />
+          <circle cx="80" cy="91" r="14" fill="none" stroke="#fff" strokeOpacity="0.7" strokeWidth="3" />
+          <circle cx="44" cy="91" r="4" fill="#fff" fillOpacity="0.55" />
+          <circle cx="116" cy="91" r="4" fill="#fff" fillOpacity="0.55" />
+        </g>
+      ))}
+      <circle cx="124" cy="46" r="22" fill="url(#yy-tips-coin)" />
+      <circle cx="124" cy="46" r="15" fill="none" stroke="#fff" strokeOpacity="0.6" strokeWidth="2.5" />
+      <path d="M124 37v18M119 41.5c0-2.4 2.2-4 5-4s5 1.4 5 3.7-2.2 3.3-5 3.8-5 1.6-5 3.9 2.2 3.6 5 3.6 5-1.6 5-4" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Average check: a long receipt with dish lines and a total. */
+export function CheckArt({ size = 150 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
+      <defs>
+        <linearGradient id="yy-check-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#9cbcff" />
+          <stop offset="0.55" stopColor="#2f6bff" />
+          <stop offset="1" stopColor="#2530b0" />
+        </linearGradient>
+      </defs>
+      <g transform="rotate(10 80 80)">
+        <path d="M40 14h80v132l-10-8-10 8-10-8-10 8-10-8-10 8-10-8-10 8z" fill="url(#yy-check-a)" />
+        <rect x="52" y="30" width="34" height="7" rx="3.5" fill="#fff" fillOpacity="0.9" />
+        {[50, 64, 78, 92].map((y, i) => (
+          <g key={y}>
+            <rect x="52" y={y} width={[40, 30, 36, 26][i]} height="5" rx="2.5" fill="#fff" fillOpacity="0.45" />
+            <rect x="98" y={y} width="12" height="5" rx="2.5" fill="#fff" fillOpacity="0.7" />
+          </g>
+        ))}
+        <rect x="52" y="106" width="58" height="2" rx="1" fill="#fff" fillOpacity="0.35" />
+        <rect x="76" y="114" width="34" height="9" rx="4.5" fill="#fff" />
+      </g>
+    </svg>
+  );
+}
