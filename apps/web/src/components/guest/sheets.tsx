@@ -14,11 +14,12 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { Check, ChevronRight, Clock, Copy, FlameKindling, ImageIcon, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { Check, ChevronRight, Clock, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
 import Image from "next/image";
+import qrcode from "qrcode-generator";
 import { haptic } from "@/lib/haptics";
 import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview, drinkColor, drinkName } from "./builders";
 
@@ -1097,6 +1098,135 @@ export function CategoriesSheet({ open, onClose, menu, lang, onPick }: { open: b
             </button>
           ))}
         </div>
+      </div>
+    </Sheet>
+  );
+}
+
+/** Escapes a value for the Wi-Fi QR payload (`\`, `;`, `,`, `:` and `"`). */
+const wifiEscape = (v: string) => v.replace(/([\;,:"])/g, "\\$1");
+
+/**
+ * A real, scannable QR drawn as soft dots, with rounded finder eyes and a
+ * Wi-Fi badge in the middle (error correction Q leaves room for it).
+ */
+function WifiQr({ value, size = 232 }: { value: string; size?: number }) {
+  const { n, dots } = useMemo(() => {
+    const qr = qrcode(0, "Q");
+    qr.addData(value);
+    qr.make();
+    const n = qr.getModuleCount();
+    const inFinder = (r: number, c: number) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+    const mid = n / 2;
+    const inBadge = (r: number, c: number) => Math.abs(r + 0.5 - mid) < n * 0.13 && Math.abs(c + 0.5 - mid) < n * 0.13;
+    const dots: [number, number][] = [];
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c) && !inFinder(r, c) && !inBadge(r, c)) dots.push([r, c]);
+    return { n, dots };
+  }, [value]);
+  const finders: [number, number][] = [[0, 0], [0, n - 7], [n - 7, 0]];
+  const badge = n * 0.22;
+  return (
+    <svg viewBox={`-2 -2 ${n + 4} ${n + 4}`} width={size} height={size} role="img" aria-label="Wi-Fi QR code">
+      {dots.map(([r, c]) => (
+        <rect key={`${r}-${c}`} x={c + 0.08} y={r + 0.08} width={0.84} height={0.84} rx={0.36} fill="#0b0b0f" />
+      ))}
+      {finders.map(([r, c]) => (
+        <g key={`f${r}-${c}`}>
+          <rect x={c + 0.5} y={r + 0.5} width={6} height={6} rx={2} fill="none" stroke="#0b0b0f" strokeWidth={1} />
+          <rect x={c + 2} y={r + 2} width={3} height={3} rx={1} fill="#2f5bff" />
+        </g>
+      ))}
+      <rect x={n / 2 - badge / 2} y={n / 2 - badge / 2} width={badge} height={badge} rx={badge * 0.3} fill="url(#wifi-badge)" />
+      <defs>
+        <linearGradient id="wifi-badge" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#6c96ff" />
+          <stop offset="0.5" stopColor="#2f6bff" />
+          <stop offset="1" stopColor="#2530b0" />
+        </linearGradient>
+      </defs>
+      <g transform={`translate(${n / 2 - badge * 0.3} ${n / 2 - badge * 0.3}) scale(${(badge * 0.6) / 24})`} fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round">
+        <path d="M5 12.5a10 10 0 0 1 14 0" />
+        <path d="M8.5 16a5 5 0 0 1 7 0" />
+        <path d="M12 19.5h.01" strokeWidth={3.2} />
+      </g>
+    </svg>
+  );
+}
+
+/** Wi-Fi page: scannable code, network and password with copy, and a short how-to. */
+export function WifiSheet({ open, onClose, brand, lang, onNotice }: { open: boolean; onClose: () => void; brand: VenueBrand; lang: Lang; onNotice: (title: string) => void }) {
+  const { name, pass } = brand.about.wifi;
+  const [shown, setShown] = useState(false);
+  const copy = (text: string, done: string) => {
+    haptic("success");
+    navigator.clipboard?.writeText(text).catch(() => undefined);
+    onNotice(done);
+  };
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      label="Wi-Fi"
+      title={false}
+      footer={
+        <button onClick={() => copy(pass, ui(lang, "wifiCopied"))} className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold">
+          <Copy size={18} strokeWidth={2} /> {ui(lang, "wifiCopy")}
+        </button>
+      }
+    >
+      <div className="px-5 pt-1 pb-8">
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">Wi-Fi</h2>
+        <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "wifiSecurity")}</p>
+
+        <div className="mt-6 flex flex-col items-center rounded-[28px] bg-g-fill px-6 pt-7 pb-6">
+          <div className="rounded-[24px] bg-white p-4">
+            <WifiQr value={`WIFI:T:WPA;S:${wifiEscape(name)};P:${wifiEscape(pass)};;`} />
+          </div>
+          <p className="mt-4 max-w-[240px] text-center text-[14px] leading-snug text-g-muted">{ui(lang, "wifiScan")}</p>
+        </div>
+
+        <p className="mt-8 text-[13px] font-semibold text-g-muted">{ui(lang, "wifiManual")}</p>
+        <div className="mt-2 divide-y divide-g-line">
+          <div className="flex items-center gap-3 py-4">
+            <span className="chip-blue grid size-10 shrink-0 place-items-center rounded-full">
+              <Wifi size={18} strokeWidth={2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] text-g-muted">{ui(lang, "wifiNetwork")}</span>
+              <span className="block truncate text-[17px] font-semibold">{name}</span>
+            </span>
+            <button onClick={() => copy(name, ui(lang, "copied"))} aria-label={`${ui(lang, "copied")}: ${name}`} className="press grid size-10 place-items-center rounded-full bg-g-fill">
+              <Copy size={17} strokeWidth={2} />
+            </button>
+          </div>
+          <div className="flex items-center gap-3 py-4">
+            <span className="chip-blue grid size-10 shrink-0 place-items-center rounded-full">
+              <KeyRound size={18} strokeWidth={2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] text-g-muted">{ui(lang, "wifiPassword")}</span>
+              <span className="block truncate text-[17px] font-semibold tracking-[0.02em] tabular-nums">{shown ? pass : "•".repeat(pass.length)}</span>
+            </span>
+            <button
+              onClick={() => {
+                haptic("tick");
+                setShown((v) => !v);
+              }}
+              className="press h-10 rounded-full bg-g-fill px-3.5 text-[14px] font-semibold"
+            >
+              {shown ? ui(lang, "wifiHide") : ui(lang, "wifiShow")}
+            </button>
+          </div>
+        </div>
+
+        <ol className="mt-6 grid gap-3">
+          {(["wifiStep1", "wifiStep2", "wifiStep3"] as const).map((k, i) => (
+            <li key={k} className="flex items-center gap-3 text-[15px]">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-g-ink text-[13px] font-semibold text-white tabular-nums">{i + 1}</span>
+              {ui(lang, k)}
+            </li>
+          ))}
+        </ol>
       </div>
     </Sheet>
   );

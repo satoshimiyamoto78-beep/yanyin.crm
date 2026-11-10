@@ -559,3 +559,80 @@ export function PeekCard({ onClose, label, children }: { onClose: () => void; la
     </div>
   );
 }
+
+/**
+ * Turns a horizontal scroller into a ring: children bend away in 3D and fade
+ * as they leave the centre, like labels printed on a rotating cylinder. While
+ * the finger drives it, every label that passes the centre ticks the haptics.
+ * Styles are written straight to the DOM on each frame, no React renders.
+ */
+export function useRing(ref: React.RefObject<HTMLElement | null>, deps: unknown[] = []) {
+  useEffect(() => {
+    const bar = ref.current;
+    if (!bar) return;
+    let raf = 0;
+    let center = -1;
+    let touching = false;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const paint = () => {
+      raf = 0;
+      const box = bar.getBoundingClientRect();
+      const mid = box.left + box.width / 2;
+      const half = box.width / 2;
+      let nearest = -1;
+      let best = Infinity;
+      Array.from(bar.children).forEach((node, i) => {
+        const el = node as HTMLElement;
+        const r = el.getBoundingClientRect();
+        const off = (r.left + r.width / 2 - mid) / half; // -1 … 1 across the bar
+        const d = Math.max(-1.4, Math.min(1.4, off));
+        const a = Math.abs(d);
+        el.style.transform = `perspective(520px) rotateY(${(-d * 62).toFixed(2)}deg) scale(${(1 - a * 0.16).toFixed(3)})`;
+        el.style.opacity = String(Math.max(0.25, 1 - a * a * 0.6).toFixed(3));
+        if (Math.abs(off) < best) {
+          best = Math.abs(off);
+          nearest = i;
+        }
+      });
+      if (nearest !== center) {
+        if (center !== -1 && touching) haptic("tick");
+        center = nearest;
+      }
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(paint);
+    };
+    const hold = () => {
+      touching = true;
+      clearTimeout(idle);
+    };
+    const release = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => (touching = false), 700);
+    };
+    const onWheel = () => {
+      hold();
+      release();
+    };
+    paint();
+    bar.addEventListener("scroll", onScroll, { passive: true });
+    bar.addEventListener("pointerdown", hold, { passive: true });
+    bar.addEventListener("touchstart", hold, { passive: true });
+    bar.addEventListener("touchend", release, { passive: true });
+    bar.addEventListener("pointerup", release, { passive: true });
+    bar.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(idle);
+      bar.removeEventListener("scroll", onScroll);
+      bar.removeEventListener("pointerdown", hold);
+      bar.removeEventListener("touchstart", hold);
+      bar.removeEventListener("touchend", release);
+      bar.removeEventListener("pointerup", release);
+      bar.removeEventListener("wheel", onWheel);
+      window.removeEventListener("resize", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run when the labels change
+  }, deps);
+}

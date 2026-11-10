@@ -24,6 +24,7 @@ import {
   Info,
   LayoutGrid,
   Wifi,
+  UtensilsCrossed,
   Dices,
   Flame,
   Plus,
@@ -44,11 +45,12 @@ import {
   OrdersSheet,
   SearchSheet,
   orderStage,
+  WifiSheet,
   type PlacedOrder,
 } from "./sheets";
 import Image from "next/image";
 import { haptic } from "@/lib/haptics";
-import { Island, LiveIsland, Reveal, RouletteWheel, startLoading, type IslandNotice } from "./motion";
+import { Island, LiveIsland, Reveal, RouletteWheel, startLoading, useRing, type IslandNotice } from "./motion";
 import { ItemCard } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
@@ -67,6 +69,7 @@ type SheetName =
   | "yan"
   | "bill"
   | "categories"
+  | "wifi"
   | null;
 
 type Notice = IslandNotice;
@@ -142,9 +145,11 @@ export function GuestApp({ menu }: { menu: Menu }) {
   useEffect(() => {
     const bar = tabsRef.current;
     const tab = bar?.querySelector<HTMLElement>(`[data-tab="${active}"]`);
+    // The ring keeps the current section in its centre.
     if (bar && tab)
-      bar.scrollTo({ left: tab.offsetLeft - 20, behavior: "smooth" });
+      bar.scrollTo({ left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2, behavior: "smooth" });
   }, [active]);
+  useRing(tabsRef, [menu, lang]);
 
   const flash = useCallback((n: Notice) => {
     haptic("success");
@@ -205,18 +210,26 @@ export function GuestApp({ menu }: { menu: Menu }) {
     <div className="min-h-dvh bg-g-bg text-g-ink">
       <div className="mx-auto max-w-[480px] pb-32">
         {/* Top: the banking-app pattern, same as the waiter's home. */}
-        <section className="rounded-b-[32px] bg-[linear-gradient(180deg,#e9efff_0%,#f3f6ff_70%,#f7f9ff_100%)] pt-[max(14px,env(safe-area-inset-top))] pb-5">
+        <section className="relative isolate overflow-hidden rounded-b-[32px] pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
+          {/* Northern lights in the Nomad blue: soft ribbons of light drift over a deep blue sky. */}
+          <div className="north-sky" aria-hidden>
+            <span className="ns-glow ns-a" />
+            <span className="ns-glow ns-b" />
+            <span className="ns-glow ns-c" />
+            <span className="ns-ribbon ns-r1" />
+            <span className="ns-ribbon ns-r2" />
+          </div>
           <div className="flex items-center gap-2.5 px-5">
             <button
               onClick={() => setSheet("about")}
               aria-label={ui(lang, "about")}
-              className="ink-grad grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold"
+              className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[16px] font-bold text-g-ink"
             >
               {brand.mark}
             </button>
             <button
               onClick={() => setSheet("search")}
-              className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/80 px-3.5 text-left text-[15px] text-g-faint"
+              className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-left text-[15px] text-white/70 backdrop-blur-md"
             >
               <Search size={17} strokeWidth={2} />
               <span className="truncate">{ui(lang, "search")}</span>
@@ -224,7 +237,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             <button
               aria-label={ui(lang, "language")}
               onClick={() => setSheet("lang")}
-              className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/80 text-[13px] font-bold uppercase"
+              className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-[13px] font-bold uppercase backdrop-blur-md"
             >
               {lang}
             </button>
@@ -240,15 +253,15 @@ export function GuestApp({ menu }: { menu: Menu }) {
             </button>
           </div>
 
-          <div className="mt-5 px-5">
-            <p className="flex min-w-0 items-center gap-1.5 text-[14px] text-g-muted">
+          <div className="mt-9 px-5">
+            <p className="flex min-w-0 items-center gap-1.5 text-[14px] text-white/70">
               {table && (
                 <>
-                  <span className="size-1.5 shrink-0 rounded-full bg-g-blue" />
-                  <span className="shrink-0 font-semibold text-g-blue">
+                  <span className="size-1.5 shrink-0 rounded-full bg-white" />
+                  <span className="shrink-0 font-semibold text-white">
                     {`${ui(lang, "table")} ${table.padStart(2, "0")}`}
                   </span>
-                  <span className="text-g-faint">·</span>
+                  <span className="text-white/45">·</span>
                 </>
               )}
               <span className="truncate">
@@ -257,19 +270,44 @@ export function GuestApp({ menu }: { menu: Menu }) {
             </p>
             <button
               onClick={() => (orders.length ? setSheet("bill") : setSheet("about"))}
-              className="press mt-1 flex max-w-full items-center gap-1 text-left"
+              className="press mt-2 flex max-w-full items-center gap-1 text-left"
             >
               <span className="truncate text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">
                 {orders.length
                   ? formatMoney(orders.reduce((n, o) => n + o.total, 0), currency, lang)
                   : menu.venue.name}
               </span>
-              <ChevronRight size={22} className="shrink-0 text-g-faint" />
+              <ChevronRight size={22} className="shrink-0 text-white/55" />
             </button>
           </div>
 
-          {/* Strip: two rows of the same height. Square service buttons on the left, short wide cards next to them. */}
-          <div className="no-scrollbar mt-4 grid grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">
+          {/* Strip: one big order card, then two rows of the same height: waiter and bill squares, short wide cards. */}
+          <div className="no-scrollbar mt-7 grid grid-flow-col grid-rows-2 gap-2.5 overflow-x-auto px-5 [grid-auto-columns:max-content]">
+            <button
+              onClick={() => {
+                haptic("light");
+                if (count > 0) setSheet("cart");
+                else if (menu.categories[0]) scrollTo(menu.categories[0].id);
+              }}
+              className="press row-span-2 flex h-[134px] w-[148px] flex-col justify-between rounded-[22px] bg-white p-3.5 text-left text-g-ink"
+            >
+              <span className="flex items-center justify-between">
+                <span className="blue-grad grid size-10 place-items-center rounded-full">
+                  <UtensilsCrossed size={19} strokeWidth={2} />
+                </span>
+                {count > 0 && (
+                  <span className="grid h-7 min-w-7 place-items-center rounded-full bg-g-blue-soft px-2 text-[13px] font-bold text-g-blue tabular-nums">{count}</span>
+                )}
+              </span>
+              <span>
+                <span className="block text-[17px] leading-tight font-semibold">
+                  {count > 0 ? ui(lang, "yourOrder") : orders.length ? ui(lang, "orderMore") : ui(lang, "startOrder")}
+                </span>
+                <span className="mt-1 block truncate text-[12px] text-g-muted tabular-nums">
+                  {count > 0 ? formatMoney(total, currency, lang) : ui(lang, "startOrderSub")}
+                </span>
+              </span>
+            </button>
             <SquareButton
               icon={<BellRing size={21} strokeWidth={1.9} />}
               label={ui(lang, "qaWaiter")}
@@ -291,7 +329,11 @@ export function GuestApp({ menu }: { menu: Menu }) {
             />
             <WideButton
               onClick={() => setSheet("roulette")}
-              art={<RouletteWheel size={34} bare />}
+              corner={
+                <span className="wheel-corner pointer-events-none absolute -top-[56px] -left-[56px]">
+                  <RouletteWheel size={112} bare />
+                </span>
+              }
               title={ui(lang, "qaRoulette")}
               sub={ui(lang, "qaRouletteShort")}
             />
@@ -312,7 +354,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
               sub={ui(lang, "yanShort")}
             />
             <WideButton
-              onClick={() => setSheet("about")}
+              onClick={() => setSheet("wifi")}
               art={
                 <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
                   <Wifi size={18} strokeWidth={2} />
@@ -376,7 +418,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         >
           <div
             ref={tabsRef}
-            className="no-scrollbar flex gap-1 overflow-x-auto scroll-smooth px-5 py-2.5"
+            className="no-scrollbar flex snap-x snap-proximity gap-1 overflow-x-auto px-[calc(50%-64px)] py-2.5 [perspective:520px]"
           >
             {menu.categories.map((c) => {
               const on = c.id === active;
@@ -386,7 +428,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                   data-tab={c.id}
                   onClick={() => scrollTo(c.id)}
                   aria-current={on ? "true" : undefined}
-                  className={`press h-9 shrink-0 rounded-full px-4 text-[14px] font-medium whitespace-nowrap transition-colors duration-200 ${on ? "bg-g-ink text-white" : "text-g-muted"}`}
+                  className={`h-9 shrink-0 snap-center rounded-full px-4 text-[14px] font-medium whitespace-nowrap transition-colors duration-200 will-change-transform ${on ? "bg-g-ink text-white" : "text-g-muted"}`}
                 >
                   {t(c.name, lang)}
                 </button>
@@ -576,6 +618,13 @@ export function GuestApp({ menu }: { menu: Menu }) {
         onAdd={quickAdd}
         onQty={setPlainQty}
       />
+      <WifiSheet
+        open={sheet === "wifi"}
+        onClose={() => setSheet(null)}
+        brand={brand}
+        lang={lang}
+        onNotice={(title) => flash({ title, tone: "green", icon: <Check size={16} strokeWidth={2.5} /> })}
+      />
       <AboutSheet
         open={sheet === "about"}
         onClose={() => setSheet(null)}
@@ -698,18 +747,22 @@ function SquareButton({ icon, label, onClick }: { icon: React.ReactNode; label: 
   );
 }
 
-/** Short wide card in the top strip: as tall as a square button, illustration and two lines. */
-function WideButton({ onClick, art, title, sub }: { onClick: () => void; art: React.ReactNode; title: string; sub: string }) {
+/**
+ * Short wide card in the top strip: as tall as a square button, illustration and two lines.
+ * `corner` puts a large illustration in the top-left corner, cropped to a quarter.
+ */
+function WideButton({ onClick, art, corner, title, sub }: { onClick: () => void; art?: React.ReactNode; corner?: React.ReactNode; title: string; sub: string }) {
   return (
     <button
       onClick={() => {
         haptic("light");
         onClick();
       }}
-      className="press flex h-[62px] w-[158px] items-center gap-2.5 rounded-[20px] bg-white pr-3 pl-2.5 text-left"
+      className={`press relative flex h-[62px] w-[158px] items-center gap-2.5 overflow-hidden rounded-[20px] bg-white pr-3 text-left text-g-ink ${corner ? "pl-[64px]" : "pl-2.5"}`}
     >
-      <span className="grid size-10 shrink-0 place-items-center">{art}</span>
-      <span className="min-w-0">
+      {corner}
+      {art && <span className="grid size-10 shrink-0 place-items-center">{art}</span>}
+      <span className="relative min-w-0">
         <span className="block truncate text-[14px] leading-tight font-semibold">{title}</span>
         <span className="mt-0.5 block truncate text-[11px] text-g-muted">{sub}</span>
       </span>

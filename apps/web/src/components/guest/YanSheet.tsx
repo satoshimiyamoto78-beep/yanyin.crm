@@ -11,13 +11,19 @@ import { DishTile, Sheet } from "./ui";
  * Yan's mark: a flat disc in the Nomad blue gradient that slowly drifts inside,
  * with a flat white spark. No 3D shading.
  */
+/**
+ * Yan's face: a flat disc in the Nomad blue gradient that drifts slowly, with two
+ * soft eyes that blink now and then and glance to the side. A character, not a logo.
+ */
 export function YanOrb({ size = 44 }: { size?: number }) {
+  const eyeW = Math.max(3, size * 0.11);
+  const eyeH = Math.max(6, size * 0.26);
   return (
-    <span className="yan-orb grid shrink-0 place-items-center rounded-full text-white" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 24 24" width={size * 0.5} height={size * 0.5} fill="currentColor" aria-hidden>
-        <path d="M11 3.5c.4 3.9 1.9 5.4 5.8 5.8-3.9.4-5.4 1.9-5.8 5.8-.4-3.9-1.9-5.4-5.8-5.8 3.9-.4 5.4-1.9 5.8-5.8Z" />
-        <path d="M17.5 13.5c.2 1.9.9 2.6 2.8 2.8-1.9.2-2.6.9-2.8 2.8-.2-1.9-.9-2.6-2.8-2.8 1.9-.2 2.6-.9 2.8-2.8Z" opacity={0.85} />
-      </svg>
+    <span className="yan-orb relative grid shrink-0 place-items-center overflow-hidden rounded-full" style={{ width: size, height: size }} aria-hidden>
+      <span className="yan-eyes flex items-center" style={{ gap: size * 0.16, marginTop: -size * 0.04 }}>
+        <span className="yan-eye block rounded-full bg-white" style={{ width: eyeW, height: eyeH }} />
+        <span className="yan-eye block rounded-full bg-white" style={{ width: eyeW, height: eyeH }} />
+      </span>
     </span>
   );
 }

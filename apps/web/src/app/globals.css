@@ -102,6 +102,63 @@ body {
   background: linear-gradient(160deg, #6c96ff 0%, #2f6bff 55%, #2530b0 100%);
   color: #fff;
 }
+/*
+ * Northern lights for the guest header: a deep Nomad-blue sky, three large
+ * glows that breathe and drift, and two thin ribbons of light that sway like
+ * an aurora curtain. Transforms only, so it stays smooth on phones.
+ */
+.north-sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 85% 0%, #4f7dff 0%, transparent 60%),
+    linear-gradient(165deg, #2f6bff 0%, #2448e0 40%, #1d2fb8 75%, #182596 100%);
+}
+.ns-glow,
+.ns-ribbon {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.ns-glow { filter: blur(40px); }
+.ns-a {
+  width: 75%; height: 70%; left: -20%; top: -15%;
+  background: radial-gradient(closest-side, rgba(108, 150, 255, 0.95), transparent);
+  animation: ns-a 14s ease-in-out infinite alternate;
+}
+.ns-b {
+  width: 70%; height: 80%; right: -25%; top: 25%;
+  background: radial-gradient(closest-side, rgba(37, 48, 176, 0.95), transparent);
+  animation: ns-b 17s ease-in-out infinite alternate;
+}
+.ns-c {
+  width: 60%; height: 55%; left: 25%; bottom: -25%;
+  background: radial-gradient(closest-side, rgba(150, 190, 255, 0.7), transparent);
+  animation: ns-c 12s ease-in-out infinite alternate;
+}
+.ns-ribbon {
+  width: 150%; height: 46%; left: -25%;
+  background: radial-gradient(closest-side, transparent 62%, rgba(214, 228, 255, 0.55) 72%, transparent 80%);
+  filter: blur(10px);
+  mix-blend-mode: screen;
+}
+.ns-r1 { top: 6%; transform: rotate(-12deg); animation: ns-r1 16s ease-in-out infinite alternate; }
+.ns-r2 { top: 38%; opacity: 0.6; transform: rotate(8deg); animation: ns-r2 21s ease-in-out infinite alternate; }
+@keyframes ns-a { to { transform: translate(35%, 20%) scale(1.15); } }
+@keyframes ns-b { to { transform: translate(-30%, -25%) scale(0.9); } }
+@keyframes ns-c { to { transform: translate(-40%, -15%) scale(1.2); } }
+@keyframes ns-r1 {
+  0% { transform: translate(-6%, 0) rotate(-12deg) scaleY(1); }
+  50% { transform: translate(4%, 6%) rotate(-6deg) scaleY(1.3); }
+  100% { transform: translate(8%, -4%) rotate(-16deg) scaleY(0.9); }
+}
+@keyframes ns-r2 {
+  from { transform: translate(6%, 0) rotate(8deg) scaleY(0.9); }
+  to { transform: translate(-8%, -8%) rotate(2deg) scaleY(1.25); }
+}
+
 /* Dark blue aurora surface for hero cards (white text on top). */
 .aurora {
   position: relative;
@@ -319,6 +376,22 @@ body {
   background-size: 260% 260%;
   animation: yan-drift 7s ease-in-out infinite alternate;
 }
+/* Yan's eyes: a quick blink every few seconds, a glance to the side now and then. */
+.yan-eye {
+  transform-origin: center;
+  animation: yan-blink 4.8s ease-in-out infinite;
+}
+.yan-eyes {
+  animation: yan-glance 9s ease-in-out infinite;
+}
+@keyframes yan-blink {
+  0%, 44%, 50%, 100% { transform: scaleY(1); }
+  47% { transform: scaleY(0.12); }
+}
+@keyframes yan-glance {
+  0%, 30%, 62%, 100% { transform: translateX(0); }
+  36%, 56% { transform: translateX(14%); }
+}
 @keyframes yan-drift {
   from { background-position: 0% 0%; }
   to { background-position: 100% 100%; }
@@ -394,6 +467,10 @@ body {
 .wheel-idle {
   animation: wheel-idle 40s linear infinite;
 }
+/* In the strip button the wheel sits in the corner and turns a bit faster. */
+.wheel-corner .wheel-idle {
+  animation-duration: 16s;
+}
 
 /*
  * Spinning gradient ring for the picked tobacco tile: the Nomad blue gradient
@@ -431,8 +508,12 @@ body {
   .spin-ring::before,
   .aurora::before,
   .aurora::after,
+  .ns-glow,
+  .ns-ribbon,
   .wheel-idle,
   .yan-orb,
+  .yan-eye,
+  .yan-eyes,
   .result-in,
   .drink-wave,
   .drink-float,
