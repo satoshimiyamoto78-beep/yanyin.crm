@@ -157,7 +157,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     window.scrollTo({ top: 0 });
     loadIfChanged(`tab:${t}`, signatureOf(t)); // only new or changed data blurs and pulls into focus
   };
-  const todays = bookings.filter((b) => b.day === 0 && b.status !== "seated").sort((a, b) => a.time.localeCompare(b.time));
+  const todays = bookings.filter((b) => b.day === 0 && b.status !== "seated" && b.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time));
   // Fingerprint of what each section shows: same data means no loading animation.
   const signatureOf = (t: Tab) =>
     t === "tables"
@@ -253,7 +253,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               notify({ title: b.status === "waiting" ? `${b.name.split(" ")[0]} · waiting list` : `Booking confirmed`, text: `${b.time} · ${b.guests} guests` });
             }}
             onCancel={(b) => {
-              setBookings((bs) => bs.filter((x) => x.id !== b.id));
+              setBookings((bs) => bs.map((x) => (x.id === b.id ? { ...x, status: "cancelled", cancelled: { at: now(), reason: "Cancelled by the waiter" } } : x)));
               if (b.day === 0 && b.table) patch(b.table, (x) => (x.status === "reserved" ? { ...x, status: "free", booking: undefined } : x));
               notify({ title: `Booking cancelled`, text: `${b.name} · ${b.time}`, tone: "orange" });
             }}

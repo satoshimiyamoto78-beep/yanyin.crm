@@ -141,51 +141,77 @@ export function CheckArt({ size = 150 }: { size?: number }) {
   );
 }
 
-/** Seated: a chair at a round table, in green. */
+/** Seated: a café table for two, side view: a round top with a cup and a vase, two bentwood chairs. */
 export function SeatedArt({ size = 150 }: { size?: number }) {
   return (
     <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
       <defs>
-        <linearGradient id="yy-seat-a" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7fe0a8" />
-          <stop offset="1" stopColor="#12a150" />
+        <linearGradient id="yy-seat-top" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8ee6b4" />
+          <stop offset="1" stopColor="#1fae5e" />
+        </linearGradient>
+        <linearGradient id="yy-seat-leg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#1a9c55" />
+          <stop offset="1" stopColor="#0f7a40" />
         </linearGradient>
       </defs>
-      <ellipse cx="96" cy="70" rx="46" ry="14" fill="url(#yy-seat-a)" />
-      <rect x="92" y="78" width="8" height="58" rx="4" fill="#12a150" opacity="0.8" />
-      <rect x="74" y="132" width="44" height="8" rx="4" fill="#12a150" opacity="0.6" />
-      <rect x="22" y="40" width="14" height="70" rx="7" fill="#3cc479" />
-      <rect x="22" y="92" width="50" height="14" rx="7" fill="url(#yy-seat-a)" />
-      <rect x="28" y="104" width="8" height="36" rx="4" fill="#12a150" opacity="0.7" />
-      <rect x="58" y="104" width="8" height="36" rx="4" fill="#12a150" opacity="0.7" />
-      <circle cx="96" cy="66" r="9" fill="#fff" fillOpacity="0.7" />
+      <ellipse cx="80" cy="146" rx="62" ry="6" fill="#12a150" opacity="0.15" />
+      {/* Chairs, behind the table: a curved back, a seat, two legs. */}
+      {[-1, 1].map((d) => (
+        <g key={d} transform={`translate(${80 + d * 46} 0) scale(${d} 1)`}>
+          <path d="M14 64c0-14 4-22 12-22" fill="none" stroke="#3cc479" strokeWidth="7" strokeLinecap="round" />
+          <path d="M14 64v34" stroke="#3cc479" strokeWidth="7" strokeLinecap="round" />
+          <rect x="8" y="94" width="34" height="9" rx="4.5" fill="#2fbb6c" />
+          <path d="M14 103l-4 40M38 103l4 40" stroke="#1a9c55" strokeWidth="5" strokeLinecap="round" />
+        </g>
+      ))}
+      {/* Table. */}
+      <path d="M77 82h6l3 54h-12z" fill="url(#yy-seat-leg)" />
+      <ellipse cx="80" cy="140" rx="20" ry="5" fill="#0f7a40" />
+      <ellipse cx="80" cy="80" rx="40" ry="9" fill="#0f8a47" />
+      <ellipse cx="80" cy="77" rx="40" ry="9" fill="url(#yy-seat-top)" />
+      {/* A cup and a small vase on top. */}
+      <path d="M62 64h13l-1.5 10h-10z" fill="#fff" />
+      <path d="M75 66.5a3.5 3.5 0 0 1 0 6" fill="none" stroke="#fff" strokeWidth="2" />
+      <path d="M92 74c-3 0-4-3-4-6s2-5 4-8c2 3 4 5 4 8s-1 6-4 6z" fill="#fff" fillOpacity="0.9" />
+      <path d="M92 60v-9" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="92" cy="48" r="4" fill="#ffd66b" />
     </svg>
   );
 }
 
-/** Guests: three people, the front one in the brand blue. */
+/** Guests: a small group in the brand blue, the front person larger, soft shapes, no faces. */
 export function GuestsArt({ size = 150 }: { size?: number }) {
   return (
     <svg viewBox="0 0 160 160" width={size} height={size} aria-hidden>
       <defs>
-        <linearGradient id="yy-guests-a" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#9cbcff" />
+        <linearGradient id="yy-g-front" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8fb2ff" />
           <stop offset="0.55" stopColor="#2f6bff" />
           <stop offset="1" stopColor="#2530b0" />
         </linearGradient>
+        <linearGradient id="yy-g-back" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#c7d8ff" />
+          <stop offset="1" stopColor="#8fb2ff" />
+        </linearGradient>
       </defs>
+      {/* Two friends behind. */}
       {[
-        [44, 0.35],
-        [116, 0.35],
-      ].map(([x, o]) => (
-        <g key={x} opacity={o as number}>
-          <circle cx={x as number} cy="58" r="17" fill="#2f6bff" />
-          <path d={`M${(x as number) - 30} 128a30 30 0 0 1 60 0z`} fill="#2f6bff" />
+        [40, 52],
+        [120, 52],
+      ].map(([x, y]) => (
+        <g key={x}>
+          <circle cx={x} cy={y} r="16" fill="url(#yy-g-back)" />
+          <path d={`M${x - 28} 120c0-20 12-34 28-34s28 14 28 34z`} fill="url(#yy-g-back)" />
         </g>
       ))}
-      <circle cx="80" cy="64" r="22" fill="url(#yy-guests-a)" />
-      <path d="M40 146a40 40 0 0 1 80 0z" fill="url(#yy-guests-a)" />
-      <circle cx="73" cy="58" r="5" fill="#fff" fillOpacity="0.5" />
+      {/* The guest in front. */}
+      <circle cx="80" cy="62" r="21" fill="url(#yy-g-front)" />
+      <path d="M40 146c0-28 18-48 40-48s40 20 40 48z" fill="url(#yy-g-front)" />
+      <path d="M66 54a15 15 0 0 1 18-10" fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="4" strokeLinecap="round" />
+      {/* A little "+" for more to come. */}
+      <circle cx="126" cy="112" r="14" fill="#fff" />
+      <path d="M126 105v14M119 112h14" stroke="#2f6bff" strokeWidth="3.5" strokeLinecap="round" />
     </svg>
   );
 }

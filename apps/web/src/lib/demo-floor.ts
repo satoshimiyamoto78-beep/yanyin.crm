@@ -41,7 +41,9 @@ export type Booking = {
   time: string;
   table?: number;
   note?: string;
-  status: "confirmed" | "seated" | "waiting";
+  status: "confirmed" | "seated" | "waiting" | "cancelled";
+  /** When the booking was cancelled: the time and the reason. */
+  cancelled?: { at: string; reason?: string };
 };
 
 export type PayMethod = "cash" | "card" | "vietqr" | "momo";
@@ -103,6 +105,14 @@ export function demoFloor(menu: Menu): FloorData {
     { id: "b3", name: "Kim Ji-woo", phone: "+82 10 2345 6789", guests: 2, day: 0, time: "20:30", status: "waiting" },
     { id: "b4", name: "Sarah Miller", phone: "+1 415 555 0182", guests: 6, day: 1, time: "18:30", table: 8, note: "Halal only", status: "confirmed" },
     { id: "b5", name: "Dmitry", phone: "+84 935 777 001", guests: 2, day: 1, time: "21:00", status: "confirmed" },
+    { id: "b6", name: "Tran Thi Mai", phone: "+84 912 345 678", guests: 5, day: 0, time: "17:00", table: 8, status: "confirmed" },
+    { id: "b7", name: "Oliver Brown", phone: "+44 7700 900123", guests: 2, day: 0, time: "18:15", table: 6, status: "confirmed" },
+    { id: "b8", name: "Lee Min", phone: "+82 10 9876 5432", guests: 4, day: 0, time: "22:30", table: 11, status: "confirmed" },
+    // Earlier days, for the booking history.
+    { id: "p1", name: "Pham Quang", phone: "+84 903 111 222", guests: 4, day: -1, time: "19:30", table: 3, status: "seated" },
+    { id: "p2", name: "Anna Ivanova", phone: "+7 921 555 44 33", guests: 2, day: -1, time: "20:00", status: "cancelled", cancelled: { at: "17:40", reason: "Guest cancelled by phone" } },
+    { id: "p3", name: "Hoang Duc", phone: "+84 905 222 333", guests: 6, day: -2, time: "13:00", table: 8, status: "seated" },
+    { id: "p4", name: "Maria Lopez", phone: "+34 612 345 678", guests: 3, day: -3, time: "19:00", status: "cancelled", cancelled: { at: "18:55", reason: "No-show" } },
   ];
 
   const closed = (id: number, table: number, at: string, ls: TicketLine[], tipPct: number, method: PayMethod, guests: number): ClosedOrder => {

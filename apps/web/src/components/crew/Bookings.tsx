@@ -1,7 +1,7 @@
 "use client";
 
-import { UserRound, Armchair, Ban, CalendarCheck, CalendarDays, CalendarPlus, Check, Hourglass, Pencil, Phone, StickyNote, Users } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, History, UserRound, Armchair, Ban, CalendarCheck, CalendarDays, CalendarPlus, Check, Hourglass, Pencil, Phone, StickyNote, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
 import { loadIfChanged, PeekCard, Reveal, useLongPress } from "@/components/guest/motion";
@@ -25,6 +25,7 @@ const STATE: Record<Booking["status"], { label: string; chip: string }> = {
   confirmed: { label: "Confirmed", chip: "chip-blue" },
   waiting: { label: "Waiting list", chip: "chip-orange" },
   seated: { label: "Seated", chip: "chip-green" },
+  cancelled: { label: "Cancelled", chip: "chip-red" },
 };
 
 const mins = (hhmm: string) => {
@@ -37,7 +38,7 @@ const relative = (time: string) => {
   const d = mins(time) - NOW;
   if (d < -5) return `${-d} min late`;
   if (d <= 5) return "now";
-  return d < 60 ? `in ${d} min` : `in ${Math.floor(d / 60)}h${d % 60 ? ` ${d % 60}m` : ""}`;
+  return d < 60 ? `in ${d} min` : `in ${Math.floor(d / 60)}h${d % 60 ? `${d % 60}m` : ""}`;
 };
 
 export function BookingsView({
@@ -59,7 +60,8 @@ export function BookingsView({
 }) {
   const [day, setDay] = useState(0);
   const [menu, setMenu] = useState<string | null>(null);
-  const list = bookings.filter((b) => b.day === day).sort((a, b) => a.time.localeCompare(b.time));
+  const list = bookings.filter((b) => b.day === day && b.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time));
+  const [history, setHistory] = useState(false);
   const guests = list.reduce((s, b) => s + b.guests, 0);
   const upcoming = list.filter((b) => b.status !== "seated");
   const next = day === 0 ? upcoming.find((b) => mins(b.time) >= NOW - 5) : upcoming[0];
@@ -68,7 +70,7 @@ export function BookingsView({
     <div className="px-5">
       {/* When guests arrive (bars), how many are already seated (ring), who waits for a table (meter). */}
       <Reveal className="mt-5 grid grid-cols-2 gap-2.5">
-        <DayTimeline className="col-span-2" list={list} today={day === 0} initial={next?.id} />
+        <BookingRuler className="col-span-2" list={list} today={day === 0} initial={next?.id} />
         <IconStat
           title={tr("Seated")}
           art={<SeatedArt size={130} />}
@@ -98,6 +100,20 @@ export function BookingsView({
           empty={tr("No one is waiting for a table")}
         />
       </Reveal>
+      <button
+        onClick={() => {
+          haptic("light");
+          setHistory(true);
+        }}
+        className="press mt-3 flex w-full items-center gap-3 rounded-[22px] bg-g-fill px-4 py-3 text-left"
+      >
+        <History size={18} strokeWidth={2.2} className="text-g-blue" />
+        <span className="flex-1 text-[15px] font-semibold">{tr("Booking history")}</span>
+        <span className="text-[13px] text-g-muted tabular-nums">
+          {bookings.filter((b) => b.status === "cancelled").length} {tr("cancelled")}
+        </span>
+        <ChevronRight size={18} className="text-g-faint" />
+      </button>
       <div className="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5">
         {[0, 1, 2, 3, 4, 5, 6].map((d) => (
           <ChoiceChip key={d} on={day === d} onClick={() => { setDay(d); loadIfChanged(`bookings:${d}`, JSON.stringify(bookings.filter((b) => b.day === d).map((b) => [b.id, b.status])), 450); }} icon={<span />}>
@@ -116,6 +132,7 @@ export function BookingsView({
         const m = list.find((b) => b.id === menu);
         return m ? <BookingMenu b={m} today={day === 0} onClose={() => setMenu(null)} onSeat={() => { setMenu(null); onSeat(m); }} onEdit={() => { setMenu(null); onEdit(m); }} onUpdate={(nb) => { setMenu(null); onUpdate(nb); }} onCancel={() => { setMenu(null); onCancel(m); }} /> : null;
       })()}
+      {history && <BookingHistory bookings={bookings} onClose={() => setHistory(false)} />}
 
       {/* Primary action sits where the thumb is: above the tab bar. */}
       <button
@@ -290,86 +307,6 @@ export function NewBookingPage({ tables, initial, onClose, onSave }: { tables: F
   );
 }
 
-const OPEN = 11 * 60;
-const CLOSE = 23 * 60;
-
-/**
- * The day's bookings as a timeline, like a calendar: each booking is a dot at
- * its time (guests inside), the past is shaded up to the "now" line. The
- * chosen booking (the next one by default) is shown on top; tap a dot to see
- * another. Waiting-list bookings are orange, seated ones green.
- */
-function DayTimeline({ list, today, initial, className = "" }: { list: Booking[]; today: boolean; initial?: string; className?: string }) {
-  const tr = useTr();
-  const [sel, setSel] = useState<string | undefined>(initial ?? list[0]?.id);
-  const cur = list.find((b) => b.id === sel) ?? list[0];
-  const pos = (m: number) => `${Math.max(0, Math.min(1, (m - OPEN) / (CLOSE - OPEN))) * 100}%`;
-  const total = list.reduce((n, b) => n + b.guests, 0);
-  return (
-    <WidgetCard
-      className={className}
-      title={tr("Bookings today")}
-      icon={<CalendarDays size={13} strokeWidth={2.4} />}
-      aside={
-        <span className="text-[13px] text-g-muted tabular-nums">
-          {list.length} · {total} {tr("guests")}
-        </span>
-      }
-    >
-      {cur ? (
-        <div key={cur.id} className="animate-tab mt-3 flex items-center gap-3">
-          <span className="text-[30px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{cur.time}</span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[16px] font-semibold">{cur.name}</span>
-            <span className="block text-[12px] leading-snug text-g-muted tabular-nums">
-              {cur.guests} {tr("guests")} · {cur.table ? `${tr("Table")} ${cur.table}` : tr("No table")}
-              {today && cur.status !== "seated" ? ` · ${relative(cur.time)}` : ""}
-            </span>
-          </span>
-        </div>
-      ) : (
-        <p className="mt-3 text-[15px] text-g-muted">{tr("nothing planned")}</p>
-      )}
-
-      {/* The day: 11:00 to 23:00. */}
-      <div className="relative mt-5 h-14">
-        <span className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white" />
-        {today && <span className="absolute top-1/2 left-0 h-1.5 -translate-y-1/2 rounded-full bg-g-fill-2" style={{ width: pos(NOW) }} />}
-        {today && (
-          <span className="absolute top-0 bottom-0 flex -translate-x-1/2 flex-col items-center" style={{ left: pos(NOW) }}>
-            <span className="text-[9px] leading-none font-bold tracking-[0.06em] text-g-blue uppercase">{tr("now")}</span>
-            <span className="mt-0.5 w-0.5 flex-1 rounded-full bg-g-blue" />
-          </span>
-        )}
-        {list.map((b) => {
-          const on = b.id === cur?.id;
-          const tone = b.status === "waiting" ? "bg-g-orange text-white" : b.status === "seated" ? "bg-g-green text-white" : on ? "blue-grad" : "bg-[#fff] text-g-blue ring-2 ring-g-blue/40";
-          return (
-            <button
-              key={b.id}
-              onClick={() => {
-                haptic("tick");
-                setSel(b.id);
-              }}
-              aria-label={`${b.time} ${b.name}`}
-              className={`press absolute top-1/2 grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[12px] font-bold tabular-nums transition-all ${tone} ${on ? "size-9 ring-4 ring-g-blue/20" : "size-7"}`}
-              style={{ left: pos(mins(b.time)) }}
-            >
-              {b.guests}
-            </button>
-          );
-        })}
-      </div>
-      <div className="relative mt-1 h-4 text-[11px] text-g-muted tabular-nums">
-        {[11, 14, 17, 20, 23].map((h) => (
-          <span key={h} className="absolute -translate-x-1/2" style={{ left: pos(h * 60) }}>
-            {h}:00
-          </span>
-        ))}
-      </div>
-    </WidgetCard>
-  );
-}
 
 /**
  * One booking. Left: the time and how soon. Right: the guest, the status, and
@@ -384,9 +321,9 @@ function BookingCard({ b, today, onSeat, onHold }: { b: Booking; today: boolean;
   return (
     <article {...press} style={{ WebkitTouchCallout: "none" }} className={`rounded-[22px] p-4 select-none ${soon ? "bg-g-tint-blue" : "bg-g-fill"} ${seated ? "opacity-55" : ""}`}>
       <div className="flex items-start gap-3.5">
-        <div className="w-[58px] shrink-0">
+        <div className="min-w-[60px] shrink-0">
           <p className="text-[22px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{b.time}</p>
-          {today && !seated && <p className={`mt-1 text-[12px] font-semibold ${soon ? "text-g-blue" : "text-g-muted"}`}>{relative(b.time)}</p>}
+          {today && !seated && <p className={`mt-1 text-[11px] font-semibold whitespace-nowrap tabular-nums ${soon ? "text-g-blue" : "text-g-muted"}`}>{relative(b.time)}</p>}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
@@ -497,5 +434,199 @@ function BookingMenu({ b, today, onClose, onSeat, onEdit, onUpdate, onCancel }: 
         </div>
       )}
     </PeekCard>
+  );
+}
+
+/**
+ * The day's bookings on a ruler you scrub, like a tuning dial. A fixed blue
+ * line stands in the middle; drag the dashed scale left or right and it ticks
+ * on every mark. The scale spans the first to the last booking of the day,
+ * and gets finer when there are more bookings (hourly, half-hourly, every 15
+ * minutes). Bookings sit on the scale as dots with their party size; bring one
+ * to the middle and its details appear on top.
+ */
+function BookingRuler({ list, today, initial, className = "" }: { list: Booking[]; today: boolean; initial?: string; className?: string }) {
+  const tr = useTr();
+  const ref = useRef<HTMLDivElement>(null);
+  const times = list.map((b) => mins(b.time));
+  const start = Math.floor(Math.min(...(times.length ? times : [11 * 60]), today ? NOW : 24 * 60) / 60) * 60 - 30;
+  const end = Math.ceil(Math.max(...(times.length ? times : [23 * 60])) / 60) * 60 + 30;
+  // More bookings, finer marks.
+  const step = list.length >= 7 ? 15 : list.length >= 4 ? 30 : 60;
+  const PX = step === 15 ? 1.9 : step === 30 ? 1.5 : 1.15; // px per minute
+  const FINE = 5; // a small dash every 5 minutes
+  const width = (end - start) * PX;
+  const firstFocus = list.find((b) => b.id === initial) ?? list[0];
+  const [center, setCenter] = useState(firstFocus ? mins(firstFocus.time) : start);
+  const lastMark = useRef(-1);
+  // The booking at the needle: the nearest one within a few minutes.
+  const near = list.reduce<Booking | undefined>((best, b) => (Math.abs(mins(b.time) - center) <= step / 2 && (!best || Math.abs(mins(b.time) - center) < Math.abs(mins(best.time) - center)) ? b : best), undefined);
+  const hhmm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.round(m % 60)).padStart(2, "0")}`;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollLeft = ((firstFocus ? mins(firstFocus.time) : start) - start) * PX;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const m = start + el.scrollLeft / PX;
+        setCenter(m);
+        const mark = Math.round(m / step);
+        if (mark !== lastMark.current) {
+          lastMark.current = mark;
+          haptic("tick");
+        }
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("scroll", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-centre only when the day's bookings change
+  }, [list.length, start, PX]);
+
+  const go = (m: number) => ref.current?.scrollTo({ left: (m - start) * PX, behavior: "smooth" });
+  const marks = Array.from({ length: Math.floor((end - start) / FINE) + 1 }, (_, i) => start + i * FINE);
+  return (
+    <WidgetCard
+      className={className}
+      title={tr("Bookings today")}
+      icon={<CalendarDays size={13} strokeWidth={2.4} />}
+      aside={
+        <span className="text-[13px] text-g-muted tabular-nums">
+          {list.length} · {list.reduce((n, b) => n + b.guests, 0)} {tr("guests")}
+        </span>
+      }
+    >
+      {/* What is under the needle. */}
+      <div className="mt-3 h-[52px]">
+        {near ? (
+          <div key={near.id} className="animate-tab flex items-center gap-3">
+            <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{near.time}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[16px] font-semibold">{near.name}</span>
+              <span className="block text-[12px] leading-snug text-g-muted tabular-nums">
+                {near.guests} {tr("guests")} · {near.table ? `${tr("Table")} ${near.table}` : tr("No table")}
+                {today && near.status !== "seated" ? <span className="whitespace-nowrap"> · {relative(near.time)}</span> : ""}
+              </span>
+            </span>
+            <span className={`${STATE[near.status].chip} shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold`}>{tr(STATE[near.status].label)}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 text-g-muted">
+            <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] text-g-faint tabular-nums">{hhmm(center)}</span>
+            <span className="text-[13px] whitespace-nowrap">{tr("Drag the scale")}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="relative -mx-4 mt-2">
+        {/* The needle. */}
+        <span aria-hidden className="pointer-events-none absolute top-0 bottom-5 left-1/2 z-10 w-[3px] -translate-x-1/2 rounded-full bg-g-blue" />
+        <div ref={ref} className="no-scrollbar edge-fade overflow-x-auto overscroll-x-contain select-none">
+          <div className="relative h-[84px]" style={{ width: `calc(100% + ${width}px)`, paddingInline: "50%" }}>
+            <div className="relative h-full" style={{ width }}>
+              {/* Past part of the day. */}
+              {today && NOW > start && <span className="absolute top-[26px] left-0 h-[30px] rounded-[6px] bg-g-fill-2/50" style={{ width: Math.min(width, (NOW - start) * PX) }} />}
+              {marks.map((m) => {
+                const hour = m % 60 === 0;
+                const major = m % step === 0;
+                return (
+                  <span key={m} className="absolute" style={{ left: (m - start) * PX }}>
+                    <span className={`absolute top-[30px] -translate-x-1/2 rounded-full ${hour ? "h-[22px] w-[2px] bg-g-ink-2" : major ? "h-[14px] w-[1.5px] bg-g-muted" : "h-[7px] w-px bg-g-faint"}`} style={{ marginTop: hour ? 0 : major ? 4 : 7.5 }} />
+                    {hour && <span className="absolute top-[60px] -translate-x-1/2 text-[11px] font-semibold text-g-muted tabular-nums">{hhmm(m)}</span>}
+                  </span>
+                );
+              })}
+              {/* Dashed baseline. */}
+              <span className="absolute top-[41px] right-0 left-0 border-t-[1.5px] border-dashed border-g-faint/60" />
+              {today && NOW >= start && NOW <= end && <span className="absolute top-[20px] h-[42px] w-[2px] -translate-x-1/2 rounded-full bg-g-orange" style={{ left: (NOW - start) * PX }} />}
+              {list.map((b) => {
+                const on = near?.id === b.id;
+                const tone = b.status === "waiting" ? "bg-g-orange text-white" : b.status === "seated" ? "bg-g-green text-white" : on ? "blue-grad" : "bg-[#fff] text-g-blue ring-2 ring-g-blue/40";
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => go(mins(b.time))}
+                    aria-label={`${b.time} ${b.name}`}
+                    className={`absolute top-[2px] grid -translate-x-1/2 place-items-center rounded-full text-[11px] font-bold tabular-nums transition-transform ${tone} ${on ? "size-7 scale-110" : "size-6"}`}
+                    style={{ left: (mins(b.time) - start) * PX }}
+                  >
+                    {b.guests}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </WidgetCard>
+  );
+}
+
+/** Every booking that is over: past visits and cancelled ones, newest first. */
+function BookingHistory({ bookings, onClose }: { bookings: Booking[]; onClose: () => void }) {
+  const tr = useTr();
+  const [tab, setTab] = useState<"past" | "cancelled">("past");
+  const past = bookings.filter((b) => b.status === "seated" || (b.day < 0 && b.status !== "cancelled"));
+  const cancelled = bookings.filter((b) => b.status === "cancelled");
+  const list = (tab === "past" ? past : cancelled).sort((a, b) => b.day - a.day || b.time.localeCompare(a.time));
+  const dayName = (d: number) => (d === 0 ? tr("Today") : d === -1 ? tr("Yesterday") : `${-d} ${tr("days ago")}`);
+  return (
+    <Sheet open onClose={onClose} label={tr("Booking history")} title={false}>
+      <div className="px-5 pt-1 pb-10">
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Booking history")}</h2>
+        <div className="mt-4 flex rounded-full bg-g-fill p-1">
+          {(
+            [
+              ["past", `${tr("Visited")} · ${past.length}`],
+              ["cancelled", `${tr("Cancelled")} · ${cancelled.length}`],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => {
+                haptic("tick");
+                setTab(id);
+              }}
+              aria-pressed={tab === id}
+              className={`h-10 flex-1 rounded-full text-[14px] font-semibold ${tab === id ? "bg-white text-g-ink" : "text-g-muted"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 grid gap-2">
+          {list.map((b) => (
+            <div key={b.id} className="rounded-[20px] bg-g-fill p-3.5">
+              <div className="flex items-center gap-3">
+                <span className="min-w-[58px] shrink-0">
+                  <span className="block text-[18px] leading-none font-semibold tabular-nums">{b.time}</span>
+                  <span className="mt-1 block text-[11px] whitespace-nowrap text-g-muted">{dayName(b.day)}</span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-semibold">{b.name}</span>
+                  <span className="block text-[12px] text-g-muted tabular-nums">
+                    {b.guests} {tr("guests")} · {b.table ? `${tr("Table")} ${b.table}` : tr("No table")}
+                  </span>
+                </span>
+                <span className={`${STATE[b.status].chip} shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold`}>{tr(STATE[b.status].label)}</span>
+              </div>
+              {b.cancelled && (
+                <p className="mt-2 rounded-[12px] bg-white px-3 py-2 text-[12px] text-g-ink-2">
+                  {tr("Cancelled at")} {b.cancelled.at}
+                  {b.cancelled.reason ? ` · ${tr(b.cancelled.reason)}` : ""}
+                </p>
+              )}
+            </div>
+          ))}
+          {!list.length && <p className="py-12 text-center text-[15px] text-g-muted">{tr("Nothing here yet")}</p>}
+        </div>
+      </div>
+    </Sheet>
   );
 }

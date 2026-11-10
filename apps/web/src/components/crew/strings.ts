@@ -1,5 +1,15 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Drag the scale": "Двигайте шкалу",
+  "Booking history": "История броней",
+  "cancelled": "отменено",
+  "Visited": "Пришли",
+  "Cancelled at": "Отменена в",
+  "days ago": "дн. назад",
+  "No bookings at this time · drag the scale": "В это время броней нет · двигайте шкалу",
+  "Guest cancelled by phone": "Гость отменил по телефону",
+  "No-show": "Не пришли",
+  "Cancelled by the waiter": "Отменил официант",
   "New booking": "Новая бронь",
   "Save changes": "Сохранить изменения",
   "Save booking": "Сохранить бронь",
@@ -430,6 +440,16 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Drag the scale": "Kéo thước",
+  "Booking history": "Lịch sử đặt bàn",
+  "cancelled": "đã hủy",
+  "Visited": "Đã đến",
+  "Cancelled at": "Hủy lúc",
+  "days ago": "ngày trước",
+  "No bookings at this time · drag the scale": "Không có đặt bàn lúc này · kéo thước",
+  "Guest cancelled by phone": "Khách hủy qua điện thoại",
+  "No-show": "Không đến",
+  "Cancelled by the waiter": "Phục vụ đã hủy",
   "New booking": "Đặt bàn mới",
   "Save changes": "Lưu thay đổi",
   "Save booking": "Lưu đặt bàn",
