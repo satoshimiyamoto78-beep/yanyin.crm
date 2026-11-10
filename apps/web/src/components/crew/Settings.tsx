@@ -260,8 +260,8 @@ function NotificationSettings({ onClose }: { onClose: () => void }) {
     {
       title: tr("Bookings"),
       rows: [
-        { k: "bookings", icon: CalendarPlus, label: tr("New bookings"), hint: tr("Someone booked a table"), chip: "chip-purple" },
-        { k: "arrivals", icon: CalendarCheck, label: tr("Guest arrived"), hint: tr("A booked guest is at the door"), chip: "chip-purple" },
+        { k: "bookings", icon: CalendarPlus, label: tr("New bookings"), hint: tr("Someone booked a table"), chip: "chip-teal" },
+        { k: "arrivals", icon: CalendarCheck, label: tr("Guest arrived"), hint: tr("A booked guest is at the door"), chip: "chip-teal" },
       ],
     },
     { title: tr("Team"), rows: [{ k: "quests", icon: BadgeCheck, label: tr("Quests and badges"), hint: tr("New quests, rewards, levels"), chip: "chip-blue" }] },

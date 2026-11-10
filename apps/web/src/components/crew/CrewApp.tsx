@@ -44,6 +44,7 @@ import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
 import { BookingsArt, CheckArt, OrdersArt, TablesArt, TipsArt } from "./Illustrations";
 import { CabinetView, pastOrders } from "./Cabinet";
+import { noticeMeta } from "./notices";
 import { DaysCompareWidget, FlowWidget, IconStat, LineWidget, MeterWidget, RingWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
@@ -71,7 +72,7 @@ const STATUS: Record<FloorTable["status"], { label: string; chip: string }> = {
   seated: { label: "Seated", chip: "chip-blue" },
   ordered: { label: "Ordered", chip: "chip-blue" },
   bill: { label: "Bill", chip: "chip-orange" },
-  reserved: { label: "Reserved", chip: "chip-purple" },
+  reserved: { label: "Reserved", chip: "chip-teal" },
 };
 const LINE: Record<LineState, { label: string; chip: string; next: LineState }> = {
   new: { label: "New", chip: "chip-gray", next: "cooking" },
@@ -134,9 +135,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
 
   const notify = useCallback((raw: Notice) => {
     haptic("success");
-    // Colour by meaning: done = green, bills and checks = orange, the rest = blue.
-    const tone = raw.tone ?? (/closed|paid|served|seated|saved|claimed|sent/i.test(raw.title) ? "green" : /bill|check/i.test(raw.title) ? "orange" : "blue");
-    const n: Notice = { ...raw, tone, icon: raw.icon ?? <ChefHat size={16} strokeWidth={2.25} /> };
+    // Colour and icon follow the meaning of the notification (English, Russian, Vietnamese wording).
+    const meta = noticeMeta(raw.title);
+    const n: Notice = { ...raw, tone: raw.tone ?? meta.tone, icon: raw.icon ?? <meta.icon size={16} strokeWidth={2.25} /> };
     setNotice(n);
     setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), 2600);
     // Every notification is kept in the inbox history.
@@ -1889,3 +1890,4 @@ function CancelInfo({ line, name, money, onClose }: { line: TicketLine; name: st
     </PeekCard>
   );
 }
+

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
 import { useTr } from "./prefs";
+import { noticeMeta } from "./notices";
 
 export type InboxKind = "orders" | "kitchen" | "bills" | "bookings" | "team";
 export type InboxItem = { id: string; kind: InboxKind; title: string; text?: string; at: number; read: boolean };
@@ -13,16 +14,16 @@ const KIND: Record<InboxKind, { label: string; icon: LucideIcon; chip: string }>
   orders: { label: "Orders", icon: UtensilsCrossed, chip: "chip-blue" },
   kitchen: { label: "Kitchen", icon: ChefHat, chip: "chip-green" },
   bills: { label: "Bills", icon: ReceiptText, chip: "chip-orange" },
-  bookings: { label: "Bookings", icon: CalendarDays, chip: "chip-blue" },
-  team: { label: "Team", icon: Trophy, chip: "chip-purple" },
+  bookings: { label: "Bookings", icon: CalendarDays, chip: "chip-teal" },
+  team: { label: "Team", icon: Trophy, chip: "chip-gray" },
 };
 
 /** Which shelf a live notification goes to, from its wording. */
 export function kindOf(title: string): InboxKind {
-  if (/bill|check|paid|payment|tip/i.test(title)) return "bills";
-  if (/seated|booking|arriv/i.test(title)) return "bookings";
-  if (/served|kitchen|ready|cooking/i.test(title)) return "kitchen";
-  if (/quest|xp|break|shift|badge|level/i.test(title)) return "team";
+  if (/bill|check|paid|payment|tip|счёт|счет|чек|оплат|чаев|hóa đơn|thanh toán|tip/i.test(title)) return "bills";
+  if (/seated|booking|arriv|сел|брон|ngồi|đặt bàn/i.test(title)) return "bookings";
+  if (/served|kitchen|ready|cooking|подан|кухн|готов|bếp|nấu|lên món/i.test(title)) return "kitchen";
+  if (/quest|xp|break|shift|badge|level|квест|перерыв|смен|бейдж|уровен|nhiệm vụ|nghỉ|ca |huy hiệu|cấp/i.test(title)) return "team";
   return "orders";
 }
 
@@ -134,10 +135,12 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
                 <ul className="mt-1 divide-y divide-g-line">
                   {l.map((i) => {
                     const k = KIND[i.kind];
+                    // The icon says what happened; the colour says which shelf it is on.
+                    const Ico = noticeMeta(i.title).icon;
                     return (
                       <li key={i.id} className="flex gap-3.5 py-3.5">
                         <span className={`${k.chip} grid size-10 shrink-0 place-items-center rounded-full`}>
-                          <k.icon size={18} strokeWidth={2} />
+                          <Ico size={18} strokeWidth={2} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-baseline justify-between gap-3">
