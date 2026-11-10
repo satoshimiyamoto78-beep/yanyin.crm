@@ -5,7 +5,8 @@ import { useRef, useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { useTr } from "./prefs";
-import { useEdgeSoften } from "@/components/system/useEdgeSoften";
+import { useEdgeSoften, useMoreSides } from "@/components/system/useEdgeSoften";
+import { EdgeBlur } from "@/components/system/EdgeBlur";
 
 export type Tip = {
   id: string;
@@ -48,6 +49,7 @@ export function TipsCarousel({
   const ref = useRef<HTMLDivElement>(null);
   const tr = useTr();
   useEdgeSoften(ref);
+  useMoreSides(ref);
   const [at, setAt] = useState(0);
 
   const onScroll = () => {
@@ -81,7 +83,7 @@ export function TipsCarousel({
         )}
       </div>
 
-      <div className="-mx-5 mt-3">
+      <div className="edge-host -mx-5 mt-3">
         <div
           ref={ref}
           onScroll={onScroll}
@@ -128,6 +130,7 @@ export function TipsCarousel({
           {/* Lets the last card land on the gutter too. */}
           <span aria-hidden className="w-[calc(18%-10px)] shrink-0" />
         </div>
+        <EdgeBlur />
       </div>
 
       <div

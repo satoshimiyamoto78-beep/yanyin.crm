@@ -9,7 +9,7 @@ import { useEffect, type RefObject } from "react";
  * crisp. Nothing is laid over the content, nothing blurs, at rest nothing
  * changes. Written straight to the DOM each frame.
  */
-const FADE = 28;
+const FADE = 40;
 
 export function useEdgeSoften(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -33,9 +33,11 @@ export function useEdgeSoften(ref: RefObject<HTMLElement | null>) {
           c.style.webkitMaskImage = "";
           return;
         }
+        // Fade only part of the way (to 35%): the progressive blur on top does the rest.
+        const soft = "rgba(0,0,0,0.35)";
         const stops = [
-          left ? `transparent ${(lTo - FADE).toFixed(1)}px, #000 ${lTo.toFixed(1)}px` : "#000 0px",
-          right ? `#000 ${rFrom.toFixed(1)}px, transparent ${(rFrom + FADE).toFixed(1)}px` : "#000 100%",
+          left ? `${soft} ${(lTo - FADE).toFixed(1)}px, #000 ${lTo.toFixed(1)}px` : "#000 0px",
+          right ? `#000 ${rFrom.toFixed(1)}px, ${soft} ${(rFrom + FADE).toFixed(1)}px` : "#000 100%",
         ];
         const m = `linear-gradient(90deg, ${stops.join(", ")})`;
         c.style.maskImage = m;
@@ -52,6 +54,32 @@ export function useEdgeSoften(ref: RefObject<HTMLElement | null>) {
       cancelAnimationFrame(raf);
       el.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+    };
+  }, [ref]);
+}
+
+/** Marks which sides of a scroller have more content, for the edge blur. */
+export function useMoreSides(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    const wrap = el?.parentElement;
+    if (!el || !wrap) return;
+    let raf = 0;
+    const mark = () => {
+      raf = 0;
+      wrap.setAttribute("data-more-l", String(el.scrollLeft > 2));
+      wrap.setAttribute("data-more-r", String(el.scrollLeft < el.scrollWidth - el.clientWidth - 2));
+    };
+    const on = () => {
+      if (!raf) raf = requestAnimationFrame(mark);
+    };
+    mark();
+    el.addEventListener("scroll", on, { passive: true });
+    window.addEventListener("resize", on);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("scroll", on);
+      window.removeEventListener("resize", on);
     };
   }, [ref]);
 }
