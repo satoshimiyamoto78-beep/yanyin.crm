@@ -190,6 +190,7 @@ body {
 [data-scheme="dark"] .chip-orange { background: #2e1d10; color: #ff9a55; }
 [data-scheme="dark"] .chip-purple { background: #1c2647; color: #8fb0ff; }
 [data-scheme="dark"] .chip-gray { background: #22252c; color: #a9adb6; }
+[data-scheme="dark"] .chip-red { background: #2e1416; color: #ff6b70; }
 [data-scheme="dark"] .chip-teal { background: #0e2a28; color: #4fd1c5; }
 [data-scheme="dark"] .ring-g-line { --tw-ring-color: var(--g-line); }
 /* Theme change: the browser cross-fades two snapshots of the screen on the GPU. */
@@ -279,6 +280,7 @@ body {
 .chip-purple { background: #f0eaff; color: #7c4dff; }
 .chip-teal { background: #e3f5f2; color: #0f8a7a; }
 .chip-gray { background: #eef0f3; color: #5d6068; }
+.chip-red { background: #fdeaea; color: #d93036; }
 
 /* Tactile press for every tappable surface. */
 .press {

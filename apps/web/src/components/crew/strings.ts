@@ -1,5 +1,16 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "dishes in work": "блюд в работе",
+  "open tables": "открытых столов",
+  "Sent, waiting for the kitchen": "Отправлены, ждут кухню",
+  "In the kitchen now": "Сейчас на кухне",
+  "On the tables": "Уже на столах",
+  "wants to pay": "хочет оплатить",
+  "No one is waiting": "Никто не ждёт",
+  "Take payment": "Принять оплату",
+  "paid today": "оплачено сегодня",
+  "Last Monday": "Прошлый понедельник",
+  "dashed line: last Monday": "пунктир: прошлый понедельник",
   "Hall occupancy": "Загрузка зала",
   "Busy now": "Занято сейчас",
   "Free seats": "Свободные места",
@@ -315,6 +326,17 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "dishes in work": "món đang làm",
+  "open tables": "bàn đang mở",
+  "Sent, waiting for the kitchen": "Đã gửi, chờ bếp",
+  "In the kitchen now": "Đang ở bếp",
+  "On the tables": "Đã lên bàn",
+  "wants to pay": "muốn thanh toán",
+  "No one is waiting": "Không ai chờ",
+  "Take payment": "Nhận thanh toán",
+  "paid today": "đã thanh toán hôm nay",
+  "Last Monday": "Thứ Hai trước",
+  "dashed line: last Monday": "nét đứt: thứ Hai trước",
   "Hall occupancy": "Mức lấp đầy sảnh",
   "Busy now": "Đang dùng",
   "Free seats": "Chỗ trống",

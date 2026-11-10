@@ -19,6 +19,7 @@ import {
   ReceiptText,
   Search,
   Send,
+  Check,
   ScanLine,
   Users,
   Wallet,
@@ -35,7 +36,7 @@ import { BookingsView, NewBookingPage } from "./Bookings";
 import { CrewBoard } from "./CrewBoard";
 import { useScheme } from "@/components/system/scheme";
 import { BookingsArt, OrdersArt, TablesArt } from "./Illustrations";
-import { HeroStat, LineWidget, MeterWidget, RingWidget, StepsWidget } from "@/components/system/Widgets";
+import { FlowWidget, HeroStat, IconStat, LineWidget, MeterWidget, RingWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useTr } from "./prefs";
 import { Scanner } from "./Scanner";
@@ -46,6 +47,11 @@ import { levelFromXp } from "@yanyin/domain";
 
 type Tab = "me" | "hall" | "tables" | "orders" | "bookings";
 type HallSeg = "tables" | "orders" | "bookings";
+
+/** Demo running totals (million ₫) by hour; the backend will supply real ones. */
+const DAY_HOURS = ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"];
+const LAST_MONDAY_RUN = [0, 0.6, 2.4, 4.2, 5.1, 5.6, 6.0, 6.6, 8.1, 10.2, 12.0, 13.1, 13.6];
+const TODAY_RUN = [0, 0.7, 2.6, 4.71];
 
 const STATUS: Record<FloorTable["status"], { label: string; chip: string }> = {
   free: { label: "Free", chip: "chip-gray" },
@@ -1281,6 +1287,8 @@ function OrdersView({
   const tr = useTr();
   const [view, setView] = useState<"open" | "closed">("open");
   const open = tables.filter((x) => x.lines.length);
+  const dishes = (st: LineState) => open.reduce((n, x) => n + x.lines.filter((l) => l.state === st).reduce((q, l) => q + l.qty, 0), 0);
+  const billTables = open.filter((x) => x.status === "bill");
   const groups: [string, FloorTable[]][] = [
     ["Bill asked", open.filter((x) => x.status === "bill")],
     ["In the kitchen", open.filter((x) => x.status !== "bill" && x.lines.some((l) => l.state !== "served"))],
@@ -1301,29 +1309,47 @@ function OrdersView({
           title={tr("Taken today")}
           icon={<Wallet size={13} strokeWidth={2.4} />}
           value={compactMoney(takings)}
-          delta="12%"
-          deltaLabel={`${tr("vs last")} ${tr("Monday")} · ${history.length} ${tr("bills closed")}`}
-          series={[0, 0.35, 0.8, 1.6, 2.9, 3.6, takings / 1_000_000]}
+          labels={DAY_HOURS}
+          today={TODAY_RUN.slice(0, -1).concat(takings / 1_000_000)}
+          reference={LAST_MONDAY_RUN}
+          referenceName={tr("Last Monday")}
+          format={(v) => `${v.toFixed(2)}M ₫`}
+          footnote={`${history.length} ${tr("bills closed")} · ${tr("dashed line: last Monday")}`}
         />
-        <StepsWidget
+        <FlowWidget
           className="col-span-2"
           title={tr("Orders now")}
           icon={<ChefHat size={13} strokeWidth={2.4} />}
-          steps={[
-            { label: tr("New"), count: open.reduce((n, x) => n + x.lines.filter((l) => l.state === "new").length, 0) },
-            { label: tr("Cooking"), count: open.reduce((n, x) => n + x.lines.filter((l) => l.state === "cooking").length, 0) },
-            { label: tr("Served"), count: open.reduce((n, x) => n + x.lines.filter((l) => l.state === "served").length, 0) },
-            { label: tr("Bill"), count: open.filter((x) => x.status === "bill").length },
-            { label: tr("Paid"), count: history.length },
+          headline={
+            <p>
+              <span className="live text-[30px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{dishes("new") + dishes("cooking")}</span>
+              <span className="ml-1.5 text-[14px] text-g-muted">
+                {tr("dishes in work")} · {open.length} {tr("open tables")}
+              </span>
+            </p>
+          }
+          stages={[
+            { label: tr("New"), count: dishes("new"), color: "#8fb2ff", icon: <Send size={14} strokeWidth={2.4} />, hint: tr("Sent, waiting for the kitchen") },
+            { label: tr("Cooking"), count: dishes("cooking"), color: "#2f5bff", icon: <ChefHat size={14} strokeWidth={2.4} />, hint: tr("In the kitchen now") },
+            { label: tr("Served"), count: dishes("served"), color: "#12a150", icon: <Check size={14} strokeWidth={2.6} />, hint: tr("On the tables") },
+            {
+              label: tr("Bill"),
+              count: billTables.length,
+              color: "#ef6c1a",
+              icon: <ReceiptText size={14} strokeWidth={2.4} />,
+              hint: billTables.length ? `${tr("Table")} ${billTables.map((x) => x.no).join(", ")} ${tr("wants to pay")}` : tr("No one is waiting"),
+              action: billTables[0] ? { label: tr("Take payment"), onClick: () => onOpenTable(billTables[0]!.no) } : undefined,
+            },
           ]}
+          footnote={`${history.length} ${tr("paid today")}`}
         />
-        <RingWidget title={tr("Tips")} icon={<Banknote size={13} strokeWidth={2.4} />} value={compactMoney(tips)} unit={tr("team pool")} part={tips / 400_000} tone="green" />
-        <RingWidget
+        <IconStat title={tr("Tips")} icon={<Banknote size={26} strokeWidth={2} />} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
+        <IconStat
           title={tr("Avg check")}
-          icon={<ReceiptText size={13} strokeWidth={2.4} />}
+          icon={<ReceiptText size={26} strokeWidth={2} />}
           value={compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0)}
-          unit={tr("per bill today")}
-          part={history.length ? takings / history.length / 1_500_000 : 0}
+          sub={tr("per bill today")}
+          tone="blue"
         />
       </Reveal>
       <div className="mt-4 flex rounded-full bg-g-fill p-1">

@@ -69,40 +69,113 @@ function Pill({ children }: { children: ReactNode }) {
   return <span className="pointer-events-none rounded-full bg-[#0b0b0f] px-2.5 py-1 text-[12px] font-semibold whitespace-nowrap text-white tabular-nums">{children}</span>;
 }
 
-/** A big number with its change and a faint trend line behind it. */
-export function HeroStat({ title, icon, value, delta, deltaLabel, good = true, series , className = ""}: { title: string; icon?: ReactNode; value: string; delta: string; deltaLabel: string; good?: boolean; series: number[] ; className?: string}) {
+/** Smooth path through points (Catmull-Rom → cubic Bézier). */
+function smooth(pts: [number, number][]) {
+  return pts
+    .map(([x, y], i) => {
+      if (!i) return `M${x.toFixed(1)},${y.toFixed(1)}`;
+      const p0 = pts[Math.max(0, i - 2)]!, p1 = pts[i - 1]!, p3 = pts[Math.min(pts.length - 1, i + 1)]!;
+      const c1x = p1[0] + (x - p0[0]) / 6, c1y = p1[1] + (y - p0[1]) / 6;
+      const c2x = x - (p3[0] - p1[0]) / 6, c2y = y - (p3[1] - p1[1]) / 6;
+      return `C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
+/**
+ * The day's number against a reference day. Today's running total is the solid
+ * line up to now; the reference day (say, last Monday) is a dashed grey line
+ * across the whole day. The change is computed at the same hour: ahead is green
+ * and points up, behind is red and points down, within ±2% is grey ("about the
+ * same"). Scrub to read any hour against the reference.
+ */
+export function HeroStat({
+  title,
+  icon,
+  value,
+  labels,
+  today,
+  reference,
+  referenceName,
+  format,
+  footnote,
+  className = "",
+}: {
+  title: string;
+  icon?: ReactNode;
+  value: string;
+  /** One label per point of the whole day. */
+  labels: string[];
+  /** Running total so far today (shorter than `reference`; the last point is now). */
+  today: number[];
+  /** Running total of the reference day, every point. */
+  reference: number[];
+  referenceName: string;
+  format: (v: number) => string;
+  footnote?: string;
+  className?: string;
+}) {
   const id = useId();
   const on = useEntered();
-  const max = Math.max(...series, 1);
-  const pts = series.map((v, i) => [(i / (series.length - 1)) * 200, 70 - (v / max) * 58] as const);
-  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-  const tone = good ? "#12a150" : "#e2600f";
+  const n = reference.length;
+  const nowI = today.length - 1;
+  const { at, box, handlers } = useScrub(today.length, nowI);
+  const max = Math.max(...reference, ...today, 1) * 1.08;
+  const X = (i: number) => (i / (n - 1)) * 300;
+  const Y = (v: number) => 92 - (v / max) * 84;
+  const refPath = smooth(reference.map((v, i) => [X(i), Y(v)]));
+  const todayPts = today.map((v, i) => [X(i), Y(v)] as [number, number]);
+  const todayPath = smooth(todayPts);
+  const ref = reference[at] ?? 0;
+  const cur = today[at] ?? 0;
+  const change = ref ? (cur - ref) / ref : 0;
+  const trend = change > 0.02 ? "up" : change < -0.02 ? "down" : "flat";
+  const color = { up: "#12a150", down: "#e5484d", flat: "#8b909a" }[trend];
+  const chip = { up: "chip-green", down: "chip-red", flat: "chip-gray" }[trend];
+  const arrow = { up: "↑", down: "↓", flat: "≈" }[trend];
+  const px = (X(at) / 300) * 100;
   return (
-    <WidgetCard title={title} icon={icon} className={`relative overflow-hidden ${className}`}>
-      <svg
-        viewBox="0 0 200 74"
-        preserveAspectRatio="none"
-        className="pointer-events-none absolute right-0 bottom-0 h-[78%] w-[62%] [mask-image:linear-gradient(90deg,transparent,#000_35%)]"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id={`hs${id}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={tone} stopOpacity="0.18" />
-            <stop offset="1" stopColor={tone} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={`${d} L200,74 L0,74 Z`} fill={`url(#hs${id})`} style={{ opacity: on ? 1 : 0, transition: "opacity 0.8s ease 0.3s" }} />
-        <path d={d} fill="none" stroke={tone} strokeWidth="1.6" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray="1" strokeDashoffset={on ? 0 : 1} style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }} />
-      </svg>
-      <div className="relative">
-        <p className="live mt-4 text-[44px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{value}</p>
-        <p className="mt-2 flex items-center gap-1.5 text-[13px]">
-          <span className={`rounded-md px-1.5 py-0.5 font-semibold ${good ? "chip-green" : "chip-orange"}`}>
-            {good ? "↑" : "↓"} {delta}
-          </span>
-          <span className="text-g-muted">{deltaLabel}</span>
-        </p>
+    <WidgetCard title={title} icon={icon} className={className} aside={<span className="text-[13px] text-g-muted">{at === nowI ? labels[at] : labels[at]}</span>}>
+      <p className="live mt-3 text-[44px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{at === nowI ? value : format(cur)}</p>
+      <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px]">
+        <span className={`rounded-md px-1.5 py-0.5 font-semibold tabular-nums ${chip}`}>
+          {ref ? `${arrow} ${Math.abs(Math.round(change * 100))}%` : "—"}
+        </span>
+        <span className="text-g-muted">
+          {referenceName} · {format(ref)}
+        </span>
+      </p>
+      <div ref={box} {...handlers} className="relative mt-4 h-[96px] cursor-crosshair touch-pan-y select-none">
+        <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
+          <defs>
+            <linearGradient id={`ha${id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor={color} stopOpacity="0.28" />
+              <stop offset="0.7" stopColor={color} stopOpacity="0.06" />
+              <stop offset="1" stopColor={color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {/* Reference day: thin dashed grey across the whole day. */}
+          <path d={refPath} fill="none" stroke="currentColor" className="text-g-faint" strokeWidth="1.5" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
+          {/* Today: area and line up to now, in the trend's colour. */}
+          <path d={`${todayPath} L${X(nowI)},100 L0,100 Z`} fill={`url(#ha${id})`} style={{ opacity: on ? 1 : 0, transition: "opacity 0.8s ease 0.4s" }} />
+          <path d={todayPath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray="1" strokeDashoffset={on ? 0 : 1} style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1), stroke 0.3s" }} />
+        </svg>
+        {/* Now: a dot with a soft pulse at the end of today's line. */}
+        <span className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${(X(nowI) / 300) * 100}%`, top: `${Y(today[nowI]!)}%` }}>
+          <span className="absolute inset-0 m-auto size-5 animate-ping rounded-full opacity-40" style={{ background: color }} />
+          <span className="relative block size-3 rounded-full border-2 border-[#fff]" style={{ background: color }} />
+        </span>
+        {at !== nowI && (
+          <>
+            <span className="pointer-events-none absolute top-0 bottom-0 w-px bg-g-ink/25" style={{ left: `${px}%` }} />
+            <span className="pointer-events-none absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#fff]" style={{ left: `${px}%`, top: `${Y(cur)}%`, background: color }} />
+          </>
+        )}
       </div>
+      <div className="mt-1.5 flex justify-between text-[11px] text-g-muted tabular-nums">
+        {labels.map((l, i) => (i % 3 === 0 || i === n - 1 ? <span key={l} className={i === at ? "font-semibold text-g-ink" : ""}>{l}</span> : null))}
+      </div>
+      {footnote && <p className="mt-2 text-[12px] text-g-muted">{footnote}</p>}
     </WidgetCard>
   );
 }
@@ -251,30 +324,92 @@ export function MeterWidget({ title, icon, value, unit, level, low, high, word, 
   );
 }
 
-/** A pipeline: every step with its count, the busiest step marked, done steps solid. */
-export function StepsWidget({ title, icon, steps, onStep , className = ""}: { title: string; icon?: ReactNode; steps: { label: string; count: number; done?: boolean }[]; onStep?: (i: number) => void ; className?: string}) {
+/**
+ * Where the work is right now: one thin bar split by stage (each stage's share
+ * of dishes), then a row per stage with its count and what it means. The stage
+ * that needs the waiter carries an action button. Colour always comes with a
+ * label, never alone.
+ */
+export function FlowWidget({
+  title,
+  icon,
+  headline,
+  stages,
+  footnote,
+  className = "",
+}: {
+  title: string;
+  icon?: ReactNode;
+  headline: ReactNode;
+  stages: { label: string; count: number; color: string; icon: ReactNode; hint: string; action?: { label: string; onClick: () => void } }[];
+  footnote?: string;
+  className?: string;
+}) {
   const on = useEntered();
-  const busiest = steps.reduce((b, s, i) => (s.count > steps[b]!.count ? i : b), 0);
+  const total = Math.max(1, stages.reduce((n, s) => n + s.count, 0));
   return (
     <WidgetCard title={title} icon={icon} className={className}>
-      <div className="relative mt-4 flex h-14 items-center overflow-hidden rounded-full bg-white p-1.5">
-        <span
-          className="absolute inset-y-1.5 left-1.5 rounded-full transition-[width] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{ width: on ? `calc(${((busiest + 1) / steps.length) * 100}% - 12px)` : "44px", background: "linear-gradient(90deg, #0b0b0f 0%, #2530b0 45%, #6c96ff 100%)" }}
-        />
-        {steps.map((s, i) => (
-          <button key={s.label} onClick={() => onStep?.(i)} className="relative z-10 grid flex-1 place-items-center">
-            <span className={`grid size-9 place-items-center rounded-full text-[14px] font-bold tabular-nums transition-colors ${i <= busiest ? "bg-white/20 text-white" : "bg-g-fill text-g-muted"}`}>{s.count}</span>
-          </button>
-        ))}
+      <div className="mt-3">{headline}</div>
+      <div className="mt-3 flex h-2.5 gap-[3px] overflow-hidden rounded-full">
+        {stages
+          .filter((s) => s.count > 0)
+          .map((s, i) => (
+            <span
+              key={s.label}
+              className="h-full rounded-full transition-[flex-grow] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ flexGrow: on ? s.count / total : 0.0001, flexBasis: 0, background: s.color, transitionDelay: `${i * 80}ms` }}
+            />
+          ))}
       </div>
-      <div className="mt-2 flex">
-        {steps.map((s, i) => (
-          <span key={s.label} className={`flex-1 text-center text-[11px] leading-tight ${i === busiest ? "font-semibold text-g-ink" : "text-g-muted"}`}>
-            {s.label}
-          </span>
+      <ul className="mt-3 divide-y divide-g-line">
+        {stages.map((s) => (
+          <li key={s.label} className="flex items-center gap-3 py-2.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full text-white" style={{ background: s.color }}>
+              {s.icon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold">{s.label}</span>
+              <span className="block truncate text-[12px] text-g-muted">{s.hint}</span>
+            </span>
+            {s.action && s.count > 0 ? (
+              <button
+                onClick={() => {
+                  haptic("light");
+                  s.action!.onClick();
+                }}
+                className="press h-8 shrink-0 rounded-full bg-g-ink px-3 text-[12px] font-semibold text-white"
+              >
+                {s.action.label}
+              </button>
+            ) : null}
+            <span className="live w-7 shrink-0 text-right text-[20px] font-semibold tabular-nums">{s.count}</span>
+          </li>
         ))}
-      </div>
+      </ul>
+      {footnote && <p className="mt-1 text-[12px] text-g-muted">{footnote}</p>}
     </WidgetCard>
+  );
+}
+
+/** A single figure led by a big coloured icon on a matching tinted card: tips in green, checks in blue. */
+export function IconStat({ title, icon, value, sub, tone = "blue", className = "" }: { title: string; icon: ReactNode; value: string; sub: string; tone?: "green" | "blue" | "orange"; className?: string }) {
+  const t = {
+    green: { card: "bg-g-tint-green", disc: "linear-gradient(145deg,#4cd18a,#12a150)", label: "text-g-green" },
+    blue: { card: "bg-g-tint-blue", disc: "linear-gradient(145deg,#6c96ff,#2f6bff 55%,#2530b0)", label: "text-g-blue" },
+    orange: { card: "bg-g-tint-orange", disc: "linear-gradient(145deg,#ffb067,#ef6c1a)", label: "text-g-orange" },
+  }[tone];
+  return (
+    <section className={`flex flex-col justify-between rounded-[26px] p-4 ${t.card} ${className}`}>
+      <span className="flex items-start justify-between gap-2">
+        <span className={`pt-1 text-[14px] font-semibold ${t.label}`}>{title}</span>
+        <span className="grid size-14 shrink-0 place-items-center rounded-full text-white" style={{ background: t.disc }}>
+          {icon}
+        </span>
+      </span>
+      <span className="mt-3 block">
+        <span className="live block text-[26px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
+        <span className="mt-1 block truncate text-[12px] text-g-muted">{sub}</span>
+      </span>
+    </section>
   );
 }
