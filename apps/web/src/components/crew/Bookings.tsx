@@ -455,13 +455,23 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
   const step = list.length >= 7 ? 15 : list.length >= 4 ? 30 : 60;
   const PX = step === 15 ? 1.9 : step === 30 ? 1.5 : 1.15; // px per minute
   const FINE = 5; // a small dash every 5 minutes
+  const [vw, setVw] = useState(360);
+  const pad = vw / 2 / PX; // minutes of scale drawn beyond each end, so it never runs out
   const width = (end - start) * PX;
   const firstFocus = list.find((b) => b.id === initial) ?? list[0];
   const [center, setCenter] = useState(firstFocus ? mins(firstFocus.time) : start);
   const lastMark = useRef(-1);
-  // The booking at the needle: the nearest one within a few minutes.
   const near = list.reduce<Booking | undefined>((best, b) => (Math.abs(mins(b.time) - center) <= step / 2 && (!best || Math.abs(mins(b.time) - center) < Math.abs(mins(best.time) - center)) ? b : best), undefined);
   const hhmm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.round(m % 60)).padStart(2, "0")}`;
+  const x = (m: number) => (m - start) * PX + vw / 2; // position inside the scrolled strip
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setVw(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -487,10 +497,12 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
       el.removeEventListener("scroll", onScroll);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-centre only when the day's bookings change
-  }, [list.length, start, PX]);
+  }, [list.length, start, PX, vw]);
 
   const go = (m: number) => ref.current?.scrollTo({ left: (m - start) * PX, behavior: "smooth" });
-  const marks = Array.from({ length: Math.floor((end - start) / FINE) + 1 }, (_, i) => start + i * FINE);
+  const from = Math.floor((start - pad) / FINE) * FINE;
+  const to = Math.ceil((end + pad) / FINE) * FINE;
+  const marks = Array.from({ length: (to - from) / FINE + 1 }, (_, i) => from + i * FINE);
   return (
     <WidgetCard
       className={className}
@@ -503,64 +515,73 @@ function BookingRuler({ list, today, initial, className = "" }: { list: Booking[
       }
     >
       {/* What is under the needle. */}
-      <div className="mt-3 h-[52px]">
+      <div className="mt-3 flex h-[56px] items-center">
         {near ? (
-          <div key={near.id} className="animate-tab flex items-center gap-3">
-            <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{near.time}</span>
+          <div key={near.id} className="animate-tab flex w-full items-center gap-3">
+            <span className="bg-[linear-gradient(135deg,#6c96ff,#2f5bff_55%,#2530b0)] bg-clip-text text-[30px] leading-none font-semibold tracking-[-0.03em] text-transparent tabular-nums">{near.time}</span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[16px] font-semibold">{near.name}</span>
-              <span className="block text-[12px] leading-snug text-g-muted tabular-nums">
-                {near.guests} {tr("guests")} · {near.table ? `${tr("Table")} ${near.table}` : tr("No table")}
-                {today && near.status !== "seated" ? <span className="whitespace-nowrap"> · {relative(near.time)}</span> : ""}
+              <span className="flex flex-wrap gap-x-1 text-[12px] leading-snug text-g-muted tabular-nums">
+                <span className="whitespace-nowrap">
+                  {near.guests} {tr("guests")} · {near.table ? `${tr("Table")} ${near.table}` : tr("No table")}
+                </span>
+                {today && near.status !== "seated" && <span className="whitespace-nowrap">· {relative(near.time)}</span>}
               </span>
             </span>
             <span className={`${STATE[near.status].chip} shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold`}>{tr(STATE[near.status].label)}</span>
           </div>
         ) : (
           <div className="flex items-center gap-3 text-g-muted">
-            <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] text-g-faint tabular-nums">{hhmm(center)}</span>
+            <span className="text-[30px] leading-none font-semibold tracking-[-0.03em] text-g-faint tabular-nums">{hhmm(center)}</span>
             <span className="text-[13px] whitespace-nowrap">{tr("Drag the scale")}</span>
           </div>
         )}
       </div>
 
-      <div className="relative -mx-4 mt-2">
-        {/* The needle. */}
-        <span aria-hidden className="pointer-events-none absolute top-0 bottom-5 left-1/2 z-10 w-[3px] -translate-x-1/2 rounded-full bg-g-blue" />
+      <div className="relative -mx-4 mt-1">
+        {/* The needle: starts under the booking bubbles and runs through the scale. */}
+        <span aria-hidden className="pointer-events-none absolute top-[40px] bottom-5 left-1/2 z-10 w-[3px] -translate-x-1/2 rounded-full bg-[linear-gradient(180deg,#6c96ff,#2f5bff_60%,#2530b0)]" />
         <div ref={ref} className="no-scrollbar edge-fade overflow-x-auto overscroll-x-contain select-none">
-          <div className="relative h-[84px]" style={{ width: `calc(100% + ${width}px)`, paddingInline: "50%" }}>
-            <div className="relative h-full" style={{ width }}>
-              {/* Past part of the day. */}
-              {today && NOW > start && <span className="absolute top-[26px] left-0 h-[30px] rounded-[6px] bg-g-fill-2/50" style={{ width: Math.min(width, (NOW - start) * PX) }} />}
-              {marks.map((m) => {
-                const hour = m % 60 === 0;
-                const major = m % step === 0;
-                return (
-                  <span key={m} className="absolute" style={{ left: (m - start) * PX }}>
-                    <span className={`absolute top-[30px] -translate-x-1/2 rounded-full ${hour ? "h-[22px] w-[2px] bg-g-ink-2" : major ? "h-[14px] w-[1.5px] bg-g-muted" : "h-[7px] w-px bg-g-faint"}`} style={{ marginTop: hour ? 0 : major ? 4 : 7.5 }} />
-                    {hour && <span className="absolute top-[60px] -translate-x-1/2 text-[11px] font-semibold text-g-muted tabular-nums">{hhmm(m)}</span>}
-                  </span>
-                );
-              })}
-              {/* Dashed baseline. */}
-              <span className="absolute top-[41px] right-0 left-0 border-t-[1.5px] border-dashed border-g-faint/60" />
-              {today && NOW >= start && NOW <= end && <span className="absolute top-[20px] h-[42px] w-[2px] -translate-x-1/2 rounded-full bg-g-orange" style={{ left: (NOW - start) * PX }} />}
-              {list.map((b) => {
-                const on = near?.id === b.id;
-                const tone = b.status === "waiting" ? "bg-g-orange text-white" : b.status === "seated" ? "bg-g-green text-white" : on ? "blue-grad" : "bg-[#fff] text-g-blue ring-2 ring-g-blue/40";
-                return (
-                  <button
-                    key={b.id}
-                    onClick={() => go(mins(b.time))}
-                    aria-label={`${b.time} ${b.name}`}
-                    className={`absolute top-[2px] grid -translate-x-1/2 place-items-center rounded-full text-[11px] font-bold tabular-nums transition-transform ${tone} ${on ? "size-7 scale-110" : "size-6"}`}
-                    style={{ left: (mins(b.time) - start) * PX }}
-                  >
+          <div className="relative h-[108px]" style={{ width: width + vw }}>
+            {/* Open hours, softly tinted; the past greyed out. */}
+            <span className="absolute top-[46px] h-[30px] rounded-[8px] bg-g-blue/5" style={{ left: x(start), width }} />
+            {today && NOW > start && <span className="absolute top-[46px] h-[30px] rounded-[8px] bg-g-fill-2/60" style={{ left: x(start), width: Math.min(width, (NOW - start) * PX) }} />}
+            {marks.map((m) => {
+              const hour = m % 60 === 0;
+              const major = m % step === 0;
+              const out = m < start || m > end;
+              return (
+                <span key={m} className={`absolute ${out ? "opacity-40" : ""}`} style={{ left: x(m) }}>
+                  <span className={`absolute top-[50px] -translate-x-1/2 rounded-full ${hour ? "h-[22px] w-[2px] bg-g-ink-2" : major ? "h-[14px] w-[1.5px] bg-g-muted" : "h-[7px] w-px bg-g-faint"}`} style={{ marginTop: hour ? 0 : major ? 4 : 7.5 }} />
+                  {hour && <span className="absolute top-[82px] -translate-x-1/2 text-[11px] font-semibold text-g-muted tabular-nums">{hhmm(m)}</span>}
+                </span>
+              );
+            })}
+            <span className="absolute top-[61px] right-0 left-0 border-t-[1.5px] border-dashed border-g-faint/60" />
+            {today && NOW >= start && NOW <= end && <span className="absolute top-[42px] h-[38px] w-[2px] -translate-x-1/2 rounded-full bg-g-orange" style={{ left: x(NOW) }} />}
+            {/* Bookings: chat-style bubbles pointing down at their time. */}
+            {list.map((b) => {
+              const on = near?.id === b.id;
+              const seated = b.status === "seated";
+              const waiting = b.status === "waiting";
+              const look = seated ? "bg-g-green/15 text-g-green" : waiting ? "bg-g-orange text-white" : on ? "blue-grad" : "bg-[#fff] text-g-blue";
+              const tail = seated ? "border-t-g-green/15" : waiting ? "border-t-g-orange" : on ? "border-t-[#2a45d0]" : "border-t-[#fff]";
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => go(mins(b.time))}
+                  aria-label={`${b.time} ${b.name}`}
+                  className={`absolute top-[2px] flex -translate-x-1/2 flex-col items-center transition-transform duration-200 ${on ? "scale-110" : ""}`}
+                  style={{ left: x(mins(b.time)) }}
+                >
+                  <span className={`flex h-7 items-center gap-1 rounded-full px-2.5 text-[12px] font-bold whitespace-nowrap tabular-nums ${look}`}>
+                    {seated ? <Check size={12} strokeWidth={3} /> : <Users size={12} strokeWidth={2.6} />}
                     {b.guests}
-                  </button>
-                );
-              })}
-            </div>
+                  </span>
+                  <span className={`-mt-px size-0 border-x-[6px] border-t-[7px] border-x-transparent ${tail}`} />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
