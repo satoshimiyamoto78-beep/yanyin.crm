@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Dices, X } from "lucide-react";
+import { ArrowUp, ChevronRight, Dices, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { haptic } from "@/lib/haptics";
@@ -423,6 +423,9 @@ export function LiveIsland({
   thumb,
   openLabel,
   callLabel,
+  kicker,
+  foldLabel,
+  stage,
   onOpen,
   onCall,
   bottom,
@@ -437,6 +440,11 @@ export function LiveIsland({
   thumb?: ReactNode;
   openLabel: string;
   callLabel: string;
+  /** Which order this is, e.g. "Order №001". */
+  kicker: string;
+  foldLabel: string;
+  /** 0–3: sent, accepted, cooking, ready. */
+  stage: number;
   onOpen: () => void;
   onCall: () => void;
   bottom: string;
@@ -448,7 +456,7 @@ export function LiveIsland({
       {open && <button aria-label="Fold" onClick={() => setOpen(false)} className="animate-fade fixed inset-0 z-40 bg-[rgba(11,11,15,0.25)] backdrop-blur-[2px]" />}
       <div
         className="island-in fixed left-1/2 z-40 -translate-x-1/2 overflow-hidden bg-[#0b0b0f] text-white transition-[width,height,border-radius] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-        style={{ bottom, width: open ? "min(92vw, 380px)" : 300, height: open ? 214 : 52, borderRadius: open ? 34 : 26 }}
+        style={{ bottom, width: open ? "min(92vw, 380px)" : 300, height: open ? 262 : 52, borderRadius: open ? 32 : 26 }}
       >
         {!open ? (
           <button
@@ -467,37 +475,48 @@ export function LiveIsland({
             <Ring progress={progress} size={30} stroke={4} done={done} />
           </button>
         ) : (
-          <div className="island-content flex h-full flex-col px-5 pt-4 pb-4">
-            <p className="text-center text-[14px] font-medium text-white/85">{label}</p>
-            <div className="mt-3 flex flex-1 items-center justify-between gap-3">
-              <p className="flex items-baseline gap-2">
-                <span className="text-[13px] text-white/70">{etaLabel}</span>
-                <span className="text-[44px] leading-none font-light tracking-[-0.02em] tabular-nums">{eta}</span>
-              </p>
-              <Ring progress={progress} size={78} stroke={6} done={done}>
-                <span className="grid size-[60px] place-items-center overflow-hidden rounded-full bg-white/10">{thumb}</span>
-              </Ring>
-            </div>
-            <div className="mt-3 flex items-center gap-3 border-t border-white/12 pt-3.5">
+          // Unfolded: which order, what is happening, how long, how far along, and two clear actions.
+          <div className="island-content flex h-full flex-col p-4">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[13px] font-medium text-white/60">
+                <span className="blue-grad grid size-6 place-items-center rounded-full text-[11px] font-bold text-white">{mark}</span>
+                {kicker}
+              </span>
               <button
-                aria-label={callLabel}
-                onClick={() => {
-                  haptic("light");
-                  onCall();
-                }}
-                className="press grid size-11 place-items-center rounded-full bg-[#2f6bff]/25 text-[#8fb2ff]"
-              >
-                <BellIcon />
-              </button>
-              <button
-                aria-label="Fold"
+                aria-label={foldLabel}
                 onClick={() => {
                   haptic("light");
                   setOpen(false);
                 }}
-                className="press grid size-11 place-items-center rounded-full bg-white/12"
+                className="press grid size-8 place-items-center rounded-full bg-white/12"
               >
-                <X size={19} strokeWidth={2.2} />
+                <X size={16} strokeWidth={2.4} />
+              </button>
+            </div>
+            <div className="mt-2 flex items-center gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[18px] leading-tight font-semibold tracking-[-0.01em]">{label}</p>
+                <p className="mt-2.5 text-[12px] font-medium text-white/55">{done ? "\u00a0" : etaLabel}</p>
+                <p className="text-[40px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{eta}</p>
+              </div>
+              <Ring progress={progress} size={84} stroke={6} done={done}>
+                <span className="grid size-[66px] place-items-center overflow-hidden rounded-full bg-white/10">{thumb}</span>
+              </Ring>
+            </div>
+            <div className="mt-4 grid grid-cols-4 gap-1.5" aria-hidden>
+              {[0, 1, 2, 3].map((k) => (
+                <span key={k} className="h-1.5 rounded-full transition-colors duration-700" style={{ background: k <= stage ? (done ? "#22c55e" : "#4d7dff") : "rgba(255,255,255,0.14)" }} />
+              ))}
+            </div>
+            <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+              <button
+                onClick={() => {
+                  haptic("light");
+                  onCall();
+                }}
+                className="press flex h-11 items-center justify-center gap-2 rounded-full bg-white/12 text-[14px] font-semibold"
+              >
+                <BellIcon /> <span className="truncate">{callLabel}</span>
               </button>
               <button
                 onClick={() => {
@@ -505,10 +524,10 @@ export function LiveIsland({
                   setOpen(false);
                   onOpen();
                 }}
-                className="press ml-auto flex items-center gap-1 text-[16px] font-medium"
+                className="press flex h-11 items-center justify-center gap-1 rounded-full bg-[#2f6bff] text-[14px] font-semibold"
               >
-                {openLabel}
-                <span className="text-[20px] leading-none">›</span>
+                <span className="truncate">{openLabel}</span>
+                <ChevronRight size={16} strokeWidth={2.4} />
               </button>
             </div>
           </div>

@@ -14,7 +14,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { BellRing, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { BellRing, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -434,6 +434,7 @@ export function CartSheet({
       open={open}
       onClose={onClose}
       label={ui(lang, "yourOrder")}
+      title={false}
       footer={
         // Sending to the kitchen is a deliberate act: slide the knob across.
         <SlideToConfirm
@@ -449,71 +450,104 @@ export function CartSheet({
         />
       }
     >
-      <div className="px-5 pt-8 pb-4">
-        <h2 className="text-[26px] font-bold tracking-[-0.02em]">
-          {ui(lang, "yourOrder")} <span className="text-g-faint">{count}</span>
-        </h2>
+      <div className="px-5 pt-2 pb-6">
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "yourOrder")}</h2>
+          {count > 0 && <span className="mb-1 rounded-full bg-g-fill px-3 py-1 text-[13px] font-semibold tabular-nums">{ui(lang, "itemsCount").replace("{n}", String(count))}</span>}
+        </div>
 
-        {!lines.length && <p className="py-12 text-center text-[15px] text-g-muted">{ui(lang, "emptyBody")}</p>}
-
-        <ul className="mt-4">
-          {lines.map((line) => {
-            const item = itemById.get(line.itemId)!;
-            const role = categoryOf.get(item.id)?.role ?? "main";
-            const variant = item.variants.find((v) => v.id === line.variantId);
-            const opts = item.modifierGroups.flatMap((g) => g.options).filter((o) => line.optionIds.includes(o.id));
-            const extra = [variant && t(variant.name, lang), ...opts.map((o) => t(o.name, lang))].filter(Boolean).join(" · ");
-            return (
-              <li key={line.key} className="flex items-center gap-3.5 border-b border-g-line py-3.5 last:border-b-0">
-                <DishTile item={item} role={role} photoScale={0.92} glyph={0.6} className="size-16 shrink-0 rounded-[18px]" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-medium">{t(item.name, lang)}</p>
-                  {extra && <p className="truncate text-[13px] text-g-muted">{extra}</p>}
-                  <p className="mt-0.5 text-[15px] font-semibold tabular-nums">{formatMoney(line.unitPrice * line.qty, currency, lang)}</p>
-                </div>
-                <div className="w-[108px] shrink-0">
-                  <Stepper qty={line.qty} onChange={(q) => onQty(line.key, q)} />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        {!lines.length && (
+          <div className="mt-6 flex flex-col items-center rounded-[28px] bg-g-fill px-6 py-12 text-center">
+            <span className="chip-blue grid size-16 place-items-center rounded-full">
+              <ShoppingBag size={28} strokeWidth={1.8} />
+            </span>
+            <p className="mt-4 text-[18px] font-semibold">{ui(lang, "cartEmptyTitle")}</p>
+            <p className="mt-1 text-[14px] leading-snug text-g-muted">{ui(lang, "emptyBody")}</p>
+          </div>
+        )}
 
         {lines.length > 0 && (
           <>
-            <h3 className="mt-7 mb-3 text-[17px] font-semibold">{ui(lang, "noteForKitchen")}</h3>
-            <div className="flex flex-wrap gap-2">
-              {NOTES.map((k) => {
-                const on = notes.includes(k);
+            {/* The dishes: one card, a row each, the quantity right where the thumb is. */}
+            <ul className="mt-5 divide-y divide-g-line rounded-[26px] bg-g-fill px-3">
+              {lines.map((line) => {
+                const item = itemById.get(line.itemId)!;
+                const role = categoryOf.get(item.id)?.role ?? "main";
+                const variant = item.variants.find((v) => v.id === line.variantId);
+                const opts = item.modifierGroups.flatMap((g) => g.options).filter((o) => line.optionIds.includes(o.id));
+                const extra = [variant && t(variant.name, lang), ...opts.map((o) => t(o.name, lang))].filter(Boolean).join(" · ");
                 return (
-                  <button
-                    key={k}
-                    onClick={() => setNotes((n) => (on ? n.filter((x) => x !== k) : [...n, k]))}
-                    aria-pressed={on}
-                    className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
-                  >
-                    {on && <Check size={15} strokeWidth={2.5} />}
-                    {ui(lang, k)}
-                  </button>
+                  <li key={line.key} className="flex items-center gap-3 py-3">
+                    <DishTile item={item} role={role} photoScale={0.96} glyph={0.62} className="size-[60px] shrink-0 rounded-[16px] !bg-g-card" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-semibold">{t(item.name, lang)}</p>
+                      {extra && <p className="truncate text-[12.5px] text-g-muted">{extra}</p>}
+                      <p className="mt-0.5 text-[15px] tabular-nums">
+                        <span className="font-semibold">{formatMoney(line.unitPrice * line.qty, currency, lang)}</span>
+                        {line.qty > 1 && <span className="ml-1.5 text-[12.5px] text-g-muted">{line.qty} × {formatMoney(line.unitPrice, currency, lang)}</span>}
+                      </p>
+                    </div>
+                    <Stepper qty={line.qty} onChange={(q) => onQty(line.key, q)} className="h-9 w-[96px] shrink-0" />
+                  </li>
                 );
               })}
-            </div>
-            <label htmlFor="kitchen-note" className="sr-only">
-              {ui(lang, "noteForKitchen")}
-            </label>
-            <textarea
-              id="kitchen-note"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={2}
-              placeholder={ui(lang, "notePlaceholder")}
-              className="mt-3 w-full resize-none rounded-[20px] bg-g-fill px-4 py-3.5 text-[16px] outline-none placeholder:text-[15px] placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/30"
-            />
-            <div className="mt-6 flex items-baseline justify-between">
-              <span className="text-[15px] text-g-muted">{ui(lang, "total")}</span>
-              <span className="text-[26px] font-semibold tracking-[-0.02em] tabular-nums">{formatMoney(total, currency, lang)}</span>
-            </div>
-            <p className="mt-1 text-[13px] text-g-faint">{ui(lang, "serviceNote")}</p>
+            </ul>
+
+            {/* A word to the kitchen: quick tags, or your own. */}
+            <section className="mt-3 rounded-[26px] bg-g-fill p-4">
+              <h3 className="flex items-center gap-2 text-[15px] font-semibold">
+                <StickyNote size={16} strokeWidth={2.2} className="text-g-blue" /> {ui(lang, "noteForKitchen")}
+                <span className="ml-auto text-[13px] font-medium text-g-faint">{ui(lang, "optional")}</span>
+              </h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {NOTES.map((k) => {
+                  const on = notes.includes(k);
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => {
+                        haptic("tick");
+                        setNotes((n) => (on ? n.filter((x) => x !== k) : [...n, k]));
+                      }}
+                      aria-pressed={on}
+                      className={`press flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium ${on ? "bg-g-ink text-white" : "bg-g-card"}`}
+                    >
+                      {on && <Check size={14} strokeWidth={2.5} />}
+                      {ui(lang, k)}
+                    </button>
+                  );
+                })}
+              </div>
+              <label htmlFor="kitchen-note" className="sr-only">
+                {ui(lang, "noteForKitchen")}
+              </label>
+              <textarea
+                id="kitchen-note"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={2}
+                placeholder={ui(lang, "notePlaceholder")}
+                className="mt-2.5 w-full resize-none rounded-[18px] bg-g-card px-4 py-3 text-[16px] outline-none placeholder:text-[15px] placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/30"
+              />
+            </section>
+
+            {/* The sum, plainly. */}
+            <section className="mt-3 rounded-[26px] bg-g-fill p-4">
+              <div className="flex items-baseline justify-between text-[14px] text-g-muted">
+                <span>
+                  {ui(lang, "dishesLabel")} · {count}
+                </span>
+                <span className="tabular-nums">{formatMoney(total, currency, lang)}</span>
+              </div>
+              <div className="mt-2.5 flex items-baseline justify-between border-t border-g-line pt-3">
+                <span className="text-[16px] font-semibold">{ui(lang, "total")}</span>
+                <span className="text-[26px] leading-none font-semibold tracking-[-0.02em] tabular-nums">{formatMoney(total, currency, lang)}</span>
+              </div>
+              <p className="mt-2 text-[12px] leading-snug text-g-faint">{ui(lang, "serviceNote")}</p>
+            </section>
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-[13px] text-g-muted">
+              <CookingPot size={14} strokeWidth={2} /> {ui(lang, "sendHint")}
+            </p>
           </>
         )}
       </div>
@@ -539,6 +573,9 @@ const STEPS: { key: UiKey; icon: LucideIcon }[] = [
   { key: "stepCooking", icon: CookingPot },
   { key: "stepReady", icon: BellRing },
 ];
+const STEP_HINT: UiKey[] = ["stepSentHint", "stepAcceptedHint", "stepCookingHint", "stepReadyHint"];
+/** When each step begins on the demo timeline, in seconds (see orderStage). */
+const STEP_AT = [0, 6, 15, 45];
 const clock = (at: number) => new Date(at).toTimeString().slice(0, 5);
 
 /**
@@ -677,31 +714,45 @@ export function OrdersSheet({
                 <span>
                   {ui(lang, "order")} №{String(o.id).padStart(3, "0")} · {clock(o.placedAt)}
                 </span>
-                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold ${ready ? "chip-green" : "bg-white text-g-blue"}`}>
+                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold ${ready ? "chip-green" : "bg-g-card text-g-blue"}`}>
                   {!ready && <span className="size-1.5 animate-pulse rounded-full bg-g-blue" />}
                   {ready ? ui(lang, "stepReady") : ui(lang, "eta").replace("{n}", String(minsLeft))}
                 </span>
               </div>
               <h3 className="mt-3 text-[26px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, STAGES[stage]!)}</h3>
 
-              {/* Four steps on one line: done ones filled, the current one ringed. */}
-              <div className="relative mt-5 grid grid-cols-4">
-                <span aria-hidden className="absolute top-[18px] right-[12.5%] left-[12.5%] h-[3px] rounded-full bg-white" />
-                <span aria-hidden className={`absolute top-[18px] left-[12.5%] h-[3px] rounded-full transition-[width] duration-700 ${ready ? "green-grad" : "bar-grad"}`} style={{ width: `${(stage / 3) * 75}%` }} />
+              {/* Progress as four even segments, then the steps as a list: done, now, to come. */}
+              <div className="mt-4 grid grid-cols-4 gap-1.5" aria-hidden>
+                {STEPS.map((st, k) => (
+                  <span key={st.key} className={`h-1.5 rounded-full transition-colors duration-700 ${k <= stage ? (ready ? "green-grad" : "bar-grad") : "bg-g-card"}`} />
+                ))}
+              </div>
+              <ol className="mt-4 rounded-[20px] bg-g-card px-3.5">
                 {STEPS.map((st, k) => {
-                  const done = k <= stage;
+                  const done = k < stage || ready;
+                  const cur = k === stage && !ready;
                   return (
-                    <span key={st.key} className="relative flex flex-col items-center gap-1.5">
-                      <span className={`grid size-9 place-items-center rounded-full transition-colors duration-500 ${done ? (ready ? "green-grad text-white" : "blue-grad") : "bg-white text-g-faint"} ${k === stage && !ready ? "ring-4 ring-g-blue/15" : ""}`}>
-                        <st.icon size={16} strokeWidth={2.2} />
+                    <li key={st.key} className={`flex items-center gap-3 py-2.5 ${k ? "border-t border-g-line" : ""} ${done || cur ? "" : "opacity-45"}`}>
+                      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${done ? (ready ? "chip-green" : "chip-blue") : cur ? "blue-grad" : "bg-g-fill text-g-muted"}`}>
+                        {done ? <Check size={16} strokeWidth={2.6} /> : <st.icon size={16} strokeWidth={2.2} />}
                       </span>
-                      <span className={`text-[11px] font-semibold ${done ? "text-g-ink" : "text-g-faint"}`}>{ui(lang, st.key)}</span>
-                    </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[15px] leading-tight font-semibold">{ui(lang, st.key)}</span>
+                        <span className="block truncate text-[12.5px] text-g-muted">{ui(lang, STEP_HINT[k]!)}</span>
+                      </span>
+                      {cur ? (
+                        <span className="flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-g-blue">
+                          <span className="size-1.5 animate-pulse rounded-full bg-g-blue" /> {ui(lang, "stepNow")}
+                        </span>
+                      ) : done ? (
+                        <span className="shrink-0 text-[12.5px] text-g-muted tabular-nums">{clock(o.placedAt + STEP_AT[k]! * 1000)}</span>
+                      ) : null}
+                    </li>
                   );
                 })}
-              </div>
+              </ol>
 
-              <div className="mt-5 rounded-[20px] bg-white/70 p-3.5">
+              <div className="mt-3 rounded-[20px] bg-g-card p-3.5">
                 {dishes(o, true)}
                 {o.note && (
                   <p className="mt-3 flex items-start gap-2 rounded-[14px] bg-g-tint-note px-3 py-2 text-[13px] leading-snug">

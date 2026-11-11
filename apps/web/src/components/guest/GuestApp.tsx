@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Info,
   LayoutGrid,
+  Pizza,
   Wifi,
   UtensilsCrossed,
   Dices,
@@ -70,7 +71,7 @@ import {
   useRing,
   type IslandNotice,
 } from "./motion";
-import { ItemCard } from "./ui";
+import { DishCard, DishRow } from "./ui";
 import { YanOrb, YanSheet } from "./YanSheet";
 
 function initialLang(): Lang {
@@ -192,6 +193,11 @@ export function GuestApp({ menu }: { menu: Menu }) {
 
   const count = cartCount(lines);
   const total = cartTotal(lines);
+  // The "pizza from halves" builder, if the venue has one: it gets its own quick button.
+  const halves = useMemo(
+    () => menu.categories.flatMap((c) => c.items).find((i) => i.builder === "halves"),
+    [menu],
+  );
   const hasCoals = menu.categories.some((c) =>
     c.serviceCalls.some((s) => s.id === "change_coals"),
   );
@@ -213,28 +219,49 @@ export function GuestApp({ menu }: { menu: Menu }) {
       <main className="px-5">
         {menu.categories.map((c) => (
           <section key={c.id} id={`cat-${c.id}`} className="pt-8">
-            <h2 className="mb-1 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
+            <h2 className="mb-3 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
               {t(c.name, lang)}
               <span className="text-[15px] font-medium tracking-normal text-g-faint">
                 {c.items.length}
               </span>
             </h2>
-            <div className="divide-y divide-g-line">
-              {c.items.map((it, n) => (
-                <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 60}>
-                  <ItemCard
-                    item={it}
-                    role={c.role}
-                    lang={lang}
-                    currency={currency}
-                    qty={qtyOf(it.id)}
-                    onOpen={() => setItem(it)}
-                    onAdd={() => quickAdd(it)}
-                    onQty={(q) => setPlainQty(it, q)}
-                  />
-                </Reveal>
-              ))}
-            </div>
+            {(() => {
+              // Dishes with a photo are cards in two columns (an odd one out leads,
+              // laid across both); dishes without one are rows of a single card.
+              const shots = c.items.filter((i) => i.photo || i.cover);
+              const plain = c.items.filter((i) => !i.photo && !i.cover);
+              const props = (it: MenuItem) => ({
+                item: it,
+                lang,
+                currency,
+                qty: qtyOf(it.id),
+                onOpen: () => setItem(it),
+                onAdd: () => quickAdd(it),
+                onQty: (q: number) => setPlainQty(it, q),
+              });
+              return (
+                <>
+                  {shots.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {shots.map((it, n) => (
+                        <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 50} className={shots.length % 2 === 1 && n === 0 ? "col-span-2 grid" : "grid"}>
+                          <DishCard {...props(it)} role={c.role} wide={shots.length % 2 === 1 && n === 0} />
+                        </Reveal>
+                      ))}
+                    </div>
+                  )}
+                  {plain.length > 0 && (
+                    <div className={`divide-y divide-g-line rounded-[26px] bg-g-fill px-4 ${shots.length ? "mt-2.5" : ""}`}>
+                      {plain.map((it, n) => (
+                        <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 50}>
+                          <DishRow {...props(it)} />
+                        </Reveal>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </section>
         ))}
         <p className="pt-12 text-center text-[13px] text-g-faint">
@@ -389,6 +416,18 @@ export function GuestApp({ menu }: { menu: Menu }) {
               title={ui(lang, "qaRoulette")}
               sub={ui(lang, "qaRouletteShort")}
             />
+            {halves && (
+              <StripWide
+                onClick={() => setItem(halves)}
+                art={
+                  <span className="chip-orange grid size-9 place-items-center rounded-[12px]">
+                    <Pizza size={18} strokeWidth={2} />
+                  </span>
+                }
+                title={ui(lang, "qaHalves")}
+                sub={ui(lang, "qaHalvesSub")}
+              />
+            )}
             <StripWide
               onClick={() => setSheet("categories")}
               art={
@@ -545,7 +584,10 @@ export function GuestApp({ menu }: { menu: Menu }) {
               );
             })()}
             openLabel={ui(lang, "liveOpen")}
-            callLabel={ui(lang, "qaWaiter")}
+            callLabel={ui(lang, "callWaiterShort")}
+            kicker={ui(lang, "liveTitle").replace("{n}", String(last.id).padStart(3, "0"))}
+            foldLabel={ui(lang, "liveFold")}
+            stage={stage}
             onOpen={() => setSheet("orders")}
             onCall={() => say("waiterCalled")}
             bottom={

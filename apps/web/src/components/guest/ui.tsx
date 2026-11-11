@@ -147,8 +147,9 @@ export function DishTile({ item, role, className = "", photoScale = 0.88, glyph 
         // A photo with its own background (hookah sets): fill the tile.
         <Image src={item.cover} alt="" fill sizes="240px" className="object-cover" />
       ) : (
+        // No photo: the dish's own line icon, white on the brand blue, the same in light and dark.
         <span
-          className="grid aspect-square place-items-center rounded-full bg-white text-g-blue"
+          className="blue-grad grid aspect-square place-items-center rounded-full"
           style={{ width: `${glyph * 100}%` }}
         >
           <RoleIcon role={role} name={item.name.en} size={22} />
@@ -284,6 +285,138 @@ export function ItemCard({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Small round marks for what matters at a glance: veggie, spicy, halal, a draft from yanyin. */
+function DishMarks({ item, lang, className = "" }: { item: MenuItem; lang: Lang; className?: string }) {
+  const veg = item.tags.includes("vegan") || item.tags.includes("vegetarian");
+  const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(item.name.en ?? "");
+  const halal = item.tags.includes("halal");
+  if (!veg && !spicy && !halal && item.status !== "suggested") return null;
+  return (
+    <span className={`flex gap-1 ${className}`}>
+      {veg && (
+        <span title="Veggie" className="chip-green grid size-6 place-items-center rounded-full">
+          <Leaf size={13} strokeWidth={2.25} />
+        </span>
+      )}
+      {spicy && (
+        <span title="Spicy" className="chip-orange grid size-6 place-items-center rounded-full">
+          <Flame size={13} strokeWidth={2.25} />
+        </span>
+      )}
+      {halal && (
+        <span title="Halal" className="chip-teal grid size-6 place-items-center rounded-full">
+          <HalalIcon size={14} />
+        </span>
+      )}
+      {item.status === "suggested" && <span className="flex h-6 items-center rounded-full bg-g-card px-2 text-[11px] font-semibold text-g-muted">{ui(lang, "draft")}</span>}
+    </span>
+  );
+}
+
+/** The add control: a blue plus, which becomes a stepper once the dish is in the order. */
+function AddControl({ item, lang, qty, onOpen, onAdd, onQty, small }: { item: MenuItem; lang: Lang; qty: number; onOpen: () => void; onAdd: () => void; onQty: (q: number) => void; small?: boolean }) {
+  const plain = !needsChoice(item);
+  if (qty > 0 && plain)
+    return (
+      <Stepper
+        qty={qty}
+        onChange={(q) => {
+          haptic("light");
+          onQty(q);
+        }}
+        className={`shrink-0 ${small ? "h-9 w-[92px]" : "w-[104px]"}`}
+      />
+    );
+  return (
+    <button
+      onClick={() => {
+        haptic(plain ? "success" : "light");
+        (plain ? onAdd : onOpen)();
+      }}
+      aria-label={`${ui(lang, "add")} ${t(item.name, lang)}`}
+      className={`blue-grad press grid shrink-0 place-items-center rounded-full ${small ? "size-9" : "size-10"}`}
+    >
+      <Plus size={small ? 18 : 20} strokeWidth={2.25} />
+    </button>
+  );
+}
+
+type DishProps = { item: MenuItem; role: CategoryRole; lang: Lang; currency: Currency; qty: number; onOpen: () => void; onAdd: () => void; onQty: (q: number) => void };
+
+/**
+ * A dish with a photo, as a card: the photo large on the card's own surface,
+ * marks on its corner, the add control sitting on the photo's lower edge;
+ * under it the name, two lines of description and the price. `wide` lays the
+ * same card out sideways across both columns.
+ */
+export function DishCard({ item, role, lang, currency, qty, onOpen, onAdd, onQty, wide }: DishProps & { wide?: boolean }) {
+  const desc = describe(item, lang);
+  const price = (
+    <span className="live block truncate text-[16px] font-semibold tracking-[-0.01em] tabular-nums">
+      {item.variants.length > 1 && <span className="mr-1 text-[12px] font-medium text-g-muted">{ui(lang, "from")}</span>}
+      {formatMoney(item.price, currency, lang)}
+    </span>
+  );
+  if (wide)
+    return (
+      <div className="col-span-2 flex items-stretch gap-3 rounded-[26px] bg-g-fill p-2.5">
+        <button onClick={onOpen} aria-label={t(item.name, lang)} className="press relative shrink-0">
+          <DishTile item={item} role={role} photoScale={0.94} className="live size-[128px] rounded-[20px]" />
+          <DishMarks item={item} lang={lang} className="absolute top-1.5 left-1.5" />
+        </button>
+        <div className="flex min-w-0 flex-1 flex-col py-1 pr-1">
+          <button onClick={onOpen} className="min-w-0 text-left">
+            <span className="live line-clamp-2 text-[16px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+            <span className="live mt-1 line-clamp-2 text-[13px] leading-[1.35] text-g-muted">{desc}</span>
+          </button>
+          <div className="mt-auto flex items-center justify-between gap-2">
+            <span className="min-w-0">{price}</span>
+            <AddControl item={item} lang={lang} qty={qty} onOpen={onOpen} onAdd={onAdd} onQty={onQty} />
+          </div>
+        </div>
+      </div>
+    );
+  return (
+    <div className="flex min-w-0 flex-col rounded-[26px] bg-g-fill p-2">
+      <div className="relative">
+        <button onClick={onOpen} aria-label={t(item.name, lang)} className="press block w-full">
+          <DishTile item={item} role={role} photoScale={0.94} className="live aspect-[1/0.9] w-full rounded-[20px]" />
+        </button>
+        <DishMarks item={item} lang={lang} className="absolute top-1.5 left-1.5" />
+        <span className="absolute right-1 bottom-1">
+          <AddControl item={item} lang={lang} qty={qty} onOpen={onOpen} onAdd={onAdd} onQty={onQty} small />
+        </span>
+      </div>
+      <button onClick={onOpen} className="min-w-0 px-1.5 pt-2.5 pb-1.5 text-left">
+        <span className="live line-clamp-2 h-[38px] text-[15px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+        <span className="live mt-0.5 block h-[17px] truncate text-[12.5px] leading-[1.35] text-g-muted">{desc}</span>
+        <span className="mt-1.5 block">{price}</span>
+      </button>
+    </div>
+  );
+}
+
+/** A dish without a photo, as a clean row of a bar card: name, one line about it, the price, the add control. */
+export function DishRow({ item, lang, currency, qty, onOpen, onAdd, onQty }: Omit<DishProps, "role">) {
+  const desc = describe(item, lang);
+  return (
+    <div className="flex items-center gap-3 py-3.5">
+      <button onClick={onOpen} className="min-w-0 flex-1 text-left">
+        <span className="flex items-center gap-1.5">
+          <span className="live truncate text-[15px] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+          <DishMarks item={item} lang={lang} className="shrink-0 scale-90" />
+        </span>
+        {desc && <span className="live mt-0.5 block truncate text-[13px] text-g-muted">{desc}</span>}
+        <span className="live mt-1 block text-[15px] font-semibold tabular-nums">
+          {item.variants.length > 1 && <span className="mr-1 text-[12px] font-medium text-g-muted">{ui(lang, "from")}</span>}
+          {formatMoney(item.price, currency, lang)}
+        </span>
+      </button>
+      <AddControl item={item} lang={lang} qty={qty} onOpen={onOpen} onAdd={onAdd} onQty={onQty} small />
     </div>
   );
 }
