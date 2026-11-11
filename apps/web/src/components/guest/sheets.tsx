@@ -14,7 +14,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { BellRing, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Send, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { BellRing, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -441,7 +441,6 @@ export function CartSheet({
           disabled={!lines.length}
           label={ui(lang, "slideToSend")}
           aside={formatMoney(total, currency, lang)}
-          icon={Send}
           onConfirm={() => {
             onSend(note);
             setNotes([]);
@@ -568,7 +567,7 @@ export function orderStage(order: PlacedOrder, now: number): number {
 }
 
 const STEPS: { key: UiKey; icon: LucideIcon }[] = [
-  { key: "stepSent", icon: Send },
+  { key: "stepSent", icon: ReceiptText },
   { key: "stepAccepted", icon: Check },
   { key: "stepCooking", icon: CookingPot },
   { key: "stepReady", icon: BellRing },

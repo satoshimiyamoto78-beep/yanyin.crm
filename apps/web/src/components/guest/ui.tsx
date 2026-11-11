@@ -138,7 +138,7 @@ export function ItemChips({ item, lang }: { item: MenuItem; lang: Lang }) {
  * Dish visual: the real cut-out photo on a soft studio gradient, or an
  * Iconly-style glyph (blue line icon in a glowing white disc). Never empty.
  */
-export function DishTile({ item, role, className = "", photoScale = 0.88, glyph = 0.42 }: { item: MenuItem; role: CategoryRole; className?: string; photoScale?: number; glyph?: number }) {
+export function DishTile({ item, role, className = "", photoScale = 0.88, glyph = 0.42, soft }: { item: MenuItem; role: CategoryRole; className?: string; photoScale?: number; glyph?: number; soft?: boolean }) {
   return (
     <div className={`hero-grad relative grid place-items-center overflow-hidden ${className}`}>
       {item.photo ? (
@@ -149,7 +149,7 @@ export function DishTile({ item, role, className = "", photoScale = 0.88, glyph 
       ) : (
         // No photo: the dish's own line icon, white on the brand blue, the same in light and dark.
         <span
-          className="blue-grad grid aspect-square place-items-center rounded-full"
+          className={`grid aspect-square place-items-center rounded-full ${soft ? "chip-blue" : "blue-grad"}`}
           style={{ width: `${glyph * 100}%` }}
         >
           <RoleIcon role={role} name={item.name.en} size={22} />
@@ -163,7 +163,7 @@ export function DishTile({ item, role, className = "", photoScale = 0.88, glyph 
 
 export function Stepper({ qty, onChange, className = "" }: { qty: number; onChange: (q: number) => void; className?: string }) {
   return (
-    <div className={`animate-pop flex h-10 items-center justify-between rounded-full bg-g-ink px-1 text-white ${className}`}>
+    <div className={`animate-pop flex items-center justify-between rounded-full bg-g-ink px-1 text-white ${/(^|\s)h-/.test(className) ? "" : "h-10"} ${className}`}>
       <button aria-label="Remove one" onClick={() => onChange(qty - 1)} className="press grid size-8 place-items-center rounded-full">
         <Minus size={16} strokeWidth={2.25} />
       </button>
@@ -317,10 +317,10 @@ function DishMarks({ item, lang, className = "" }: { item: MenuItem; lang: Lang;
   );
 }
 
-/** The add control: a blue plus, which becomes a stepper once the dish is in the order. */
-function AddControl({ item, lang, qty, onOpen, onAdd, onQty, small }: { item: MenuItem; lang: Lang; qty: number; onOpen: () => void; onAdd: () => void; onQty: (q: number) => void; small?: boolean }) {
+/** The add control: a small blue plus, which becomes a stepper once the dish is in the order. */
+function AddControl({ item, lang, qty, onOpen, onAdd, onQty, plusOnly }: { item: MenuItem; lang: Lang; qty: number; onOpen: () => void; onAdd: () => void; onQty: (q: number) => void; plusOnly?: boolean }) {
   const plain = !needsChoice(item);
-  if (qty > 0 && plain)
+  if (qty > 0 && plain && !plusOnly)
     return (
       <Stepper
         qty={qty}
@@ -328,7 +328,7 @@ function AddControl({ item, lang, qty, onOpen, onAdd, onQty, small }: { item: Me
           haptic("light");
           onQty(q);
         }}
-        className={`shrink-0 ${small ? "h-9 w-[92px]" : "w-[104px]"}`}
+        className="h-8 w-[88px] shrink-0"
       />
     );
   return (
@@ -338,9 +338,9 @@ function AddControl({ item, lang, qty, onOpen, onAdd, onQty, small }: { item: Me
         (plain ? onAdd : onOpen)();
       }}
       aria-label={`${ui(lang, "add")} ${t(item.name, lang)}`}
-      className={`blue-grad press grid shrink-0 place-items-center rounded-full ${small ? "size-9" : "size-10"}`}
+      className="blue-grad press grid size-8 shrink-0 place-items-center rounded-full"
     >
-      <Plus size={small ? 18 : 20} strokeWidth={2.25} />
+      <Plus size={17} strokeWidth={2.4} />
     </button>
   );
 }
@@ -356,7 +356,7 @@ type DishProps = { item: MenuItem; role: CategoryRole; lang: Lang; currency: Cur
 export function DishCard({ item, role, lang, currency, qty, onOpen, onAdd, onQty, wide }: DishProps & { wide?: boolean }) {
   const desc = describe(item, lang);
   const price = (
-    <span className="live block truncate text-[16px] font-semibold tracking-[-0.01em] tabular-nums">
+    <span className="live block truncate text-[15.5px] font-semibold tracking-[-0.01em] tabular-nums">
       {item.variants.length > 1 && <span className="mr-1 text-[12px] font-medium text-g-muted">{ui(lang, "from")}</span>}
       {formatMoney(item.price, currency, lang)}
     </span>
@@ -380,43 +380,63 @@ export function DishCard({ item, role, lang, currency, qty, onOpen, onAdd, onQty
         </div>
       </div>
     );
+  const inOrder = qty > 0 && !needsChoice(item);
   return (
-    <div className="flex min-w-0 flex-col rounded-[26px] bg-g-fill p-2">
+    <div className="flex h-full min-w-0 flex-col rounded-[24px] bg-g-fill p-2">
       <div className="relative">
         <button onClick={onOpen} aria-label={t(item.name, lang)} className="press block w-full">
-          <DishTile item={item} role={role} photoScale={0.94} className="live aspect-[1/0.9] w-full rounded-[20px]" />
+          <DishTile item={item} role={role} photoScale={0.9} className="live aspect-[1/0.82] w-full rounded-[18px]" />
         </button>
-        <DishMarks item={item} lang={lang} className="absolute top-1.5 left-1.5" />
-        <span className="absolute right-1 bottom-1">
-          <AddControl item={item} lang={lang} qty={qty} onOpen={onOpen} onAdd={onAdd} onQty={onQty} small />
-        </span>
+        <DishMarks item={item} lang={lang} className="absolute top-1 left-1" />
+        {/* In the order: the count sits on the photo, with minus and plus either side. */}
+        {inOrder && (
+          <Stepper
+            qty={qty}
+            onChange={(q) => {
+              haptic("light");
+              onQty(q);
+            }}
+            className="absolute inset-x-1 bottom-1 h-9"
+          />
+        )}
       </div>
-      <button onClick={onOpen} className="min-w-0 px-1.5 pt-2.5 pb-1.5 text-left">
-        <span className="live line-clamp-2 h-[38px] text-[15px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
-        <span className="live mt-0.5 block h-[17px] truncate text-[12.5px] leading-[1.35] text-g-muted">{desc}</span>
-        <span className="mt-1.5 block">{price}</span>
+      <button onClick={onOpen} className="min-w-0 px-1.5 pt-2 text-left">
+        <span className="live line-clamp-2 text-[15px] leading-[1.25] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+        {desc && <span className="live mt-1 line-clamp-2 text-[12.5px] leading-[1.35] text-g-muted">{desc}</span>}
       </button>
+      {/* Price and the add button share the last line, pinned to the bottom so cards in a row line up. */}
+      <div className="mt-auto flex items-center justify-between gap-2 px-1.5 pt-2.5 pb-1">
+        <span className="min-w-0">{price}</span>
+        {!inOrder && <AddControl item={item} lang={lang} qty={0} onOpen={onOpen} onAdd={onAdd} onQty={onQty} plusOnly />}
+      </div>
     </div>
   );
 }
 
-/** A dish without a photo, as a clean row of a bar card: name, one line about it, the price, the add control. */
-export function DishRow({ item, lang, currency, qty, onOpen, onAdd, onQty }: Omit<DishProps, "role">) {
+/**
+ * A dish without a photo, as a row: a small tile with the dish's own icon (so
+ * the eye has something to hold on to), the name, a line about it, the price,
+ * the add control.
+ */
+export function DishRow({ item, role, lang, currency, qty, onOpen, onAdd, onQty }: DishProps) {
   const desc = describe(item, lang);
   return (
-    <div className="flex items-center gap-3 py-3.5">
+    <div className="flex items-center gap-3 py-3">
+      <button onClick={onOpen} aria-label={t(item.name, lang)} className="press relative shrink-0">
+        <DishTile item={item} role={role} glyph={0.66} soft className="live size-[52px] rounded-[16px] !bg-g-card" />
+      </button>
       <button onClick={onOpen} className="min-w-0 flex-1 text-left">
         <span className="flex items-center gap-1.5">
-          <span className="live truncate text-[15px] font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
-          <DishMarks item={item} lang={lang} className="shrink-0 scale-90" />
+          <span className="live line-clamp-2 text-[15px] leading-tight font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+          <DishMarks item={item} lang={lang} className="shrink-0 origin-left scale-[0.85]" />
         </span>
         {desc && <span className="live mt-0.5 block truncate text-[13px] text-g-muted">{desc}</span>}
-        <span className="live mt-1 block text-[15px] font-semibold tabular-nums">
+        <span className="live mt-1 block text-[14.5px] font-semibold tabular-nums">
           {item.variants.length > 1 && <span className="mr-1 text-[12px] font-medium text-g-muted">{ui(lang, "from")}</span>}
           {formatMoney(item.price, currency, lang)}
         </span>
       </button>
-      <AddControl item={item} lang={lang} qty={qty} onOpen={onOpen} onAdd={onAdd} onQty={onQty} small />
+      <AddControl item={item} lang={lang} qty={qty} onOpen={onOpen} onAdd={onAdd} onQty={onQty} />
     </div>
   );
 }

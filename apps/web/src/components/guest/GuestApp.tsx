@@ -251,10 +251,10 @@ export function GuestApp({ menu }: { menu: Menu }) {
                     </div>
                   )}
                   {plain.length > 0 && (
-                    <div className={`divide-y divide-g-line rounded-[26px] bg-g-fill px-4 ${shots.length ? "mt-2.5" : ""}`}>
+                    <div className={`divide-y divide-g-line rounded-[24px] bg-g-fill px-3 ${shots.length ? "mt-2.5" : ""}`}>
                       {plain.map((it, n) => (
                         <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 50}>
-                          <DishRow {...props(it)} />
+                          <DishRow {...props(it)} role={c.role} />
                         </Reveal>
                       ))}
                     </div>
