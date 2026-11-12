@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowUp, ChevronLeft, ChevronRight, Languages, ListOrdered, Mic, PanelLeft, ReceiptText, ShieldAlert, Sparkles, SquarePen, Trash2, TrendingUp, Search as SearchIcon, type LucideIcon } from "lucide-react";
+import { Armchair, ArrowUp, CalendarDays, Check, ChevronLeft, ChevronRight, FlaskConical, Languages, ListOrdered, MessageCircle, MessageCircleHeart, Mic, PanelLeft, ReceiptText, ShieldAlert, Sparkles, SquarePen, Trash2, TrendingUp, Search as SearchIcon, type LucideIcon } from "lucide-react";
+import { LiveTranslator } from "./LiveTranslator";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MenuItem } from "@yanyin/domain";
@@ -118,6 +119,18 @@ function think(q: string, c: Ctx): Omit<Msg, "id" | "from"> {
       };
     return { text: tr("Halal dishes carry the moon badge. Nuts are in baklava and some salads; gluten in bread, lagman and samsa. Name a dish and I will check it."), next: [tr("Allergens in plov")] };
   }
+  if (/complain|жалоб|недовол|phàn nàn/.test(s)) {
+    return {
+      text: [
+        tr("Calmly, in four steps:"),
+        tr("1. Listen to the end and do not argue."),
+        tr("2. Apologise and name the problem: “I'm sorry the soup came cold.”"),
+        tr("3. Offer a fix right away: redo the dish, swap it, or take it off the bill."),
+        tr("4. Tell the manager and come back to the table in 5 minutes."),
+      ].join("\n"),
+      next: [tr("Who waits for the bill?")],
+    };
+  }
   if (/translat|перевед|скажи гостю|dịch|vietnam|вьетнам|english|англ/.test(s)) {
     return {
       text: tr("Here is how to say it:") + "\n" + "VI · «Món của anh chị sẽ có trong khoảng 10 phút ạ.»\nEN · “Your dishes will be ready in about 10 minutes.”\n" + tr("Want another phrase? Write it in your own words."),
@@ -174,12 +187,14 @@ export function YanChat({
   onOpenTable: (no: number) => void;
   onClose: () => void;
 }) {
-  const { tr, prefs } = usePrefs();
+  const { tr } = usePrefs();
   const dish = useDish();
   const ctx: Ctx = { tables, bookings, items, history, money, name, tr, dish };
   const [sessions, setSessions] = useState<Session[]>([]);
   const [cur, setCur] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
+  const [beta, setBeta] = useState(false);
+  const [live, setLive] = useState(false);
   const [text, setText] = useState("");
   const [typing, setTyping] = useState<{ id: string; shown: number } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -264,20 +279,23 @@ export function YanChat({
   };
 
   const first = name.split(" ")[0];
+  // Hot questions: small pills in two rows that scroll sideways, so ten fit in the room of two.
   const starters: { icon: LucideIcon; text: string; tone: string }[] = [
-    { icon: ReceiptText, text: tr("Who waits for the bill?"), tone: "chip-orange" },
-    { icon: TrendingUp, text: tr("What to offer table 7?"), tone: "chip-green" },
-    { icon: Sparkles, text: tr("Shift summary"), tone: "chip-blue" },
-    { icon: ShieldAlert, text: tr("Allergens in plov"), tone: "chip-red" },
-    { icon: ListOrdered, text: tr("Who is in the queue?"), tone: "chip-teal" },
-    { icon: Languages, text: prefs.lang === "vi" ? tr("How to say it in English?") : tr("How to say it in Vietnamese?"), tone: "chip-gray" },
+    { icon: ReceiptText, text: tr("Who waits for the bill?"), tone: "text-g-orange" },
+    { icon: TrendingUp, text: tr("What to offer table 7?"), tone: "text-g-green" },
+    { icon: Sparkles, text: tr("Shift summary"), tone: "text-g-blue" },
+    { icon: Armchair, text: tr("Who is free?"), tone: "text-g-teal" },
+    { icon: ListOrdered, text: tr("Who is in the queue?"), tone: "text-g-teal" },
+    { icon: CalendarDays, text: tr("Bookings tonight"), tone: "text-g-blue" },
+    { icon: ShieldAlert, text: tr("Allergens in plov"), tone: "text-g-red" },
+    { icon: MessageCircleHeart, text: tr("How to answer a complaint?"), tone: "text-g-orange" },
   ];
 
   return createPortal(
     <div className="animate-fade fixed inset-0 z-[80] flex flex-col bg-white text-g-ink" role="dialog" aria-label={tr("Yan")}>
       <ScrollLock />
-      {/* Header: back, who you talk to, past chats and a new one. */}
-      <header className="mx-auto flex w-full max-w-[480px] items-center gap-2 px-3 pt-[max(12px,env(safe-area-inset-top))] pb-2">
+      {/* Header: back and chats on the left, new chat on the right, the name centred with its beta mark. */}
+      <header className="relative mx-auto flex w-full max-w-[480px] items-center gap-2 px-3 pt-[max(12px,env(safe-area-inset-top))] pb-2">
         <button onClick={onClose} aria-label={tr("Back")} className="press grid size-11 shrink-0 place-items-center rounded-full bg-g-fill">
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
@@ -291,16 +309,24 @@ export function YanChat({
         >
           <PanelLeft size={20} strokeWidth={2} />
         </button>
-        <div className="flex min-w-0 flex-1 flex-col items-center">
-          <span className="flex items-center gap-1.5 text-[16px] font-semibold">
-            <YanOrb size={22} /> {tr("Yan")}
+        <div className="pointer-events-none absolute inset-x-[112px] flex flex-col items-center">
+          <span className="pointer-events-auto flex items-center gap-1.5 text-[17px] font-semibold">
+            {tr("Yan")}
+            <button
+              onClick={() => {
+                haptic("light");
+                setBeta(true);
+              }}
+              className="press rounded-full bg-g-tint-blue px-1.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-g-blue uppercase"
+            >
+              {tr("Beta")}
+            </button>
           </span>
           <span className="max-w-full truncate text-[12px] text-g-muted">{session ? session.title : tr("shift assistant")}</span>
         </div>
-        <button onClick={newChat} aria-label={tr("New chat")} className="press grid size-11 shrink-0 place-items-center rounded-full bg-g-fill">
+        <button onClick={newChat} aria-label={tr("New chat")} className="press ml-auto grid size-11 shrink-0 place-items-center rounded-full bg-g-fill">
           <SquarePen size={19} strokeWidth={2} />
         </button>
-        <span className="size-11 shrink-0" aria-hidden />
       </header>
 
       <div ref={scroller} className="no-scrollbar mx-auto w-full max-w-[480px] flex-1 overflow-y-auto overscroll-contain px-4">
@@ -312,13 +338,29 @@ export function YanChat({
               <h1 className="mt-5 text-[26px] leading-tight font-bold tracking-[-0.02em]">{tr("Hi, {name}!", { name: first ?? "" })}</h1>
               <p className="mt-1.5 max-w-[300px] text-[15px] leading-snug text-g-muted">{tr("I know your tables, bookings and the menu. Ask anything about the shift.")}</p>
             </div>
-            <div className="mt-7 grid grid-cols-2 gap-2.5">
+            {/* Live translation is a tool of its own, so it leads as a card. */}
+            <button
+              onClick={() => {
+                haptic("light");
+                setLive(true);
+              }}
+              className="press mt-7 flex items-center gap-3.5 rounded-[22px] bg-g-tint-blue p-3.5 text-left"
+            >
+              <span className="blue-grad grid size-11 shrink-0 place-items-center rounded-[14px]">
+                <Languages size={21} strokeWidth={2} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold">{tr("Live translator")}</span>
+                <span className="block truncate text-[13px] text-g-muted">{tr("Talk to a guest in Vietnamese, English or Russian")}</span>
+              </span>
+              <ChevronRight size={18} className="shrink-0 text-g-faint" />
+            </button>
+            <p className="mt-6 mb-2.5 text-[12px] font-semibold tracking-[0.06em] text-g-muted uppercase">{tr("Quick questions")}</p>
+            <div className="no-scrollbar -mx-4 grid grid-flow-col grid-rows-2 justify-start gap-2 overflow-x-auto px-4 [grid-auto-columns:max-content]">
               {starters.map((x) => (
-                <button key={x.text} onClick={() => ask(x.text)} className="press flex min-h-[84px] flex-col justify-between rounded-[22px] bg-g-fill p-3.5 text-left">
-                  <span className={`${x.tone} grid size-8 place-items-center rounded-full`}>
-                    <x.icon size={16} strokeWidth={2.2} />
-                  </span>
-                  <span className="mt-3 text-[14px] leading-snug font-semibold">{x.text}</span>
+                <button key={x.text} onClick={() => ask(x.text)} className="press flex h-10 items-center gap-2 rounded-full bg-g-fill pr-4 pl-3 text-[14px] font-medium whitespace-nowrap">
+                  <x.icon size={16} strokeWidth={2.2} className={x.tone} />
+                  {x.text}
                 </button>
               ))}
             </div>
@@ -395,6 +437,24 @@ export function YanChat({
         </form>
       </div>
 
+      {beta && (
+        <PeekCard z={100} label={tr("Beta")} onClose={() => setBeta(false)}>
+          <span className="blue-grad grid size-12 place-items-center rounded-[16px]">
+            <FlaskConical size={22} strokeWidth={2} />
+          </span>
+          <p className="mt-4 text-[20px] leading-tight font-bold">{tr("Yan is in beta")}</p>
+          <p className="mt-2 text-[14px] leading-relaxed text-g-ink-2">{tr("We are still teaching Yan. Use him freely on shift: ask about tables, bills, bookings, the menu, or how to say something to a guest.")}</p>
+          <ul className="mt-3 grid gap-2 text-[13px] leading-snug text-g-muted">
+            <li className="flex gap-2"><Check size={15} strokeWidth={2.4} className="mt-0.5 shrink-0 text-g-green" /> {tr("He answers from your live shift: tables, bookings, menu.")}</li>
+            <li className="flex gap-2"><Check size={15} strokeWidth={2.4} className="mt-0.5 shrink-0 text-g-green" /> {tr("Chats stay on this phone.")}</li>
+            <li className="flex gap-2"><ShieldAlert size={15} strokeWidth={2.2} className="mt-0.5 shrink-0 text-g-orange" /> {tr("He can be wrong. For allergies and payments, double-check.")}</li>
+          </ul>
+          <button onClick={() => setBeta(false)} className="blue-grad press mt-5 h-12 w-full rounded-full text-[15px] font-semibold">
+            {tr("Got it")}
+          </button>
+        </PeekCard>
+      )}
+      {live && <LiveTranslator onClose={() => setLive(false)} />}
       {drawer && (
         <Drawer
           sessions={sessions}
@@ -489,14 +549,16 @@ function Drawer({ sessions, cur, onPick, onNew, onDelete, onClose }: { sessions:
       <button aria-label={tr("Close")} onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.3)] backdrop-blur-sm" />
       <aside className="animate-drawer absolute inset-y-0 left-0 flex w-[86%] max-w-[360px] flex-col rounded-r-[28px] bg-white pt-[max(14px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))]">
         <div className="px-4">
-          <h2 className="text-[26px] font-bold tracking-[-0.02em]">{tr("Chats")}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-[26px] font-bold tracking-[-0.02em]">{tr("Chats")}</h2>
+            <button onClick={onNew} className="press flex items-center gap-1.5 py-2 text-[15px] font-semibold text-[#4d7dff]">
+              <SquarePen size={16} strokeWidth={2.2} /> {tr("New chat")}
+            </button>
+          </div>
           <label className="mt-3 flex h-11 items-center gap-2 rounded-full bg-g-fill px-3.5">
             <SearchIcon size={17} className="text-g-muted" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Find a chat")} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-g-faint" />
           </label>
-          <button onClick={onNew} className="blue-grad press mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold">
-            <SquarePen size={17} strokeWidth={2.2} /> {tr("New chat")}
-          </button>
         </div>
         <div className="no-scrollbar mt-4 flex-1 overflow-y-auto px-2">
           {groups.map(([g, ss]) => (
@@ -512,7 +574,7 @@ function Drawer({ sessions, cur, onPick, onNew, onDelete, onClose }: { sessions:
         </div>
       </aside>
       {menu && (
-        <PeekCard label={menu.title} onClose={() => setMenu(null)}>
+        <PeekCard z={100} label={menu.title} onClose={() => setMenu(null)}>
           <p className="text-[18px] leading-snug font-bold">{menu.title}</p>
           <p className="mt-1 text-[13px] text-g-muted">{tr("{n} message|{n} messages", { n: menu.msgs.length })}</p>
           <PeekActions
@@ -538,10 +600,21 @@ function Drawer({ sessions, cur, onPick, onNew, onDelete, onClose }: { sessions:
 function ChatRow({ s, on, onPick, onHold }: { s: Session; on: boolean; onPick: () => void; onHold: () => void }) {
   const press = useLongPress(onHold, onPick);
   const lastYan = [...s.msgs].reverse().find((m) => m.from === "yan");
+  const d = new Date(s.at);
+  const today = d.toDateString() === new Date().toDateString();
+  const when = today ? d.toTimeString().slice(0, 5) : `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
   return (
-    <button {...press} style={{ WebkitTouchCallout: "none" }} className={`press block w-full rounded-[16px] px-3 py-2.5 text-left select-none ${on ? "bg-g-tint-blue" : ""}`}>
-      <span className="block truncate text-[15px] font-semibold">{s.title}</span>
-      {lastYan && <span className="block truncate text-[13px] text-g-muted">{lastYan.text.replace(/\n/g, " ")}</span>}
+    <button {...press} style={{ WebkitTouchCallout: "none" }} className={`press flex w-full items-start gap-3 rounded-[16px] px-2.5 py-2.5 text-left select-none ${on ? "bg-g-tint-blue" : ""}`}>
+      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-g-fill text-g-blue">
+        <MessageCircle size={15} strokeWidth={2.2} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-[15px] font-semibold">{s.title}</span>
+          <span className="shrink-0 text-[12px] text-g-faint tabular-nums">{when}</span>
+        </span>
+        {lastYan && <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-g-muted">{lastYan.text.replace(/\n/g, " ")}</span>}
+      </span>
     </button>
   );
 }

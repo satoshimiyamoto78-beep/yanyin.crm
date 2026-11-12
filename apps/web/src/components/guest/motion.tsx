@@ -623,13 +623,13 @@ export function useLongPress(onLong: () => void, onTap?: () => void, ms = PEEK_H
  * iOS-style peek: the screen blurs and a card pops up with a short story about
  * the thing that was held. Tap outside to close.
  */
-export function PeekCard({ onClose, label, children }: { onClose: () => void; label: string; children: ReactNode }) {
+export function PeekCard({ onClose, label, children, z = 70 }: { onClose: () => void; label: string; children: ReactNode; /** Stacking level; raise it over full-screen pages. */ z?: number }) {
   // The screen behind is frozen while the card is up, like a native context peek.
   useScrollLock(true);
   // Rendered at the root of the page, so it is always centred on the screen,
   // wherever the held element was and whatever wraps it.
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex touch-none items-center justify-center overscroll-none px-6" role="dialog" aria-label={label}>
+    <div className="fixed inset-0 flex touch-none items-center justify-center overscroll-none px-6" style={{ zIndex: z }} role="dialog" aria-label={label}>
       <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
       <div className="animate-pop relative w-full max-w-[340px] rounded-[28px] bg-white p-5 text-g-ink">{children}</div>
     </div>,
