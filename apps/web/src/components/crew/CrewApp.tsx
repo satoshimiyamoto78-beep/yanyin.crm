@@ -304,7 +304,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: "tables" },
               { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: "orders" },
               { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: "bookings" },
-              { id: "bills", title: tr("Bills"), value: compactMoney(tables.reduce((n, x) => n + (x.status !== "free" && x.status !== "reserved" ? Math.round(ticketTotal(x.lines) * 1.05) : 0), 0)), sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("still to pay"), hot: hot.bills > 0, art: "check" },
+              { id: "bills", title: tr("Bills"), value: compactMoney(tables.reduce((n, x) => n + (x.status !== "free" && x.status !== "reserved" ? Math.round(ticketTotal(x.lines) * 1.05) : 0), 0)).replace(/(\.\d)\d(M)/, "$1$2"), sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("still to pay"), hot: hot.bills > 0, art: "check" },
               { id: "kitchen", title: tr("Kitchen"), value: String(hot.inKitchen), sub: tr("dish in work|dishes in work", { n: hot.inKitchen }), art: "kitchen" },
             ]}
             onOpen={(id) => (id === "bills" || id === "kitchen" ? setHallPage(id) : go(id))}
@@ -2022,12 +2022,12 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
       <ArtScene
         name={s.art}
         layout="row"
-        focal={big ? 64 : 50}
+        focal={big ? 64 : 42}
         className={`rounded-[26px] ${big ? "p-5" : "p-4"}`}
         footer={<p className={`truncate pr-5 ${big ? "mt-4 text-[14px]" : "mt-3.5 text-[13px]"} ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</p>}
       >
         <p className={`truncate leading-tight font-semibold text-g-ink-2 ${big ? "text-[15px]" : "text-[14px]"}`}>{s.title}</p>
-        <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums ${big ? "text-[34px]" : s.value.length > 4 ? "text-[21px]" : "text-[28px]"}`}>{s.value}</p>
+        <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums ${big ? "text-[34px]" : s.value.length > 5 ? "text-[18px]" : s.value.length > 3 ? "text-[23px]" : "text-[28px]"}`}>{s.value}</p>
       </ArtScene>
       <ChevronRight size={18} className="absolute right-4 bottom-4 text-g-faint" />
     </button>

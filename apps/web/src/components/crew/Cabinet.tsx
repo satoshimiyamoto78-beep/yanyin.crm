@@ -9,6 +9,7 @@ import { haptic } from "@/lib/haptics";
 import { Reveal } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { BarsWidget, HeroStat, IconStat, RingWidget } from "@/components/system/Widgets";
+import { ArtTile } from "@/components/system/Art";
 import { BADGE_ICON, BADGE_TIER } from "./CrewBoard";
 import { BadgeEmblem } from "./Emblems";
 import { useDish, useLocale, useTr } from "./prefs";
@@ -23,6 +24,169 @@ import { useDish, useLocale, useTr } from "./prefs";
 export type PastOrder = ClosedOrder & { day: number };
 
 const DAY = 86_400_000;
+/** Demo shift length until clock-in arrives with the backend. */
+const HOURS = 8;
+/** Money on cards: 1.2M ₫, 340k ₫. */
+const compact = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2).replace(/\.?0+$/, "")}M ₫` : n >= 1000 ? `${Math.round(n / 1000)}k ₫` : `${n} ₫`);
+type Range = "week" | "month" | "all";
+const RANGE_DAYS: Record<Range, number> = { week: 6, month: 29, all: 999 };
+
+/** Week / month / all, as one row of pills. */
+function RangePills({ value, onChange }: { value: Range; onChange: (r: Range) => void }) {
+  const tr = useTr();
+  return (
+    <div className="mt-4 flex gap-2">
+      {(
+        [
+          ["week", tr("Week")],
+          ["month", tr("Month")],
+          ["all", tr("All")],
+        ] as const
+      ).map(([id, label]) => (
+        <button
+          key={id}
+          onClick={() => {
+            haptic("tick");
+            onChange(id);
+          }}
+          aria-pressed={value === id}
+          className={`press h-9 rounded-full px-4 text-[14px] font-semibold ${value === id ? "bg-g-ink text-white" : "bg-g-fill text-g-ink-2"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Three numbers in one quiet row. */
+function Facts({ items }: { items: [string, string][] }) {
+  return (
+    <div className="mt-4 grid grid-cols-3 rounded-[20px] bg-g-fill px-4 py-3">
+      {items.map(([label, value]) => (
+        <span key={label} className="min-w-0">
+          <span className="block truncate text-[11.5px] text-g-muted">{label}</span>
+          <span className="mt-0.5 block truncate text-[16px] font-semibold tabular-nums">{value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Tips history: totals for the period, then day by day; open a day to see which bills tipped. */
+function TipsHistoryPage({ history, money, onOpen, onClose }: { history: PastOrder[]; money: (n: number) => string; onOpen: (o: ClosedOrder) => void; onClose: () => void }) {
+  const tr = useTr();
+  const locale = useLocale();
+  const [now] = useState(() => Date.now());
+  const [range, setRange] = useState<Range>("week");
+  const [openDay, setOpenDay] = useState<number | null>(null);
+  const list = history.filter((o) => o.day <= RANGE_DAYS[range]);
+  const days = [...new Set(list.map((o) => o.day))].sort((a, b) => a - b);
+  const byDay = days.map((d) => ({ d, orders: list.filter((o) => o.day === d) })).map((x) => ({ ...x, tips: x.orders.reduce((n, o) => n + o.tip, 0) }));
+  const total = byDay.reduce((n, x) => n + x.tips, 0);
+  const best = byDay.reduce((m, x) => (x.tips > m.tips ? x : m), byDay[0] ?? { d: 0, orders: [], tips: 0 });
+  return (
+    <Sheet open onClose={onClose} label={tr("Tips")} title={false}>
+      <div className="px-5 pt-1 pb-10">
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Tips")}</h2>
+        <p className="mt-1 text-[14px] text-g-muted">{tr("Your share from the team pool, by day")}</p>
+        <RangePills value={range} onChange={setRange} />
+        <Facts
+          items={[
+            [tr("Total"), compact(total)],
+            [tr("Per shift"), compact(byDay.length ? Math.round(total / byDay.length / 1000) * 1000 : 0)],
+            [tr("Best day"), byDay.length ? dayName(best.d, tr, now, locale) : "—"],
+          ]}
+        />
+        <div className="mt-4 divide-y divide-g-line">
+          {byDay.map((x) => {
+            const tipped = x.orders.filter((o) => o.tip > 0);
+            const on = openDay === x.d;
+            return (
+              <div key={x.d}>
+                <button
+                  onClick={() => {
+                    haptic("tick");
+                    setOpenDay(on ? null : x.d);
+                  }}
+                  aria-expanded={on}
+                  className="press flex w-full items-center gap-3 py-3.5 text-left"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold">{dayName(x.d, tr, now, locale)}</span>
+                    <span className="block text-[13px] text-g-muted">{tr("{a} of {b} bills with a tip", { a: tipped.length, b: x.orders.length })}</span>
+                  </span>
+                  <span className={`shrink-0 text-[16px] font-semibold tabular-nums ${x.tips ? "text-g-green" : "text-g-faint"}`}>{x.tips ? `+${compact(x.tips)}` : "0 ₫"}</span>
+                  <ChevronRight size={18} className={`shrink-0 text-g-faint transition-transform ${on ? "rotate-90" : ""}`} />
+                </button>
+                {on && (
+                  <div className="mb-3 grid gap-1.5">
+                    {tipped.map((o) => (
+                      <button key={o.id} onClick={() => onOpen(o)} className="press flex items-center gap-3 rounded-[16px] bg-g-fill px-3.5 py-2.5 text-left">
+                        <span className="w-12 shrink-0 text-[13px] text-g-muted tabular-nums">{o.closedAt}</span>
+                        <span className="min-w-0 flex-1 truncate text-[14px]">{tr("Table {n}", { n: o.table })} · {money(o.subtotal)}</span>
+                        <span className="shrink-0 text-[14px] font-semibold text-g-green tabular-nums">+{compact(o.tip)}</span>
+                      </button>
+                    ))}
+                    {!tipped.length && <p className="px-1 py-2 text-[13px] text-g-muted">{tr("No tips this day")}</p>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+/** Shifts history: one row per worked day with hours, orders, takings and tips. */
+function ShiftsHistoryPage({ history, onClose }: { history: PastOrder[]; onClose: () => void }) {
+  const tr = useTr();
+  const locale = useLocale();
+  const [now] = useState(() => Date.now());
+  const [range, setRange] = useState<Range>("week");
+  const list = history.filter((o) => o.day <= RANGE_DAYS[range]);
+  const days = [...new Set(list.map((o) => o.day))].sort((a, b) => a - b);
+  const takings = list.reduce((n, o) => n + o.subtotal, 0);
+  return (
+    <Sheet open onClose={onClose} label={tr("Shifts")} title={false}>
+      <div className="px-5 pt-1 pb-10">
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Shifts")}</h2>
+        <p className="mt-1 text-[14px] text-g-muted">{tr("Days you worked and how they went")}</p>
+        <RangePills value={range} onChange={setRange} />
+        <Facts
+          items={[
+            [tr("Shifts"), String(days.length)],
+            [tr("Hours"), String(days.length * HOURS)],
+            [tr("Takings"), compact(takings)],
+          ]}
+        />
+        <div className="mt-4 divide-y divide-g-line">
+          {days.map((d) => {
+            const os = list.filter((o) => o.day === d);
+            const times = os.map((o) => o.closedAt).sort();
+            return (
+              <div key={d} className="flex items-center gap-3 py-3.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-semibold">{dayName(d, tr, now, locale)}</span>
+                  <span className="block truncate text-[13px] text-g-muted">
+                    {tr("{n} h", { n: HOURS })} · {tr("{n} order|{n} orders", { n: os.length })}
+                    {times.length ? ` · ${times[0]}–${times[times.length - 1]}` : ""}
+                  </span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block text-[15px] font-semibold tabular-nums">{compact(os.reduce((n, o) => n + o.subtotal, 0))}</span>
+                  <span className="block text-[12.5px] text-g-green tabular-nums">+{compact(os.reduce((n, o) => n + o.tip, 0))}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Sheet>
+  );
+}
 const dayName = (d: number, tr: (s: string) => string, now: number, locale: string) => {
   if (d === 0) return tr("Today");
   if (d === 1) return tr("Yesterday");
@@ -129,17 +293,33 @@ export function CabinetView({
         <RingWidget title={tr("Upsell")} icon={<Sparkles size={13} strokeWidth={2.4} />} value="34%" unit={tr("tables with an add-on")} part={0.34} />
       </Reveal>
 
-      {/* Order history: the latest three, the rest on its own page. */}
+      {/* History: the waiter's own record, one row per kind, each opens its page. */}
       <section className="mt-10">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-[24px] leading-tight font-bold tracking-[-0.025em]">{tr("Order history")}</h2>
-          <button onClick={() => setPage("history")} className="press flex items-center gap-0.5 text-[15px] font-semibold text-g-blue underline decoration-g-blue/30 decoration-2 underline-offset-4">
-            {tr("See all")} <ChevronRight size={16} strokeWidth={2.4} />
-          </button>
-        </div>
-        <div className="mt-2 divide-y divide-g-line">
-          {history.slice(0, 3).map((o) => (
-            <OrderRow key={o.id} o={o} itemById={itemById} money={money} onOpen={() => onReceipt(o)} />
+        <h2 className="text-[24px] leading-tight font-bold tracking-[-0.025em]">{tr("History")}</h2>
+        <div className="mt-3 divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
+          {(
+            [
+              ["history", "orders", tr("Orders"), tr("{n} order|{n} orders", { n: orders }), compact(history.reduce((n, o) => n + o.subtotal + o.tip, 0))],
+              ["tips", "tips", tr("Tips"), tr("{n} bill with a tip|{n} bills with a tip", { n: history.filter((o) => o.tip > 0).length }), compact(history.reduce((n, o) => n + o.tip, 0))],
+              ["shifts", "shifts", tr("Shifts"), tr("{n} shift|{n} shifts", { n: shifts }), tr("{n} h", { n: shifts * HOURS })],
+            ] as const
+          ).map(([id, art, title, sub, value]) => (
+            <button
+              key={id}
+              onClick={() => {
+                haptic("light");
+                setPage(id);
+              }}
+              className="press flex w-full items-center gap-3 py-3 text-left"
+            >
+              <ArtTile name={art} size={36} bare />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[16px] font-semibold">{title}</span>
+                <span className="block truncate text-[13px] text-g-muted">{sub}</span>
+              </span>
+              <span className="shrink-0 text-[15px] font-semibold tabular-nums">{value}</span>
+              <ChevronRight size={18} className="shrink-0 text-g-faint" />
+            </button>
           ))}
         </div>
       </section>
@@ -213,6 +393,8 @@ export function CabinetView({
       </section>
 
       {page === "history" && <HistoryPage history={history} itemById={itemById} money={money} onOpen={onReceipt} onClose={() => setPage(null)} />}
+      {page === "tips" && <TipsHistoryPage history={history} money={money} onOpen={onReceipt} onClose={() => setPage(null)} />}
+      {page === "shifts" && <ShiftsHistoryPage history={history} onClose={() => setPage(null)} />}
       {guide && (
         <Sheet open onClose={() => setPage(null)} label={tr(guide.title)} title={false}>
           <div className="px-5 pt-1 pb-10">
