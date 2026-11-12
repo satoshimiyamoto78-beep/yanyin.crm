@@ -332,7 +332,9 @@ export function CountMoney({ to, delay = 0, ms = 700, format }: { to: number; de
 export type IslandTone = "blue" | "green" | "orange";
 export type IslandNotice = { title: string; text?: string; tone?: IslandTone; icon?: ReactNode;
   /** One clear next step right on the island, e.g. "Open bill". */
-  action?: { label: string; onClick: () => void } };
+  action?: { label: string; onClick: () => void };
+  /** More about it: a tap on the island unfolds it into a card with these. */
+  details?: ReactNode };
 
 const TONE: Record<IslandTone, string> = {
   blue: "blue-grad",
@@ -345,13 +347,15 @@ const TONE: Record<IslandTone, string> = {
  * that grows out of a dot, shows a coloured circle and the title, then folds
  * back. Every action in the guest and waiter apps reports through it.
  */
-export function Island({ notice }: { notice: IslandNotice | null }) {
+export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** Told when the island unfolds or folds, so it is not dismissed while read. */ onExpand?: (open: boolean) => void }) {
   // Keep the last notice on screen while it folds away.
   const [shown, setShown] = useState<IslandNotice | null>(notice);
   const [prev, setPrev] = useState<IslandNotice | null>(notice);
+  const [open, setOpen] = useState(false);
   if (notice !== prev) {
     setPrev(notice);
     if (notice) setShown(notice);
+    setOpen(false);
   }
   const leaving = !notice && !!shown;
   useEffect(() => {
@@ -360,25 +364,54 @@ export function Island({ notice }: { notice: IslandNotice | null }) {
     return () => clearTimeout(id);
   }, [leaving]);
   if (!shown) return null;
+  const toggle = (v: boolean) => {
+    haptic("light");
+    setOpen(v);
+    onExpand?.(v);
+  };
+  const act = shown.action && (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        haptic("light");
+        setOpen(false);
+        onExpand?.(false);
+        shown.action!.onClick();
+      }}
+      className={`island-content press shrink-0 rounded-full bg-[#2f6bff] font-semibold ${open ? "h-11 flex-1 text-[15px]" : "ml-1 h-8 px-3.5 text-[13px]"}`}
+    >
+      {shown.action.label}
+    </button>
+  );
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center pt-[max(10px,env(safe-area-inset-top))]">
+      {open && <button aria-label="Fold" onClick={() => toggle(false)} className="animate-fade pointer-events-auto fixed inset-0 -z-10 bg-[rgba(11,11,15,0.25)] backdrop-blur-[2px]" />}
       <div
         key={shown.title}
         role="status"
-        className={`${leaving ? "island-out" : "island-in"} flex h-11 max-w-[92vw] min-w-[34vw] items-center gap-2.5 rounded-full bg-[#0b0b0f] py-1.5 pl-1.5 text-white ${shown.action ? "pointer-events-auto pr-1.5" : "pr-4"}`}
+        onClick={shown.details && !open ? () => toggle(true) : undefined}
+        className={`${leaving ? "island-out" : "island-in"} overflow-hidden bg-[#0b0b0f] text-white transition-[width,border-radius] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          open ? "pointer-events-auto w-[min(92vw,380px)] rounded-[30px] p-4" : `flex h-11 max-w-[92vw] min-w-[34vw] items-center gap-2.5 rounded-full py-1.5 pl-1.5 ${shown.action || shown.details ? "pointer-events-auto pr-1.5" : "pr-4"} ${shown.details ? "cursor-pointer" : ""}`
+        }`}
       >
-        <span className={`island-content grid size-8 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
-        <span className="island-content min-w-0 truncate text-[14px] font-semibold">{shown.title}</span>
-        {shown.action && (
-          <button
-            onClick={() => {
-              haptic("light");
-              shown.action!.onClick();
-            }}
-            className="island-content press ml-1 h-8 shrink-0 rounded-full bg-[#2f6bff] px-3.5 text-[13px] font-semibold"
-          >
-            {shown.action.label}
-          </button>
+        {open ? (
+          <div className="island-content">
+            <div className="flex items-center gap-2.5">
+              <span className={`grid size-9 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
+              <span className="min-w-0 flex-1 truncate text-[16px] font-semibold">{shown.title}</span>
+              <button aria-label="Fold" onClick={() => toggle(false)} className="press grid size-8 shrink-0 place-items-center rounded-full bg-white/12">
+                <X size={16} strokeWidth={2.4} />
+              </button>
+            </div>
+            <div className="mt-3">{shown.details}</div>
+            {act && <div className="mt-4 flex">{act}</div>}
+          </div>
+        ) : (
+          <>
+            <span className={`island-content grid size-8 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
+            <span className="island-content min-w-0 truncate text-[14px] font-semibold">{shown.title}</span>
+            {act}
+          </>
         )}
       </div>
     </div>

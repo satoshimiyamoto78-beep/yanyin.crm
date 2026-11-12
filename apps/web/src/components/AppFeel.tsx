@@ -28,11 +28,22 @@ export function AppFeel() {
       const el = t?.closest?.("button, a, [role=button], [role=tab], [role=switch], summary, label, input[type=checkbox], input[type=radio]");
       if (el && !(el as HTMLButtonElement).disabled) haptic("light");
     };
+    // iOS Safari ignores user-scalable=no, so pinch gestures are stopped here too.
+    const noZoom = (e: Event) => e.preventDefault();
+    const onTouch = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
+    };
+    document.addEventListener("gesturestart", noZoom, { passive: false } as AddEventListenerOptions);
+    document.addEventListener("gesturechange", noZoom, { passive: false } as AddEventListenerOptions);
+    document.addEventListener("touchmove", onTouch, { passive: false });
     document.addEventListener("click", onTap, true);
     document.addEventListener("contextmenu", onMenu);
     document.addEventListener("dragstart", onDrag);
     return () => {
       document.removeEventListener("click", onTap, true);
+      document.removeEventListener("gesturestart", noZoom);
+      document.removeEventListener("gesturechange", noZoom);
+      document.removeEventListener("touchmove", onTouch);
       document.removeEventListener("contextmenu", onMenu);
       document.removeEventListener("dragstart", onDrag);
     };

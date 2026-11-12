@@ -15,6 +15,8 @@ export type TicketLine = {
   price: number;
   state: LineState;
   by?: "guest" | "waiter";
+  /** When the dish was added to the ticket ("12:31"). Every line is tracked. */
+  at?: string;
   /** Cancelled by the waiter: kept on the ticket (crossed out, not charged) with the reason. */
   cancelled?: { reason: string; at: string; by: string };
 };
@@ -72,7 +74,13 @@ export function demoFloor(menu: Menu): FloorData {
   const items = allItems(menu).filter((i) => i.price > 0 && !i.variants.length && !i.modifierGroups.some((g) => g.required));
   const find = (re: RegExp) => items.find((i) => re.test(i.name.en ?? "")) ?? items[0]!;
   let seq = 0;
-  const line = (it: MenuItem, qty: number, state: LineState, by: "guest" | "waiter" = "waiter"): TicketLine => ({ id: `l${++seq}`, itemId: it.id, qty, price: it.price, state, by });
+  const line = (it: MenuItem, qty: number, state: LineState, by: "guest" | "waiter" = "waiter", at?: string): TicketLine => ({ id: `l${++seq}`, itemId: it.id, qty, price: it.price, state, by, at });
+  /** Adds minutes to a "HH:MM" time (demo: dishes arrive a few minutes after the guests sit). */
+  const plus = (t: string, m: number) => {
+    const [h, mm] = t.split(":").map(Number);
+    const v = (h ?? 0) * 60 + (mm ?? 0) + m;
+    return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
+  };
 
   const plov = find(/plov/i);
   const shashlik = find(/lamb shashlik/i);
@@ -87,14 +95,14 @@ export function demoFloor(menu: Menu): FloorData {
 
   const tables: FloorTable[] = [
     { no: 1, seats: 2, zone: "Hall", status: "free", guests: 0, lines: [] },
-    { no: 2, seats: 4, zone: "Hall", status: "ordered", guests: 3, since: "12:10", lines: [line(plov, 2, "served", "guest"), line(salad, 1, "served", "guest"), line(tea, 1, "cooking")] },
+    { no: 2, seats: 4, zone: "Hall", status: "ordered", guests: 3, since: "12:10", lines: [line(plov, 2, "served", "guest", plus("12:10", 4)), line(salad, 1, "served", "guest", plus("12:10", 4)), line(tea, 1, "cooking", "waiter", plus("12:10", 9))] },
     { no: 3, seats: 4, zone: "Hall", status: "reserved", guests: 0, lines: [], booking: { name: "Nguyen", time: "13:30" } },
-    { no: 4, seats: 6, zone: "Hall", status: "bill", guests: 5, since: "11:40", lines: [line(shashlik, 3, "served", "guest"), line(beef, 2, "served", "guest"), line(bread, 2, "served"), line(juice, 5, "served", "guest"), line(dessert, 2, "served")] },
+    { no: 4, seats: 6, zone: "Hall", status: "bill", guests: 5, since: "11:40", lines: [line(shashlik, 3, "served", "guest", plus("11:40", 4)), line(beef, 2, "served", "guest", plus("11:40", 4)), line(bread, 2, "served", "waiter", plus("11:40", 9)), line(juice, 5, "served", "guest", plus("11:40", 15)), line(dessert, 2, "served", "waiter", plus("11:40", 22))] },
     { no: 5, seats: 2, zone: "Hall", status: "seated", guests: 2, since: "12:42", lines: [] },
     { no: 6, seats: 4, zone: "Hall", status: "free", guests: 0, lines: [] },
-    { no: 7, seats: 4, zone: "Hall", status: "ordered", guests: 2, since: "12:25", lines: [line(soup, 2, "cooking"), line(samsa, 2, "new", "guest"), line(tea, 1, "served")] },
+    { no: 7, seats: 4, zone: "Hall", status: "ordered", guests: 2, since: "12:25", lines: [line(soup, 2, "cooking", "waiter", plus("12:25", 4)), line(samsa, 2, "new", "guest", plus("12:25", 4)), line(tea, 1, "served", "waiter", plus("12:25", 9))] },
     { no: 8, seats: 8, zone: "Hall", status: "free", guests: 0, lines: [] },
-    { no: 10, seats: 2, zone: "Terrace", status: "ordered", guests: 2, since: "12:30", lines: [line(shashlik, 2, "cooking"), line(juice, 2, "served")] },
+    { no: 10, seats: 2, zone: "Terrace", status: "ordered", guests: 2, since: "12:30", lines: [line(shashlik, 2, "cooking", "waiter", plus("12:30", 4)), line(juice, 2, "served", "waiter", plus("12:30", 4))] },
     { no: 11, seats: 4, zone: "Terrace", status: "free", guests: 0, lines: [] },
     { no: 12, seats: 4, zone: "Terrace", status: "reserved", guests: 0, lines: [], booking: { name: "Alex", time: "19:00" } },
     { no: 14, seats: 6, zone: "Terrace", status: "free", guests: 0, lines: [] },

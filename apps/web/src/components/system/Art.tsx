@@ -13,7 +13,7 @@ import { useId, type CSSProperties, type ReactNode } from "react";
  */
 
 export type ArtTone = "blue" | "sunset" | "teal" | "green" | "coral" | "night";
-export type ArtName = "tables" | "floor" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
+export type ArtName = "tables" | "floor" | "sales" | "trophy" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
 
 const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; shadow: string }> = {
   blue: { a: "#8fb6ff", b: "#3d6bff", c: "#1a2a9e", glow: "#bcd2ff", shadow: "rgba(47,91,255,0.5)" },
@@ -28,6 +28,8 @@ const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; sh
 export const ART: Record<ArtName, ArtTone> = {
   tables: "blue",
   floor: "blue",
+  sales: "green",
+  trophy: "sunset",
   orders: "sunset",
   bookings: "teal",
   seated: "green",
@@ -173,6 +175,15 @@ function Focal({ name, t, size }: { name: ArtName; t: (typeof TONES)[ArtTone]; s
  * fine grain, and the same subject small and sharp as the one focal point.
  * Light theme: pastel and dark text; dark theme: deep tone and light text.
  */
+/** The scene background for any element (light pastel, deep in dark), for tiles that share the look. */
+export function sceneStyle(tone: ArtTone): CSSProperties {
+  const t = TONES[tone];
+  return {
+    "--art-l": `radial-gradient(120% 90% at 100% 0%, ${t.a}88 0%, ${t.glow}66 40%, transparent 72%), linear-gradient(160deg, #ffffff 0%, ${t.glow}55 100%)`,
+    "--art-d": `radial-gradient(120% 90% at 100% 0%, ${t.b}88 0%, ${t.c}44 45%, transparent 75%), linear-gradient(160deg, #15171d 0%, ${t.c}55 100%)`,
+  } as CSSProperties;
+}
+
 export function ArtScene({
   name,
   tone = ART[name],
@@ -250,6 +261,8 @@ type DecoKind = "rays" | "sparkle" | "petals" | "dots" | "waves" | "ticks";
 const DECO: Record<ArtName, DecoKind> = {
   tables: "sparkle",
   floor: "dots",
+  sales: "rays",
+  trophy: "sparkle",
   orders: "waves",
   bookings: "dots",
   seated: "petals",
@@ -350,6 +363,40 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
       <ellipse cx="62.6" cy="40.5" rx="2.4" ry="1.1" fill="#36b36a" transform="rotate(-30 62.6 40.5)" />
       <circle cx="60" cy="35.5" r="3.4" fill="#ff7a8a" />
       <circle cx="60" cy="35.5" r="1.3" fill="#ffd27a" />
+    </g>
+  ),
+  // Takings going up: three rising bars and an arrow.
+  sales: (g) => (
+    <g>
+      <rect x="28" y="92" width="64" height="4" rx="2" fill="#c7d2ea" />
+      {[
+        [32, 70, 22],
+        [52, 56, 36],
+        [72, 40, 52],
+      ].map(([x, y, h], k) => (
+        <g key={k}>
+          <rect x={x} y={y} width="16" height={h} rx="5" fill={url(g, "tone")} />
+          <rect x={x} y={y} width="16" height={h} rx="5" fill={url(g, "paper")} opacity="0.25" />
+          <rect x={x + 3} y={y + 3} width="4" height={h - 8} rx="2" fill="#fff" opacity="0.55" />
+        </g>
+      ))}
+      <path d="M30 60 L50 46 L62 52 L86 30" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M30 60 L50 46 L62 52 L86 30" fill="none" stroke={url(g, "gold")} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M78 28 L89 27 L88 38" fill="none" stroke={url(g, "gold")} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+  ),
+  // A gold cup: the waiter's level.
+  trophy: (g) => (
+    <g>
+      <rect x="44" y="84" width="32" height="8" rx="3" fill={url(g, "deep")} />
+      <rect x="49" y="77" width="22" height="8" rx="3" fill={url(g, "goldSide")} />
+      <rect x="57" y="64" width="6" height="14" rx="2" fill={url(g, "goldSide")} />
+      <path d="M38 34 h44 v10 a22 22 0 0 1 -44 0 z" fill={url(g, "gold")} />
+      <path d="M38 38 h-6 a8 8 0 0 0 8 12" fill="none" stroke={url(g, "gold")} strokeWidth="4" strokeLinecap="round" />
+      <path d="M82 38 h6 a8 8 0 0 1 -8 12" fill="none" stroke={url(g, "gold")} strokeWidth="4" strokeLinecap="round" />
+      <ellipse cx="60" cy="34" rx="22" ry="4" fill="#fff6c9" />
+      <path d="M46 40 q2 16 12 22" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
+      <path d="M60 41 l2.6 5.3 5.8.8 -4.2 4.1 1 5.8 -5.2-2.7 -5.2 2.7 1-5.8 -4.2-4.1 5.8-.8z" fill="#fff" opacity="0.9" />
     </g>
   ),
   // The hall from above: four tables, three taken (in the tone), one free.

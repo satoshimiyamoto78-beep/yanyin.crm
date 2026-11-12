@@ -1,5 +1,16 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "added at {t}": "добавлено в {t}",
+  "At the table": "За столом",
+  "last at {t}": "последнее в {t}",
+  "Still to pay": "Ещё к оплате",
+  "Paid today": "Оплачено сегодня",
+  "Hurry the kitchen": "Поторопить кухню",
+  "Call the kitchen": "Позвать кухню",
+  "Your dishes that are not on the tables yet, longest first.": "Ваши блюда, которых ещё нет на столах, — сначала самые долгие.",
+  "Everything is on the tables": "Всё уже на столах",
+  "Dishes late by 15 minutes or more show a hurry button.": "У блюд, которые ждут 15 минут и дольше, появляется кнопка «поторопить».",
+  "Kitchen asked to hurry": "Кухню попросили ускориться",
   "Bills with a tip": "С чаевыми",
   "Average tip": "В среднем",
   "Biggest": "Максимум",
@@ -756,6 +767,17 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "added at {t}": "thêm lúc {t}",
+  "At the table": "Đã ngồi",
+  "last at {t}": "món cuối lúc {t}",
+  "Still to pay": "Chưa thanh toán",
+  "Paid today": "Đã thu hôm nay",
+  "Hurry the kitchen": "Giục bếp",
+  "Call the kitchen": "Gọi bếp",
+  "Your dishes that are not on the tables yet, longest first.": "Các món của bạn chưa lên bàn, món chờ lâu nhất trước.",
+  "Everything is on the tables": "Đã lên đủ món",
+  "Dishes late by 15 minutes or more show a hurry button.": "Món chờ từ 15 phút sẽ có nút giục bếp.",
+  "Kitchen asked to hurry": "Đã giục bếp",
   "Bills with a tip": "Có tip",
   "Average tip": "Trung bình",
   "Biggest": "Cao nhất",

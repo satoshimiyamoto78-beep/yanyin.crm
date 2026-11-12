@@ -369,6 +369,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
           {/* Strip: one big order card, then two rows of the same height: waiter and bill squares, short wide cards. */}
           <Strip>
             <StripBig
+              art="orders"
               onClick={() => {
                 if (count > 0) setSheet("cart");
                 else if (menu.categories[0]) scrollTo(menu.categories[0].id);

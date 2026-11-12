@@ -360,6 +360,7 @@ export function CrewBoard({
 
           <Strip>
             <StripBig
+              art="tables"
               onClick={() => onGo?.("tables")}
               icon={<LayoutGrid size={19} strokeWidth={2} />}
               title={hot ? tr("{a}/{b} tables", { a: hot.busy, b: hot.tables }) : tr("Tables")}
@@ -367,9 +368,9 @@ export function CrewBoard({
               tone={hot?.bills ? "orange" : "muted"}
             />
             <StripSquare icon={<ScanLine size={21} strokeWidth={1.9} />} label={tr("Scan")} onClick={() => onScan?.()} />
-            <StripSquare icon={<Coffee size={21} strokeWidth={1.9} />} label={tr("Break")} onClick={() => onNotify?.(tr("Break started"), tr("Tables see “back in 10 min”"))} />
-            <StripBig onClick={() => onGo?.("orders")} icon={<TrendingUp size={19} strokeWidth={2} />} title={hidden ? "•••" : `${short(data.today.sales)} ₫`} sub={`${tr("Sales today")} · +12%`} />
-            <StripBig icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">{tr("Level {n}", { n: level.level })}</span>} title={tr(level.title)} wide>
+            <StripSquare tone="sunset" icon={<Coffee size={21} strokeWidth={1.9} />} label={tr("Break")} onClick={() => onNotify?.(tr("Break started"), tr("Tables see “back in 10 min”"))} />
+            <StripBig art="sales" onClick={() => onGo?.("orders")} icon={<TrendingUp size={19} strokeWidth={2} />} title={hidden ? "•••" : `${short(data.today.sales)} ₫`} sub={`${tr("Sales today")} · +12%`} />
+            <StripBig art="trophy" icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">{tr("Level {n}", { n: level.level })}</span>} title={tr(level.title)} wide>
               <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-g-fill">
                 <span className="live bar-grad block h-full rounded-full" style={{ width: `${pct}%` }} />
               </span>

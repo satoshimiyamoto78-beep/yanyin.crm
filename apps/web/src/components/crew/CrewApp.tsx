@@ -51,6 +51,7 @@ import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useDish, useLocale, useTr, type TrVars } from "./prefs";
 import { Scanner } from "./Scanner";
 import { CrewSearch } from "./Search";
+import { BillsPage, KitchenPage } from "./HallPages";
 import { ArtScene, type ArtName } from "@/components/system/Art";
 import { YanChat } from "./YanChat";
 import { YanOrb } from "@/components/guest/YanSheet";
@@ -133,6 +134,8 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const [page, setPage] = useState<"picker" | "check" | "pay" | null>(null);
   const [receipt, setReceipt] = useState<ClosedOrder | null>(null);
   const [newBooking, setNewBooking] = useState(false);
+  // The Hall's quick pages: all bills, and the kitchen queue.
+  const [hallPage, setHallPage] = useState<"bills" | "kitchen" | null>(null);
   // The bill opened straight from a notification: closing it goes back to where the waiter was.
   const [direct, setDirect] = useState(false);
   // Search over everything, and Yan's chat (optionally opened with a question from search).
@@ -146,13 +149,15 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const money = useCallback((n: number) => formatMoney(n, floor.venue.currency, "en"), [floor.venue.currency]);
   const table = tables.find((x) => x.no === open) ?? null;
 
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const notify = useCallback((raw: Notice) => {
     haptic("success");
     // Colour and icon follow the meaning of the notification (English, Russian, Vietnamese wording).
     const meta = noticeMeta(raw.title);
     const n: Notice = { ...raw, tone: raw.tone ?? meta.tone, icon: raw.icon ?? <meta.icon size={16} strokeWidth={2.25} /> };
     setNotice(n);
-    setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), raw.action ? 6000 : 2600);
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), raw.action ? 7000 : 2600);
     // Every notification is kept in the inbox history.
     setInbox((xs) => [{ id: `i${Date.now()}${xs.length}`, kind: kindOf(raw.title), table: raw.table, title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at: Date.now(), read: false }, ...xs].slice(0, 80));
   }, []);
@@ -178,7 +183,30 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       const tr = trNow.current;
       const x = floor.tables.find((t) => t.no === 4);
       if (!x) return;
-      notify({ title: tr("Table {n} asks for the bill", { n: 4 }), tone: "orange", table: 4, icon: <ReceiptText size={16} strokeWidth={2.25} />, action: { label: tr("Open bill"), onClick: () => openBill(4) } });
+      const sum = Math.round(ticketTotal(x.lines) * 1.05);
+      const last = [...x.lines].reverse().find((l) => l.at)?.at;
+      notify({
+        title: tr("Table {n} asks for the bill", { n: 4 }),
+        tone: "orange",
+        table: 4,
+        icon: <ReceiptText size={16} strokeWidth={2.25} />,
+        action: { label: tr("Open bill"), onClick: () => openBill(4) },
+        details: (
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              [tr("To pay"), money(sum)],
+              [tr("Guests"), String(x.guests)],
+              [tr("At the table"), seatedFor(x.since, tr)],
+              [tr("Dishes"), `${x.lines.reduce((n, l) => n + l.qty, 0)}${last ? ` · ${tr("last at {t}", { t: last })}` : ""}`],
+            ].map(([k, v]) => (
+              <span key={k} className="rounded-[16px] bg-white/8 px-3 py-2.5">
+                <span className="block text-[11.5px] text-white/55">{k}</span>
+                <span className="block truncate text-[15px] font-semibold tabular-nums">{v}</span>
+              </span>
+            ))}
+          </div>
+        ),
+      });
     }, 7000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one demo ping per visit
@@ -228,8 +256,8 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             actions={[
               { icon: ScanLine, label: tr("Scan"), onClick: () => setScan(true) },
               { icon: CalendarPlus, label: tr("New booking"), onClick: () => setNewBooking(true) },
-              { icon: ReceiptText, label: tr("Bills"), onClick: () => go("orders") },
-              { icon: ChefHat, label: tr("Kitchen"), onClick: () => notify({ title: tr("Kitchen pinged"), text: tr("The pass sees your call") }) },
+              { icon: ReceiptText, label: tr("Bills"), onClick: () => setHallPage("bills") },
+              { icon: ChefHat, label: tr("Kitchen"), onClick: () => setHallPage("kitchen") },
             ]}
           />
         )}
@@ -410,7 +438,14 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       {cabBadges && <BadgesPage badges={data.badges} onClose={() => setCabBadges(false)} />}
       {inboxOpen && <InboxPage items={inbox} onOpenBill={openBill} onClose={() => setInboxOpen(false)} onReadAll={() => setInbox((xs) => xs.map((i) => ({ ...i, read: true })))} />}
 
-      <Island notice={notice} />
+      <Island
+        notice={notice}
+        onExpand={(open) => {
+          // Unfolded, it stays until the waiter acts or folds it; folded, it leaves a moment later.
+          clearTimeout(noticeTimer.current);
+          if (!open) noticeTimer.current = setTimeout(() => setNotice(null), 2500);
+        }}
+      />
 
       {/* Table page and its flow: take order → check → payment */}
       {table && (
@@ -519,6 +554,36 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         />
       )}
 
+      {hallPage === "bills" && (
+        <BillsPage
+          tables={tables}
+          history={history}
+          money={money}
+          onClose={() => setHallPage(null)}
+          onOpenBill={(no) => {
+            setHallPage(null);
+            openBill(no);
+          }}
+          onReceipt={(o) => setReceipt(o)}
+        />
+      )}
+      {hallPage === "kitchen" && (
+        <KitchenPage
+          tables={tables}
+          itemById={itemById}
+          onClose={() => setHallPage(null)}
+          onOpenTable={(no) => {
+            setHallPage(null);
+            setOpen(no);
+          }}
+          onServe={(no, l) => {
+            patch(no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === l.id ? { ...y, state: "served" } : y)) }));
+            notify({ title: tr("{dish} is served", { dish: dish(itemById.get(l.itemId)?.name) }), text: tr("Table {n}", { n: no }) });
+          }}
+          onHurry={(no, l) => notify({ title: tr("Kitchen asked to hurry"), text: `${tr("Table {n}", { n: no })} · ${dish(itemById.get(l.itemId)?.name)}`, tone: "orange" })}
+          onPing={() => notify({ title: tr("Kitchen pinged"), text: tr("The pass sees your call") })}
+        />
+      )}
       {searching && (
         <CrewSearch
           tables={tables}
@@ -1127,7 +1192,7 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
       return next;
     });
   };
-  const send = () => onSend(entries.map(([itemId, qty]) => ({ id: lineId(), itemId, qty, price: byId.get(itemId)?.price ?? 0, state: "new" as const, by: "waiter" as const })));
+  const send = () => onSend(entries.map(([itemId, qty]) => ({ id: lineId(), itemId, qty, price: byId.get(itemId)?.price ?? 0, state: "new" as const, by: "waiter" as const, at: new Date().toTimeString().slice(0, 5) })));
   const stepper = (id: string, n: number) => (
     <div className="flex h-10 w-[104px] shrink-0 items-center justify-between rounded-full bg-g-ink px-1 text-white">
       <button aria-label={tr("One less")} onClick={() => set(id, n - 1)} className="grid size-8 place-items-center">
@@ -1918,7 +1983,15 @@ function OrderLineRow({ line: l, name, money, onHold, onStatus }: { line: Ticket
         <span className="w-7 shrink-0 text-[15px] font-semibold text-g-muted tabular-nums">{l.qty}×</span>
         <span className="min-w-0 flex-1">
           <span className={`block truncate text-[15px] font-medium ${off ? "line-through decoration-g-faint" : ""}`}>{name}</span>
-          <span className={`text-[13px] text-g-muted tabular-nums ${off ? "line-through" : ""}`}>{money(l.price * l.qty)}</span>
+          <span className="flex items-center gap-1.5 text-[13px] text-g-muted tabular-nums">
+            <span className={off ? "line-through" : ""}>{money(l.price * l.qty)}</span>
+            {/* When it was added: every dish on the ticket is tracked. */}
+            {l.at && (
+              <span className="inline-flex items-center gap-0.5 text-[12px] text-g-faint">
+                <Clock size={11} strokeWidth={2.4} /> {l.at}
+              </span>
+            )}
+          </span>
         </span>
       </div>
       <button
@@ -1944,6 +2017,7 @@ function DishHead({ line, name, money }: { line: TicketLine; name: string; money
       facts={[
         line.by === "guest" ? { icon: QrCode, text: tr("Guest · QR menu"), tone: "blue" } : { icon: UserRound, text: tr("Added by the waiter") },
         { icon: ReceiptText, text: money(line.price * line.qty) },
+        ...(line.at ? [{ icon: Clock, text: tr("added at {t}", { t: line.at }) }] : []),
         ...(line.cancelled ? [] : [{ icon: line.state === "served" ? CheckCheck : line.state === "cooking" ? CookingPot : Hourglass, text: tr(LINE[line.state].label) }]),
       ]}
     />
