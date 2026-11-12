@@ -57,11 +57,18 @@ something like `yanyin.app` (not decided yet, see `docs/04-decisions.md`).
   https://app.notion.com/p/412e2f5cf96881a693cbcff41402d2ac with the «Задачи» database
   (data source `collection://6d0a817b-c956-49a0-b4f9-e2ffb25ef39b`). When you finish or
   start a roadmap task, update its status there. New tasks go into the same database.
+  After every batch of work (not only roadmap tasks), update Notion before replying:
+  task status, a short note of what changed, and the «Дизайн-система» page when a
+  design rule changed.
 - **Google Drive** folder `yanyin.crm` (id `1-TiMYVOR4wqbfOeQDRL0cHrOMLTt9Irn`): files,
   mockups, contracts and copies of key docs for the founder.
 - The repo stays the source of truth for docs; Notion and Drive mirror it.
 
 ## One visual system
+
+The founder approved the current look. Every new screen follows the canon in
+`.claude/skills/yanyin-product/references/visual-system.md` (sky header,
+illustrated scene cards, quick-action strip, widgets, island, motion rules).
 
 The guest menu and the waiter app are one product. Shared visual building blocks
 (header sky, theme, quick-action strip, notifications, loading blur, pages,

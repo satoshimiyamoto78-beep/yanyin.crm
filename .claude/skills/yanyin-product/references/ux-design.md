@@ -2,6 +2,8 @@
 
 ## 1. Brand feel
 
+> **The current approved look is `references/visual-system.md`. It overrides the older palette, fonts and emoji examples below.**
+
 > **Guest UI rules live in `docs/07-design-audit.md` (ADR-013) and override everything below for yanyin.menu:** one platform look for every venue — white #FFFFFF, fills #F3F4F6, ink #0B0B0F, one blue #2F5BFF only for the primary action, Onest font, scale 28/22/17/15/13, no emoji or third-party 3D icons, Lucide line icons at 1.75, text category tabs (black active pill), photo dishes as 2-column cards, dishes without photos as list rows, one scrolling menu with sheets and a floating black cart. Venues bring logo, name, photos and copy only.
 
 Playful but professional: "a game studio that understands restaurants". The architecture artifact sets the visual language: dark, high-contrast boards, one colour per surface, display font **Unbounded**, body **Manrope**, numbers and code in **JetBrains Mono**.

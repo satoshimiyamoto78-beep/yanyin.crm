@@ -46,6 +46,7 @@ dashboards?* Every meaningful action emits a `domain_event`.
 | `references/horeca-domain.md` | Menu, orders, KDS, stock, recipes, food cost, finance, staff, loyalty, fiscal rules, payments in UZ/TJ, the glossary |
 | `references/saas-platform.md` | Multi-tenancy, roles, billing, plans, feature flags, metrics (MRR, churn, NRR), yanyin.core |
 | `references/engineering.md` | Code, schema, migrations, RLS, API, realtime, testing, folder layout, conventions |
+| `references/visual-system.md` | **Any screen or visual change (load first): the approved yanyin look — sky, illustrated scene cards, strip, widgets, island, motion** |
 | `references/ux-design.md` | Any UI: design tokens, per-surface rules, components, states, accessibility, i18n, copy |
 | `references/game-and-ai.md` | Quests, XP, badges, rewards, guest games, recommendations, AI Yan prompts, tools and guardrails |
 
@@ -62,4 +63,6 @@ Market facts (competitors, laws, payment providers, benchmarks) live in
 - [ ] UI has loading, empty, error and offline states; works at 360 px width; ru/uz/tg/en strings via i18n
 - [ ] Domain logic is in `packages/domain` with unit tests
 - [ ] Docs updated if behaviour or decisions changed
+- [ ] New screens follow `references/visual-system.md`
+- [ ] Notion «Задачи» updated: task status set (or a new task added); design rule changes mirrored on the «Дизайн-система» page
 - [ ] Summary to the founder in Russian: what changed, how to check it, what's next
