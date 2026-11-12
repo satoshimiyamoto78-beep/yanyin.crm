@@ -5,3 +5,5 @@ export * from "./normalize";
 export * from "./cart";
 export * from "./roulette";
 export * from "./quests";
+export * from "./people";
+export * from "./checklists";

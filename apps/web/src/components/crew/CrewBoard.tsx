@@ -13,6 +13,8 @@ import { DragList } from "./DragList";
 import { BadgeEmblem, type Tier } from "./Emblems";
 import { useTr } from "./prefs";
 import { BadgesPage, QuestsPage } from "./Collections";
+import { ChecklistCard, ChecklistPage } from "./Checklist";
+import { CHECKLIST_OWNER, WAITER_CHECKLIST, WAITER_RUN } from "@/lib/demo-team";
 import { NorthSky } from "@/components/system/NorthSky";
 import { Strip, StripBig, StripSquare } from "@/components/system/Strip";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
@@ -163,7 +165,8 @@ export function CrewBoard({
   const [goalInfo, setGoalInfo] = useState(false);
   const [editing, setEditing] = useState(false);
   const tr = useTr();
-  const [page, setPage] = useState<"customize" | "yours" | "board" | "badges" | null>(null);
+  const [page, setPage] = useState<"customize" | "yours" | "board" | "badges" | "checklist" | null>(null);
+  const [run, setRun] = useState(WAITER_RUN);
   const takeBtn = (q: CrewQuest) => (
     <button
       onClick={() => {
@@ -188,6 +191,8 @@ export function CrewBoard({
       </button>
     ) : undefined;
   const blocks: Record<HomeBlock, React.ReactNode> = {
+    // The shift checklist: how far along, what is next, what is late.
+    checklist: <ChecklistCard template={WAITER_CHECKLIST} run={run} onOpen={() => setPage("checklist")} />,
     // Yan's tips for the shift: quest of the week, sales hints, the team goal.
     tips: (
         <TipsCarousel
@@ -476,6 +481,20 @@ export function CrewBoard({
         />
       )}
       {page === "badges" && <BadgesPage badges={data.badges} onClose={() => setPage(null)} />}
+      {page === "checklist" && (
+        <ChecklistPage
+          template={WAITER_CHECKLIST}
+          run={run}
+          onChange={setRun}
+          me={data.staff.id}
+          setBy={CHECKLIST_OWNER}
+          onClose={() => setPage(null)}
+          onFinish={(gain) => {
+            setXp((v) => v + gain);
+            onNotify?.(tr("Checklist closed · +{n} XP", { n: gain }), tr("{who} sees it in the admin panel", { who: "@huong" }));
+          }}
+        />
+      )}
 
       {goalInfo && (
         <PeekCard label={tr("Team goal")} onClose={() => setGoalInfo(false)}>

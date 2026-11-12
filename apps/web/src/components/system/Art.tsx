@@ -13,7 +13,7 @@ import { useId, type CSSProperties, type ReactNode } from "react";
  */
 
 export type ArtTone = "blue" | "sunset" | "teal" | "green" | "coral" | "night";
-export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "bell" | "wifi" | "pizza" | "menu" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
+export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "bell" | "wifi" | "pizza" | "menu" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats" | "checklist";
 
 const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; shadow: string }> = {
   blue: { a: "#8fb6ff", b: "#3d6bff", c: "#1a2a9e", glow: "#bcd2ff", shadow: "rgba(47,91,255,0.5)" },
@@ -43,6 +43,7 @@ const ART: Record<ArtName, ArtTone> = {
   check: "coral",
   shifts: "night",
   seats: "teal",
+  checklist: "teal",
 };
 
 export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, bare = false, className = "" }: { name: ArtName; tone?: ArtTone; size?: number; tilt?: number; bare?: boolean; className?: string }) {
@@ -273,6 +274,7 @@ const DECO: Record<ArtName, DecoKind> = {
   tips: "rays",
   check: "petals",
   shifts: "ticks",
+  checklist: "sparkle",
   seats: "dots",
 };
 
@@ -587,6 +589,24 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
         <rect x="31" y="45" width="54" height="5" rx="2.5" fill="#fff" opacity="0.8" />
       </g>
       <Coin g={g} x={80} y={82} r={14} />
+    </g>
+  ),
+  // A clipboard: two tasks ticked, one still open.
+  checklist: (g) => (
+    <g>
+      <rect x="32" y="28" width="56" height="66" rx="10" fill="#bfd0e6" transform="translate(3 4)" />
+      <rect x="32" y="28" width="56" height="66" rx="10" fill={url(g, "deep")} />
+      <rect x="37" y="34" width="46" height="56" rx="6" fill={url(g, "paper")} />
+      <rect x="48" y="23" width="24" height="12" rx="5" fill="#eef2fb" stroke="#9fb0d4" strokeWidth="1" />
+      <circle cx="60" cy="27" r="2.2" fill="#9fb0d4" />
+      {[0, 1, 2].map((r) => (
+        <g key={r} transform={`translate(0 ${r * 15})`}>
+          <circle cx="47" cy="49" r="5" fill={r < 2 ? "#22c55e" : "#fff"} stroke={r < 2 ? "#fff" : "#b8c3dd"} strokeWidth="1.6" />
+          {r < 2 && <path d="M44.6 49l1.7 1.7 3.4-3.4" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />}
+          <rect x="56" y="46.5" width={r === 1 ? 18 : 22} height="5" rx="2.5" fill={r < 2 ? "#c8d0e2" : url(g, "tone")} />
+        </g>
+      ))}
+      <path d="M37 40a6 6 0 0 1 6-6h34a6 6 0 0 1 6 6v2H37z" fill="#fff" opacity="0.6" />
     </g>
   ),
   // A shift clock.

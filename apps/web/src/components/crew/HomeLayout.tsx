@@ -8,9 +8,10 @@ import { DragList } from "./DragList";
 import { useTr } from "./prefs";
 
 /** Blocks of the waiter's home screen below the header. Order and visibility are the waiter's choice. */
-export type HomeBlock = "tips" | "streak" | "goal" | "quests" | "board" | "badges" | "week";
+export type HomeBlock = "checklist" | "tips" | "streak" | "goal" | "quests" | "board" | "badges" | "week";
 
 export const HOME_BLOCKS: Record<HomeBlock, { label: string; hint: string }> = {
+  checklist: { label: "Shift checklist", hint: "Opening, during the shift, closing" },
   tips: { label: "Yan suggests", hint: "Tips, the quest of the week, peak hours" },
   streak: { label: "Streak", hint: "Days on time in a row" },
   goal: { label: "Team goal", hint: "This week's shared target" },
@@ -32,9 +33,13 @@ export function useHomeLayout(): [HomeLayout, (l: HomeLayout) => void] {
       const raw = localStorage.getItem(KEY);
       if (!raw) return;
       const saved = (JSON.parse(raw) as HomeLayout).filter((b) => b.id in HOME_BLOCKS);
-      const missing = DEFAULT.filter((d) => !saved.some((s) => s.id === d.id));
+      // Blocks added since the layout was saved go to their default place, not to the end.
+      const merged = [...saved];
+      DEFAULT.forEach((d, i) => {
+        if (!saved.some((s) => s.id === d.id)) merged.splice(Math.min(i, merged.length), 0, d);
+      });
       // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the saved layout once on mount
-      setLayout([...saved, ...missing]);
+      setLayout(merged);
     } catch {
       /* keep the default */
     }
