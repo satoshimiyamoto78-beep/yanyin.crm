@@ -41,7 +41,7 @@ short, current rule set. When the founder changes a rule, update this file too.
 ## 6. Motion and feel
 
 - Native-app feel: no zoom, no text selection on controls, haptics on every meaningful tap, `press` scale on buttons, 60 fps.
-- Performance first: no `backdrop-blur` on full-screen dims, no blend modes on grain, `contain: paint` on scene cards, transitions for non-urgent state (`startTransition`). Respect `prefers-reduced-motion`.
+- Performance first: animate only `transform` and `opacity` (never `clip-path`, `filter: blur` or size for entrances); no `backdrop-blur` on full-screen dims, no blend modes on grain, `contain: paint` on scene cards, transitions for non-urgent state (`startTransition`). Respect `prefers-reduced-motion`.
 
 ## 7. Copy
 
