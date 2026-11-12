@@ -710,7 +710,7 @@ export function PeekCard({ onClose, label, children, z = 70 }: { onClose: () => 
   // wherever the held element was and whatever wraps it.
   return createPortal(
     <div className="fixed inset-0 flex touch-none items-center justify-center overscroll-none px-6" style={{ zIndex: z }} role="dialog" aria-label={label}>
-      <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
+      <button aria-label="Close" onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.45)]" />
       <div className="animate-pop relative w-full max-w-[340px] rounded-[28px] bg-white p-5 text-g-ink">{children}</div>
     </div>,
     document.body,

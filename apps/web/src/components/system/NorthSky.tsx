@@ -14,7 +14,7 @@ import { useEffect, useRef } from "react";
  * A fine static grain on top hides 8-bit banding on phone screens.
  *
  * Drawn on a small canvas the browser stretches (the stretch is the blur),
- * ~30 fps, paused off screen and in background tabs, one still frame for
+ * ~15 fps (the drift is slow enough that more frames look the same), paused off screen and in background tabs, one still frame for
  * reduced motion.
  */
 
@@ -102,7 +102,7 @@ export function NorthSky() {
 
     const loop = (now: number) => {
       raf = 0;
-      if (now - last > 32) {
+      if (now - last > 66) {
         last = now;
         draw(now);
       }

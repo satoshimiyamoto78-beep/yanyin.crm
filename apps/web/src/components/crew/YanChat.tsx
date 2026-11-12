@@ -546,7 +546,7 @@ function Drawer({ sessions, cur, onPick, onNew, onDelete, onClose }: { sessions:
   }, []);
   return (
     <div className="fixed inset-0 z-[90]" role="dialog" aria-label={tr("Chats")}>
-      <button aria-label={tr("Close")} onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.3)] backdrop-blur-sm" />
+      <button aria-label={tr("Close")} onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.4)]" />
       <aside className="animate-drawer absolute inset-y-0 left-0 flex w-[86%] max-w-[360px] flex-col rounded-r-[28px] bg-white pt-[max(14px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))]">
         <div className="px-4">
           <div className="flex items-center justify-between">

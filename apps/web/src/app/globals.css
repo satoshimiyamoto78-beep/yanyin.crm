@@ -344,18 +344,21 @@ body {
 [data-scheme="dark"] .art-grain { opacity: 0.05; }
 
 /* Order track: light flowing along the stretch the kitchen works on now. */
-.track-flow {
+/* A light runs along the track: a child moved by transform, so the GPU runs it. */
+.track-flow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 50%;
   background: linear-gradient(90deg, transparent, rgba(47, 107, 255, 0.55), transparent);
-  background-size: 50% 100%;
-  background-repeat: no-repeat;
   animation: track-flow 1.6s linear infinite;
 }
 @keyframes track-flow {
-  from { background-position: -50% 0; }
-  to { background-position: 150% 0; }
+  from { transform: translateX(-100%); }
+  to { transform: translateX(200%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .track-flow { animation: none; }
+  .track-flow::after { animation: none; }
 }
 /* Yan's chat list slides in from the left edge. */
 @keyframes drawer {
@@ -429,13 +432,13 @@ body {
 /* Fill "backwards" only: once in focus the element drops its filter entirely.
    Keeping blur(0) on hundreds of cards made every later repaint expensive. */
 [data-loaded="true"] .live {
-  animation: focus-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: focus-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 [data-loaded="true"] .live:nth-child(2) { animation-delay: 60ms; }
 [data-loaded="true"] .live:nth-child(3) { animation-delay: 120ms; }
 [data-loaded="true"] .live:nth-child(n + 4) { animation-delay: 170ms; }
 @keyframes focus-in {
-  from { filter: blur(9px); opacity: 0.35; transform: translateY(3px); }
+  from { filter: blur(5px); opacity: 0.35; transform: translateY(3px); }
   to { filter: none; opacity: 1; transform: none; }
 }
 
@@ -503,9 +506,9 @@ body {
 
 /* Roulette result: each dish flies out of the wheel, unblurs and settles with a small overshoot. */
 @keyframes result-in {
-  0% { opacity: 0; transform: translateY(-70px) scale(0.6); filter: blur(10px); }
-  65% { opacity: 1; transform: translateY(4px) scale(1.02); filter: blur(0); }
-  100% { opacity: 1; transform: none; filter: none; }
+  0% { opacity: 0; transform: translateY(-70px) scale(0.6); }
+  65% { opacity: 1; transform: translateY(4px) scale(1.02); }
+  100% { opacity: 1; transform: none; }
 }
 .result-in {
   animation: result-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -513,11 +516,12 @@ body {
 
 /* Win ring around the hub when the wheel lands. */
 @keyframes wheel-ring {
-  from { box-shadow: 0 0 0 0 rgba(47, 107, 255, 0.55); }
-  to { box-shadow: 0 0 0 28px rgba(47, 107, 255, 0); }
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(2.4); opacity: 0; }
 }
 .wheel-ring {
-  animation: wheel-ring 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2;
+  border: 3px solid rgba(47, 107, 255, 0.55);
+  animation: wheel-ring 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2 both;
 }
 
 /* Dynamic-Island notification: grows out of a dot, content fades in after. */

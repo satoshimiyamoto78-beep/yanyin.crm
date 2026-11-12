@@ -547,7 +547,7 @@ export function CrewBoard({
       })()}
 
       {done && (
-        <div role="status" className="animate-fade fixed inset-0 z-50 grid place-items-center bg-g-bg/90 p-6 backdrop-blur-md">
+        <div role="status" className="animate-fade fixed inset-0 z-50 grid place-items-center bg-g-bg/95 p-6">
           <div className="animate-pop text-center">
             <span className="blue-grad mx-auto grid size-20 place-items-center rounded-full">
               <Check size={36} strokeWidth={2.5} />

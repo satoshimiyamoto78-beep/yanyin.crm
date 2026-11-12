@@ -416,7 +416,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       {/* Tab bar: a floating capsule (Home, Hall) and a separate round scan button, iOS 26 style. */}
       <nav aria-label={tr("Sections")} className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-[440px] items-center gap-2.5">
-          <div className="relative grid h-[56px] flex-1 grid-cols-3 rounded-full bg-white/95 p-1 ring-1 ring-black/5 backdrop-blur-xl">
+          <div className="relative grid h-[56px] flex-1 grid-cols-3 rounded-full bg-white/95 p-1 ring-1 ring-black/5">
             <span
               aria-hidden
               className="absolute top-1 bottom-1 left-1 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -895,7 +895,7 @@ function TablePeek({ x, money, actions, itemById, onClose }: { x: FloorTable; mo
   return createPortal(
     <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-6" role="dialog" aria-label={tr("Table {n}", { n: x.no })}>
       <ScrollLock />
-      <button aria-label={tr("Close")} onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.35)] backdrop-blur-md" />
+      <button aria-label={tr("Close")} onClick={onClose} className="animate-fade absolute inset-0 bg-[rgba(11,11,15,0.45)]" />
       <div className="animate-pop relative w-full max-w-[340px]">
         <div className="rounded-[28px] bg-white p-5">
           <div className="flex items-start justify-between gap-3">
