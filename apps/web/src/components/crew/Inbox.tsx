@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CalendarDays, ChefHat, Megaphone, ReceiptText, Sparkles, Trophy, UtensilsCrossed, type LucideIcon } from "lucide-react";
+import { Bell, ChevronRight, CalendarDays, ChefHat, Megaphone, ReceiptText, Sparkles, Trophy, UtensilsCrossed, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
@@ -8,7 +8,7 @@ import { useTr } from "./prefs";
 import { noticeMeta } from "./notices";
 
 export type InboxKind = "orders" | "kitchen" | "bills" | "bookings" | "team";
-export type InboxItem = { id: string; kind: InboxKind; title: string; text?: string; at: number; read: boolean };
+export type InboxItem = { id: string; kind: InboxKind; title: string; text?: string; at: number; read: boolean; /** The table it is about: a bill request opens that table's bill. */ table?: number };
 
 const KIND: Record<InboxKind, { label: string; icon: LucideIcon; chip: string }> = {
   orders: { label: "Orders", icon: UtensilsCrossed, chip: "chip-blue" },
@@ -32,7 +32,7 @@ const MIN = 60_000;
 export function seedInbox(now: number): InboxItem[] {
   return [
     { id: "s1", kind: "kitchen", title: "Plov for table 4 is ready", text: "Pick it up at the pass", at: now - 4 * MIN, read: false },
-    { id: "s2", kind: "bills", title: "Table 4 asked for the bill", text: "5 guests · 2,170,000 ₫", at: now - 9 * MIN, read: false },
+    { id: "s2", kind: "bills", title: "Table 4 asked for the bill", text: "5 guests · 2,170,000 ₫", at: now - 9 * MIN, read: false, table: 4 },
     { id: "s3", kind: "bookings", title: "Booking at 13:30", text: "Nguyen Van An · 4 guests · table 3", at: now - 35 * MIN, read: false },
     { id: "s4", kind: "team", title: "New quest: Shashlik Sunday", text: "Serve 10 shashlik or kebab · +200 XP", at: now - 80 * MIN, read: true },
     { id: "s5", kind: "orders", title: "Table 2 ordered from the QR menu", text: "2× Lagman, 1× Tarragon lemonade", at: now - 26 * 60 * MIN, read: true },
@@ -55,7 +55,7 @@ const timeOf = (at: number, now: number, tr: (s: string, v?: Record<string, numb
 const dayOf = (at: number, now: number) => (new Date(at).toDateString() === new Date(now).toDateString() ? "Today" : "Earlier");
 
 /** Notifications (live history, filterable) and news from the venue and yanyin. */
-export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; onClose: () => void; onReadAll: () => void }) {
+export function InboxPage({ items, onClose, onReadAll, onOpenBill }: { items: InboxItem[]; onClose: () => void; onReadAll: () => void; onOpenBill?: (table: number) => void }) {
   const tr = useTr();
   const [tab, setTab] = useState<"notifications" | "news">("notifications");
   const [filter, setFilter] = useState<InboxKind | "all">("all");
@@ -137,8 +137,10 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
                     const k = KIND[i.kind];
                     // The icon says what happened; the colour says which shelf it is on.
                     const Ico = noticeMeta(i.title).icon;
+                    // A bill request leads straight to that table's bill.
+                    const bill = i.kind === "bills" && i.table !== undefined && onOpenBill;
                     return (
-                      <li key={i.id} className="flex gap-3.5 py-3.5">
+                      <li key={i.id} className="flex gap-3.5 py-3.5" onClick={bill ? () => onOpenBill(i.table!) : undefined} role={bill ? "button" : undefined} style={bill ? { cursor: "pointer" } : undefined}>
                         <span className={`${k.chip} grid size-10 shrink-0 place-items-center rounded-full`}>
                           <Ico size={18} strokeWidth={2} />
                         </span>
@@ -148,6 +150,11 @@ export function InboxPage({ items, onClose, onReadAll }: { items: InboxItem[]; o
                             <span className="shrink-0 text-[12px] text-g-muted tabular-nums">{timeOf(i.at, now, tr)}</span>
                           </span>
                           {i.text && <span className="mt-0.5 block text-[13px] leading-snug text-g-muted">{tr(i.text)}</span>}
+                          {bill && (
+                            <span className="mt-2 inline-flex h-8 items-center gap-1 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white">
+                              {tr("Open bill")} <ChevronRight size={14} strokeWidth={2.4} />
+                            </span>
+                          )}
                         </span>
                         {!i.read && <span aria-label="New" className="mt-2 size-2 shrink-0 rounded-full bg-g-blue" />}
                       </li>

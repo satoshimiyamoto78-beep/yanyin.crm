@@ -108,6 +108,8 @@ export type Venue = {
   timezone: string;
   languages: Lang[];
   ageRestricted: boolean;
+  /** Service charge as a share of the dishes (0.05 = 5%); defaults to DEFAULT_SERVICE_RATE. */
+  serviceRate?: number;
 };
 
 export type Menu = { venue: Venue; categories: Category[] };

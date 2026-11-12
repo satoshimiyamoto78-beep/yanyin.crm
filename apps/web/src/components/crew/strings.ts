@@ -1,5 +1,9 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Table {n} asks for the bill": "Стол {n} просит счёт",
+  "Open bill": "Открыть счёт",
+  "Bill · table {n}": "Счёт · стол {n}",
+  "Print": "Печать",
   "{a}/{b} tables": "{a}/{b} столов",
   "Actions": "Действия",
   "Allergens in lagman": "Аллергены в лагмане",
@@ -713,6 +717,10 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Table {n} asks for the bill": "Bàn {n} gọi tính tiền",
+  "Open bill": "Mở hóa đơn",
+  "Bill · table {n}": "Hóa đơn · bàn {n}",
+  "Print": "In",
   "{a}/{b} tables": "{a}/{b} bàn",
   "Actions": "Thao tác",
   "Allergens in lagman": "Chất gây dị ứng trong lagman",

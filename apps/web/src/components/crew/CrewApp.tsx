@@ -35,7 +35,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
@@ -93,7 +93,7 @@ export const METHOD: Record<PayMethod, { label: string; icon: LucideIcon }> = {
   momo: { label: "MoMo", icon: Wallet },
 };
 
-type Notice = IslandNotice;
+type Notice = IslandNotice & { table?: number };
 
 /**
  * yanyin.crew — the waiter's phone app: the floor (tables), open and closed
@@ -134,6 +134,8 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const [page, setPage] = useState<"picker" | "check" | "pay" | null>(null);
   const [receipt, setReceipt] = useState<ClosedOrder | null>(null);
   const [newBooking, setNewBooking] = useState(false);
+  // The bill opened straight from a notification: closing it goes back to where the waiter was.
+  const [direct, setDirect] = useState(false);
   // Search over everything, and Yan's chat (optionally opened with a question from search).
   const [searching, setSearching] = useState(false);
   const [yan, setYan] = useState<{ q?: string } | null>(null);
@@ -151,12 +153,37 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     const meta = noticeMeta(raw.title);
     const n: Notice = { ...raw, tone: raw.tone ?? meta.tone, icon: raw.icon ?? <meta.icon size={16} strokeWidth={2.25} /> };
     setNotice(n);
-    setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), 2600);
+    setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), raw.action ? 6000 : 2600);
     // Every notification is kept in the inbox history.
-    setInbox((xs) => [{ id: `i${Date.now()}${xs.length}`, kind: kindOf(raw.title), title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at: Date.now(), read: false }, ...xs].slice(0, 80));
+    setInbox((xs) => [{ id: `i${Date.now()}${xs.length}`, kind: kindOf(raw.title), table: raw.table, title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at: Date.now(), read: false }, ...xs].slice(0, 80));
   }, []);
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));
   const now = () => new Date().toTimeString().slice(0, 5);
+  const openBill = (no: number) => {
+    haptic("light");
+    setNotice(null);
+    setInboxOpen(false);
+    setDirect(true);
+    patch(no, (x) => ({ ...x, status: "bill" }));
+    setOpen(no);
+    setPage("check");
+  };
+  // Demo: a guest at table 4 asks for the bill a few seconds into the shift.
+  // The words are read when it fires, so they follow the language saved on this phone.
+  const trNow = useRef(tr);
+  useEffect(() => {
+    trNow.current = tr;
+  });
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const tr = trNow.current;
+      const x = floor.tables.find((t) => t.no === 4);
+      if (!x) return;
+      notify({ title: tr("Table {n} asks for the bill", { n: 4 }), tone: "orange", table: 4, icon: <ReceiptText size={16} strokeWidth={2.25} />, action: { label: tr("Open bill"), onClick: () => openBill(4) } });
+    }, 7000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one demo ping per visit
+  }, []);
   const billCount = tables.filter((x) => x.status === "bill").length;
   useEffect(() => {
     markShown("tab:me", JSON.stringify([floor.history.length])); // the first screen already played its load
@@ -223,6 +250,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             actions={{
               scan: () => setScan(true),
               open: setOpen,
+              bill: openBill,
               addItems: (no) => {
                 setOpen(no);
                 setPage("picker");
@@ -381,7 +409,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       )}
       {profile === "badges" && <BadgesPage badges={data.badges} onClose={() => setProfile("profile")} />}
       {cabBadges && <BadgesPage badges={data.badges} onClose={() => setCabBadges(false)} />}
-      {inboxOpen && <InboxPage items={inbox} onClose={() => setInboxOpen(false)} onReadAll={() => setInbox((xs) => xs.map((i) => ({ ...i, read: true })))} />}
+      {inboxOpen && <InboxPage items={inbox} onOpenBill={openBill} onClose={() => setInboxOpen(false)} onReadAll={() => setInbox((xs) => xs.map((i) => ({ ...i, read: true })))} />}
 
       <Island notice={notice} />
 
@@ -436,17 +464,37 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         />
       )}
       {table && page === "check" && (
-        <Sheet open onClose={() => setPage(null)} label={`Check · Table ${table.no}`} footer={
-          <div className="flex gap-2.5">
-            <button onClick={() => notify({ title: tr("Bill printed"), text: tr("Hall printer") })} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
-              <Printer size={18} strokeWidth={2} /> Print
-            </button>
-            <button onClick={() => setPage("pay")} className="blue-grad press h-14 flex-[1.6] rounded-full text-[16px] font-semibold">
-              Take payment
-            </button>
-          </div>
-        }>
+        // The bill: who asks and how long they have sat, then the receipt; print or take payment.
+        <Sheet
+          open
+          onClose={() => {
+            setPage(null);
+            if (direct) setOpen(null);
+            setDirect(false);
+          }}
+          label={tr("Bill · table {n}", { n: table.no })}
+          title={false}
+          footer={
+            <div className="flex gap-2.5">
+              <button onClick={() => notify({ title: tr("Bill printed"), text: tr("Hall printer") })} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
+                <Printer size={18} strokeWidth={2} /> {tr("Print")}
+              </button>
+              <button onClick={() => setPage("pay")} className="blue-grad press flex h-14 flex-[1.6] items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums">
+                {tr("Take payment")} · {compactMoney(Math.round(ticketTotal(table.lines) * 1.05))}
+              </button>
+            </div>
+          }
+        >
           <div className="px-5 pt-2 pb-8">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Bill · table {n}", { n: table.no })}</h2>
+                <p className="mt-1 text-[14px] text-g-muted">
+                  {tr("{n} guest|{n} guests", { n: table.guests })} · {tr("at the table for {d}", { d: seatedFor(table.since, tr) })}
+                </p>
+              </div>
+              {table.status === "bill" && <span className="chip-orange mt-1.5 shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold">{tr("Wants the bill")}</span>}
+            </div>
             <Receipt venue={floor.venue} waiter={floor.waiter} table={table.no} guests={table.guests} time={now()} lines={table.lines} itemById={itemById} money={money} qr />
           </div>
         </Sheet>
@@ -601,6 +649,8 @@ export function Dash({ items }: { items: DashItem[] }) {
 export type TableActions = {
   scan: () => void;
   open: (no: number) => void;
+  /** Opens the bill straight away (a table that asked for it). */
+  bill: (no: number) => void;
   addItems: (no: number) => void;
   check: (no: number) => void;
   serveAll: (no: number) => void;
@@ -722,7 +772,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
       </div>
       <Reveal className="mt-4 grid grid-cols-3 gap-3">
         {shown.map((x) => (
-          <TableTile key={x.no} x={x} money={money} onTap={() => actions.open(x.no)} onLong={() => setPeek(x.no)} />
+          <TableTile key={x.no} x={x} money={money} onTap={() => (x.status === "bill" ? actions.bill(x.no) : actions.open(x.no))} onLong={() => setPeek(x.no)} />
         ))}
       </Reveal>
       <p className="mt-4 text-center text-[12px] text-g-faint">{tr("Hold a table for quick actions")}</p>

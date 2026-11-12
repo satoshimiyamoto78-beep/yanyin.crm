@@ -6,6 +6,8 @@ import {
   missingRequired,
   t,
   unitPrice,
+  withService,
+  DEFAULT_SERVICE_RATE,
   type CartLine,
   type Category,
   type Currency,
@@ -14,7 +16,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { BellRing, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -47,7 +49,7 @@ export function ItemSheet({
   lang: Lang;
   currency: Currency;
   onClose: () => void;
-  onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number) => void;
+  onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number, note?: string) => void;
 }) {
   if (!item || !category) return null;
   if (item.builder === "halves") return <HalvesPicker key={item.id} item={item} lang={lang} currency={currency} onClose={onClose} onAdd={onAdd} />;
@@ -67,8 +69,9 @@ function ItemSheetBody({
   lang: Lang;
   currency: Currency;
   onClose: () => void;
-  onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number) => void;
+  onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number, note?: string) => void;
 }) {
+  const [note, setNote] = useState("");
   const [variantId, setVariantId] = useState<string | undefined>(item.variants[0]?.id);
   const [optionIds, setOptionIds] = useState<string[]>(() => defaultOptionIds(item));
   const [qty, setQty] = useState(1);
@@ -112,7 +115,7 @@ function ItemSheetBody({
             disabled={missing.length > 0}
             onClick={() => {
               haptic("success");
-              onAdd(item, variantId, optionIds, qty);
+              onAdd(item, variantId, optionIds, qty, note);
             }}
             className={`press flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-semibold tabular-nums ${missing.length ? "bg-g-fill-2 text-g-faint" : "blue-grad"}`}
           >
@@ -301,6 +304,22 @@ function ItemSheetBody({
             </section>
           );
         })}
+        {/* A word to the kitchen about this dish only; it travels with the dish to the cart and the kitchen. */}
+        <section className="mt-9">
+          <h3 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">
+            <MessageSquareText size={18} strokeWidth={2} className="text-g-blue" /> {ui(lang, "dishNote")}
+            <span className="ml-auto text-[13px] font-medium text-g-faint">{ui(lang, "optional")}</span>
+          </h3>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            maxLength={140}
+            placeholder={ui(lang, "dishNotePh")}
+            aria-label={ui(lang, "dishNote")}
+            className="w-full resize-none rounded-[20px] bg-g-fill px-4 py-3.5 text-[16px] outline-none placeholder:text-[15px] placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/30"
+          />
+        </section>
       </div>
     </Sheet>
   );
@@ -411,6 +430,8 @@ export function CartSheet({
   itemById,
   categoryOf,
   onQty,
+  onNote,
+  serviceRate,
   onSend,
 }: {
   open: boolean;
@@ -421,11 +442,17 @@ export function CartSheet({
   itemById: Map<string, MenuItem>;
   categoryOf: Map<string, Category>;
   onQty: (key: string, qty: number) => void;
+  onNote: (key: string, note: string) => void;
+  serviceRate: number;
   onSend: (note: string) => void;
 }) {
   const [notes, setNotes] = useState<UiKey[]>([]);
   const [text, setText] = useState("");
-  const total = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
+  // Which dish's note is open for editing, and its draft.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const dishes = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
+  const { service, total } = withService(dishes, serviceRate);
   const count = lines.reduce((s, l) => s + l.qty, 0);
   const note = [...notes.map((k) => ui(lang, k)), text.trim()].filter(Boolean).join(", ");
 
@@ -475,18 +502,81 @@ export function CartSheet({
                 const variant = item.variants.find((v) => v.id === line.variantId);
                 const opts = item.modifierGroups.flatMap((g) => g.options).filter((o) => line.optionIds.includes(o.id));
                 const extra = [variant && t(variant.name, lang), ...opts.map((o) => t(o.name, lang))].filter(Boolean).join(" · ");
+                const open = editing === line.key;
                 return (
-                  <li key={line.key} className="flex items-center gap-3 py-3">
-                    <DishTile item={item} role={role} photoScale={0.96} glyph={0.62} className="size-[60px] shrink-0 rounded-[16px] !bg-g-card" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-semibold">{t(item.name, lang)}</p>
-                      {extra && <p className="truncate text-[12.5px] text-g-muted">{extra}</p>}
-                      <p className="mt-0.5 text-[15px] tabular-nums">
-                        <span className="font-semibold">{formatMoney(line.unitPrice * line.qty, currency, lang)}</span>
-                        {line.qty > 1 && <span className="ml-1.5 text-[12.5px] text-g-muted">{line.qty} × {formatMoney(line.unitPrice, currency, lang)}</span>}
-                      </p>
+                  <li key={line.key} className="py-3">
+                    <div className="flex items-center gap-3">
+                      <DishTile item={item} role={role} photoScale={0.96} glyph={0.62} soft className="size-[60px] shrink-0 rounded-[16px] !bg-g-card" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-semibold">{t(item.name, lang)}</p>
+                        {extra && <p className="truncate text-[12.5px] text-g-muted">{extra}</p>}
+                        <p className="mt-0.5 text-[15px] tabular-nums">
+                          <span className="font-semibold">{formatMoney(line.unitPrice * line.qty, currency, lang)}</span>
+                          {line.qty > 1 && <span className="ml-1.5 text-[12.5px] text-g-muted">{line.qty} × {formatMoney(line.unitPrice, currency, lang)}</span>}
+                        </p>
+                      </div>
+                      <Stepper qty={line.qty} onChange={(q) => onQty(line.key, q)} className="h-9 w-[96px] shrink-0" />
                     </div>
-                    <Stepper qty={line.qty} onChange={(q) => onQty(line.key, q)} className="h-9 w-[96px] shrink-0" />
+                    {/* The dish's own note: a quiet link when empty, a note card when set, a small editor when open. */}
+                    {open ? (
+                      <div className="mt-2.5 rounded-[18px] bg-g-card p-2.5">
+                        <textarea
+                          autoFocus
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          rows={2}
+                          maxLength={140}
+                          placeholder={ui(lang, "dishNotePh")}
+                          aria-label={ui(lang, "dishNoteFor").replace("{dish}", t(item.name, lang))}
+                          className="w-full resize-none bg-transparent px-1.5 py-1 text-[15px] outline-none placeholder:text-g-faint"
+                        />
+                        <div className="mt-1 flex items-center justify-end gap-2">
+                          {line.note && (
+                            <button
+                              onClick={() => {
+                                onNote(line.key, "");
+                                setEditing(null);
+                              }}
+                              className="press mr-auto h-9 px-2 text-[13px] font-semibold text-g-muted"
+                            >
+                              {ui(lang, "clearNote")}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              haptic("light");
+                              onNote(line.key, draft);
+                              setEditing(null);
+                            }}
+                            className="blue-grad press h-9 rounded-full px-4 text-[14px] font-semibold"
+                          >
+                            {ui(lang, "saveNote")}
+                          </button>
+                        </div>
+                      </div>
+                    ) : line.note ? (
+                      <button
+                        onClick={() => {
+                          setDraft(line.note ?? "");
+                          setEditing(line.key);
+                        }}
+                        className="press mt-2 flex w-full items-start gap-2 rounded-[14px] bg-g-tint-note px-3 py-2 text-left text-[13px] leading-snug"
+                      >
+                        <MessageSquareText size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-g-orange" />
+                        <span className="min-w-0 flex-1">{line.note}</span>
+                        <Pencil size={13} strokeWidth={2.2} className="mt-0.5 shrink-0 text-g-muted" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setDraft("");
+                          setEditing(line.key);
+                        }}
+                        className="press mt-1.5 ml-[72px] flex items-center gap-1.5 text-[13px] font-semibold text-g-blue"
+                      >
+                        <MessageSquarePlus size={14} strokeWidth={2.2} /> {ui(lang, "addNote")}
+                      </button>
+                    )}
                   </li>
                 );
               })}
@@ -495,7 +585,7 @@ export function CartSheet({
             {/* A word to the kitchen: quick tags, or your own. */}
             <section className="mt-3 rounded-[26px] bg-g-fill p-4">
               <h3 className="flex items-center gap-2 text-[15px] font-semibold">
-                <StickyNote size={16} strokeWidth={2.2} className="text-g-blue" /> {ui(lang, "noteForKitchen")}
+                <StickyNote size={16} strokeWidth={2.2} className="text-g-blue" /> {ui(lang, "wholeOrderNote")}
                 <span className="ml-auto text-[13px] font-medium text-g-faint">{ui(lang, "optional")}</span>
               </h3>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -536,7 +626,11 @@ export function CartSheet({
                 <span>
                   {ui(lang, "dishesLabel")} · {count}
                 </span>
-                <span className="tabular-nums">{formatMoney(total, currency, lang)}</span>
+                <span className="tabular-nums">{formatMoney(dishes, currency, lang)}</span>
+              </div>
+              <div className="mt-1.5 flex items-baseline justify-between text-[14px] text-g-muted">
+                <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
+                <span className="tabular-nums">{formatMoney(service, currency, lang)}</span>
               </div>
               <div className="mt-2.5 flex items-baseline justify-between border-t border-g-line pt-3">
                 <span className="text-[16px] font-semibold">{ui(lang, "total")}</span>
@@ -572,10 +666,47 @@ const STEPS: { key: UiKey; icon: LucideIcon }[] = [
   { key: "stepCooking", icon: CookingPot },
   { key: "stepReady", icon: BellRing },
 ];
-const STEP_HINT: UiKey[] = ["stepSentHint", "stepAcceptedHint", "stepCookingHint", "stepReadyHint"];
 /** When each step begins on the demo timeline, in seconds (see orderStage). */
 const STEP_AT = [0, 6, 15, 45];
 const clock = (at: number) => new Date(at).toTimeString().slice(0, 5);
+
+/** The order's progress on one line: four stations and the track between them. */
+function OrderTrack({ stage, ready, lang, at }: { stage: number; ready: boolean; lang: Lang; at: (k: number) => string }) {
+  const share = ready ? 1 : stage / 3;
+  return (
+    <div className="mt-4">
+      <div className="relative mx-3 h-7">
+        {/* The track: a quiet line, the filled part in the brand gradient, light flowing on the live stretch. */}
+        <span aria-hidden className="absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full bg-g-card" />
+        <span aria-hidden className={`absolute top-1/2 left-0 h-[3px] -translate-y-1/2 rounded-full transition-[width] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${ready ? "bg-g-green" : "bar-grad"}`} style={{ width: `${share * 100}%` }} />
+        {!ready && <span aria-hidden className="track-flow absolute top-1/2 h-[3px] -translate-y-1/2 overflow-hidden rounded-full" style={{ left: `${share * 100}%`, width: `${100 / 3}%` }} />}
+        {STEPS.map((st, k) => {
+          const done = k < stage || ready;
+          const cur = k === stage && !ready;
+          return (
+            <span key={st.key} className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: `${(k / 3) * 100}%` }}>
+              {cur && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-g-blue/30" />}
+              <span className={`relative grid size-7 place-items-center rounded-full transition-colors duration-500 ${done ? (ready ? "bg-g-green text-white" : "blue-grad") : cur ? "blue-grad ring-4 ring-g-blue/15" : "bg-g-card text-g-faint"}`}>
+                {done ? <Check size={14} strokeWidth={2.8} /> : <st.icon size={13} strokeWidth={2.4} />}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 grid grid-cols-4 text-center">
+        {STEPS.map((st, k) => {
+          const reached = k <= stage || ready;
+          return (
+            <span key={st.key} className="min-w-0">
+              <span className={`block truncate text-[11.5px] font-semibold ${reached ? "text-g-ink" : "text-g-faint"}`}>{ui(lang, st.key)}</span>
+              <span className="block text-[10.5px] text-g-muted tabular-nums">{reached ? (k === stage && !ready ? ui(lang, "stepNow") : at(k)) : "\u00a0"}</span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 /**
  * The guest's orders. The newest one is the hero: its status in words, the
@@ -608,6 +739,7 @@ export function OrdersSheet({
   onOrderMore: () => void;
   onBill?: () => void;
 }) {
+  const serviceRate = menu.venue.serviceRate ?? DEFAULT_SERVICE_RATE;
   const list = [...orders].reverse();
   const roleOf = useMemo(() => new Map(menu.categories.flatMap((c) => c.items.map((i) => [i.id, c.role] as const))), [menu]);
   const [openId, setOpenId] = useState<number | null>(null);
@@ -625,6 +757,11 @@ export function OrdersSheet({
               <span className="block text-[13px] text-g-muted tabular-nums">
                 {l.qty} × {money(l.unitPrice)}
               </span>
+              {l.note && (
+                <span className="mt-1 flex items-start gap-1.5 text-[12.5px] leading-snug text-g-ink-2">
+                  <MessageSquareText size={13} strokeWidth={2.2} className="mt-0.5 shrink-0 text-g-orange" /> {l.note}
+                </span>
+              )}
             </span>
             <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(l.unitPrice * l.qty)}</span>
           </li>
@@ -699,7 +836,7 @@ export function OrdersSheet({
                         {clock(o.placedAt)} · {o.lines.map((l) => `${l.qty}× ${t(itemById.get(l.itemId)!.name, lang)}`).join(", ")}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(o.total)}</span>
+                    <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(withService(o.total, serviceRate).total)}</span>
                     <ChevronDown size={17} className={`shrink-0 text-g-faint transition-transform ${on ? "rotate-180" : ""}`} />
                   </button>
                   {on && dishes(o, false)}
@@ -718,38 +855,12 @@ export function OrdersSheet({
                   {ready ? ui(lang, "stepReady") : ui(lang, "eta").replace("{n}", String(minsLeft))}
                 </span>
               </div>
-              <h3 className="mt-3 text-[26px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, STAGES[stage]!)}</h3>
+              <h3 className="mt-2.5 text-[24px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, STAGES[stage]!)}</h3>
 
-              {/* Progress as four even segments, then the steps as a list: done, now, to come. */}
-              <div className="mt-4 grid grid-cols-4 gap-1.5" aria-hidden>
-                {STEPS.map((st, k) => (
-                  <span key={st.key} className={`h-1.5 rounded-full transition-colors duration-700 ${k <= stage ? (ready ? "green-grad" : "bar-grad") : "bg-g-card"}`} />
-                ))}
-              </div>
-              <ol className="mt-4 rounded-[20px] bg-g-card px-3.5">
-                {STEPS.map((st, k) => {
-                  const done = k < stage || ready;
-                  const cur = k === stage && !ready;
-                  return (
-                    <li key={st.key} className={`flex items-center gap-3 py-2.5 ${k ? "border-t border-g-line" : ""} ${done || cur ? "" : "opacity-45"}`}>
-                      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${done ? (ready ? "chip-green" : "chip-blue") : cur ? "blue-grad" : "bg-g-fill text-g-muted"}`}>
-                        {done ? <Check size={16} strokeWidth={2.6} /> : <st.icon size={16} strokeWidth={2.2} />}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] leading-tight font-semibold">{ui(lang, st.key)}</span>
-                        <span className="block truncate text-[12.5px] text-g-muted">{ui(lang, STEP_HINT[k]!)}</span>
-                      </span>
-                      {cur ? (
-                        <span className="flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-g-blue">
-                          <span className="size-1.5 animate-pulse rounded-full bg-g-blue" /> {ui(lang, "stepNow")}
-                        </span>
-                      ) : done ? (
-                        <span className="shrink-0 text-[12.5px] text-g-muted tabular-nums">{clock(o.placedAt + STEP_AT[k]! * 1000)}</span>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ol>
+              {/* One compact horizontal line: four stations joined by a track. Done
+                  stations are filled, the current one pulses, and light flows along
+                  the stretch the kitchen is working on now. */}
+              <OrderTrack stage={stage} ready={ready} lang={lang} at={(k) => clock(o.placedAt + STEP_AT[k]! * 1000)} />
 
               <div className="mt-3 rounded-[20px] bg-g-card p-3.5">
                 {dishes(o, true)}
@@ -758,9 +869,19 @@ export function OrdersSheet({
                     <StickyNote size={14} className="mt-0.5 shrink-0 text-g-orange" /> {o.note}
                   </p>
                 )}
-                <div className="mt-3 flex items-baseline justify-between border-t border-g-line pt-3">
-                  <span className="text-[14px] text-g-muted">{ui(lang, "total")}</span>
-                  <span className="text-[20px] font-semibold tracking-[-0.02em] tabular-nums">{money(o.total)}</span>
+                <div className="mt-3 border-t border-g-line pt-3 text-[13px] text-g-muted">
+                  <p className="flex justify-between tabular-nums">
+                    <span>{ui(lang, "dishesLabel")}</span>
+                    <span>{money(o.total)}</span>
+                  </p>
+                  <p className="mt-1 flex justify-between tabular-nums">
+                    <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
+                    <span>{money(withService(o.total, serviceRate).service)}</span>
+                  </p>
+                </div>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-[14px] font-semibold">{ui(lang, "total")}</span>
+                  <span className="text-[20px] font-semibold tracking-[-0.02em] tabular-nums">{money(withService(o.total, serviceRate).total)}</span>
                 </div>
               </div>
             </article>
@@ -773,7 +894,10 @@ export function OrdersSheet({
               <span className="block text-[15px] font-semibold">{ui(lang, "tableTotal")}</span>
               <span className="block text-[13px] text-g-muted">{ui(lang, "ordersCount").replace("{n}", String(orders.length))}</span>
             </span>
-            <span className="text-[22px] font-semibold tracking-[-0.02em] tabular-nums">{money(sum)}</span>
+            <span className="text-right">
+              <span className="block text-[22px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">{money(withService(sum, serviceRate).total)}</span>
+              <span className="block text-[12px] text-g-muted tabular-nums">{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))} · {money(withService(sum, serviceRate).service)}</span>
+            </span>
           </div>
         )}
         {list.length > 0 && <p className="mt-2 text-[12px] text-g-faint">{ui(lang, "serviceNote")}</p>}
@@ -1113,6 +1237,7 @@ export function BillSheet({
   itemById,
   table,
   onRequest,
+  serviceRate = DEFAULT_SERVICE_RATE,
 }: {
   open: boolean;
   onClose: () => void;
@@ -1122,12 +1247,13 @@ export function BillSheet({
   itemById: Map<string, MenuItem>;
   table: string | null;
   onRequest: (total: number, method: string) => void;
+  serviceRate?: number;
 }) {
   const [tip, setTip] = useState(0);
   const [method, setMethod] = useState<UiKey>("billQr");
   const lines = orders.flatMap((o) => o.lines);
   const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
-  const service = Math.round(subtotal * 0.05);
+  const service = withService(subtotal, serviceRate).service;
   const tipAmount = Math.round((subtotal * tip) / 100 / 1000) * 1000;
   const total = subtotal + service + tipAmount;
   const money = (n: number) => formatMoney(n, currency, lang);
@@ -1176,7 +1302,7 @@ export function BillSheet({
               <span className="text-g-ink">{money(subtotal)}</span>
             </p>
             <p className="flex justify-between">
-              <span>{ui(lang, "billService")}</span>
+              <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
               <span className="text-g-ink">{money(service)}</span>
             </p>
             {tipAmount > 0 && (

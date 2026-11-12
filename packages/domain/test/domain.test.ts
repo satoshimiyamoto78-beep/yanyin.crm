@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  setNote,
+  withService,
   addLine, cartTotal, defaultOptionIds, formatMoney, levelFromXp, missingRequired, moodsFor, normalizeMenu,
   questPercent, questProgress, roleFor, spinRoulette, t, unitPrice, xpForLevel,
   type DomainEvent, type Quest, type RawMenu,
@@ -134,5 +136,20 @@ describe("quests", () => {
     expect(levelFromXp(0).level).toBe(1);
     expect(levelFromXp(100).level).toBe(2);
     expect(levelFromXp(100).title).toBe("Rookie");
+  });
+});
+
+describe("line notes and service", () => {
+  const base = { itemId: "soup", optionIds: [], qty: 1, unitPrice: 100 };
+  it("keeps a dish with its own note as a separate line, and merges equal notes", () => {
+    let lines = addLine([], base);
+    lines = addLine(lines, { ...base, note: "No onion" });
+    expect(lines).toHaveLength(2);
+    lines = setNote(lines, lines[0]!.key, "no onion");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.qty).toBe(2);
+  });
+  it("shows the service on top of the dishes", () => {
+    expect(withService(200_000)).toEqual({ subtotal: 200_000, service: 10_000, total: 210_000, rate: 0.05 });
   });
 });

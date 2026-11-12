@@ -330,7 +330,9 @@ export function CountMoney({ to, delay = 0, ms = 700, format }: { to: number; de
 /* ---------------------------------------------------------------- Island */
 
 export type IslandTone = "blue" | "green" | "orange";
-export type IslandNotice = { title: string; text?: string; tone?: IslandTone; icon?: ReactNode };
+export type IslandNotice = { title: string; text?: string; tone?: IslandTone; icon?: ReactNode;
+  /** One clear next step right on the island, e.g. "Open bill". */
+  action?: { label: string; onClick: () => void } };
 
 const TONE: Record<IslandTone, string> = {
   blue: "blue-grad",
@@ -363,10 +365,21 @@ export function Island({ notice }: { notice: IslandNotice | null }) {
       <div
         key={shown.title}
         role="status"
-        className={`${leaving ? "island-out" : "island-in"} flex h-11 max-w-[88vw] min-w-[34vw] items-center gap-2.5 rounded-full bg-[#0b0b0f] py-1.5 pr-4 pl-1.5 text-white`}
+        className={`${leaving ? "island-out" : "island-in"} flex h-11 max-w-[92vw] min-w-[34vw] items-center gap-2.5 rounded-full bg-[#0b0b0f] py-1.5 pl-1.5 text-white ${shown.action ? "pointer-events-auto pr-1.5" : "pr-4"}`}
       >
         <span className={`island-content grid size-8 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
         <span className="island-content min-w-0 truncate text-[14px] font-semibold">{shown.title}</span>
+        {shown.action && (
+          <button
+            onClick={() => {
+              haptic("light");
+              shown.action!.onClick();
+            }}
+            className="island-content press ml-1 h-8 shrink-0 rounded-full bg-[#2f6bff] px-3.5 text-[13px] font-semibold"
+          >
+            {shown.action.label}
+          </button>
+        )}
       </div>
     </div>
   );

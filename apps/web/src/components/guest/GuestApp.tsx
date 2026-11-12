@@ -2,6 +2,9 @@
 
 import {
   addLine,
+  setNote,
+  DEFAULT_SERVICE_RATE,
+  withService,
   allItems,
   cartCount,
   cartTotal,
@@ -170,6 +173,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
     variantId: string | undefined,
     optionIds: string[],
     qty: number,
+    note?: string,
   ) => {
     setLines((prev) =>
       addLine(prev, {
@@ -178,6 +182,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         optionIds,
         qty,
         unitPrice: unitPrice(it, variantId, optionIds),
+        note,
       }),
     );
   };
@@ -193,6 +198,8 @@ export function GuestApp({ menu }: { menu: Menu }) {
 
   const count = cartCount(lines);
   const total = cartTotal(lines);
+  // Service is shown up front everywhere a sum appears, so the bill holds no surprises.
+  const serviceRate = menu.venue.serviceRate ?? DEFAULT_SERVICE_RATE;
   // The "pizza from halves" builder, if the venue has one: it gets its own quick button.
   const halves = useMemo(
     () => menu.categories.flatMap((c) => c.items).find((i) => i.builder === "halves"),
@@ -383,7 +390,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
               }
               sub={
                 count > 0
-                  ? formatMoney(total, currency, lang)
+                  ? formatMoney(withService(total, serviceRate).total, currency, lang)
                   : ui(lang, "startOrderSub")
               }
             />
@@ -529,7 +536,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
               {ui(lang, "yourOrder")}
             </span>
             <span className="text-[16px] font-semibold tabular-nums">
-              {formatMoney(total, currency, lang)}
+              {formatMoney(withService(total, serviceRate).total, currency, lang)}
             </span>
           </button>
         </div>
@@ -625,6 +632,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
         orders={orders}
         itemById={itemById}
         table={table}
+        serviceRate={serviceRate}
         onRequest={(_, method) => {
           setSheet(null);
           flash({
@@ -642,8 +650,8 @@ export function GuestApp({ menu }: { menu: Menu }) {
         lang={lang}
         currency={currency}
         onClose={() => setItem(null)}
-        onAdd={(it, v, o, q) => {
-          addToCart(it, v, o, q);
+        onAdd={(it, v, o, q, n) => {
+          addToCart(it, v, o, q, n);
           setItem(null);
           say("added", <Plus size={18} strokeWidth={2.25} />);
         }}
@@ -657,6 +665,8 @@ export function GuestApp({ menu }: { menu: Menu }) {
         itemById={itemById}
         categoryOf={categoryOf}
         onQty={(key, q) => setLines((prev) => setQty(prev, key, q))}
+        onNote={(key, n) => setLines((prev) => setNote(prev, key, n))}
+        serviceRate={serviceRate}
         onSend={(note) => {
           setOrders((o) => [
             ...o,

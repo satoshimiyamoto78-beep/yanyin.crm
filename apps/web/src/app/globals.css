@@ -354,6 +354,20 @@ body {
 .animate-fade {
   animation: fade-in 0.2s ease-out;
 }
+/* Order track: light flowing along the stretch the kitchen works on now. */
+.track-flow {
+  background: linear-gradient(90deg, transparent, rgba(47, 107, 255, 0.55), transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: track-flow 1.6s linear infinite;
+}
+@keyframes track-flow {
+  from { background-position: -50% 0; }
+  to { background-position: 150% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .track-flow { animation: none; }
+}
 /* Yan's chat list slides in from the left edge. */
 @keyframes drawer {
   from { transform: translateX(-100%); }

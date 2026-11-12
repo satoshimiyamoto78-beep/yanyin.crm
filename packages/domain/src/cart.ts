@@ -8,7 +8,18 @@ export type CartLine = {
   optionIds: string[];
   qty: number;
   unitPrice: number;
+  /** The guest's word to the kitchen about this dish only ("no onion"). */
+  note?: string;
 };
+
+/** Service charge most venues add to the bill; a venue can set its own. */
+export const DEFAULT_SERVICE_RATE = 0.05;
+
+/** Dishes, service and the total, so the guest sees the full price before ordering. */
+export function withService(subtotal: number, rate = DEFAULT_SERVICE_RATE): { subtotal: number; service: number; total: number; rate: number } {
+  const service = Math.round(subtotal * rate);
+  return { subtotal, service, total: subtotal + service, rate };
+}
 
 export function unitPrice(item: MenuItem, variantId?: string, optionIds: string[] = []): number {
   const variant = item.variants.find((v) => v.id === variantId);
@@ -18,8 +29,10 @@ export function unitPrice(item: MenuItem, variantId?: string, optionIds: string[
   return base + extras;
 }
 
-export function lineKey(itemId: string, variantId: string | undefined, optionIds: string[]): string {
-  return [itemId, variantId ?? "", [...optionIds].sort().join(",")].join("|");
+export function lineKey(itemId: string, variantId: string | undefined, optionIds: string[], note = ""): string {
+  const base = [itemId, variantId ?? "", [...optionIds].sort().join(",")].join("|");
+  // A dish with its own note is its own line: two Tom Yums, one "no shrimp".
+  return note.trim() ? `${base}|${note.trim().toLowerCase()}` : base;
 }
 
 /** Returns the ids of required modifier groups that have no selection yet. */
@@ -35,10 +48,25 @@ export function defaultOptionIds(item: MenuItem): string[] {
 }
 
 export function addLine(lines: CartLine[], line: Omit<CartLine, "key">): CartLine[] {
-  const key = lineKey(line.itemId, line.variantId, line.optionIds);
+  const note = line.note?.trim() || undefined;
+  const key = lineKey(line.itemId, line.variantId, line.optionIds, note);
   const existing = lines.find((l) => l.key === key);
   if (existing) return lines.map((l) => (l.key === key ? { ...l, qty: l.qty + line.qty } : l));
-  return [...lines, { ...line, key }];
+  return [...lines, { ...line, note, key }];
+}
+
+/** Sets or clears one line's note; merges into a line that already has the same note. */
+export function setNote(lines: CartLine[], key: string, note: string): CartLine[] {
+  const line = lines.find((l) => l.key === key);
+  if (!line) return lines;
+  const rest = lines.filter((l) => l.key !== key);
+  const at = lines.indexOf(line);
+  const next = addLine(rest, { ...line, note });
+  // Keep the line where it was in the list.
+  const moved = next.find((l) => l.key === lineKey(line.itemId, line.variantId, line.optionIds, note.trim()))!;
+  if (next.length === rest.length) return next; // merged into an existing line
+  const without = next.filter((l) => l !== moved);
+  return [...without.slice(0, at), moved, ...without.slice(at)];
 }
 
 export function setQty(lines: CartLine[], key: string, qty: number): CartLine[] {

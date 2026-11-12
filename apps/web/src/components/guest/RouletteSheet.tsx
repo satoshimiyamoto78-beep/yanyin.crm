@@ -1,7 +1,7 @@
 "use client";
 
-import { formatMoney, moodsFor, spinRoulette, t, type CategoryRole, type Lang, type Menu, type MenuItem, type Mood, type RouletteResult } from "@yanyin/domain";
-import { CakeSlice, CupSoda, Dices, Flame, Leaf, Minus, Plus, RefreshCw, Sandwich, Soup, Sparkles, Users, UtensilsCrossed, Wind, type LucideIcon } from "lucide-react";
+import { DEFAULT_SERVICE_RATE, withService, formatMoney, moodsFor, spinRoulette, t, type CategoryRole, type Lang, type Menu, type MenuItem, type Mood, type RouletteResult } from "@yanyin/domain";
+import { X, CakeSlice, CupSoda, Dices, Flame, Leaf, Minus, Plus, RefreshCw, Sandwich, Soup, Sparkles, Users, UtensilsCrossed, Wind, type LucideIcon } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { ui, type UiKey } from "@/lib/ui-strings";
@@ -53,6 +53,7 @@ export function RouletteSheet({
   const lounge = menu.venue.type === "shisha_lounge";
   const roleOf = useMemo(() => new Map<string, CategoryRole>(menu.categories.flatMap((c) => c.items.map((i) => [i.id, c.role] as const))), [menu]);
   const { currency } = menu.venue;
+  const rate = menu.venue.serviceRate ?? DEFAULT_SERVICE_RATE;
 
   const [guests, setGuests] = useState(2);
   // The budget is kept per guest, so adding a guest grows the table's budget with it.
@@ -68,6 +69,15 @@ export function RouletteSheet({
   const top = useRef<HTMLDivElement>(null);
   const value = per * guests;
   const tags = [...(veg ? ["vegetarian"] : []), ...(halal ? ["halal"] : [])];
+
+  // Drop one dish from the set; the total follows.
+  const remove = (it: MenuItem) => {
+    if (!result || result.items.length < 2) return;
+    haptic("light");
+    const items = result.items.filter((x) => x.id !== it.id);
+    const perGuest = items.reduce((n, x) => n + x.price, 0);
+    setResult({ items, perGuest, total: perGuest * guests });
+  };
 
   // Swap one dish of the set for another of the same kind that still fits the budget.
   const swap = (it: MenuItem) => {
@@ -157,18 +167,28 @@ export function RouletteSheet({
                   <DishTile item={it} role={roleOf.get(it.id) ?? "main"} photoScale={0.9} glyph={0.5} className="size-14 shrink-0 rounded-[16px]" />
                   <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{t(it.name, lang)}</span>
                   <span className="shrink-0 text-[15px] text-g-muted tabular-nums">{formatMoney(it.price, currency, lang)}</span>
-                  <button aria-label={ui(lang, "swapDish")} onClick={() => swap(it)} className="press grid size-9 shrink-0 place-items-center rounded-full bg-g-fill text-g-blue">
-                    <RefreshCw size={15} strokeWidth={2.2} />
-                  </button>
+                  {/* Swap for another of the same kind, or drop it from the set. */}
+                  <span className="flex shrink-0 gap-1.5">
+                    <button aria-label={ui(lang, "swapDish")} onClick={() => swap(it)} className="press grid size-9 place-items-center rounded-full bg-g-fill text-g-blue">
+                      <RefreshCw size={15} strokeWidth={2.2} />
+                    </button>
+                    {result.items.length > 1 && (
+                      <button aria-label={ui(lang, "removeDish")} onClick={() => remove(it)} className="press grid size-9 place-items-center rounded-full bg-g-fill text-g-muted">
+                        <X size={16} strokeWidth={2.4} />
+                      </button>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
             <div className="result-in mt-1 flex items-baseline justify-between border-t border-g-line pt-3.5" style={{ animationDelay: `${140 + result.items.length * 170}ms` }}>
-              <span className="text-[13px] text-g-muted">
+              <span className="text-[13px] leading-snug text-g-muted">
                 {formatMoney(result.perGuest, currency, lang)} {ui(lang, "perGuest")} × {guests}
+                <br />
+                {ui(lang, "servicePct").replace("{p}", String(Math.round(rate * 100)))} · {formatMoney(withService(result.total, rate).service, currency, lang)}
               </span>
               <span className="text-[24px] font-semibold tracking-[-0.02em] tabular-nums">
-                <CountMoney to={result.total} delay={140 + result.items.length * 170} format={(n) => formatMoney(n, currency, lang)} />
+                <CountMoney to={withService(result.total, rate).total} delay={140 + result.items.length * 170} format={(n) => formatMoney(n, currency, lang)} />
               </span>
             </div>
           </div>
