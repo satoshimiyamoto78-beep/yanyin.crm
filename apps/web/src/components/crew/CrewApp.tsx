@@ -36,6 +36,7 @@ import {
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
+import { useStopList } from "@/lib/stoplist";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
 import { Island, loadIfChanged, markShown, PeekCard, Reveal, useLongPress, type IslandNotice } from "@/components/guest/motion";
@@ -1199,7 +1200,8 @@ function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTabl
   const [picked, setPicked] = useState<Record<string, number>>({});
   const [review, setReview] = useState(false);
   const [note, setNote] = useState("");
-  const simple = (i: MenuItem) => i.price > 0 && !i.variants.length && !i.modifierGroups.some((g) => g.required);
+  const stop = useStopList();
+  const simple = (i: MenuItem) => i.price > 0 && !i.variants.length && !i.modifierGroups.some((g) => g.required) && !stop.includes(i.id);
   const query = q.trim().toLowerCase();
   const list = menu.categories.flatMap((c) => c.items.filter((i) => simple(i) && (query ? Object.values(i.name).some((v) => (v ?? "").toLowerCase().includes(query)) : c.id === cat)));
   const all = allItems(menu);

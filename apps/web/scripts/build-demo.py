@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 WEB = Path(__file__).resolve().parent.parent
-PAGES = {"m/samarkand-danang.html": "samarkand.html", "m/zabey-danang.html": "zabey.html", "crew.html": "crew.html"}
+PAGES = {"m/samarkand-danang.html": "samarkand.html", "m/zabey-danang.html": "zabey.html", "crew.html": "crew.html", "kitchen.html": "kitchen.html"}
 
 
 def main(out: Path) -> None:

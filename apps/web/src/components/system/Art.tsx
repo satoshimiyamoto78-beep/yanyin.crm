@@ -13,7 +13,7 @@ import { useId, type CSSProperties, type ReactNode } from "react";
  */
 
 export type ArtTone = "blue" | "sunset" | "teal" | "green" | "coral" | "night";
-export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "bell" | "wifi" | "pizza" | "menu" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats" | "checklist";
+export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "bell" | "wifi" | "pizza" | "menu" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats" | "checklist" | "drink" | "salad";
 
 const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; shadow: string }> = {
   blue: { a: "#8fb6ff", b: "#3d6bff", c: "#1a2a9e", glow: "#bcd2ff", shadow: "rgba(47,91,255,0.5)" },
@@ -44,6 +44,8 @@ const ART: Record<ArtName, ArtTone> = {
   shifts: "night",
   seats: "teal",
   checklist: "teal",
+  drink: "coral",
+  salad: "green",
 };
 
 export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, bare = false, className = "" }: { name: ArtName; tone?: ArtTone; size?: number; tilt?: number; bare?: boolean; className?: string }) {
@@ -275,6 +277,8 @@ const DECO: Record<ArtName, DecoKind> = {
   check: "petals",
   shifts: "ticks",
   checklist: "sparkle",
+  drink: "dots",
+  salad: "petals",
   seats: "dots",
 };
 
@@ -607,6 +611,41 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
         </g>
       ))}
       <path d="M37 40a6 6 0 0 1 6-6h34a6 6 0 0 1 6 6v2H37z" fill="#fff" opacity="0.6" />
+    </g>
+  ),
+  // A tall glass of lemonade with a straw and a lemon slice.
+  drink: (g) => (
+    <g>
+      <rect x="57" y="18" width="5" height="40" rx="2.5" fill="#fff" transform="rotate(14 60 40)" />
+      <rect x="57" y="18" width="5" height="12" rx="2.5" fill={url(g, "tone")} transform="rotate(14 60 40)" />
+      <path d="M38 36h44l-6 54a8 8 0 0 1-8 7H52a8 8 0 0 1-8-7z" fill="#dfe8fa" opacity="0.9" />
+      <path d="M40.5 50h39l-4.5 40a6 6 0 0 1-6 5.3H51a6 6 0 0 1-6-5.3z" fill={url(g, "tone")} opacity="0.85" />
+      {[0, 1, 2].map((k) => (
+        <rect key={k} x={47 + k * 9} y={58 + (k % 2) * 9} width="9" height="9" rx="2.5" fill="#fff" opacity="0.55" transform={`rotate(${k * 18 - 12} ${51 + k * 9} ${62 + (k % 2) * 9})`} />
+      ))}
+      <path d="M44 38h6l-5 50" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
+      <circle cx="82" cy="40" r="11" fill="#ffe27a" />
+      <circle cx="82" cy="40" r="8" fill="#fff6c8" />
+      {[0, 1, 2, 3, 4, 5].map((k) => (
+        <path key={k} d="M82 40v-7" stroke="#ffd23d" strokeWidth="1.4" transform={`rotate(${k * 60} 82 40)`} />
+      ))}
+    </g>
+  ),
+  // A bowl of fresh salad.
+  salad: (g) => (
+    <g>
+      <ellipse cx="60" cy="58" rx="30" ry="12" fill="#3fbf6a" />
+      <circle cx="44" cy="54" r="9" fill="#7bdc6a" />
+      <circle cx="58" cy="49" r="10" fill="#5ccf62" />
+      <circle cx="73" cy="53" r="9" fill="#8fe57a" />
+      <circle cx="52" cy="58" r="5" fill="#ff6a6a" />
+      <circle cx="68" cy="60" r="4.5" fill="#ff6a6a" />
+      <circle cx="51" cy="57" r="1.6" fill="#fff" opacity="0.7" />
+      <ellipse cx="62" cy="56" rx="5" ry="3" fill="#fff6c8" />
+      <path d="M26 60h68a34 26 0 0 1-68 0z" fill={url(g, "paper")} />
+      <path d="M26 60h68" stroke={url(g, "tone")} strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M36 70a26 16 0 0 0 48 0" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+      <ellipse cx="60" cy="88" rx="16" ry="3" fill="#c8d0e2" />
     </g>
   ),
   // A shift clock.

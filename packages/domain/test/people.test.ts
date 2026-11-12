@@ -76,6 +76,10 @@ describe("roles and stations", () => {
     expect(stationFor("alcohol")).toBe("bar");
     expect(stationFor("main")).toBe("hot");
     expect(stationFor("hookah")).toBe("hookah");
+    expect(stationFor("hot_drink")).toBe("bar");
+    expect(stationFor("salad")).toBe("cold");
+    expect(stationFor("grill")).toBe("grill");
+    expect(stationFor("dessert")).toBe("pastry");
   });
   it("moves a ticket through the station without anyone claiming it", () => {
     const t = { id: "t1", station: "bar" as const, table: 4, state: "new" as const };

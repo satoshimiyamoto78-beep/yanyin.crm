@@ -187,12 +187,27 @@ export function insertMention(text: string, start: number, caret: number, handle
 
 /* ------------------------------------------------------------------ Stations and tickets */
 
-/** Which station makes an item, from its category role. Venues can override per category later. */
+/** Which station makes an item by default, from its category role. A venue merges or renames stations to fit its kitchen. */
 export function stationFor(categoryRole: string): Station {
-  if (categoryRole === "drink" || categoryRole === "alcohol") return "bar";
-  if (categoryRole === "hookah") return "hookah";
-  if (categoryRole === "dessert") return "pastry";
-  return "hot";
+  switch (categoryRole) {
+    case "drink":
+    case "hot_drink":
+    case "alcohol":
+      return "bar";
+    case "hookah":
+      return "hookah";
+    case "salad":
+    case "starter":
+    case "snack":
+      return "cold";
+    case "grill":
+      return "grill";
+    case "dessert":
+    case "pastry":
+      return "pastry";
+    default:
+      return "hot";
+  }
 }
 
 /**

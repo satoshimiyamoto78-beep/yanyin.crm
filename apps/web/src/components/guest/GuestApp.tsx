@@ -59,6 +59,7 @@ import {
   type PlacedOrder,
 } from "./sheets";
 import Image from "next/image";
+import { useStopList, withoutStopped } from "@/lib/stoplist";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
 import {
@@ -98,17 +99,20 @@ type Notice = IslandNotice;
  * yanyin.menu — the guest app opened from a table QR code. One scrolling menu
  * (Yandex Eda pattern) with sheets for the dish, the order, search and more.
  */
-export function GuestApp({ menu }: { menu: Menu }) {
+export function GuestApp({ menu: fullMenu }: { menu: Menu }) {
+  // Dishes a station marked as run out disappear at once (the full menu still resolves cart lines).
+  const stop = useStopList();
+  const menu = useMemo(() => withoutStopped(fullMenu, stop), [fullMenu, stop]);
   const brand = venueBrand(menu.venue);
   const { currency } = menu.venue;
-  const items = useMemo(() => allItems(menu), [menu]);
+  const items = useMemo(() => allItems(fullMenu), [fullMenu]);
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const categoryOf = useMemo(
     () =>
       new Map<string, Category>(
-        menu.categories.flatMap((c) => c.items.map((i) => [i.id, c] as const)),
+        fullMenu.categories.flatMap((c) => c.items.map((i) => [i.id, c] as const)),
       ),
-    [menu],
+    [fullMenu],
   );
 
   const [lang, setLang] = useState<Lang>("en");
