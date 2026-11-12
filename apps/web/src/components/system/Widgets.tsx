@@ -424,17 +424,20 @@ export function IconStat({ title, art, value, sub, className = "" }: { title: st
 }
 
 /**
- * A wide insight card: the picture and the number on top, then a small bar
- * chart with its axis, three facts underneath, and an ⓘ that explains what
- * the number means and how to move it.
+ * A wide insight card: the picture and the number on top, then the whole
+ * shift as a chart you can scroll. Hours already worked are bars in colour,
+ * the hour now is the brightest, hours still ahead are grey; tap a bar to read
+ * it. Three facts underneath, and an ⓘ that explains the number.
  */
 export function InsightCard({
   title,
   art,
   value,
-  bars,
-  labels,
+  slots,
+  now,
   tone = "blue",
+  format,
+  nowLabel = "now",
   facts,
   info,
   className = "",
@@ -442,17 +445,30 @@ export function InsightCard({
   title: string;
   art: ArtName;
   value: string;
-  bars: number[];
-  /** First, middle and last axis labels. */
-  labels: [string, string, string];
+  nowLabel?: string;
+  /** One slot per hour of the shift; `value` null means the hour is still ahead. */
+  slots: { label: string; value: number | null }[];
+  /** Index of the hour now. */
+  now: number;
   tone?: "blue" | "green" | "orange" | "red";
+  format: (n: number) => string;
   facts: { label: string; value: string }[];
   info: { title: string; text: string; points: string[] };
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const max = Math.max(...bars, 1);
+  const [pick, setPick] = useState(now);
+  const strip = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Start with the hour now in the middle of the view.
+    const el = strip.current;
+    const bar = el?.children[now] as HTMLElement | undefined;
+    if (el && bar) el.scrollLeft = bar.offsetLeft - el.clientWidth / 2 + bar.offsetWidth / 2;
+  }, [now]);
+  const max = Math.max(1, ...slots.map((x) => x.value ?? 0));
   const fill = { blue: "bg-g-blue", green: "bg-g-green", orange: "bg-g-orange", red: "bg-[#ff6a6a]" }[tone];
+  const ink = { blue: "text-g-blue", green: "text-g-green", orange: "text-g-orange", red: "text-[#e5484d]" }[tone];
+  const cur = slots[pick];
   return (
     <>
       <ArtScene
@@ -462,15 +478,39 @@ export function InsightCard({
         className={`rounded-[26px] p-4 ${className}`}
         footer={
           <>
-            <div className="mt-4 flex h-14 items-end justify-around gap-1.5" aria-hidden>
-              {bars.map((v, i) => (
-                <span key={i} className={`min-w-0 max-w-[26px] flex-1 rounded-t-[7px] rounded-b-[3px] ${fill} ${i === bars.length - 1 ? "" : "opacity-35"}`} style={{ height: `${Math.max(8, (v / max) * 100)}%` }} />
-              ))}
+            {/* The hour read out, above the chart. */}
+            <div className="mt-4 flex items-baseline justify-between text-[12.5px]">
+              <span className="text-g-muted">
+                {cur?.label}
+                {pick === now ? ` · ${nowLabel}` : ""}
+              </span>
+              <span className={`font-semibold tabular-nums ${cur?.value === null ? "text-g-faint" : ink}`}>{cur?.value === null ? "—" : format(cur?.value ?? 0)}</span>
             </div>
-            <div className="mt-1.5 flex justify-between text-[10.5px] text-g-muted tabular-nums">
-              {labels.map((l, i) => (
-                <span key={i}>{l}</span>
-              ))}
+            <div ref={strip} className="no-scrollbar -mx-4 mt-2 flex items-end gap-1.5 overflow-x-auto px-4 pb-1" style={{ height: 132 }}>
+              {slots.map((x, i) => {
+                const future = x.value === null;
+                const h = future ? 14 : Math.max(10, ((x.value ?? 0) / max) * 100);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      haptic("tick");
+                      setPick(i);
+                    }}
+                    aria-label={`${x.label} ${future ? "" : format(x.value ?? 0)}`}
+                    className="flex h-full w-[30px] shrink-0 flex-col items-center justify-end gap-1.5"
+                  >
+                    <span className="relative flex w-full flex-1 items-end">
+                      <span
+                        className={`w-full rounded-t-[8px] rounded-b-[4px] transition-[height,opacity] duration-500 ${future ? "bg-g-fill-2" : fill} ${!future && i !== now ? "opacity-45" : ""} ${pick === i ? "ring-2 ring-g-ink/70 ring-offset-2 ring-offset-transparent" : ""}`}
+                        style={{ height: `${h}%` }}
+                      />
+                      {i === now && <span className="absolute -top-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-g-ink" />}
+                    </span>
+                    <span className={`text-[10.5px] tabular-nums ${i === now ? "font-bold text-g-ink" : future ? "text-g-faint" : "text-g-muted"}`}>{x.label.slice(0, 2)}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {facts.map((f) => (
@@ -660,10 +700,9 @@ export function ActionListWidget({
       {rows.length ? (
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2">
           {rows.map((r) => (
-            <div key={r.id} className="flex min-w-0 items-center gap-3 rounded-[18px] bg-g-card p-2.5 pr-2.5">
-              <span className={`flex w-12 shrink-0 flex-col items-center rounded-[14px] py-1 ${chip}`}>
-                <span className="text-[9px] leading-none font-semibold uppercase">{r.badgeLabel}</span>
-                <span className="text-[20px] leading-tight font-bold tabular-nums">{r.badge}</span>
+            <div key={r.id} className="flex min-w-0 items-center gap-3 rounded-full bg-g-card p-1.5 pr-1.5">
+              <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[19px] font-bold tabular-nums ${chip}`} aria-label={`${r.badgeLabel} ${r.badge}`}>
+                {r.badge}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14px] font-semibold">{r.title}</span>
@@ -675,7 +714,7 @@ export function ActionListWidget({
                     haptic("light");
                     r.action!.onClick();
                   }}
-                  className="press h-9 shrink-0 rounded-full bg-g-ink px-3.5 text-[13px] font-semibold text-white"
+                  className="press h-11 shrink-0 rounded-full bg-g-ink px-4 text-[13px] font-semibold text-white"
                 >
                   {r.action.label}
                 </button>

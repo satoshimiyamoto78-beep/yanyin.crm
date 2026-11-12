@@ -385,7 +385,7 @@ export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** 
   );
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center pt-[max(10px,env(safe-area-inset-top))]">
-      {open && <button aria-label="Fold" onClick={() => toggle(false)} className="animate-fade pointer-events-auto fixed inset-0 -z-10 bg-[rgba(11,11,15,0.25)] backdrop-blur-[2px]" />}
+      {open && <button aria-label="Fold" onClick={() => toggle(false)} className="animate-fade pointer-events-auto fixed inset-0 -z-10 bg-[rgba(11,11,15,0.32)]" />}
       <div
         key={shown.title}
         role="status"
@@ -499,7 +499,7 @@ export function LiveIsland({
   return (
     <>
       {open && <ScrollLock />}
-      {open && <button aria-label="Fold" onClick={() => setOpen(false)} className="animate-fade fixed inset-0 z-40 bg-[rgba(11,11,15,0.25)] backdrop-blur-[2px]" />}
+      {open && <button aria-label="Fold" onClick={() => setOpen(false)} className="animate-fade fixed inset-0 z-40 bg-[rgba(11,11,15,0.3)]" />}
       <div
         className="island-in fixed left-1/2 z-40 -translate-x-1/2 overflow-hidden bg-[#0b0b0f] text-white transition-[width,height,border-radius] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{ bottom, width: open ? "min(92vw, 380px)" : 300, height: open ? 262 : 52, borderRadius: open ? 32 : 26 }}

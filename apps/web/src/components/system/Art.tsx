@@ -13,7 +13,7 @@ import { useId, type CSSProperties, type ReactNode } from "react";
  */
 
 export type ArtTone = "blue" | "sunset" | "teal" | "green" | "coral" | "night";
-export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
+export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "bell" | "wifi" | "pizza" | "menu" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
 
 const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; shadow: string }> = {
   blue: { a: "#8fb6ff", b: "#3d6bff", c: "#1a2a9e", glow: "#bcd2ff", shadow: "rgba(47,91,255,0.5)" },
@@ -31,6 +31,10 @@ export const ART: Record<ArtName, ArtTone> = {
   sales: "green",
   trophy: "sunset",
   kitchen: "green",
+  bell: "sunset",
+  wifi: "teal",
+  pizza: "coral",
+  menu: "blue",
   orders: "sunset",
   bookings: "teal",
   seated: "green",
@@ -94,7 +98,7 @@ export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, className
           <path d="M96 20c.6 4 3.4 6.8 7.4 7.4-4 .6-6.8 3.4-7.4 7.4-.6-4-3.4-6.8-7.4-7.4 4-.6 6.8-3.4 7.4-7.4Z" fill="#fff" opacity="0.9" />
           <circle cx="22" cy="30" r="2" fill="#fff" opacity="0.7" />
           {/* Film grain and the light rim. */}
-          <rect width="120" height="120" fill="#fff" opacity="0.16" filter={`url(#${g("grain")})`} style={{ mixBlendMode: "overlay" }} />
+          <rect width="120" height="120" fill="#fff" opacity="0.16" filter={`url(#${g("grain")})`} />
           <path d={SQUIRCLE} fill="none" stroke={`url(#${g("rim")})`} strokeWidth="2" />
         </g>
       </svg>
@@ -181,7 +185,7 @@ export function sceneStyle(tone: ArtTone): CSSProperties {
   const t = TONES[tone];
   return {
     "--art-l": `radial-gradient(120% 90% at 100% 0%, ${t.a}88 0%, ${t.glow}66 40%, transparent 72%), linear-gradient(160deg, #ffffff 0%, ${t.glow}55 100%)`,
-    "--art-d": `radial-gradient(120% 90% at 100% 0%, ${t.b}88 0%, ${t.c}44 45%, transparent 75%), linear-gradient(160deg, #15171d 0%, ${t.c}55 100%)`,
+    "--art-d": `radial-gradient(90% 80% at 100% 0%, ${t.b}59 0%, ${t.b}1f 45%, transparent 72%), radial-gradient(70% 60% at 0% 100%, ${t.c}33 0%, transparent 70%), #17191e`,
   } as CSSProperties;
 }
 
@@ -210,7 +214,7 @@ export function ArtScene({
   const t = TONES[tone];
   const style = {
     "--art-l": `radial-gradient(120% 90% at 100% 0%, ${t.a}bb 0%, ${t.glow}88 38%, transparent 70%), linear-gradient(160deg, #ffffff 0%, ${t.glow}66 100%)`,
-    "--art-d": `radial-gradient(120% 90% at 100% 0%, ${t.b}99 0%, ${t.c}55 45%, transparent 75%), linear-gradient(160deg, #15171d 0%, ${t.c}55 100%)`,
+    "--art-d": `radial-gradient(90% 80% at 100% 0%, ${t.b}59 0%, ${t.b}1f 45%, transparent 72%), radial-gradient(70% 60% at 0% 100%, ${t.c}33 0%, transparent 70%), #17191e`,
   } as CSSProperties;
   // The sharp subject with its own decoration radiating from right behind it.
   const subject = focal > 0 && (
@@ -265,6 +269,10 @@ const DECO: Record<ArtName, DecoKind> = {
   sales: "rays",
   trophy: "sparkle",
   kitchen: "waves",
+  bell: "rays",
+  wifi: "waves",
+  pizza: "petals",
+  menu: "dots",
   orders: "waves",
   bookings: "dots",
   seated: "petals",
@@ -385,6 +393,60 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
       <path d="M30 60 L50 46 L62 52 L86 30" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M30 60 L50 46 L62 52 L86 30" fill="none" stroke={url(g, "gold")} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M78 28 L89 27 L88 38" fill="none" stroke={url(g, "gold")} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+  ),
+  // A service bell on the counter: call the waiter.
+  bell: (g) => (
+    <g>
+      <rect x="26" y="80" width="68" height="9" rx="4.5" fill={url(g, "deep")} />
+      <path d="M32 80a28 28 0 0 1 56 0z" fill={url(g, "gold")} />
+      <path d="M40 74a20 20 0 0 1 12-16" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity="0.7" />
+      <rect x="55" y="45" width="10" height="9" rx="3" fill={url(g, "goldSide")} />
+      <ellipse cx="60" cy="44" rx="9" ry="3.5" fill={url(g, "gold")} />
+      <path d="M86 40l6-5M90 52h8M30 40l-6-5M22 52h8" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.9" />
+    </g>
+  ),
+  // Wi-Fi waves over a glowing dot.
+  wifi: (g) => (
+    <g>
+      {[34, 24, 14].map((r, k) => (
+        <path key={r} d={`M${60 - r} ${78 - r * 0.6} a${r} ${r} 0 0 1 ${r * 2} 0`} fill="none" stroke={k ? url(g, "paper") : url(g, "tone")} strokeWidth="8" strokeLinecap="round" transform={`translate(0 ${r * 0.6 - 8})`} />
+      ))}
+      <circle cx="60" cy="80" r="7" fill={url(g, "deep")} />
+      <circle cx="58" cy="78" r="2.4" fill="#fff" opacity="0.8" />
+    </g>
+  ),
+  // A pizza of two different halves.
+  pizza: () => (
+    <g>
+      <circle cx="60" cy="62" r="34" fill="#e7a34a" />
+      <path d="M60 31 A31 31 0 0 0 60 93 Z" fill="#ff7a4d" />
+      <path d="M60 31 A31 31 0 0 1 60 93 Z" fill="#ffd27a" />
+      <path d="M60 28v68" stroke="#fff" strokeWidth="3" />
+      {[[46, 48], [42, 66], [50, 80], [38, 56]].map(([x, y], k) => (
+        <circle key={k} cx={x} cy={y} r="4.5" fill="#c62f3e" />
+      ))}
+      {[[72, 46], [78, 62], [70, 78]].map(([x, y], k) => (
+        <circle key={k} cx={x} cy={y} r="3.4" fill="#3fbf6a" />
+      ))}
+      <circle cx="80" cy="52" r="2.6" fill="#fff" opacity="0.9" />
+      <circle cx="74" cy="70" r="2.2" fill="#fff" opacity="0.9" />
+      <path d="M38 44a31 31 0 0 1 18-14" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.6" />
+    </g>
+  ),
+  // The menu: an open card with dishes listed.
+  menu: (g) => (
+    <g>
+      <rect x="32" y="26" width="56" height="70" rx="10" fill="#c7d2ea" transform="translate(4 4) rotate(4 60 60)" />
+      <rect x="32" y="26" width="56" height="70" rx="10" fill={url(g, "paper")} />
+      <rect x="40" y="34" width="22" height="5" rx="2.5" fill={url(g, "tone")} />
+      {[48, 60, 72, 84].map((y) => (
+        <g key={y}>
+          <circle cx="44" cy={y} r="3.5" fill={url(g, "gold")} />
+          <rect x="51" y={y - 2} width="22" height="4" rx="2" fill="#c8d0e2" />
+          <rect x="76" y={y - 2} width="6" height="4" rx="2" fill={url(g, "tone")} opacity="0.7" />
+        </g>
+      ))}
     </g>
   ),
   // A cooking pot on a flame, steam rising.

@@ -94,6 +94,10 @@ export function NorthSky() {
       glow(W * (0.08 + 0.1 * Math.sin(t * 0.11)), H * (0.06 + 0.04 * Math.cos(t * 0.09)), W * 0.95, H * 0.5, s.deep);
       glow(W * (0.95 + 0.1 * Math.cos(t * 0.1)), H * (0.2 + 0.05 * Math.sin(t * 0.13)), W * 0.85, H * 0.46, s.cyan);
       glow(W * (0.5 + 0.3 * Math.sin(t * 0.08 + 1)), H * (0.5 + 0.06 * Math.sin(t * 0.12)), W * 0.8, H * 0.3, s.bloom);
+      // Soft white mist drifting through the blue: two slow clouds of light.
+      const dark = s === DARK;
+      glow(W * (0.25 + 0.35 * Math.sin(t * 0.07)), H * (0.32 + 0.08 * Math.cos(t * 0.09)), W * 0.5, H * 0.16, [255, 255, 255, dark ? 0.1 : 0.32]);
+      glow(W * (0.75 + 0.3 * Math.cos(t * 0.06 + 2)), H * (0.58 + 0.07 * Math.sin(t * 0.1 + 1)), W * 0.55, H * 0.15, [255, 255, 255, dark ? 0.08 : 0.28]);
     };
 
     const loop = (now: number) => {

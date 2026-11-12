@@ -25,9 +25,6 @@ import {
   ChefHat,
   ChevronRight,
   Info,
-  LayoutGrid,
-  Pizza,
-  Wifi,
   UtensilsCrossed,
   Dices,
   Flame,
@@ -39,12 +36,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import { venueBrand, type VenueBrand } from "@/lib/visual";
 import { RouletteSheet } from "./RouletteSheet";
+import { ArtTile } from "@/components/system/Art";
 import { NorthSky } from "@/components/system/NorthSky";
 import { useScheme } from "@/components/system/scheme";
 import {
   Strip,
   StripBig,
-  StripSquare,
   StripWide,
 } from "@/components/system/Strip";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
@@ -252,7 +249,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                     <div className="grid grid-cols-2 gap-2.5">
                       {shots.map((it, n) => (
                         <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 50} className={shots.length % 2 === 1 && n === 0 ? "col-span-2 grid" : "grid"}>
-                          <DishCard {...props(it)} role={c.role} wide={shots.length % 2 === 1 && n === 0} />
+                          <DishCard {...props(it)} role={c.role} format={menu.venue.imageFormat} wide={shots.length % 2 === 1 && n === 0} />
                         </Reveal>
                       ))}
                     </div>
@@ -395,14 +392,13 @@ export function GuestApp({ menu }: { menu: Menu }) {
                   : ui(lang, "startOrderSub")
               }
             />
-            <StripSquare
-              icon={<BellRing size={21} strokeWidth={1.9} />}
-              label={ui(lang, "qaWaiter")}
+            <StripWide
               onClick={() => say("waiterCalled")}
+              art={<ArtTile name="bell" size={40} />}
+              title={ui(lang, "qaWaiter")}
+              sub={ui(lang, "qaWaiterSub")}
             />
-            <StripSquare
-              icon={<ReceiptText size={21} strokeWidth={1.9} />}
-              label={ui(lang, "qaBill")}
+            <StripWide
               onClick={() => {
                 if (!orders.length)
                   flash({
@@ -413,6 +409,9 @@ export function GuestApp({ menu }: { menu: Menu }) {
                   });
                 else setSheet("bill");
               }}
+              art={<ArtTile name="check" size={40} />}
+              title={ui(lang, "qaBill")}
+              sub={ui(lang, "askBillHint")}
             />
             <StripWide
               onClick={() => setSheet("roulette")}
@@ -427,22 +426,14 @@ export function GuestApp({ menu }: { menu: Menu }) {
             {halves && (
               <StripWide
                 onClick={() => setItem(halves)}
-                art={
-                  <span className="chip-orange grid size-9 place-items-center rounded-[12px]">
-                    <Pizza size={18} strokeWidth={2} />
-                  </span>
-                }
+                art={<ArtTile name="pizza" size={40} />}
                 title={ui(lang, "qaHalves")}
                 sub={ui(lang, "qaHalvesSub")}
               />
             )}
             <StripWide
               onClick={() => setSheet("categories")}
-              art={
-                <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
-                  <LayoutGrid size={18} strokeWidth={2} />
-                </span>
-              }
+              art={<ArtTile name="menu" size={40} />}
               title={ui(lang, "categories")}
               sub={`${menu.categories.length} ${ui(lang, "sections")}`}
             />
@@ -454,11 +445,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             />
             <StripWide
               onClick={() => setSheet("wifi")}
-              art={
-                <span className="chip-blue grid size-9 place-items-center rounded-[12px]">
-                  <Wifi size={18} strokeWidth={2} />
-                </span>
-              }
+              art={<ArtTile name="wifi" size={40} />}
               title="Wi-Fi"
               sub={brand.about.wifi.name}
             />

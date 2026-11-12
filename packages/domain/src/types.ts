@@ -110,6 +110,12 @@ export type Venue = {
   ageRestricted: boolean;
   /** Service charge as a share of the dishes (0.05 = 5%); defaults to DEFAULT_SERVICE_RATE. */
   serviceRate?: number;
+  /**
+   * How dish photos are cropped in menu lists: "square", "portrait" (3:4) or
+   * "landscape" (4:3). Set in the venue settings; the dish page always shows
+   * the whole photo in its own proportions.
+   */
+  imageFormat?: "square" | "portrait" | "landscape";
 };
 
 export type Menu = { venue: Venue; categories: Category[] };

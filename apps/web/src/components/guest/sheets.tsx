@@ -148,8 +148,9 @@ function ItemSheetBody({
         </div>
       ) : item.cover ? (
         <div className="px-3 pt-3">
-          <div className="relative aspect-[1.2] w-full overflow-hidden rounded-[28px]">
-            <Image src={item.cover} alt="" fill sizes="480px" className="object-cover" />
+          {/* On the dish's own page the photo is shown whole, in its own proportions; lists crop it to the venue's format. */}
+          <div className="w-full overflow-hidden rounded-[28px] bg-g-fill">
+            <Image src={item.cover} alt="" width={960} height={960} sizes="480px" className="block h-auto w-full" />
           </div>
         </div>
       ) : item.photo ? (

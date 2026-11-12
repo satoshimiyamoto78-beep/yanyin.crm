@@ -353,7 +353,10 @@ type DishProps = { item: MenuItem; role: CategoryRole; lang: Lang; currency: Cur
  * under it the name, two lines of description and the price. `wide` lays the
  * same card out sideways across both columns.
  */
-export function DishCard({ item, role, lang, currency, qty, onOpen, onAdd, onQty, wide }: DishProps & { wide?: boolean }) {
+/** The list crop for dish photos, from the venue setting. */
+const FORMAT = { square: "aspect-square", portrait: "aspect-[3/4]", landscape: "aspect-[4/3]" } as const;
+
+export function DishCard({ item, role, lang, currency, qty, onOpen, onAdd, onQty, wide, format }: DishProps & { wide?: boolean; format?: keyof typeof FORMAT }) {
   const desc = describe(item, lang);
   const price = (
     <span className="live block truncate text-[15.5px] font-semibold tracking-[-0.01em] tabular-nums">
@@ -385,7 +388,7 @@ export function DishCard({ item, role, lang, currency, qty, onOpen, onAdd, onQty
     <div className="flex h-full min-w-0 flex-col rounded-[24px] bg-g-fill p-2">
       <div className="relative">
         <button onClick={onOpen} aria-label={t(item.name, lang)} className="press block w-full">
-          <DishTile item={item} role={role} photoScale={0.9} className="live aspect-[1/0.82] w-full rounded-[18px]" />
+          <DishTile item={item} role={role} photoScale={0.9} className={`live w-full rounded-[18px] ${format ? FORMAT[format] : "aspect-[1/0.82]"}`} />
         </button>
         <DishMarks item={item} lang={lang} className="absolute top-1 left-1" />
         {/* In the order: the count sits on the photo, with minus and plus either side. */}

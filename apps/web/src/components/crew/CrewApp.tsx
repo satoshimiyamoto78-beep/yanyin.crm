@@ -33,7 +33,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
@@ -95,6 +95,30 @@ export const METHOD: Record<PayMethod, { label: string; icon: LucideIcon }> = {
 
 type Notice = IslandNotice & { table?: number };
 
+/** A tiny store for the island, so a notification never re-renders the app. */
+const noticeStore = (() => {
+  let cur: Notice | null = null;
+  const subs = new Set<() => void>();
+  return {
+    get: () => cur,
+    set: (v: Notice | null | ((c: Notice | null) => Notice | null)) => {
+      const next = typeof v === "function" ? v(cur) : v;
+      if (next === cur) return;
+      cur = next;
+      subs.forEach((f) => f());
+    },
+    subscribe: (f: () => void) => {
+      subs.add(f);
+      return () => subs.delete(f);
+    },
+  };
+})();
+
+function CrewIsland({ onExpand }: { onExpand: (open: boolean) => void }) {
+  const notice = useSyncExternalStore(noticeStore.subscribe, noticeStore.get, () => null);
+  return <Island notice={notice} onExpand={onExpand} />;
+}
+
 /**
  * yanyin.crew — the waiter's phone app: the floor (tables), open and closed
  * orders, bookings and the waiter's own quest page. Every secondary screen is a
@@ -143,7 +167,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const [yan, setYan] = useState<{ q?: string } | null>(null);
   const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [scan, setScan] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  // The island lives in its own little store: showing a notice re-renders only
+  // the island, never the whole app (that was the lag when a table asked for the bill).
+  const setNotice = noticeStore.set;
   const items = useMemo(() => allItems(menu), [menu]);
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const money = useCallback((n: number) => formatMoney(n, floor.venue.currency, "en"), [floor.venue.currency]);
@@ -158,8 +184,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     setNotice(n);
     clearTimeout(noticeTimer.current);
     noticeTimer.current = setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), raw.action ? 7000 : 2600);
-    // Every notification is kept in the inbox history.
-    setInbox((xs) => [{ id: `i${Date.now()}${xs.length}`, kind: kindOf(raw.title), table: raw.table, title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at: Date.now(), read: false }, ...xs].slice(0, 80));
+    // Every notification is kept in the inbox history (low priority, after the island is on screen).
+    startTransition(() => setInbox((xs) => [{ id: `i${Date.now()}${xs.length}`, kind: kindOf(raw.title), table: raw.table, title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at: Date.now(), read: false }, ...xs].slice(0, 80)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the store setter is stable
   }, []);
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));
   const now = () => new Date().toTimeString().slice(0, 5);
@@ -387,11 +414,11 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       {/* Tab bar: a floating capsule (Home, Hall) and a separate round scan button, iOS 26 style. */}
       <nav aria-label={tr("Sections")} className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-[440px] items-center gap-2.5">
-          <div className="relative grid h-[64px] flex-1 grid-cols-3 rounded-full bg-white/95 p-1.5 ring-1 ring-black/5 backdrop-blur-xl">
+          <div className="relative grid h-[56px] flex-1 grid-cols-3 rounded-full bg-white/95 p-1 ring-1 ring-black/5 backdrop-blur-xl">
             <span
               aria-hidden
-              className="absolute top-1.5 bottom-1.5 left-1.5 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{ width: "calc((100% - 12px) / 3)", transform: `translateX(${(tab === "me" ? 0 : tab === "cabinet" ? 2 : 1) * 100}%)` }}
+              className="absolute top-1 bottom-1 left-1 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ width: "calc((100% - 8px) / 3)", transform: `translateX(${(tab === "me" ? 0 : tab === "cabinet" ? 2 : 1) * 100}%)` }}
             />
             {(
               [
@@ -408,7 +435,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
                   aria-current={on ? "page" : undefined}
                   className={`relative z-10 flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors ${on ? "text-g-ink" : "text-g-faint"}`}
                 >
-                  <Icon size={21} strokeWidth={on ? 2.1 : 1.8} />
+                  <Icon size={19} strokeWidth={on ? 2.1 : 1.8} />
                   {label}
                   {badge > 0 && <span className="blue-grad absolute top-1 left-[calc(50%+6px)] grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold">{badge}</span>}
                 </button>
@@ -425,10 +452,10 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               }}
               className="press absolute bottom-[calc(100%+10px)] left-1/2 grid -translate-x-1/2 place-items-center rounded-full shadow-[0_8px_24px_-8px_rgba(47,91,255,0.55)] ring-4 ring-[var(--g-bg)]"
             >
-              <YanOrb size={48} />
+              <YanOrb size={44} />
             </button>
-            <button aria-label={tr("Scan table QR")} onClick={() => setScan(true)} className="blue-grad press grid size-[56px] place-items-center rounded-full">
-              <ScanLine size={22} strokeWidth={2} />
+            <button aria-label={tr("Scan table QR")} onClick={() => setScan(true)} className="blue-grad press grid size-[52px] place-items-center rounded-full">
+              <ScanLine size={21} strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -462,8 +489,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       {cabBadges && <BadgesPage badges={data.badges} onClose={() => setCabBadges(false)} />}
       {inboxOpen && <InboxPage items={inbox} onOpenBill={openBill} onClose={() => setInboxOpen(false)} onReadAll={() => setInbox((xs) => xs.map((i) => ({ ...i, read: true })))} />}
 
-      <Island
-        notice={notice}
+      <CrewIsland
         onExpand={(open) => {
           // Unfolded, it stays until the waiter acts or folds it; folded, it leaves a moment later.
           clearTimeout(noticeTimer.current);
@@ -1719,10 +1745,21 @@ function OrdersView({
           ]}
           footnote={tr("{n} bill paid today|{n} bills paid today", { n: history.length })}
         />
-        {/* Full-width insight cards: the number, a bar per closed bill, three facts and an explainer. */}
+        {/* Full-width insight cards over the whole shift: worked hours in colour, the rest grey. */}
         {(() => {
           const bills = [...history].reverse();
-          const axis = (): [string, string, string] => [bills[0]?.closedAt ?? "", bills[Math.floor(bills.length / 2)]?.closedAt ?? "", bills[bills.length - 1]?.closedAt ?? ""];
+          const START = 10;
+          const END = 22;
+          const NOW_H = 12;
+          const hourOf = (t: string) => Number(t.slice(0, 2));
+          const inHour = (h: number) => bills.filter((o) => hourOf(o.closedAt) === h);
+          const label = (h: number) => `${String(h).padStart(2, "0")}:00`;
+          const hours = Array.from({ length: END - START + 1 }, (_, k) => START + k);
+          const tipsSlots = hours.map((h) => ({ label: label(h), value: h > NOW_H ? null : inHour(h).reduce((n, o) => n + o.tip, 0) }));
+          const checkSlots = hours.map((h) => {
+            const os = inHour(h);
+            return { label: label(h), value: h > NOW_H ? null : os.length ? Math.round(os.reduce((n, o) => n + total5(o), 0) / os.length) : 0 };
+          });
           const tipped = bills.filter((o) => o.tip > 0);
           const totals = bills.map(total5);
           const avg = bills.length ? Math.round(takings / bills.length / 1000) * 1000 : 0;
@@ -1734,8 +1771,10 @@ function OrdersView({
                 art="tips"
                 tone="green"
                 value={compactMoney(tips)}
-                bars={bills.map((o) => o.tip)}
-                labels={axis()}
+                slots={tipsSlots}
+                now={NOW_H - START}
+                nowLabel={tr("now")}
+                format={compactMoney}
                 facts={[
                   { label: tr("Bills with a tip"), value: `${tipped.length} / ${bills.length}` },
                   { label: tr("Average tip"), value: compactMoney(tipped.length ? Math.round(tips / tipped.length / 1000) * 1000 : 0) },
@@ -1744,7 +1783,7 @@ function OrdersView({
                 info={{
                   title: tr("How tips work"),
                   text: tr("Tips go to the team pool. Guests add them when they pay; at the end of the shift the pool is shared by everyone on shift, by hours worked."),
-                  points: [tr("Each bar is one closed bill today."), tr("A warm goodbye by name and a quick bill raise tips the most."), tr("Tips are counted separately from takings.")],
+                  points: [tr("Each bar is one hour of the shift; grey hours are still ahead. Tap a bar to see it."), tr("A warm goodbye by name and a quick bill raise tips the most."), tr("Tips are counted separately from takings.")],
                 }}
               />
               <InsightCard
@@ -1753,17 +1792,19 @@ function OrdersView({
                 art="check"
                 tone="red"
                 value={compactMoney(avg)}
-                bars={totals}
-                labels={axis()}
+                slots={checkSlots}
+                now={NOW_H - START}
+                nowLabel={tr("now")}
+                format={compactMoney}
                 facts={[
                   { label: tr("Bills today"), value: String(bills.length) },
-                  { label: tr("Smallest"), value: compactMoney(Math.min(...totals, totals.length ? Infinity : 0)) },
+                  { label: tr("Smallest"), value: compactMoney(totals.length ? Math.min(...totals) : 0) },
                   { label: tr("Biggest"), value: compactMoney(Math.max(0, ...totals)) },
                 ]}
                 info={{
                   title: tr("What is the average check"),
                   text: tr("Today's takings with service, divided by the number of closed bills. It shows how much one table spends on average."),
-                  points: [tr("Each bar is one closed bill today."), tr("It grows when you offer a drink with the dish and a dessert after."), tr("Big groups raise it; quick coffees lower it.")],
+                  points: [tr("Each bar is one hour of the shift; grey hours are still ahead. Tap a bar to see it."), tr("It grows when you offer a drink with the dish and a dessert after."), tr("Big groups raise it; quick coffees lower it.")],
                 }}
               />
             </>

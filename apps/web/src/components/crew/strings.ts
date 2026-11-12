@@ -1,5 +1,6 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Each bar is one hour of the shift; grey hours are still ahead. Tap a bar to see it.": "Каждый столбик — час смены; серые часы ещё впереди. Нажмите на столбик, чтобы увидеть сумму.",
   "Open it": "Открыть",
   "still to pay": "ещё к оплате",
   "Longest": "Дольше всех",
@@ -773,6 +774,7 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Each bar is one hour of the shift; grey hours are still ahead. Tap a bar to see it.": "Mỗi cột là một giờ của ca; cột xám là giờ chưa tới. Chạm vào cột để xem.",
   "Open it": "Mở",
   "still to pay": "chưa thanh toán",
   "Longest": "Lâu nhất",
