@@ -408,18 +408,15 @@ export function FlowWidget({
  * without competing with the number (like the wheel in the roulette button).
  */
 /**
- * A number on its picture: the card is filled by a soft illustrated scene,
- * the subject sits small and sharp at the top, and the text keeps one rhythm
- * at the bottom: label, the number large, a short line.
+ * A number on its picture, compact: the sharp subject on the left with its
+ * ornament, the label and the number stacked right of it on one level, a
+ * short line under the row. The soft scene fills the card behind.
  */
 export function IconStat({ title, art, value, sub, className = "" }: { title: string; art: ArtName; value: string; sub: string; className?: string }) {
   return (
-    <ArtScene name={art} focal={66} className={`min-h-[184px] rounded-[26px] p-4 ${className}`}>
-      <div className="mt-auto pt-3">
-        <p className="text-[12.5px] font-semibold text-g-ink-2">{title}</p>
-        <p className="live mt-1 text-[28px] leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</p>
-        <p className="mt-1.5 truncate text-[12px] text-g-muted">{sub}</p>
-      </div>
+    <ArtScene name={art} layout="row" focal={42} className={`rounded-[24px] p-3.5 ${className}`} footer={<p className="mt-3 truncate text-[12px] text-g-muted">{sub}</p>}>
+      <p className="truncate text-[12.5px] leading-tight font-semibold text-g-ink-2">{title}</p>
+      <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums ${value.length > 7 ? "text-[20px]" : "text-[24px]"}`}>{value}</p>
     </ArtScene>
   );
 }

@@ -1819,7 +1819,7 @@ function SectionHead({ title, sub, art, onBack }: { title: string; sub: string; 
       <button onClick={onBack} aria-label={tr("Hall")} className="press flex h-10 items-center gap-1 rounded-full bg-g-fill pr-4 pl-2 text-[14px] font-semibold">
         <ChevronLeft size={20} strokeWidth={2.2} /> {tr("Hall")}
       </button>
-      <ArtScene name={art} layout="side" focal={80} className="mt-5 min-h-[128px] rounded-[28px] p-5 pr-4">
+      <ArtScene name={art} layout="row" focal={64} className="mt-5 rounded-[28px] p-5">
         <span className="block pl-1">
           <span className="block text-[30px] leading-tight font-bold tracking-[-0.03em]">{title}</span>
           <span className="mt-0.5 block text-[14px] text-g-muted">{sub}</span>
@@ -1831,15 +1831,8 @@ function SectionHead({ title, sub, art, onBack }: { title: string; sub: string; 
 
 type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: ArtName };
 
-/** One Hall section as a big button on its illustrated scene, the same family as the stat cards. */
+/** One Hall section as a button on its illustrated scene; the same rhythm as the stat cards. */
 function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSeg) => void }) {
-  const text = (
-    <>
-      <p className="text-[14px] font-semibold text-g-ink-2">{s.title}</p>
-      <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] tabular-nums ${big ? "text-[38px]" : "text-[32px]"}`}>{s.value}</p>
-      <p className={`mt-2 truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</p>
-    </>
-  );
   return (
     <button
       onClick={() => {
@@ -1848,8 +1841,15 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
       }}
       className={`press relative block text-left ${big ? "col-span-2" : ""}`}
     >
-      <ArtScene name={s.art} layout={big ? "side" : "stack"} focal={big ? 96 : 70} className={`rounded-[28px] ${big ? "h-[156px] p-5" : "h-[196px] p-4"}`}>
-        {big ? <div className="pl-1">{text}</div> : <div className="mt-auto pr-4">{text}</div>}
+      <ArtScene
+        name={s.art}
+        layout="row"
+        focal={big ? 64 : 50}
+        className={`rounded-[26px] ${big ? "p-5" : "p-4"}`}
+        footer={<p className={`truncate pr-5 ${big ? "mt-4 text-[14px]" : "mt-3.5 text-[13px]"} ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</p>}
+      >
+        <p className={`truncate leading-tight font-semibold text-g-ink-2 ${big ? "text-[15px]" : "text-[14px]"}`}>{s.title}</p>
+        <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] tabular-nums ${big ? "text-[34px]" : "text-[28px]"}`}>{s.value}</p>
       </ArtScene>
       <ChevronRight size={18} className="absolute right-4 bottom-4 text-g-faint" />
     </button>

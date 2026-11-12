@@ -357,10 +357,11 @@ body {
 /* Illustrated scene cards (see ArtScene): pastel in light, deep tone in dark, with fine grain. */
 .art-scene { background: var(--art-l); }
 [data-scheme="dark"] .art-scene { background: var(--art-d); }
-.art-rays { opacity: 0.18; }
-.art-ghost { opacity: 0.55; }
-[data-scheme="dark"] .art-rays { opacity: 0.05; }
-[data-scheme="dark"] .art-ghost { opacity: 0.35; }
+.art-deco { opacity: 0.75; }
+.art-deco .art-halo { opacity: 0.6; filter: blur(6px); }
+.art-ghost { opacity: 0.45; }
+[data-scheme="dark"] .art-deco { opacity: 0.12; }
+[data-scheme="dark"] .art-ghost { opacity: 0.28; }
 .art-grain {
   opacity: 0.35;
   mix-blend-mode: soft-light;

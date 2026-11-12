@@ -178,55 +178,114 @@ export function ArtScene({
   focal = 56,
   layout = "stack",
   className = "",
+  footer,
   children,
 }: {
   name: ArtName;
   tone?: ArtTone;
   /** Size of the sharp subject; 0 hides it. */
   focal?: number;
-  /** "stack": subject on top, text below. "side": text left, subject right. */
-  layout?: "stack" | "side";
+  /** "row": subject left, text right of it. "stack": subject on top, text below. "side": text left, subject right. */
+  layout?: "row" | "stack" | "side";
   className?: string;
+  /** A line under the row, across the whole card. */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const id = useId().replace(/:/g, "");
   const g = (s: string) => `${s}-s${id}`;
   const t = TONES[tone];
   const style = {
-    "--art-l": `radial-gradient(120% 90% at 100% 0%, ${t.a}cc 0%, ${t.glow}99 38%, transparent 70%), linear-gradient(160deg, #ffffff 0%, ${t.glow}66 100%)`,
-    "--art-d": `radial-gradient(120% 90% at 100% 0%, ${t.b}aa 0%, ${t.c}66 45%, transparent 75%), linear-gradient(160deg, #15171d 0%, ${t.c}55 100%)`,
+    "--art-l": `radial-gradient(120% 90% at 100% 0%, ${t.a}bb 0%, ${t.glow}88 38%, transparent 70%), linear-gradient(160deg, #ffffff 0%, ${t.glow}66 100%)`,
+    "--art-d": `radial-gradient(120% 90% at 100% 0%, ${t.b}99 0%, ${t.c}55 45%, transparent 75%), linear-gradient(160deg, #15171d 0%, ${t.c}55 100%)`,
   } as CSSProperties;
+  // The sharp subject with its own decoration radiating from right behind it.
+  const subject = focal > 0 && (
+    <span className="relative grid shrink-0 place-items-center" style={{ width: focal, height: focal }}>
+      <Deco kind={DECO[name]} size={focal * 2.5} />
+      <Focal name={name} t={t} size={focal} />
+    </span>
+  );
   return (
     <div className={`art-scene relative isolate overflow-hidden ${className}`} style={style}>
-      <svg aria-hidden viewBox="0 0 120 120" className="pointer-events-none absolute -z-10" style={layout === "side" ? { height: "150%", aspectRatio: "1", right: "-12%", top: "-25%" } : { width: "120%", aspectRatio: "1", right: "-46%", top: "-10%" }}>
+      {/* The subject again, large and blurred, filling the far corner. */}
+      <svg aria-hidden viewBox="0 0 120 120" className="art-ghost pointer-events-none absolute -z-20" style={layout === "side" ? { height: "150%", aspectRatio: "1", left: "-20%", top: "-25%" } : { height: "160%", aspectRatio: "1", right: "-34%", top: "-30%" }}>
         <defs>
           <Materials g={g} t={t} />
           <filter id={g("blur")} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="4.5" />
+            <feGaussianBlur stdDeviation="5" />
           </filter>
         </defs>
-        <g transform="translate(60 60)" className="art-rays">
-          {Array.from({ length: 14 }, (_, i) => (
-            <path key={i} d="M0 0 L-6 -90 L6 -90 Z" fill="#fff" transform={`rotate(${i * (360 / 14)})`} />
-          ))}
-        </g>
-        <g className="art-ghost" filter={`url(#${g("blur")})`}>
+        <g filter={`url(#${g("blur")})`}>
           <g transform="translate(60 62) scale(1.1) translate(-60 -62)">{SUBJECT[name](g)}</g>
         </g>
       </svg>
       <span aria-hidden className="art-grain pointer-events-none absolute inset-0 -z-10" />
-      {layout === "side" ? (
+      {layout === "row" ? (
+        <>
+          <div className="flex items-center gap-3.5">
+            {subject}
+            <div className="min-w-0 flex-1">{children}</div>
+          </div>
+          {footer}
+        </>
+      ) : layout === "side" ? (
         <div className="flex h-full items-center gap-3">
           <div className="min-w-0 flex-1">{children}</div>
-          {focal > 0 && <Focal name={name} t={t} size={focal} />}
+          {subject}
         </div>
       ) : (
         <div className="flex h-full flex-col">
-          {focal > 0 && <Focal name={name} t={t} size={focal} />}
+          {subject}
           {children}
         </div>
       )}
     </div>
+  );
+}
+
+type DecoKind = "rays" | "rings" | "petals" | "dots" | "waves" | "ticks";
+/** Each picture gets its own ornament, so a row of cards never repeats itself. */
+const DECO: Record<ArtName, DecoKind> = {
+  tables: "rings",
+  orders: "waves",
+  bookings: "dots",
+  seated: "petals",
+  guests: "rings",
+  tips: "rays",
+  check: "petals",
+  shifts: "ticks",
+  seats: "dots",
+};
+
+/** A quiet ornament centred on the subject: rays, rings, petals, a dot halo, ripples or clock ticks. */
+function Deco({ kind, size }: { kind: DecoKind; size: number }) {
+  return (
+    <svg aria-hidden viewBox="-60 -60 120 120" width={size} height={size} className="art-deco pointer-events-none absolute top-1/2 left-1/2 -z-10 -translate-x-1/2 -translate-y-1/2">
+      <circle r="26" fill="#fff" className="art-halo" />
+      {kind === "rays" &&
+        Array.from({ length: 16 }, (_, i) => <path key={i} d="M0 0 L-3.2 -60 L3.2 -60 Z" fill="#fff" transform={`rotate(${i * 22.5})`} />)}
+      {kind === "rings" && [30, 40, 50].map((r, i) => <circle key={r} r={r} fill="none" stroke="#fff" strokeWidth={2.2 - i * 0.5} />)}
+      {kind === "petals" &&
+        Array.from({ length: 10 }, (_, i) => <ellipse key={i} cx="0" cy="-36" rx="7" ry="16" fill="#fff" transform={`rotate(${i * 36})`} />)}
+      {kind === "dots" &&
+        [32, 44, 55].flatMap((r, ring) =>
+          Array.from({ length: 10 + ring * 6 }, (_, i) => {
+            const a = (i / (10 + ring * 6)) * Math.PI * 2 + ring * 0.3;
+            return <circle key={`${r}-${i}`} cx={Math.cos(a) * r} cy={Math.sin(a) * r} r={2.4 - ring * 0.5} fill="#fff" />;
+          }),
+        )}
+      {kind === "waves" &&
+        [32, 42, 52].map((r, i) => (
+          <path key={r} d={Array.from({ length: 49 }, (_, k) => {
+            const a = (k / 48) * Math.PI * 2;
+            const rr = r + Math.sin(a * 8 + i) * 2.2;
+            return `${k ? "L" : "M"}${(Math.cos(a) * rr).toFixed(1)} ${(Math.sin(a) * rr).toFixed(1)}`;
+          }).join(" ")} fill="none" stroke="#fff" strokeWidth={1.8 - i * 0.4} />
+        ))}
+      {kind === "ticks" &&
+        Array.from({ length: 24 }, (_, i) => <rect key={i} x="-1" y={i % 6 ? -52 : -56} width="2" height={i % 6 ? 6 : 12} rx="1" fill="#fff" transform={`rotate(${i * 15})`} />)}
+    </svg>
   );
 }
 
