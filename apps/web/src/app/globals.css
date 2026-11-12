@@ -568,26 +568,30 @@ body {
 }
 
 /* Dynamic-Island notification: grows out of a dot, content fades in after. */
+/* Island: transform and opacity only, so the GPU runs it even when the page is busy
+   (clip-path and blur repainted on the main thread and stuttered on phones). */
 @keyframes island-in {
-  0% { clip-path: inset(0 calc(50% - 22px) round 22px); transform: scale(0.85); }
-  60% { clip-path: inset(0 0 round 22px); transform: scale(1.03); }
-  100% { clip-path: inset(0 0 round 22px); transform: scale(1); }
+  0% { transform: translateY(-6px) scale(0.55, 0.8); opacity: 0; }
+  55% { opacity: 1; }
+  100% { transform: none; opacity: 1; }
 }
 @keyframes island-out {
-  to { clip-path: inset(0 calc(50% - 22px) round 22px); transform: scale(0.85); opacity: 0; }
+  to { transform: translateY(-4px) scale(0.6, 0.85); opacity: 0; }
 }
 @keyframes island-content {
-  from { opacity: 0; filter: blur(4px); }
-  to { opacity: 1; filter: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .island-in {
-  animation: island-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: island-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  will-change: transform, opacity;
 }
 .island-in .island-content {
-  animation: island-content 0.3s ease-out 0.18s both;
+  animation: island-content 0.18s ease-out 0.08s both;
 }
 .island-out {
-  animation: island-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: island-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+  will-change: transform, opacity;
 }
 
 /* Idle roulette wheel turns slowly. */

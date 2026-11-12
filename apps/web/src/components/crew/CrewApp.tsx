@@ -184,8 +184,10 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     setNotice(n);
     clearTimeout(noticeTimer.current);
     noticeTimer.current = setTimeout(() => setNotice((cur) => (cur === n ? null : cur)), raw.action ? 7000 : 2600);
-    // Every notification is kept in the inbox history (low priority, after the island is on screen).
-    startTransition(() => setInbox((xs) => [{ id: `i${Date.now()}${xs.length}`, kind: kindOf(raw.title), table: raw.table, title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at: Date.now(), read: false }, ...xs].slice(0, 80)));
+    // Every notification is kept in the inbox history, written once the island has
+    // finished arriving so the app re-render never competes with its animation.
+    const at = Date.now();
+    setTimeout(() => startTransition(() => setInbox((xs) => [{ id: `i${at}${xs.length}`, kind: kindOf(raw.title), table: raw.table, title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at, read: false }, ...xs].slice(0, 80))), 450);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the store setter is stable
   }, []);
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));

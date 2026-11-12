@@ -360,7 +360,7 @@ export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** 
   const leaving = !notice && !!shown;
   useEffect(() => {
     if (!leaving) return;
-    const id = setTimeout(() => setShown(null), 260);
+    const id = setTimeout(() => setShown(null), 220);
     return () => clearTimeout(id);
   }, [leaving]);
   if (!shown) return null;
