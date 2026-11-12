@@ -195,20 +195,13 @@ export function stationFor(categoryRole: string): Station {
   return "hot";
 }
 
-/** A ticket line on a station screen. `claimedBy` is the person making it (one of 2–3 on the station). */
-export type StationTicket = { id: string; station: Station; table: number; claimedBy?: string; state: "new" | "making" | "ready" };
-
 /**
- * One person takes a ticket so two bartenders never make the same drink.
- * A ticket already taken by someone else stays theirs; taking your own again is a no-op.
+ * A ticket line on a station screen. The whole station works it together:
+ * nobody claims a ticket, anyone on the station moves it new → making → ready.
  */
-export function claimTicket(t: StationTicket, personId: string): StationTicket {
-  if (t.claimedBy && t.claimedBy !== personId) return t;
-  return { ...t, claimedBy: personId, state: t.state === "new" ? "making" : t.state };
-}
+export type StationTicket = { id: string; station: Station; table: number; state: "new" | "making" | "ready" };
 
-/** Lets go of a ticket so anyone on the station can take it. */
-export function releaseTicket(t: StationTicket, personId: string): StationTicket {
-  if (t.claimedBy !== personId) return t;
-  return { ...t, claimedBy: undefined, state: t.state === "making" ? "new" : t.state };
+/** The next state of a ticket when anyone on the station taps it; ready stays ready. */
+export function advanceTicket(t: StationTicket): StationTicket {
+  return { ...t, state: t.state === "new" ? "making" : "ready" };
 }

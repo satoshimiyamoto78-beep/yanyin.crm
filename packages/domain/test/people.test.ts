@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  can, checklistProgress, checklistXp, claimTicket, handleProblem, insertMention, mentionAt, mentionedHandles, normalizeHandle,
-  proofProblem, recipientsOf, releaseTicket, stationFor, suggestHandle, suggestPeople, templatesFor, toggleItem,
+  advanceTicket, can, checklistProgress, checklistXp, handleProblem, insertMention, mentionAt, mentionedHandles, normalizeHandle,
+  proofProblem, recipientsOf, stationFor, suggestHandle, suggestPeople, templatesFor, toggleItem,
   type ChecklistRun, type ChecklistTemplate, type Person,
 } from "../src";
 
@@ -77,14 +77,13 @@ describe("roles and stations", () => {
     expect(stationFor("main")).toBe("hot");
     expect(stationFor("hookah")).toBe("hookah");
   });
-  it("lets one of several bartenders take a ticket", () => {
+  it("moves a ticket through the station without anyone claiming it", () => {
     const t = { id: "t1", station: "bar" as const, table: 4, state: "new" as const };
-    const a = claimTicket(t, "u2");
-    expect(a).toMatchObject({ claimedBy: "u2", state: "making" });
-    expect(claimTicket(a, "u3")).toBe(a);
-    expect(releaseTicket(a, "u3")).toBe(a);
-    expect(releaseTicket(a, "u2")).toMatchObject({ claimedBy: undefined, state: "new" });
+    expect(advanceTicket(t).state).toBe("making");
+    expect(advanceTicket(advanceTicket(t)).state).toBe("ready");
+    expect(advanceTicket({ ...t, state: "ready" }).state).toBe("ready");
   });
+
 });
 
 describe("checklists", () => {
