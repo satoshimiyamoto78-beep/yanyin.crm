@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
 
 /*
  * Illustrated tiles, after the founder's references (glossy app icons and
@@ -70,29 +70,7 @@ export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, className
           <clipPath id={g("clip")}>
             <path d={SQUIRCLE} />
           </clipPath>
-          {/* Shared material gradients for the subjects. */}
-          <linearGradient id={g("paper")} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#ffffff" />
-            <stop offset="1" stopColor="#e7ecf7" />
-          </linearGradient>
-          <linearGradient id={g("gold")} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#fff2b3" />
-            <stop offset="0.45" stopColor="#ffc93d" />
-            <stop offset="1" stopColor="#d9800f" />
-          </linearGradient>
-          <linearGradient id={g("goldSide")} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#c56c0c" />
-            <stop offset="0.5" stopColor="#f2a826" />
-            <stop offset="1" stopColor="#b85e08" />
-          </linearGradient>
-          <linearGradient id={g("tone")} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor={t.a} />
-            <stop offset="1" stopColor={t.b} />
-          </linearGradient>
-          <linearGradient id={g("deep")} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={t.b} />
-            <stop offset="1" stopColor={t.c} />
-          </linearGradient>
+          <Materials g={g} t={t} />
         </defs>
         <g clipPath={`url(#${g("clip")})`}>
           <rect width="120" height="120" fill={`url(#${g("bg")})`} />
@@ -136,6 +114,119 @@ export function ArtFan({ name, size = 84, pill }: { name: ArtName; size?: number
         </span>
       )}
     </span>
+  );
+}
+
+/** Material gradients the subjects are painted with (paper, gold, the tone). */
+function Materials({ g, t }: { g: G; t: (typeof TONES)[ArtTone] }) {
+  return (
+    <>
+      <linearGradient id={g("paper")} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#ffffff" />
+        <stop offset="1" stopColor="#e7ecf7" />
+      </linearGradient>
+      <linearGradient id={g("gold")} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#fff2b3" />
+        <stop offset="0.45" stopColor="#ffc93d" />
+        <stop offset="1" stopColor="#d9800f" />
+      </linearGradient>
+      <linearGradient id={g("goldSide")} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#c56c0c" />
+        <stop offset="0.5" stopColor="#f2a826" />
+        <stop offset="1" stopColor="#b85e08" />
+      </linearGradient>
+      <linearGradient id={g("tone")} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor={t.a} />
+        <stop offset="1" stopColor={t.b} />
+      </linearGradient>
+      <linearGradient id={g("deep")} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor={t.b} />
+        <stop offset="1" stopColor={t.c} />
+      </linearGradient>
+    </>
+  );
+}
+
+/** The subject alone, crisp, on a soft light: the one sharp thing on a scene card. */
+function Focal({ name, t, size }: { name: ArtName; t: (typeof TONES)[ArtTone]; size: number }) {
+  const id = useId().replace(/:/g, "");
+  const g = (s: string) => `${s}-f${id}`;
+  return (
+    <svg aria-hidden viewBox="0 0 120 120" width={size} height={size} className="block shrink-0" style={{ filter: `drop-shadow(0 ${size * 0.06}px ${size * 0.08}px ${t.shadow})` }}>
+      <defs>
+        <Materials g={g} t={t} />
+        <filter id={g("soft")} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3" />
+        </filter>
+      </defs>
+      <ellipse cx="60" cy="100" rx="34" ry="6" fill={t.c} opacity="0.35" filter={`url(#${g("soft")})`} />
+      <g transform="translate(60 62) scale(1.2) translate(-60 -62)">{SUBJECT[name](g)}</g>
+    </svg>
+  );
+}
+
+/**
+ * A card filled edge to edge by its illustration, after the founder's story
+ * card reference: a soft pastel gradient, quiet rays, the subject drawn large
+ * and blurred into the background (low contrast, it never fights the text),
+ * fine grain, and the same subject small and sharp as the one focal point.
+ * Light theme: pastel and dark text; dark theme: deep tone and light text.
+ */
+export function ArtScene({
+  name,
+  tone = ART[name],
+  focal = 56,
+  layout = "stack",
+  className = "",
+  children,
+}: {
+  name: ArtName;
+  tone?: ArtTone;
+  /** Size of the sharp subject; 0 hides it. */
+  focal?: number;
+  /** "stack": subject on top, text below. "side": text left, subject right. */
+  layout?: "stack" | "side";
+  className?: string;
+  children: ReactNode;
+}) {
+  const id = useId().replace(/:/g, "");
+  const g = (s: string) => `${s}-s${id}`;
+  const t = TONES[tone];
+  const style = {
+    "--art-l": `radial-gradient(120% 90% at 100% 0%, ${t.a}cc 0%, ${t.glow}99 38%, transparent 70%), linear-gradient(160deg, #ffffff 0%, ${t.glow}66 100%)`,
+    "--art-d": `radial-gradient(120% 90% at 100% 0%, ${t.b}aa 0%, ${t.c}66 45%, transparent 75%), linear-gradient(160deg, #15171d 0%, ${t.c}55 100%)`,
+  } as CSSProperties;
+  return (
+    <div className={`art-scene relative isolate overflow-hidden ${className}`} style={style}>
+      <svg aria-hidden viewBox="0 0 120 120" className="pointer-events-none absolute -z-10" style={layout === "side" ? { height: "150%", aspectRatio: "1", right: "-12%", top: "-25%" } : { width: "120%", aspectRatio: "1", right: "-46%", top: "-10%" }}>
+        <defs>
+          <Materials g={g} t={t} />
+          <filter id={g("blur")} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="4.5" />
+          </filter>
+        </defs>
+        <g transform="translate(60 60)" className="art-rays">
+          {Array.from({ length: 14 }, (_, i) => (
+            <path key={i} d="M0 0 L-6 -90 L6 -90 Z" fill="#fff" transform={`rotate(${i * (360 / 14)})`} />
+          ))}
+        </g>
+        <g className="art-ghost" filter={`url(#${g("blur")})`}>
+          <g transform="translate(60 62) scale(1.1) translate(-60 -62)">{SUBJECT[name](g)}</g>
+        </g>
+      </svg>
+      <span aria-hidden className="art-grain pointer-events-none absolute inset-0 -z-10" />
+      {layout === "side" ? (
+        <div className="flex h-full items-center gap-3">
+          <div className="min-w-0 flex-1">{children}</div>
+          {focal > 0 && <Focal name={name} t={t} size={focal} />}
+        </div>
+      ) : (
+        <div className="flex h-full flex-col">
+          {focal > 0 && <Focal name={name} t={t} size={focal} />}
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
 

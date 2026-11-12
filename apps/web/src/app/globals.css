@@ -354,6 +354,20 @@ body {
 .animate-fade {
   animation: fade-in 0.2s ease-out;
 }
+/* Illustrated scene cards (see ArtScene): pastel in light, deep tone in dark, with fine grain. */
+.art-scene { background: var(--art-l); }
+[data-scheme="dark"] .art-scene { background: var(--art-d); }
+.art-rays { opacity: 0.18; }
+.art-ghost { opacity: 0.55; }
+[data-scheme="dark"] .art-rays { opacity: 0.05; }
+[data-scheme="dark"] .art-ghost { opacity: 0.35; }
+.art-grain {
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
 /* Order track: light flowing along the stretch the kitchen works on now. */
 .track-flow {
   background: linear-gradient(90deg, transparent, rgba(47, 107, 255, 0.55), transparent);

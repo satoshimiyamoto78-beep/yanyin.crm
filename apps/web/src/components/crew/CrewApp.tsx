@@ -51,7 +51,7 @@ import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useDish, useLocale, useTr, type TrVars } from "./prefs";
 import { Scanner } from "./Scanner";
 import { CrewSearch } from "./Search";
-import { ArtFan, ArtTile, type ArtName } from "@/components/system/Art";
+import { ArtScene, type ArtName } from "@/components/system/Art";
 import { YanChat } from "./YanChat";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
@@ -220,7 +220,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         {tab === "hall" && (
           <HallHome
             sections={[
-              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: "tables", pill: <><Users size={13} strokeWidth={2.6} className="text-g-blue" /> {tables.reduce((n, x) => n + x.guests, 0)}</> },
+              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: "tables" },
               { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: "orders" },
               { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: "bookings" },
             ]}
@@ -1819,48 +1819,38 @@ function SectionHead({ title, sub, art, onBack }: { title: string; sub: string; 
       <button onClick={onBack} aria-label={tr("Hall")} className="press flex h-10 items-center gap-1 rounded-full bg-g-fill pr-4 pl-2 text-[14px] font-semibold">
         <ChevronLeft size={20} strokeWidth={2.2} /> {tr("Hall")}
       </button>
-      <div className="mt-5 flex items-center gap-3 rounded-[28px] bg-g-fill p-5 pr-4">
-        <span className="min-w-0 flex-1 pl-1">
+      <ArtScene name={art} layout="side" focal={80} className="mt-5 min-h-[128px] rounded-[28px] p-5 pr-4">
+        <span className="block pl-1">
           <span className="block text-[30px] leading-tight font-bold tracking-[-0.03em]">{title}</span>
           <span className="mt-0.5 block text-[14px] text-g-muted">{sub}</span>
         </span>
-        <ArtFan name={art} size={72} />
-      </div>
+      </ArtScene>
     </div>
   );
 }
 
-type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: ArtName; pill?: ReactNode };
+type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: ArtName };
 
-/** One Hall section as a big button with its app-icon illustration, as on the stat cards. */
+/** One Hall section as a big button on its illustrated scene, the same family as the stat cards. */
 function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSeg) => void }) {
+  const text = (
+    <>
+      <p className="text-[14px] font-semibold text-g-ink-2">{s.title}</p>
+      <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] tabular-nums ${big ? "text-[38px]" : "text-[32px]"}`}>{s.value}</p>
+      <p className={`mt-2 truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</p>
+    </>
+  );
   return (
     <button
       onClick={() => {
         haptic("light");
         onOpen(s.id);
       }}
-      className={`press relative flex overflow-hidden rounded-[28px] bg-g-fill text-left ${big ? "col-span-2 h-[148px] items-center gap-3 p-5" : "h-[184px] flex-col p-4"}`}
+      className={`press relative block text-left ${big ? "col-span-2" : ""}`}
     >
-      {big ? (
-        <>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
-            <span className="live mt-0.5 block text-[34px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
-            <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
-          </span>
-          <ArtFan name={s.art} size={88} pill={s.pill} />
-        </>
-      ) : (
-        <>
-          <ArtTile name={s.art} size={64} tilt={-6} />
-          <span className="mt-auto block pr-4">
-            <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
-            <span className="live mt-0.5 block text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
-            <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
-          </span>
-        </>
-      )}
+      <ArtScene name={s.art} layout={big ? "side" : "stack"} focal={big ? 96 : 70} className={`rounded-[28px] ${big ? "h-[156px] p-5" : "h-[196px] p-4"}`}>
+        {big ? <div className="pl-1">{text}</div> : <div className="mt-auto pr-4">{text}</div>}
+      </ArtScene>
       <ChevronRight size={18} className="absolute right-4 bottom-4 text-g-faint" />
     </button>
   );
