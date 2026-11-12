@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUp, ChevronRight, Dices, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock, useScrollLock } from "@/lib/scroll-lock";
@@ -373,9 +373,45 @@ export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** 
       cancelAnimationFrame(b);
     };
   }, [notice]);
+  // Unfolding works like the live-order island in the guest menu: the shell
+  // always has an explicit width, height and corner radius in pixels, so the
+  // browser can morph one into the other. (Before, the height jumped and the
+  // radius slid down from 9999px, which held a half-circle shape mid-way.)
+  // The card's content has a fixed width, so text never reflows while it grows.
+  const shell = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState({ w: 0, h: 44 });
+  const [box, setBox] = useState<{ w: number; h: number; r: number } | null>(null);
+  const cardW = typeof window === "undefined" ? 348 : Math.min(window.innerWidth * 0.92, 380);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const h = (card.current?.offsetHeight ?? 200) + 32;
+    let b = 0;
+    const a = requestAnimationFrame(() => {
+      b = requestAnimationFrame(() => setBox({ w: cardW, h, r: 30 }));
+    });
+    return () => {
+      cancelAnimationFrame(a);
+      cancelAnimationFrame(b);
+    };
+  }, [open, cardW]);
+  useEffect(() => {
+    if (open || !box || box.r !== 22) return;
+    // Folded back to the pill size: hand the width back to the content.
+    const id = setTimeout(() => setBox(null), 460);
+    return () => clearTimeout(id);
+  }, [open, box]);
   if (!shown) return null;
   const toggle = (v: boolean) => {
     haptic("light");
+    const el = shell.current;
+    if (v && el) {
+      // Freeze the pill at its current size, then grow from there.
+      const p = { w: el.offsetWidth, h: el.offsetHeight };
+      setPill(p);
+      setBox({ ...p, r: 22 });
+    }
+    if (!v) setBox({ ...pill, r: 22 });
     setOpen(v);
     onExpand?.(v);
   };
@@ -385,10 +421,11 @@ export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** 
         e.stopPropagation();
         haptic("light");
         setOpen(false);
+        setBox(null);
         onExpand?.(false);
         shown.action!.onClick();
       }}
-      className={`island-content press shrink-0 rounded-full bg-[#2f6bff] font-semibold ${open ? "h-11 flex-1 text-[15px]" : "ml-1 h-8 px-3.5 text-[13px]"}`}
+      className={`press shrink-0 rounded-full bg-[#2f6bff] font-semibold ${open ? "h-11 flex-1 text-[15px]" : "ml-1 h-8 px-3.5 text-[13px]"}`}
     >
       {shown.action.label}
     </button>
@@ -397,15 +434,15 @@ export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** 
     <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center pt-[max(10px,env(safe-area-inset-top))]">
       {open && <button aria-label="Fold" onClick={() => toggle(false)} className="animate-fade pointer-events-auto fixed inset-0 -z-10 bg-[rgba(11,11,15,0.32)]" />}
       <div
+        ref={shell}
         role="status"
         aria-hidden={!vis}
         onClick={shown.details && !open ? () => toggle(true) : undefined}
-        className={`island-shell ${vis ? "on" : ""} overflow-hidden bg-[#0b0b0f] text-white ${
-          open ? "pointer-events-auto w-[min(92vw,380px)] rounded-[30px] p-4" : `flex h-11 max-w-[92vw] min-w-[34vw] items-center gap-2.5 rounded-full py-1.5 pl-1.5 ${shown.action || shown.details ? "pointer-events-auto pr-1.5" : "pr-4"} ${shown.details ? "cursor-pointer" : ""}`
-        }`}
+        className={`island-shell ${vis ? "on" : ""} overflow-hidden bg-[#0b0b0f] text-white ${open || shown.action || shown.details ? "pointer-events-auto" : ""} ${shown.details && !open ? "cursor-pointer" : ""}`}
+        style={{ width: box?.w, height: box?.h ?? 44, borderRadius: box?.r ?? 22 }}
       >
         {open ? (
-          <div className="island-content">
+          <div ref={card} className="island-fade p-4" style={{ width: cardW }}>
             <div className="flex items-center gap-2.5">
               <span className={`grid size-9 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
               <span className="min-w-0 flex-1 truncate text-[16px] font-semibold">{shown.title}</span>
@@ -417,11 +454,11 @@ export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** 
             {act && <div className="mt-4 flex">{act}</div>}
           </div>
         ) : (
-          <>
-            <span className={`island-content grid size-8 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
-            <span className="island-content min-w-0 truncate text-[14px] font-semibold">{shown.title}</span>
+          <div className={`flex h-11 max-w-[92vw] min-w-[34vw] items-center gap-2.5 py-1.5 pl-1.5 ${box ? "island-fade" : ""} ${shown.action || shown.details ? "pr-1.5" : "pr-4"}`} style={{ width: box ? pill.w : undefined }}>
+            <span className={`grid size-8 shrink-0 place-items-center rounded-full ${TONE[shown.tone ?? "blue"]}`}>{shown.icon}</span>
+            <span className="min-w-0 truncate text-[14px] font-semibold">{shown.title}</span>
             {act}
-          </>
+          </div>
         )}
       </div>
     </div>

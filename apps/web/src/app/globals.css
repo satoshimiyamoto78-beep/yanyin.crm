@@ -577,8 +577,9 @@ body {
   transition:
     transform 0.26s cubic-bezier(0.4, 0, 1, 1),
     opacity 0.2s ease-in,
-    width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .island-shell:not(.on) {
   pointer-events: none !important;
@@ -589,8 +590,25 @@ body {
   transition:
     transform 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.12),
     opacity 0.16s ease-out,
-    width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Content of a morphing island fades in once the shape is on its way. */
+@keyframes island-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.island-fade {
+  animation: island-fade 0.22s ease-out 0.1s both;
+}
+/* The live-order island at the bottom of the guest menu rises in. */
+@keyframes island-rise {
+  from { transform: translateY(14px) scale(0.92); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.island-in {
+  animation: island-rise 0.38s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
 }
 
 /* Idle roulette wheel turns slowly. */
