@@ -164,6 +164,13 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));
   const now = () => new Date().toTimeString().slice(0, 5);
   const openBill = (no: number) => {
+    // A table with nothing on it has no bill: open the table instead.
+    const x = tables.find((t) => t.no === no);
+    if (!x || !x.lines.some((l) => !l.cancelled)) {
+      setNotice(null);
+      setOpen(no);
+      return;
+    }
     haptic("light");
     setNotice(null);
     setInboxOpen(false);
@@ -175,14 +182,16 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   // Demo: a guest at table 4 asks for the bill a few seconds into the shift.
   // The words are read when it fires, so they follow the language saved on this phone.
   const trNow = useRef(tr);
+  const dishNow = useRef(dish);
   useEffect(() => {
     trNow.current = tr;
+    dishNow.current = dish;
   });
   useEffect(() => {
     const t = setTimeout(() => {
       const tr = trNow.current;
       const x = floor.tables.find((t) => t.no === 4);
-      if (!x) return;
+      if (!x || !x.lines.length) return;
       const sum = Math.round(ticketTotal(x.lines) * 1.05);
       const last = [...x.lines].reverse().find((l) => l.at)?.at;
       notify({
@@ -192,18 +201,33 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         icon: <ReceiptText size={16} strokeWidth={2.25} />,
         action: { label: tr("Open bill"), onClick: () => openBill(4) },
         details: (
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              [tr("To pay"), money(sum)],
-              [tr("Guests"), String(x.guests)],
-              [tr("At the table"), seatedFor(x.since, tr)],
-              [tr("Dishes"), `${x.lines.reduce((n, l) => n + l.qty, 0)}${last ? ` · ${tr("last at {t}", { t: last })}` : ""}`],
-            ].map(([k, v]) => (
-              <span key={k} className="rounded-[16px] bg-white/8 px-3 py-2.5">
-                <span className="block text-[11.5px] text-white/55">{k}</span>
-                <span className="block truncate text-[15px] font-semibold tabular-nums">{v}</span>
+          // The bill at a glance: the sum large, the table, then what was eaten and when.
+          <div>
+            <div className="flex items-end justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block text-[12px] text-white/55">{tr("To pay")}</span>
+                <span className="block text-[30px] leading-none font-bold tracking-[-0.02em] whitespace-nowrap tabular-nums">{money(sum)}</span>
               </span>
-            ))}
+              <span className="flex shrink-0 flex-col items-center rounded-[14px] bg-[#ff8a3d] px-3 py-1.5 text-white">
+                <span className="text-[9px] leading-none font-semibold uppercase">{tr("Table")}</span>
+                <span className="text-[20px] leading-tight font-bold tabular-nums">4</span>
+              </span>
+            </div>
+            <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-white/70">
+              <span className="flex items-center gap-1"><Users size={13} strokeWidth={2.2} /> {tr("{n} guest|{n} guests", { n: x.guests })}</span>
+              <span className="flex items-center gap-1"><Clock size={13} strokeWidth={2.2} /> {seatedFor(x.since, tr)}</span>
+              <span className="flex items-center gap-1"><ReceiptText size={13} strokeWidth={2.2} /> {tr("{n} item|{n} items", { n: x.lines.reduce((n, l) => n + l.qty, 0) })}</span>
+            </p>
+            <div className="mt-3 divide-y divide-white/10 rounded-[18px] bg-white/8 px-3">
+              {x.lines.slice(0, 3).map((l) => (
+                <p key={l.id} className="flex items-center gap-2 py-2 text-[13.5px]">
+                  <span className="w-6 shrink-0 text-white/55 tabular-nums">{l.qty}×</span>
+                  <span className="min-w-0 flex-1 truncate">{dishNow.current(itemById.get(l.itemId)?.name)}</span>
+                  {l.at && <span className="shrink-0 text-[12px] text-white/45 tabular-nums">{l.at}</span>}
+                </p>
+              ))}
+              {x.lines.length > 3 && <p className="py-2 text-[12.5px] text-white/55">{tr("and {n} more", { n: x.lines.length - 3 })}{last ? ` · ${tr("last at {t}", { t: last })}` : ""}</p>}
+            </div>
           </div>
         ),
       });
@@ -251,13 +275,13 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: "tables" },
               { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: "orders" },
               { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: "bookings" },
+              { id: "bills", title: tr("Bills"), value: compactMoney(tables.reduce((n, x) => n + (x.status !== "free" && x.status !== "reserved" ? Math.round(ticketTotal(x.lines) * 1.05) : 0), 0)), sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("still to pay"), hot: hot.bills > 0, art: "check" },
+              { id: "kitchen", title: tr("Kitchen"), value: String(hot.inKitchen), sub: tr("dish in work|dishes in work", { n: hot.inKitchen }), art: "kitchen" },
             ]}
-            onOpen={(id) => go(id)}
+            onOpen={(id) => (id === "bills" || id === "kitchen" ? setHallPage(id) : go(id))}
             actions={[
               { icon: ScanLine, label: tr("Scan"), onClick: () => setScan(true) },
               { icon: CalendarPlus, label: tr("New booking"), onClick: () => setNewBooking(true) },
-              { icon: ReceiptText, label: tr("Bills"), onClick: () => setHallPage("bills") },
-              { icon: ChefHat, label: tr("Kitchen"), onClick: () => setHallPage("kitchen") },
             ]}
           />
         )}
@@ -540,6 +564,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onClose={() => setPage("check")}
           onPaid={(method, tip) => {
             const subtotal = ticketTotal(table.lines);
+            if (!subtotal) return; // nothing to pay, nothing to record
             notify({ title: tr("Table {n} is paid", { n: table.no }), text: `${tr(METHOD[method].label)}${tip ? ` · ${tr("tip {sum}", { sum: money(tip) })}` : ""}` });
             setHistory((h) => [{ id: (h[0]?.id ?? 1000) + 1, table: table.no, closedAt: now(), lines: table.lines, subtotal, tip, method, guests: table.guests }, ...h]);
             patch(table.no, (x) => ({ ...x, status: "free", guests: 0, since: undefined, lines: [] }));
@@ -579,6 +604,10 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onServe={(no, l) => {
             patch(no, (x) => ({ ...x, lines: x.lines.map((y) => (y.id === l.id ? { ...y, state: "served" } : y)) }));
             notify({ title: tr("{dish} is served", { dish: dish(itemById.get(l.itemId)?.name) }), text: tr("Table {n}", { n: no }) });
+          }}
+          onServeAll={(no) => {
+            patch(no, (x) => ({ ...x, lines: x.lines.map((y) => (y.cancelled ? y : { ...y, state: "served" as const })) }));
+            notify({ title: tr("Table {n}: everything is served", { n: no }), text: tr("Kitchen tickets are closed") });
           }}
           onHurry={(no, l) => notify({ title: tr("Kitchen asked to hurry"), text: `${tr("Table {n}", { n: no })} · ${dish(itemById.get(l.itemId)?.name)}`, tone: "orange" })}
           onPing={() => notify({ title: tr("Kitchen pinged"), text: tr("The pass sees your call") })}
@@ -1883,7 +1912,7 @@ function HallHome({
   actions,
 }: {
   sections: HallSection[];
-  onOpen: (s: HallSeg) => void;
+  onOpen: (s: HallSection["id"]) => void;
   actions: { icon: LucideIcon; label: string; onClick: () => void }[];
 }) {
   const tr = useTr();
@@ -1897,7 +1926,8 @@ function HallHome({
           <HallCard key={s.id} s={s} onOpen={onOpen} />
         ))}
       </Reveal>
-      <div className="mt-8 grid grid-cols-4 gap-2">
+      {/* The two quick actions as wide buttons, under the cards. */}
+      <div className="mt-3 grid grid-cols-2 gap-3">
         {actions.map((a) => (
           <button
             key={a.label}
@@ -1905,12 +1935,12 @@ function HallHome({
               haptic("light");
               a.onClick();
             }}
-            className="press flex flex-col items-center gap-1.5"
+            className="press flex h-14 items-center gap-2.5 rounded-[20px] bg-g-fill px-3.5 text-left"
           >
-            <span className="chip-blue grid size-12 place-items-center rounded-full">
-              <a.icon size={20} strokeWidth={2} />
+            <span className="blue-grad grid size-9 shrink-0 place-items-center rounded-[12px]">
+              <a.icon size={18} strokeWidth={2} />
             </span>
-            <span className="text-center text-[12px] leading-tight font-semibold">{a.label}</span>
+            <span className="truncate text-[14px] font-semibold">{a.label}</span>
           </button>
         ))}
       </div>
@@ -1936,10 +1966,10 @@ function SectionHead({ title, sub, art, onBack }: { title: string; sub: string; 
   );
 }
 
-type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: ArtName };
+type HallSection = { id: HallSeg | "bills" | "kitchen"; title: string; value: string; sub: string; hot?: boolean; art: ArtName };
 
 /** One Hall section as a button on its illustrated scene; the same rhythm as the stat cards. */
-function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSeg) => void }) {
+function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSection["id"]) => void }) {
   return (
     <button
       onClick={() => {
@@ -1956,7 +1986,7 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
         footer={<p className={`truncate pr-5 ${big ? "mt-4 text-[14px]" : "mt-3.5 text-[13px]"} ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</p>}
       >
         <p className={`truncate leading-tight font-semibold text-g-ink-2 ${big ? "text-[15px]" : "text-[14px]"}`}>{s.title}</p>
-        <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] tabular-nums ${big ? "text-[34px]" : "text-[28px]"}`}>{s.value}</p>
+        <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums ${big ? "text-[34px]" : s.value.length > 4 ? "text-[21px]" : "text-[28px]"}`}>{s.value}</p>
       </ArtScene>
       <ChevronRight size={18} className="absolute right-4 bottom-4 text-g-faint" />
     </button>

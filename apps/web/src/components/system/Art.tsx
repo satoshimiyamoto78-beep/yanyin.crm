@@ -13,7 +13,7 @@ import { useId, type CSSProperties, type ReactNode } from "react";
  */
 
 export type ArtTone = "blue" | "sunset" | "teal" | "green" | "coral" | "night";
-export type ArtName = "tables" | "floor" | "sales" | "trophy" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
+export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
 
 const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; shadow: string }> = {
   blue: { a: "#8fb6ff", b: "#3d6bff", c: "#1a2a9e", glow: "#bcd2ff", shadow: "rgba(47,91,255,0.5)" },
@@ -30,6 +30,7 @@ export const ART: Record<ArtName, ArtTone> = {
   floor: "blue",
   sales: "green",
   trophy: "sunset",
+  kitchen: "green",
   orders: "sunset",
   bookings: "teal",
   seated: "green",
@@ -263,6 +264,7 @@ const DECO: Record<ArtName, DecoKind> = {
   floor: "dots",
   sales: "rays",
   trophy: "sparkle",
+  kitchen: "waves",
   orders: "waves",
   bookings: "dots",
   seated: "petals",
@@ -383,6 +385,22 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
       <path d="M30 60 L50 46 L62 52 L86 30" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M30 60 L50 46 L62 52 L86 30" fill="none" stroke={url(g, "gold")} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M78 28 L89 27 L88 38" fill="none" stroke={url(g, "gold")} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+  ),
+  // A cooking pot on a flame, steam rising.
+  kitchen: (g) => (
+    <g>
+      <path d="M44 22c-4 5 4 8 0 13M60 18c-4 5 4 8 0 13M76 22c-4 5 4 8 0 13" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.85" />
+      <path d="M50 92c0-6 5-7 4-12 6 3 8 8 6 12M62 92c0-5 4-6 3-10 5 3 6 7 5 10" fill="#ff8a3d" />
+      <path d="M53 92c0-3 2-4 2-6 3 2 4 4 3 6" fill="#ffd27a" />
+      <rect x="30" y="50" width="60" height="36" rx="12" fill={url(g, "deep")} />
+      <rect x="30" y="50" width="60" height="36" rx="12" fill="#fff" opacity="0.12" />
+      <rect x="35" y="55" width="7" height="24" rx="3.5" fill="#fff" opacity="0.35" />
+      <rect x="22" y="56" width="10" height="6" rx="3" fill={url(g, "deep")} />
+      <rect x="88" y="56" width="10" height="6" rx="3" fill={url(g, "deep")} />
+      <path d="M28 50h64a4 4 0 0 1 0 8H28a4 4 0 0 1 0-8z" fill={url(g, "paper")} />
+      <path d="M40 46c0-6 9-9 20-9s20 3 20 9z" fill={url(g, "paper")} />
+      <rect x="55" y="32" width="10" height="6" rx="3" fill={url(g, "tone")} />
     </g>
   ),
   // A gold cup: the waiter's level.

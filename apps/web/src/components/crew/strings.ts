@@ -1,5 +1,11 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Open it": "Открыть",
+  "still to pay": "ещё к оплате",
+  "Longest": "Дольше всех",
+  "Not on the tables yet": "Ещё не на столах",
+  "{n} dish|{n} dishes": "{n} блюдо|{n} блюда|{n} блюд",
+  "waiting up to {n} min": "ждут до {n} мин",
   "added at {t}": "добавлено в {t}",
   "At the table": "За столом",
   "last at {t}": "последнее в {t}",
@@ -767,6 +773,12 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Open it": "Mở",
+  "still to pay": "chưa thanh toán",
+  "Longest": "Lâu nhất",
+  "Not on the tables yet": "Chưa lên bàn",
+  "{n} dish|{n} dishes": "{n} món",
+  "waiting up to {n} min": "chờ tới {n} phút",
   "added at {t}": "thêm lúc {t}",
   "At the table": "Đã ngồi",
   "last at {t}": "món cuối lúc {t}",
