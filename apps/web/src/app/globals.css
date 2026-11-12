@@ -22,7 +22,6 @@
   --g-blue-soft: #eaf0ff;
   --g-green: #12a150;
   --g-orange: #ef6c1a;
-  --g-purple: #7c4dff;
   /* Soft tints for highlight cards and notes, the same in both apps. */
   --g-tint-blue: #eef3ff;
   --g-tint-green: #ecf8f1;
@@ -48,7 +47,6 @@
   --color-g-blue-soft: var(--g-blue-soft);
   --color-g-green: var(--g-green);
   --color-g-orange: var(--g-orange);
-  --color-g-purple: var(--g-purple);
   --color-g-tint-blue: var(--g-tint-blue);
   --color-g-tint-green: var(--g-tint-green);
   --color-g-tint-orange: var(--g-tint-orange);
@@ -102,8 +100,7 @@ body {
  * Separation comes from space, tone (#F4F5F8) and hairlines. Gradients are
  * blue-and-white only and live on blue elements: buttons, progress, streak.
  */
-.card,
-.card-float {
+.card {
   background: var(--g-fill);
 }
 /* Nomad Production blue: light top-left, deep indigo bottom-right. */
@@ -186,9 +183,7 @@ body {
 /* Strip tiles over the night sky: a lifted grey, not black. */
 [data-scheme="dark"] .strip-tile { background-color: #2a2d35; }
 /* Soft blue highlight blocks (team goal, roulette art) at night. */
-[data-scheme="dark"] .mesh-blue,
-[data-scheme="dark"] .mesh-lilac,
-[data-scheme="dark"] .blue-grad-soft { background: linear-gradient(160deg, #1a2342 0%, #141a30 100%); }
+[data-scheme="dark"] .mesh-blue { background: linear-gradient(160deg, #1a2342 0%, #141a30 100%); }
 [data-scheme="dark"] .bg-g-ink,
 [data-scheme="dark"] .ink-grad { background-color: #2c2f37; background-image: none; }
 [data-scheme="dark"] .bg-white\/75,
@@ -199,7 +194,6 @@ body {
 [data-scheme="dark"] .chip-blue { background: #1c2647; color: #8fb0ff; }
 [data-scheme="dark"] .chip-green { background: #0f2a1d; color: #4cd18a; }
 [data-scheme="dark"] .chip-orange { background: #2e1d10; color: #ff9a55; }
-[data-scheme="dark"] .chip-purple { background: #1c2647; color: #8fb0ff; }
 [data-scheme="dark"] .chip-gray { background: #22252c; color: #a9adb6; }
 [data-scheme="dark"] .chip-red { background: #2e1416; color: #ff6b70; }
 [data-scheme="dark"] .chip-teal { background: #0e2a28; color: #4fd1c5; }
@@ -255,20 +249,9 @@ body {
   from { transform: translate(0, 6%); }
   to { transform: translate(40%, -6%); }
 }
-.text-grad {
-  background: linear-gradient(95deg, #ffffff 0%, #8fb2ff 45%, #2f6bff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 /* Soft blue surface for the few highlighted blocks (roulette, team goal). */
-.mesh-blue,
-.mesh-lilac,
-.blue-grad-soft {
+.mesh-blue {
   background: linear-gradient(160deg, #f5f7ff 0%, #e8eeff 100%);
-}
-.mesh-sky {
-  background: var(--g-fill);
 }
 .bar-grad {
   background: linear-gradient(90deg, #2f6bff 0%, #5d8bff 100%);
@@ -288,7 +271,6 @@ body {
 .chip-blue { background: #eaf0ff; color: #2f5bff; }
 .chip-green { background: #e6f6ed; color: #12a150; }
 .chip-orange { background: #fdeee3; color: #e2600f; }
-.chip-purple { background: #f0eaff; color: #7c4dff; }
 .chip-teal { background: #e3f5f2; color: #0f8a7a; }
 .chip-gray { background: #eef0f3; color: #5d6068; }
 .chip-red { background: #fdeaea; color: #d93036; }
@@ -312,14 +294,6 @@ body {
   display: none;
 }
 
-@keyframes sheet-up {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -347,9 +321,6 @@ body {
     transform: scale(1);
     opacity: 1;
   }
-}
-.animate-sheet {
-  animation: sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .animate-fade {
   animation: fade-in 0.2s ease-out;
@@ -401,14 +372,6 @@ body {
   animation: pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes lever-pull {
-  0% { transform: translateY(0); }
-  35% { transform: translateY(46px); }
-  100% { transform: translateY(0); }
-}
-.animate-lever {
-  animation: lever-pull 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-}
 @keyframes grow-x {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
@@ -476,15 +439,6 @@ body {
   to { filter: none; opacity: 1; transform: none; }
 }
 
-/* Notification drops in from the top and pulls into focus. */
-@keyframes notice-in {
-  from { transform: translateY(-120%); filter: blur(8px); opacity: 0; }
-  to { transform: none; filter: none; opacity: 1; }
-}
-.animate-notice {
-  animation: notice-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 /* Yan: flat blue disc, the gradient drifts slowly inside. */
 /*
  * Yan: flat blue disc, the gradient drifts slowly inside. The gradient lives on
@@ -525,7 +479,6 @@ body {
   0%, 30%, 62%, 100% { transform: translateX(0); }
   36%, 56% { transform: translateX(14%); }
 }
-
 
 /* Drink builder: the liquid surface rolls, ice bobs, bubbles rise. */
 @keyframes drink-wave {
@@ -677,9 +630,7 @@ body {
     filter: none;
     transform: none;
   }
-  .animate-lever,
   .animate-grow,
-  .animate-sheet,
   .animate-fade,
   .animate-rise,
   .animate-drawer,

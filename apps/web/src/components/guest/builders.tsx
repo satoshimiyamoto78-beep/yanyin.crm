@@ -12,7 +12,7 @@ import { Sheet } from "./ui";
  * Flat food glyphs in the yanyin style, drawn in a 24×24 box. Used on option
  * tiles and scattered on the pizza preview.
  */
-export function Glyph({ kind, color = "#2f6bff", size = 24 }: { kind?: string; color?: string; size?: number }) {
+function Glyph({ kind, color = "#2f6bff", size = 24 }: { kind?: string; color?: string; size?: number }) {
   const g: Record<string, ReactNode> = {
     pepperoni: (
       <>

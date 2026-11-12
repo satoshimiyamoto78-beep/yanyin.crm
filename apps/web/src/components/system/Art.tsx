@@ -25,7 +25,7 @@ const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; sh
 };
 
 /** What each section is drawn as, and in which colour. */
-export const ART: Record<ArtName, ArtTone> = {
+const ART: Record<ArtName, ArtTone> = {
   tables: "blue",
   floor: "blue",
   sales: "green",
@@ -114,25 +114,6 @@ export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, bare = fa
           <path d={SQUIRCLE} fill="none" stroke={`url(#${g("rim")})`} strokeWidth="2" />
         </g>
       </svg>
-    </span>
-  );
-}
-
-/**
- * The large-card picture: one big tile tilted a touch, with a small white
- * pill floating over its corner (like the "★ 20" chip in the reference).
- */
-export function ArtFan({ name, size = 84, pill }: { name: ArtName; size?: number; pill?: ReactNode }) {
-  return (
-    <span aria-hidden className="relative block shrink-0" style={{ width: size * 1.12, height: size * 1.08 }}>
-      <span className="absolute" style={{ right: 0, top: size * 0.04 }}>
-        <ArtTile name={name} size={size} tilt={-7} />
-      </span>
-      {pill && (
-        <span className="absolute flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-[12px] font-bold whitespace-nowrap text-[#0b0b0f] shadow-[0_8px_18px_-8px_rgba(10,20,60,0.45)]" style={{ left: 0, bottom: 0 }}>
-          {pill}
-        </span>
-      )}
     </span>
   );
 }

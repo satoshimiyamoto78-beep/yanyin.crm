@@ -11,7 +11,7 @@ import { haptic } from "@/lib/haptics";
  */
 const ROW = 40;
 
-export function Wheel({ values, value, onChange, format = (v) => String(v), width = 72, label }: { values: number[]; value: number; onChange: (v: number) => void; format?: (v: number) => string; width?: number; label: string }) {
+function Wheel({ values, value, onChange, format = (v) => String(v), width = 72, label }: { values: number[]; value: number; onChange: (v: number) => void; format?: (v: number) => string; width?: number; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const last = useRef(values.indexOf(value));
   const settle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);

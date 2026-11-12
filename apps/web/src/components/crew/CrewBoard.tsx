@@ -96,7 +96,7 @@ function Gauge({ percent }: { percent: number }) {
  * yanyin.crew — the waiter's own page: level, today's numbers, streak, the team
  * goal and quests. Same white, black and blue system as the guest menu (ADR-013).
  */
-export type CrewHot = { busy: number; tables: number; bills: number; openOrders: number; inKitchen: number; bookings: number; nextBooking?: string };
+type CrewHot = { busy: number; tables: number; bills: number; openOrders: number; inKitchen: number; bookings: number; nextBooking?: string };
 
 export function CrewBoard({
   data,
@@ -574,7 +574,7 @@ export const BADGE_INFO: Record<string, { what: string; how: string; progress: n
 };
 
 /** A badge you can hold to peek at its story. */
-export function BadgeTile({ b, onPeek }: { b: CrewData["badges"][number]; onPeek: () => void }) {
+function BadgeTile({ b, onPeek }: { b: CrewData["badges"][number]; onPeek: () => void }) {
   const tr = useTr();
   const press = useLongPress(onPeek);
   const Icon = BADGE_ICON[b.id] ?? Trophy;
@@ -667,7 +667,7 @@ export function QuestRow({ q, money, action, onPeek }: { q: CrewQuest; money: (n
 }
 
 /** Hold-to-peek card for a badge: what it is, how to get it, how far along. */
-export function BadgePeek({ b, onClose }: { b: CrewData["badges"][number]; onClose: () => void }) {
+function BadgePeek({ b, onClose }: { b: CrewData["badges"][number]; onClose: () => void }) {
   const tr = useTr();
   const info = BADGE_INFO[b.id] ?? { what: "", how: "", progress: 0 };
   const Icon = BADGE_ICON[b.id] ?? Trophy;

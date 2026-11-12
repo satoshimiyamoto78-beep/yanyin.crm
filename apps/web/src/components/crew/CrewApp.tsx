@@ -86,7 +86,7 @@ const LINE: Record<LineState, { label: string; chip: string; next: LineState }> 
   cooking: { label: "Cooking", chip: "chip-orange", next: "served" },
   served: { label: "Served", chip: "chip-green", next: "served" },
 };
-export const METHOD: Record<PayMethod, { label: string; icon: LucideIcon }> = {
+const METHOD: Record<PayMethod, { label: string; icon: LucideIcon }> = {
   cash: { label: "Cash", icon: Banknote },
   card: { label: "Card", icon: CreditCard },
   vietqr: { label: "VietQR", icon: QrCode },
@@ -731,43 +731,11 @@ export function compactMoney(n: number): string {
   return `${n} ₫`;
 }
 
-export type DashItem = { label: string; value: string; sub?: string; icon: LucideIcon; tone?: "blue" | "orange" | "green" | "plain"; bar?: number; hot?: boolean };
-
-/** The stats at the top of every waiter page: two by two, big numbers, one optional progress bar. */
-export function Dash({ items }: { items: DashItem[] }) {
-  const tone = { blue: "text-g-blue", orange: "text-g-orange", green: "text-g-green", plain: "text-g-muted" };
-  const tr = useTr();
-  // Sub-lines mix numbers and words ("4 bills closed"): translate the words, keep the numbers.
-  const trSub = (x: string) => x.replace(/[A-Za-z][A-Za-z ’'.]*[A-Za-z]/g, (w) => tr(w));
-  return (
-    <Reveal className="mt-6 grid grid-cols-2 gap-3">
-      {items.map((d) => (
-        <div key={d.label} className={`flex h-[104px] flex-col justify-between rounded-[22px] p-3.5 ${d.hot ? "blue-grad" : "bg-g-fill"}`}>
-          <span className="flex items-center justify-between gap-2">
-            <span className={`truncate text-[12px] font-medium ${d.hot ? "text-white/80" : "text-g-muted"}`}>{tr(d.label)}</span>
-            <d.icon size={16} strokeWidth={2} className={d.hot ? "text-white/80" : tone[d.tone ?? "blue"]} />
-          </span>
-          <span>
-            <span className="live block truncate text-[24px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{d.value}</span>
-            {d.bar !== undefined ? (
-              <span className={`mt-2 block h-1.5 overflow-hidden rounded-full ${d.hot ? "bg-white/25" : "bg-white"}`}>
-                <span className={`live block h-full rounded-full ${d.hot ? "bg-white" : "bar-grad"}`} style={{ width: `${Math.round(d.bar * 100)}%` }} />
-              </span>
-            ) : (
-              d.sub && <span className={`live mt-1.5 block truncate text-[12px] ${d.hot ? "text-white/80" : "text-g-muted"}`}>{trSub(d.sub)}</span>
-            )}
-          </span>
-        </div>
-      ))}
-    </Reveal>
-  );
-}
-
 /* ---------------------------------------------------------------- Long press */
 
 /* ---------------------------------------------------------------- Tables */
 
-export type TableActions = {
+type TableActions = {
   scan: () => void;
   open: (no: number) => void;
   /** Opens the bill straight away (a table that asked for it). */
@@ -987,7 +955,6 @@ function PageHead({ title, sub, action, hidden }: { title: string; sub?: string;
     </header>
   );
 }
-export { PageHead };
 
 function TablePage({
   table,
@@ -1413,7 +1380,7 @@ function FakeQr({ seed, size = 132 }: { seed: number; size?: number }) {
   );
 }
 
-export function Receipt({
+function Receipt({
   venue,
   waiter,
   table,

@@ -26,7 +26,7 @@ export type NotifyPrefs = {
   sound: boolean;
   vibration: boolean;
 };
-export type CrewPrefs = {
+type CrewPrefs = {
   lang: CrewLang;
   text: "default" | "large";
   zone: "Hall" | "Terrace";
@@ -71,7 +71,7 @@ const plural = (forms: string[], n: number, lang: CrewLang) => {
 };
 
 /** Translates a whole phrase (never glued pieces), fills `{slots}` and picks the plural form by `n`. */
-export const translate = (dict: Record<string, string> | null, lang: CrewLang): Tr => (en, vars) => {
+const translate = (dict: Record<string, string> | null, lang: CrewLang): Tr => (en, vars) => {
   let s = dict?.[en] ?? en;
   if (s.includes("|")) s = plural(s.split("|"), typeof vars?.n === "number" ? vars.n : 2, dict?.[en] ? lang : "en");
   return vars ? s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : s;

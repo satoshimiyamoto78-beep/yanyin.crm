@@ -34,7 +34,7 @@ import { ui } from "@/lib/ui-strings";
 /* ---------------------------------------------------------------- Icons */
 
 /** Hookah in the Lucide line style (Lucide has none). */
-export function HookahIcon({ size = 24, strokeWidth = 1.75, ...rest }: SVGProps<SVGSVGElement> & { size?: number; strokeWidth?: number }) {
+function HookahIcon({ size = 24, strokeWidth = 1.75, ...rest }: SVGProps<SVGSVGElement> & { size?: number; strokeWidth?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...rest}>
       <path d="M10 2h4M11 2v3h2V2M9.5 5h5l-1 3h-3z" />
@@ -84,9 +84,9 @@ export function RoleIcon({ role, name, size = 22 }: { role: CategoryRole; name?:
 
 /* ---------------------------------------------------------------- Chips */
 
-export type ChipTone = "blue" | "green" | "orange" | "purple" | "gray" | "teal";
+type ChipTone = "blue" | "green" | "orange" | "gray" | "teal";
 
-export function Chip({ tone = "gray", icon, children }: { tone?: ChipTone; icon?: ReactNode; children: ReactNode }) {
+function Chip({ tone = "gray", icon, children }: { tone?: ChipTone; icon?: ReactNode; children: ReactNode }) {
   return (
     <span className={`chip-${tone} inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap`}>
       {icon}
@@ -175,15 +175,6 @@ export function Stepper({ qty, onChange, className = "" }: { qty: number; onChan
   );
 }
 
-export function RoundButton({ label, onClick, children, dot }: { label: string; onClick: () => void; children: ReactNode; dot?: boolean }) {
-  return (
-    <button aria-label={label} title={label} onClick={onClick} className="card press relative grid size-11 shrink-0 place-items-center rounded-full text-g-ink">
-      {children}
-      {dot && <span className="absolute top-2 right-2 size-2.5 rounded-full border-2 border-white bg-g-blue" />}
-    </button>
-  );
-}
-
 /* ---------------------------------------------------------------- Item card */
 
 export function altName(item: MenuItem, lang: Lang): string | undefined {
@@ -192,7 +183,7 @@ export function altName(item: MenuItem, lang: Lang): string | undefined {
   return alt && alt !== main ? alt : undefined;
 }
 
-export function describe(item: MenuItem, lang: Lang): string | undefined {
+function describe(item: MenuItem, lang: Lang): string | undefined {
   return item.description ? t(item.description, lang) : altName(item, lang);
 }
 
@@ -445,46 +436,6 @@ export function DishRow({ item, role, lang, currency, qty, onOpen, onAdd, onQty 
 }
 
 /* ---------------------------------------------------------------- Action circles */
-
-/**
- * Quick action: a round button with a short label under it (banking-app
- * style). Used in one compact row on the guest menu and the waiter's home.
- * `badge` shows a count; `accent` marks the one that needs attention.
- */
-export function ActionCircle({
-  icon,
-  label,
-  onClick,
-  badge,
-  accent,
-  art,
-}: {
-  icon?: ReactNode;
-  label: string;
-  onClick: () => void;
-  badge?: number;
-  accent?: boolean;
-  /** Replaces the icon with an illustration (e.g. the turning roulette wheel). */
-  art?: ReactNode;
-}) {
-  return (
-    <button
-      onClick={() => {
-        haptic("light");
-        onClick();
-      }}
-      className="press flex w-[68px] flex-col items-center gap-2"
-    >
-      <span className="relative">
-        <span className={`grid size-[56px] place-items-center overflow-hidden rounded-full ${accent ? "blue-grad" : art ? "mesh-blue" : "bg-g-fill text-g-blue"}`}>{art ?? icon}</span>
-        {badge ? (
-          <span className="absolute -top-0.5 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-g-ink px-1.5 text-[11px] font-bold text-white ring-2 ring-white tabular-nums">{badge}</span>
-        ) : null}
-      </span>
-      <span className="max-w-full truncate text-[12px] leading-tight font-semibold">{label}</span>
-    </button>
-  );
-}
 
 /* ---------------------------------------------------------------- Slider */
 

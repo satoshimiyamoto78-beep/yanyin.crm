@@ -307,36 +307,6 @@ export function RingWidget({ title, icon, value, unit, part, tone = "blue" , cla
   );
 }
 
-/** Where a value sits between low and high: a striped fill up to it, the rest empty. */
-export function MeterWidget({ title, icon, value, unit, level, low, high, word, tone = "green" , className = ""}: { title: string; icon?: ReactNode; value: string; unit: string; level: number; low: string; high: string; word: string; tone?: "green" | "orange" | "blue" ; className?: string}) {
-  const on = useEntered();
-  const c = { green: ["#2ecc71", "#12a150"], orange: ["#ffb347", "#ef6c1a"], blue: ["#6c96ff", "#2f5bff"] }[tone];
-  const p = Math.max(0.12, Math.min(1, level));
-  return (
-    <WidgetCard title={title} icon={icon} className={className} aside={<span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone === "orange" ? "chip-orange" : tone === "blue" ? "chip-blue" : "chip-green"}`}>{word}</span>}>
-      <p className="mt-3 flex items-baseline gap-1">
-        <span className="live text-[34px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{value}</span>
-        <span className="text-[15px] text-g-muted">{unit}</span>
-      </p>
-      <div className="mt-3 flex justify-between text-[11px] text-g-muted">
-        <span>{low}</span>
-        <span>{high}</span>
-      </div>
-      <div className="mt-1 flex h-11 gap-1.5">
-        <span
-          className="rounded-[12px] transition-[width] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{
-            width: on ? `${p * 100}%` : "12%",
-            background: `repeating-linear-gradient(115deg, rgba(255,255,255,0.16) 0 6px, transparent 6px 12px), linear-gradient(135deg, ${c[0]}, ${c[1]})`,
-          }}
-        />
-        <span className="w-1 shrink-0 rounded-full bg-g-fill-2" />
-        <span className="flex-1 rounded-[12px] bg-g-fill-2/60" />
-      </div>
-    </WidgetCard>
-  );
-}
-
 /**
  * Where the work is right now: one thin bar split by stage (each stage's share
  * of dishes), then a row per stage with its count and what it means. The stage

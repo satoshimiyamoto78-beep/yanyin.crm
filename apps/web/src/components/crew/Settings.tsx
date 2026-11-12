@@ -420,7 +420,7 @@ function Row({ icon: Icon, label, hint, children, onClick, chip = "chip-blue" }:
 }
 
 /** Flat switch: blue gradient track when on, white knob. */
-export function Switch({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) {
+function Switch({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) {
   return (
     <button
       role="switch"
@@ -458,7 +458,7 @@ function Segmented<T extends string>({ value, options, onChange, render = (v) =>
 }
 
 /** Round avatar: the photo, or the first letter on ink. */
-export function Avatar({ me, size }: { me: Me; size: number }) {
+function Avatar({ me, size }: { me: Me; size: number }) {
   return (
     <span className="grid shrink-0 place-items-center overflow-hidden rounded-full bg-g-ink font-bold text-white" style={{ width: size, height: size, fontSize: size * 0.38 }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- a local photo the waiter picked */}

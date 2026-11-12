@@ -642,7 +642,7 @@ function BellIcon() {
 /* ---------------------------------------------------------------- Long press and peek */
 
 /** Long press (≈0.45 s) with a haptic tick, like the iOS / One UI context menu; a short tap stays a tap. */
-export const PEEK_HOLD_MS = 500;
+const PEEK_HOLD_MS = 500;
 
 /**
  * Press and hold. Details (peeks) open only on a hold, never on a plain tap:
