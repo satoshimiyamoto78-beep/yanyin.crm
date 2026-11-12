@@ -16,7 +16,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, KeyRound, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -1454,7 +1454,7 @@ function WifiQr({ value, size = 232 }: { value: string; size?: number }) {
 /** Wi-Fi page: scannable code, network and password with copy, and a short how-to. */
 export function WifiSheet({ open, onClose, brand, lang, onNotice }: { open: boolean; onClose: () => void; brand: VenueBrand; lang: Lang; onNotice: (title: string) => void }) {
   const { name, pass } = brand.about.wifi;
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(true);
   const copy = (text: string, done: string) => {
     haptic("success");
     navigator.clipboard?.writeText(text).catch(() => undefined);
@@ -1472,59 +1472,47 @@ export function WifiSheet({ open, onClose, brand, lang, onNotice }: { open: bool
         </button>
       }
     >
-      <div className="px-5 pt-1 pb-8">
+      <div className="px-5 pt-1 pb-6">
         <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">Wi-Fi</h2>
         <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "wifiSecurity")}</p>
 
-        <div className="mt-6 flex flex-col items-center rounded-[28px] bg-g-fill px-6 pt-7 pb-6">
-          <div className="rounded-[24px] bg-white p-4">
-            <WifiQr value={`WIFI:T:WPA;S:${wifiEscape(name)};P:${wifiEscape(pass)};;`} />
-          </div>
-          <p className="mt-4 max-w-[240px] text-center text-[14px] leading-snug text-g-muted">{ui(lang, "wifiScan")}</p>
+        {/* The code always on white, so any camera reads it in either theme. */}
+        <div className="mt-5 flex items-center gap-4 rounded-[24px] bg-g-fill p-3">
+          <span className="shrink-0 rounded-[18px] p-2.5" style={{ background: "#fff" }}>
+            <WifiQr value={`WIFI:T:WPA;S:${wifiEscape(name)};P:${wifiEscape(pass)};;`} size={128} />
+          </span>
+          <p className="min-w-0 pr-1 text-[14px] leading-snug text-g-ink-2">{ui(lang, "wifiScan")}</p>
         </div>
 
-        <p className="mt-8 text-[13px] font-semibold text-g-muted">{ui(lang, "wifiManual")}</p>
-        <div className="mt-2 divide-y divide-g-line">
-          <div className="flex items-center gap-3 py-4">
-            <span className="chip-blue grid size-10 shrink-0 place-items-center rounded-full">
-              <Wifi size={18} strokeWidth={2} />
-            </span>
+        <p className="mt-6 mb-2 text-[13px] font-semibold text-g-muted">{ui(lang, "wifiManual")}</p>
+        <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
+          <div className="flex items-center gap-3 py-3">
             <span className="min-w-0 flex-1">
-              <span className="block text-[13px] text-g-muted">{ui(lang, "wifiNetwork")}</span>
+              <span className="block text-[12px] text-g-muted">{ui(lang, "wifiNetwork")}</span>
               <span className="block truncate text-[17px] font-semibold">{name}</span>
             </span>
-            <button onClick={() => copy(name, ui(lang, "copied"))} aria-label={`${ui(lang, "copied")}: ${name}`} className="press grid size-10 place-items-center rounded-full bg-g-fill">
-              <Copy size={17} strokeWidth={2} />
+            <button onClick={() => copy(name, ui(lang, "copied"))} aria-label={`${ui(lang, "copied")}: ${name}`} className="press grid size-10 shrink-0 place-items-center rounded-full text-g-blue">
+              <Copy size={19} strokeWidth={2} />
             </button>
           </div>
-          <div className="flex items-center gap-3 py-4">
-            <span className="chip-blue grid size-10 shrink-0 place-items-center rounded-full">
-              <KeyRound size={18} strokeWidth={2} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[13px] text-g-muted">{ui(lang, "wifiPassword")}</span>
-              <span className="block truncate text-[17px] font-semibold tracking-[0.02em] tabular-nums">{shown ? pass : "•".repeat(pass.length)}</span>
-            </span>
+          <div className="flex items-center gap-3 py-3">
             <button
               onClick={() => {
                 haptic("tick");
                 setShown((v) => !v);
               }}
-              className="press h-10 rounded-full bg-g-fill px-3.5 text-[14px] font-semibold"
+              className="min-w-0 flex-1 text-left"
             >
-              {shown ? ui(lang, "wifiHide") : ui(lang, "wifiShow")}
+              <span className="block text-[12px] text-g-muted">
+                {ui(lang, "wifiPassword")} · <span className="text-g-blue">{shown ? ui(lang, "wifiHide") : ui(lang, "wifiShow")}</span>
+              </span>
+              <span className="block truncate text-[17px] font-semibold tracking-[0.02em] tabular-nums">{shown ? pass : "•".repeat(pass.length)}</span>
+            </button>
+            <button onClick={() => copy(pass, ui(lang, "wifiCopied"))} aria-label={ui(lang, "wifiCopy")} className="press grid size-10 shrink-0 place-items-center rounded-full text-g-blue">
+              <Copy size={19} strokeWidth={2} />
             </button>
           </div>
         </div>
-
-        <ol className="mt-6 grid gap-3">
-          {(["wifiStep1", "wifiStep2", "wifiStep3"] as const).map((k, i) => (
-            <li key={k} className="flex items-center gap-3 text-[15px]">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-g-ink text-[13px] font-semibold text-white tabular-nums">{i + 1}</span>
-              {ui(lang, k)}
-            </li>
-          ))}
-        </ol>
       </div>
     </Sheet>
   );

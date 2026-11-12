@@ -45,10 +45,22 @@ export const ART: Record<ArtName, ArtTone> = {
   seats: "teal",
 };
 
-export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, className = "" }: { name: ArtName; tone?: ArtTone; size?: number; tilt?: number; className?: string }) {
+export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, bare = false, className = "" }: { name: ArtName; tone?: ArtTone; size?: number; tilt?: number; bare?: boolean; className?: string }) {
   const id = useId().replace(/:/g, "");
   const t = TONES[tone];
   const g = (s: string) => `${s}-${id}`;
+  if (bare)
+    // Just the drawn subject, no tile behind it: for small icons on plain cards.
+    return (
+      <span aria-hidden className={`relative block shrink-0 ${className}`} style={{ width: size, height: size, filter: `drop-shadow(0 ${size * 0.05}px ${size * 0.06}px ${t.shadow})` }}>
+        <svg viewBox="14 16 92 92" width={size} height={size} className="block overflow-visible">
+          <defs>
+            <Materials g={g} t={t} />
+          </defs>
+          {SUBJECT[name](g)}
+        </svg>
+      </span>
+    );
   return (
     <span aria-hidden className={`relative block shrink-0 ${className}`} style={{ width: size, height: size, transform: tilt ? `rotate(${tilt}deg)` : undefined, filter: `drop-shadow(0 ${size * 0.08}px ${size * 0.09}px ${t.shadow})` }}>
       <svg viewBox="0 0 120 120" width={size} height={size} className="block">

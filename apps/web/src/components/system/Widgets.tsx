@@ -424,14 +424,14 @@ export function IconStat({ title, art, value, sub, className = "" }: { title: st
 }
 
 /**
- * A wide insight card: the picture and the number on top, then the whole
- * shift as a chart you can scroll. Hours already worked are bars in colour,
- * the hour now is the brightest, hours still ahead are grey; tap a bar to read
- * it. Three facts underneath, and an ⓘ that explains the number.
+ * A compact "history" card (after the founder's Sales-history reference): the
+ * title and the number on top, then the whole shift as thin bars over a light
+ * grid with a short axis. Hours already worked are pale in the card's colour,
+ * the picked hour is solid with a bubble over it, hours still ahead are grey
+ * stubs. Tap any bar to read it. One line of facts underneath; ⓘ explains.
  */
 export function InsightCard({
   title,
-  art,
   value,
   slots,
   now,
@@ -443,7 +443,6 @@ export function InsightCard({
   className = "",
 }: {
   title: string;
-  art: ArtName;
   value: string;
   nowLabel?: string;
   /** One slot per hour of the shift; `value` null means the hour is still ahead. */
@@ -458,75 +457,23 @@ export function InsightCard({
 }) {
   const [open, setOpen] = useState(false);
   const [pick, setPick] = useState(now);
-  const strip = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    // Start with the hour now in the middle of the view.
-    const el = strip.current;
-    const bar = el?.children[now] as HTMLElement | undefined;
-    if (el && bar) el.scrollLeft = bar.offsetLeft - el.clientWidth / 2 + bar.offsetWidth / 2;
-  }, [now]);
   const max = Math.max(1, ...slots.map((x) => x.value ?? 0));
+  // A round top for the axis just above the tallest bar, with headroom for the bubble.
+  const step = 10 ** Math.floor(Math.log10(max * 1.15));
+  const top = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].map((k) => k * step).find((v) => v >= max * 1.15) ?? max;
   const fill = { blue: "bg-g-blue", green: "bg-g-green", orange: "bg-g-orange", red: "bg-[#ff6a6a]" }[tone];
-  const ink = { blue: "text-g-blue", green: "text-g-green", orange: "text-g-orange", red: "text-[#e5484d]" }[tone];
-  const cur = slots[pick];
+  const pale = { blue: "bg-g-blue/25", green: "bg-g-green/25", orange: "bg-g-orange/25", red: "bg-[#ff6a6a]/30" }[tone];
+  const short = (n: number) => format(n).replace(/\s*₫$/, "");
+  const H = 132;
+  // Keep the bubble inside the card at both ends.
+  const edge = pick < 2 ? "left-0" : pick > slots.length - 3 ? "right-0" : "left-1/2 -translate-x-1/2";
   return (
     <>
-      <ArtScene
-        name={art}
-        layout="row"
-        focal={48}
-        className={`rounded-[26px] p-4 ${className}`}
-        footer={
-          <>
-            {/* The hour read out, above the chart. */}
-            <div className="mt-4 flex items-baseline justify-between text-[12.5px]">
-              <span className="text-g-muted">
-                {cur?.label}
-                {pick === now ? ` · ${nowLabel}` : ""}
-              </span>
-              <span className={`font-semibold tabular-nums ${cur?.value === null ? "text-g-faint" : ink}`}>{cur?.value === null ? "—" : format(cur?.value ?? 0)}</span>
-            </div>
-            <div ref={strip} className="no-scrollbar -mx-4 mt-2 flex items-end gap-1.5 overflow-x-auto px-4 pb-1" style={{ height: 132 }}>
-              {slots.map((x, i) => {
-                const future = x.value === null;
-                const h = future ? 14 : Math.max(10, ((x.value ?? 0) / max) * 100);
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      haptic("tick");
-                      setPick(i);
-                    }}
-                    aria-label={`${x.label} ${future ? "" : format(x.value ?? 0)}`}
-                    className="flex h-full w-[30px] shrink-0 flex-col items-center justify-end gap-1.5"
-                  >
-                    <span className="relative flex w-full flex-1 items-end">
-                      <span
-                        className={`w-full rounded-t-[8px] rounded-b-[4px] transition-[height,opacity] duration-500 ${future ? "bg-g-fill-2" : fill} ${!future && i !== now ? "opacity-45" : ""} ${pick === i ? "ring-2 ring-g-ink/70 ring-offset-2 ring-offset-transparent" : ""}`}
-                        style={{ height: `${h}%` }}
-                      />
-                      {i === now && <span className="absolute -top-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-g-ink" />}
-                    </span>
-                    <span className={`text-[10.5px] tabular-nums ${i === now ? "font-bold text-g-ink" : future ? "text-g-faint" : "text-g-muted"}`}>{x.label.slice(0, 2)}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {facts.map((f) => (
-                <span key={f.label} className="min-w-0 rounded-[14px] bg-g-card/70 px-2.5 py-2">
-                  <span className="block truncate text-[11px] leading-tight text-g-muted">{f.label}</span>
-                  <span className="block truncate text-[14px] font-semibold tabular-nums">{f.value}</span>
-                </span>
-              ))}
-            </div>
-          </>
-        }
-      >
-        <div className="flex items-start justify-between gap-2">
+      <section className={`min-w-0 rounded-[24px] bg-g-fill p-4 ${className}`}>
+        <header className="flex items-start justify-between gap-2">
           <span className="min-w-0">
-            <p className="truncate text-[13px] leading-tight font-semibold text-g-ink-2">{title}</p>
-            <p className="live mt-1 text-[28px] leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</p>
+            <span className="block truncate text-[13px] font-semibold text-g-ink-2">{title}</span>
+            <span className="live mt-0.5 block text-[24px] leading-tight font-bold tracking-[-0.02em] whitespace-nowrap tabular-nums">{value}</span>
           </span>
           <button
             aria-label={info.title}
@@ -534,12 +481,75 @@ export function InsightCard({
               haptic("light");
               setOpen(true);
             }}
-            className="press grid size-8 shrink-0 place-items-center rounded-full bg-g-card/80 text-g-ink-2"
+            className="press -mt-1 -mr-1 grid size-8 shrink-0 place-items-center rounded-full text-g-muted"
           >
-            <Info size={16} strokeWidth={2.2} />
+            <Info size={17} strokeWidth={2} />
           </button>
+        </header>
+
+        <div className="mt-3 flex gap-2">
+          {/* The axis: top, half, zero. */}
+          <div className="relative w-8 shrink-0 text-[10px] text-g-faint tabular-nums" style={{ height: H }}>
+            {[1, 0.5, 0].map((k) => (
+              <span key={k} className="absolute right-0 -translate-y-1/2" style={{ top: `${(1 - k) * 100}%` }}>
+                {k ? short(top * k) : "0"}
+              </span>
+            ))}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="relative" style={{ height: H }}>
+              {[0, 0.5, 1].map((k) => (
+                <span key={k} className="absolute inset-x-0 border-t border-dashed border-g-line" style={{ top: `${k * 100}%` }} />
+              ))}
+              <div className="absolute inset-0 flex items-end justify-between">
+                {slots.map((x, i) => {
+                  const future = x.value === null;
+                  const h = future ? 6 : Math.max(4, ((x.value ?? 0) / top) * 100);
+                  const on = pick === i;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        haptic("tick");
+                        setPick(i);
+                      }}
+                      aria-label={`${x.label} ${future ? "" : format(x.value ?? 0)}`}
+                      className="relative flex h-full flex-1 items-end justify-center"
+                    >
+                      <span className={`w-[9px] rounded-full transition-[height] duration-500 ${future ? "bg-g-fill-2" : on ? fill : pale}`} style={{ height: `${h}%` }} />
+                      {on && (
+                        <span className={`pointer-events-none absolute z-10 rounded-[12px] bg-g-card px-2.5 py-1.5 text-center whitespace-nowrap shadow-[0_6px_18px_-8px_rgba(11,11,15,0.35)] ${edge}`} style={{ bottom: `calc(${h}% + 8px)` }}>
+                          <span className="block text-[10.5px] leading-tight text-g-muted">
+                            {x.label}
+                            {i === now ? ` · ${nowLabel}` : ""}
+                          </span>
+                          <span className="block text-[13px] leading-tight font-bold tabular-nums">{future ? "—" : format(x.value ?? 0)}</span>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mt-1.5 flex justify-between">
+              {slots.map((x, i) => (
+                <span key={i} className={`flex-1 text-center text-[10px] tabular-nums ${pick === i ? "font-bold text-g-ink" : i > now ? "text-g-faint" : "text-g-muted"}`}>
+                  {x.label.slice(0, 2)}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
-      </ArtScene>
+
+        <div className={`mt-3 grid border-t border-g-line pt-3`} style={{ gridTemplateColumns: `repeat(${facts.length}, minmax(0, 1fr))` }}>
+          {facts.map((f) => (
+            <span key={f.label} className="min-w-0">
+              <span className="block truncate text-[11px] leading-tight text-g-muted">{f.label}</span>
+              <span className="mt-0.5 block truncate text-[14px] font-semibold tabular-nums">{f.value}</span>
+            </span>
+          ))}
+        </div>
+      </section>
       {open && (
         <PeekCard label={info.title} onClose={() => setOpen(false)}>
           <p className="text-[19px] leading-tight font-bold">{info.title}</p>

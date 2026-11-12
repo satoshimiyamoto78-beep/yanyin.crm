@@ -394,7 +394,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             />
             <StripWide
               onClick={() => say("waiterCalled")}
-              art={<ArtTile name="bell" size={40} />}
+              art={<ArtTile name="bell" size={38} bare />}
               title={ui(lang, "qaWaiter")}
               sub={ui(lang, "qaWaiterSub")}
             />
@@ -409,7 +409,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                   });
                 else setSheet("bill");
               }}
-              art={<ArtTile name="check" size={40} />}
+              art={<ArtTile name="check" size={38} bare />}
               title={ui(lang, "qaBill")}
               sub={ui(lang, "askBillHint")}
             />
@@ -426,14 +426,14 @@ export function GuestApp({ menu }: { menu: Menu }) {
             {halves && (
               <StripWide
                 onClick={() => setItem(halves)}
-                art={<ArtTile name="pizza" size={40} />}
+                art={<ArtTile name="pizza" size={38} bare />}
                 title={ui(lang, "qaHalves")}
                 sub={ui(lang, "qaHalvesSub")}
               />
             )}
             <StripWide
               onClick={() => setSheet("categories")}
-              art={<ArtTile name="menu" size={40} />}
+              art={<ArtTile name="menu" size={38} bare />}
               title={ui(lang, "categories")}
               sub={`${menu.categories.length} ${ui(lang, "sections")}`}
             />
@@ -445,7 +445,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
             />
             <StripWide
               onClick={() => setSheet("wifi")}
-              art={<ArtTile name="wifi" size={40} />}
+              art={<ArtTile name="wifi" size={38} bare />}
               title="Wi-Fi"
               sub={brand.about.wifi.name}
             />
@@ -456,9 +456,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                     say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)
                   }
                   art={
-                    <span className="chip-orange grid size-9 place-items-center rounded-[12px]">
-                      <Flame size={18} strokeWidth={2} />
-                    </span>
+                    <Flame size={24} strokeWidth={2} className="text-g-orange" />
                   }
                   title={ui(lang, "qaCoalsDo")}
                   sub={ui(lang, "qaCoalsSub")}
@@ -466,9 +464,7 @@ export function GuestApp({ menu }: { menu: Menu }) {
                 <StripWide
                   onClick={() => setSheet("about")}
                   art={
-                    <span className="chip-gray grid size-9 place-items-center rounded-[12px]">
-                      <Info size={18} strokeWidth={2} />
-                    </span>
+                    <Info size={24} strokeWidth={2} className="text-g-ink-2" />
                   }
                   title={ui(lang, "about")}
                   sub={

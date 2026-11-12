@@ -1768,7 +1768,6 @@ function OrdersView({
               <InsightCard
                 className="col-span-2"
                 title={tr("Tips")}
-                art="tips"
                 tone="green"
                 value={compactMoney(tips)}
                 slots={tipsSlots}
@@ -1789,7 +1788,6 @@ function OrdersView({
               <InsightCard
                 className="col-span-2"
                 title={tr("Avg check")}
-                art="check"
                 tone="red"
                 value={compactMoney(avg)}
                 slots={checkSlots}
