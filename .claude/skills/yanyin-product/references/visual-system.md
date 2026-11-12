@@ -26,14 +26,14 @@ short, current rule set. When the founder changes a rule, update this file too.
 
 - One illustration kit: `components/system/Art.tsx`. Tones: blue, sunset, teal, green, coral, night. Each subject has its own drawing; **never repeat the same picture on two cards of one screen**, and never use rings or "generated-looking" ornaments.
 - `ArtScene` — the main plaque: the card is filled by a soft, blurred, low-contrast scene; one small sharp subject; the title and the number sit **on one level to the right of the subject**; extra info goes in the footer. Dark mode: neutral #17191e with two soft tone glows, no muddy full tint.
-- `ArtTile` — squircle icon in the same style, for quick actions and list leaders.
+- `ArtTile bare` — just the drawn subject, no tile behind it: the icon on quick-action cards and list leaders. **No square colour pads behind icons** (the founder rejected them).
 - Line icons (Lucide, 1.75–2.2 stroke) only for small UI controls (back, close, chevrons, row meta).
 - When a new section needs a picture, draw a new `SUBJECT` and add it to `ART`; don't reuse an unrelated one.
 
 ## 5. Patterns
 
 - **Quick-action strip** (`Strip`): `StripBig` (scene card), `StripWide` (wide card with an ArtTile, title and sub), round edge fade. Guest: Start order, Waiter, Bill, Roulette, Half & half, Categories, Wi-Fi, Yan — all wide cards.
-- **Dashboards** (`Widgets.tsx`): one question per card. `IconStat` / `HallCard` for a number, `InsightCard` for a timeline (the whole shift by hour: past in colour, now brighter with a dot, future grey, scrollable, tap a bar to read it, ⓘ opens an explanation), `LineWidget`, `BarsWidget`, `DaysCompareWidget`, `ActionListWidget` (fully round rows with a round badge and one action).
+- **Dashboards** (`Widgets.tsx`): one question per card. `IconStat` / `HallCard` for a number, `InsightCard` for a timeline, after the Sales-history reference: plain card, title and number on top, thin round bars for the whole shift over a dashed grid with a short axis, past hours pale in the card colour, the picked hour solid with a bubble "hour · value", future grey; fits the width without scrolling; one line of facts; ⓘ explains, `LineWidget`, `BarsWidget`, `DaysCompareWidget`, `ActionListWidget` (fully round rows with a round badge and one action).
 - **Island** (`motion.tsx`): Dynamic-Island-style notice at the top; can expand into details with one action; then it goes to Notifications. It lives in its own store and never re-renders the whole app.
 - **Hold for a peek** (`PeekCard`), always centred. Full-screen pages slide in; sheets for short choices; `SlideToConfirm` for sending an order or taking a payment; `WheelPicker` for times.
 - Guest dish lists: photo cards in the venue's `imageFormat` (landscape 4:3, portrait 3:4, square); dishes without photos as plain rows; the dish page shows the whole photo.
