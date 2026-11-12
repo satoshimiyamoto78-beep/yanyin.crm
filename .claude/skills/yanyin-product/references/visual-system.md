@@ -42,6 +42,9 @@ short, current rule set. When the founder changes a rule, update this file too.
 
 - Native-app feel: no zoom, no text selection on controls, haptics on every meaningful tap, `press` scale on buttons, 60 fps.
 - Morphing shapes (island pill ↔ card) always animate between explicit pixel width, height and radius, never from `auto` or `rounded-full`; the content inside keeps a fixed width.
+- Decorations that move on their own (Yan's orb, idle wheel, aurora) pause while the page scrolls and while off screen (`AppFeel` + `.deco-off`, `html[data-scrolling]`); new ones go into the `DECO` list.
+- Never a blocking (`passive: false`) touch or wheel listener on the document; zoom is blocked by CSS `touch-action`.
+- Run `apps/web/scripts/stress-test.cjs` after big UI changes: zero page errors is the bar.
 - Performance first: animate only `transform` and `opacity` (never `clip-path`, `filter: blur` or size for entrances); no `backdrop-blur` on full-screen dims, no blend modes on grain, `contain: paint` on scene cards, transitions for non-urgent state (`startTransition`). Respect `prefers-reduced-motion`.
 
 ## 7. Copy

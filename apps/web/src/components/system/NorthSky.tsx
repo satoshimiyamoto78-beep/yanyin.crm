@@ -102,7 +102,8 @@ export function NorthSky() {
 
     const loop = (now: number) => {
       raf = 0;
-      if (now - last > 66) {
+      // Hold still while the page scrolls: the finger gets every frame.
+      if (now - last > 66 && !("scrolling" in document.documentElement.dataset)) {
         last = now;
         draw(now);
       }

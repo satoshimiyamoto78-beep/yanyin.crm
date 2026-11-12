@@ -82,6 +82,11 @@ img,
 svg {
   -webkit-user-drag: none;
 }
+/* Pan only, everywhere: no pinch or double-tap zoom (iOS honours this even
+   though it ignores user-scalable=no), with no JS on the scroll path. */
+html {
+  touch-action: pan-x pan-y;
+}
 button,
 a,
 [role="button"] {
@@ -222,23 +227,23 @@ body {
   position: absolute;
   z-index: -1;
   border-radius: 50%;
-  filter: blur(34px);
+  /* The glows are soft gradients already; no filter, so moving them costs nothing extra. */
   will-change: transform;
 }
 .aurora::before {
-  left: 10%;
-  right: 10%;
-  top: 22%;
-  height: 46%;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(235, 242, 255, 0.55) 0%, rgba(110, 145, 255, 0.4) 40%, transparent 72%);
+  left: 0%;
+  right: 0%;
+  top: 10%;
+  height: 70%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(235, 242, 255, 0.42) 0%, rgba(160, 185, 255, 0.3) 25%, rgba(110, 145, 255, 0.16) 50%, transparent 75%);
   animation: aurA 11s ease-in-out infinite alternate;
 }
 .aurora::after {
-  left: -10%;
-  width: 55%;
-  top: 45%;
-  height: 60%;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(60, 100, 255, 0.7) 0%, transparent 70%);
+  left: -20%;
+  width: 75%;
+  top: 35%;
+  height: 80%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(60, 100, 255, 0.55) 0%, rgba(60, 100, 255, 0.28) 35%, transparent 72%);
   animation: aurC 13s ease-in-out infinite alternate;
 }
 @keyframes aurA {
@@ -566,6 +571,23 @@ body {
 }
 .island-in {
   animation: island-rise 0.38s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+
+/* Decorative idle motion (Yan's orb, the idle wheel, aurora glows) rests while
+   the page scrolls and while it is off screen, so it never competes with the
+   finger. AppFeel sets data-scrolling and .deco-off. */
+html[data-scrolling] .yan-orb::before,
+html[data-scrolling] .yan-eye,
+html[data-scrolling] .yan-eyes,
+html[data-scrolling] .wheel-idle,
+html[data-scrolling] .aurora::before,
+html[data-scrolling] .aurora::after,
+.deco-off::before,
+.deco-off::after,
+.deco-off.wheel-idle,
+.deco-off .yan-eye,
+.deco-off .yan-eyes {
+  animation-play-state: paused !important;
 }
 
 /* Idle roulette wheel turns slowly. */
