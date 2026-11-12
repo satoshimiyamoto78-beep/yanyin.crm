@@ -53,6 +53,7 @@ import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useDish, useLocale, useTr, type TrVars } from "./prefs";
 import { Scanner } from "./Scanner";
 import { CrewSearch } from "./Search";
+import { AppIcon, AppIconStack, type IconTone } from "@/components/system/AppIcon";
 import { YanChat } from "./YanChat";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
@@ -221,9 +222,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         {tab === "hall" && (
           <HallHome
             sections={[
-              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: LayoutGrid },
-              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: ReceiptText },
-              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: CalendarCheck },
+              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: LayoutGrid, tone: "blue" },
+              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: ReceiptText, tone: "orange" },
+              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: CalendarCheck, tone: "teal" },
             ]}
             onOpen={(id) => go(id)}
             actions={[
@@ -239,6 +240,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             title={tr(tab === "tables" ? "Tables" : tab === "orders" ? "Orders" : "Bookings")}
             sub={tab === "tables" ? `Samarkand · ${tr("lunch")}` : tab === "orders" ? tr("Today") : tr("Today and the week ahead")}
             art={tab === "tables" ? LayoutGrid : tab === "orders" ? ReceiptText : CalendarCheck}
+            tone={tab === "tables" ? "blue" : tab === "orders" ? "orange" : "teal"}
             onBack={() => go("hall")}
           />
         )}
@@ -738,8 +740,8 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           values={[1, 3, 6, busy]}
           format={(v) => tr("{v} of {n} tables", { v, n: tables.length })}
         />
-        <IconStat title={tr("Busy now")} art={<LayoutGrid size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />} value={`${busy} / ${tables.length}`} sub={tr("tables taken")} tone="blue" />
-        <IconStat title={tr("Free seats")} art={<Armchair size={120} strokeWidth={1.4} className="text-g-green opacity-40" />} value={String(seats)} sub={tr("{n} free table|{n} free tables", { n: tables.filter((x) => x.status === "free").length })} tone="green" />
+        <IconStat title={tr("Busy now")} icon={LayoutGrid} value={`${busy} / ${tables.length}`} sub={tr("tables taken")} tone="blue" />
+        <IconStat title={tr("Free seats")} icon={Armchair} value={String(seats)} sub={tr("{n} free table|{n} free tables", { n: tables.filter((x) => x.status === "free").length })} tone="green" />
         <ActionListWidget
           className="col-span-2"
           title={tr("Waiting for the bill")}
@@ -1626,10 +1628,10 @@ function OrdersView({
           ]}
           footnote={tr("{n} bill paid today|{n} bills paid today", { n: history.length })}
         />
-        <IconStat title={tr("Tips")} art={<HandCoins size={120} strokeWidth={1.4} className="text-g-green opacity-40" />} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
+        <IconStat title={tr("Tips")} icon={HandCoins} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
         <IconStat
           title={tr("Avg check")}
-          art={<Banknote size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />}
+          icon={Banknote}
           value={compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0)}
           sub={tr("per bill today")}
           tone="blue"
@@ -1813,27 +1815,27 @@ function HallHome({
 }
 
 /** Header of a Hall section: back to the Hall, the section's illustration, title and context. */
-function SectionHead({ title, sub, art: Art, onBack }: { title: string; sub: string; art: LucideIcon; onBack: () => void }) {
+function SectionHead({ title, sub, art: Art, tone, onBack }: { title: string; sub: string; art: LucideIcon; tone: IconTone; onBack: () => void }) {
   const tr = useTr();
   return (
     <div className="px-5 pt-[max(14px,env(safe-area-inset-top))]">
       <button onClick={onBack} aria-label={tr("Hall")} className="press flex h-10 items-center gap-1 rounded-full bg-g-fill pr-4 pl-2 text-[14px] font-semibold">
         <ChevronLeft size={20} strokeWidth={2.2} /> {tr("Hall")}
       </button>
-      <div className="relative mt-5 flex h-[112px] items-center overflow-hidden rounded-[28px] bg-g-tint-blue p-5">
-        <Art aria-hidden size={150} strokeWidth={1.3} className="pointer-events-none absolute -top-5 -right-8 text-g-blue opacity-30" />
-        <span className="relative min-w-0 flex-1 pl-1">
+      <div className="mt-5 flex items-center gap-3 rounded-[28px] bg-g-fill p-5 pr-4">
+        <span className="min-w-0 flex-1 pl-1">
           <span className="block text-[30px] leading-tight font-bold tracking-[-0.03em]">{title}</span>
           <span className="mt-0.5 block text-[14px] text-g-muted">{sub}</span>
         </span>
+        <AppIconStack icon={Art} tone={tone} size={58} />
       </div>
     </div>
   );
 }
 
-type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: LucideIcon };
+type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: LucideIcon; tone: IconTone };
 
-/** One Hall section as a big button; its line icon is drawn large and cropped by the card corner, as in the Cabinet. */
+/** One Hall section as a big button with its app-icon illustration, as on the stat cards. */
 function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSeg) => void }) {
   return (
     <button
@@ -1841,19 +1843,29 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
         haptic("light");
         onOpen(s.id);
       }}
-      className={`press relative flex overflow-hidden rounded-[28px] bg-g-tint-blue text-left ${big ? "col-span-2 h-[150px] items-end p-5" : "h-[188px] flex-col justify-end p-4"}`}
+      className={`press relative flex overflow-hidden rounded-[28px] bg-g-fill text-left ${big ? "col-span-2 h-[148px] items-center gap-3 p-5" : "h-[184px] flex-col p-4"}`}
     >
-      <s.art aria-hidden size={big ? 190 : 150} strokeWidth={1.3} className={`pointer-events-none absolute text-g-blue opacity-30 ${big ? "-top-6 -right-9" : "-top-7 -right-9"}`} />
-      <span className="relative min-w-0">
-        <span className="block">
-          <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
-          <span className="live mt-0.5 block text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
-          <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
-        </span>
-      </span>
+      {big ? (
+        <>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
+            <span className="live mt-0.5 block text-[34px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
+            <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
+          </span>
+          <AppIconStack icon={s.art} tone={s.tone} size={66} />
+        </>
+      ) : (
+        <>
+          <AppIcon icon={s.art} tone={s.tone} size={50} tilt={-6} />
+          <span className="mt-auto block pr-4">
+            <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
+            <span className="live mt-0.5 block text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
+            <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
+          </span>
+        </>
+      )}
       <ChevronRight size={18} className="absolute right-4 bottom-4 text-g-faint" />
     </button>
-  
   );
 }
 

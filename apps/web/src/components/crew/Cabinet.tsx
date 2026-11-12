@@ -114,8 +114,8 @@ export function CabinetView({
           referenceName={tr("Last month")}
           format={k}
         />
-        <IconStat title={tr("Shifts")} art={<Clock size={120} strokeWidth={1.4} className="text-g-blue opacity-40" />} value={`${shifts}`} sub={tr("{n} hour this month|{n} hours this month", { n: shifts * 8 })} tone="blue" />
-        <IconStat title={tr("Orders")} art={<ReceiptIcon size={120} strokeWidth={1.4} className="text-g-orange opacity-40" />} value={`${orders}`} sub={tr("served this month")} tone="orange" />
+        <IconStat title={tr("Shifts")} icon={Clock} value={`${shifts}`} sub={tr("{n} hour this month|{n} hours this month", { n: shifts * 8 })} tone="blue" />
+        <IconStat title={tr("Orders")} icon={ReceiptIcon} value={`${orders}`} sub={tr("served this month")} tone="orange" />
         <BarsWidget
           className="col-span-2"
           title={tr("Tips by day")}

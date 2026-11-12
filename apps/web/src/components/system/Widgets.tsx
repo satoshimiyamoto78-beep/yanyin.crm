@@ -1,5 +1,8 @@
 "use client";
 
+import { AppIcon, type IconTone } from "./AppIcon";
+import type { LucideIcon } from "lucide-react";
+
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
 
@@ -405,22 +408,18 @@ export function FlowWidget({
  * corner, cropped by the card and a little transparent, so it sets the mood
  * without competing with the number (like the wheel in the roulette button).
  */
-export function IconStat({ title, art, value, sub, tone = "blue", fit = false, className = "" }: { title: string; art: ReactNode; value: string; sub: string; tone?: "green" | "blue" | "orange"; /** Show the whole illustration inside the corner instead of cropping it. */ fit?: boolean; className?: string }) {
-  const t = {
-    green: { card: "bg-g-tint-green", label: "text-g-green" },
-    blue: { card: "bg-g-tint-blue", label: "text-g-blue" },
-    orange: { card: "bg-g-tint-orange", label: "text-g-orange" },
-  }[tone];
+/**
+ * A number with its icon, in the "What's New" manner: a glossy app-icon tile,
+ * the label, the number large, a short line under it. Neutral card, the colour
+ * lives only in the icon.
+ */
+export function IconStat({ title, icon, value, sub, tone = "blue", className = "" }: { title: string; icon: LucideIcon; value: string; sub: string; tone?: IconTone; className?: string }) {
   return (
-    <section className={`relative isolate flex min-h-[132px] flex-col justify-between overflow-hidden rounded-[24px] p-[18px] ${t.card} ${className}`}>
-      <span aria-hidden className={`pointer-events-none absolute -z-10 ${fit ? "top-2.5 right-2.5" : "-top-7 -right-9 opacity-75"}`}>
-        {art}
-      </span>
-      <span className={`text-[13px] font-semibold ${t.label}`}>{title}</span>
-      <span className="block">
-        <span className="live block text-[24px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
-        <span className="mt-1 block truncate text-[12px] text-g-muted">{sub}</span>
-      </span>
+    <section className={`flex min-h-[150px] flex-col rounded-[24px] bg-g-fill p-4 ${className}`}>
+      <AppIcon icon={icon} tone={tone} size={42} />
+      <span className="mt-auto block pt-4 text-[13px] font-semibold text-g-ink-2">{title}</span>
+      <span className="live mt-1 block text-[26px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
+      <span className="mt-1.5 block truncate text-[12px] text-g-muted">{sub}</span>
     </section>
   );
 }
