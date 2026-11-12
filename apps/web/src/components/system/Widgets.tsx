@@ -4,6 +4,8 @@ import { ArtScene, type ArtName } from "./Art";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
+import { Info } from "lucide-react";
+import { PeekCard } from "@/components/guest/motion";
 
 /*
  * Dashboard widgets, each a different form so attention spreads the right way:
@@ -20,7 +22,7 @@ const BLUE = "#2f6bff";
 /** Plain card every widget sits on. */
 export function WidgetCard({ title, icon, aside, children, className = "" }: { title: string; icon?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[24px] bg-g-fill p-[18px] ${className}`}>
+    <section className={`min-w-0 rounded-[24px] bg-g-fill p-[18px] ${className}`}>
       <header className="flex min-h-6 items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-g-ink-2">
           {icon && <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white text-g-blue">{icon}</span>}
@@ -415,9 +417,106 @@ export function FlowWidget({
 export function IconStat({ title, art, value, sub, className = "" }: { title: string; art: ArtName; value: string; sub: string; className?: string }) {
   return (
     <ArtScene name={art} layout="row" focal={42} className={`rounded-[24px] p-3.5 ${className}`} footer={<p className="mt-3 truncate text-[12px] text-g-muted">{sub}</p>}>
-      <p className="truncate text-[12.5px] leading-tight font-semibold text-g-ink-2">{title}</p>
+      <p className="line-clamp-2 text-[12.5px] leading-tight font-semibold text-g-ink-2">{title}</p>
       <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums ${value.length > 7 ? "text-[20px]" : "text-[24px]"}`}>{value}</p>
     </ArtScene>
+  );
+}
+
+/**
+ * A wide insight card: the picture and the number on top, then a small bar
+ * chart with its axis, three facts underneath, and an ⓘ that explains what
+ * the number means and how to move it.
+ */
+export function InsightCard({
+  title,
+  art,
+  value,
+  bars,
+  labels,
+  tone = "blue",
+  facts,
+  info,
+  className = "",
+}: {
+  title: string;
+  art: ArtName;
+  value: string;
+  bars: number[];
+  /** First, middle and last axis labels. */
+  labels: [string, string, string];
+  tone?: "blue" | "green" | "orange" | "red";
+  facts: { label: string; value: string }[];
+  info: { title: string; text: string; points: string[] };
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const max = Math.max(...bars, 1);
+  const fill = { blue: "bg-g-blue", green: "bg-g-green", orange: "bg-g-orange", red: "bg-[#ff6a6a]" }[tone];
+  return (
+    <>
+      <ArtScene
+        name={art}
+        layout="row"
+        focal={48}
+        className={`rounded-[26px] p-4 ${className}`}
+        footer={
+          <>
+            <div className="mt-4 flex h-14 items-end justify-around gap-1.5" aria-hidden>
+              {bars.map((v, i) => (
+                <span key={i} className={`min-w-0 max-w-[26px] flex-1 rounded-t-[7px] rounded-b-[3px] ${fill} ${i === bars.length - 1 ? "" : "opacity-35"}`} style={{ height: `${Math.max(8, (v / max) * 100)}%` }} />
+              ))}
+            </div>
+            <div className="mt-1.5 flex justify-between text-[10.5px] text-g-muted tabular-nums">
+              {labels.map((l, i) => (
+                <span key={i}>{l}</span>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {facts.map((f) => (
+                <span key={f.label} className="min-w-0 rounded-[14px] bg-g-card/70 px-2.5 py-2">
+                  <span className="block truncate text-[11px] leading-tight text-g-muted">{f.label}</span>
+                  <span className="block truncate text-[14px] font-semibold tabular-nums">{f.value}</span>
+                </span>
+              ))}
+            </div>
+          </>
+        }
+      >
+        <div className="flex items-start justify-between gap-2">
+          <span className="min-w-0">
+            <p className="truncate text-[13px] leading-tight font-semibold text-g-ink-2">{title}</p>
+            <p className="live mt-1 text-[28px] leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</p>
+          </span>
+          <button
+            aria-label={info.title}
+            onClick={() => {
+              haptic("light");
+              setOpen(true);
+            }}
+            className="press grid size-8 shrink-0 place-items-center rounded-full bg-g-card/80 text-g-ink-2"
+          >
+            <Info size={16} strokeWidth={2.2} />
+          </button>
+        </div>
+      </ArtScene>
+      {open && (
+        <PeekCard label={info.title} onClose={() => setOpen(false)}>
+          <p className="text-[19px] leading-tight font-bold">{info.title}</p>
+          <p className="mt-2 text-[14px] leading-relaxed text-g-ink-2">{info.text}</p>
+          <ul className="mt-3 grid gap-2">
+            {info.points.map((pt) => (
+              <li key={pt} className="flex gap-2 text-[13px] leading-snug text-g-muted">
+                <span className={`mt-1.5 size-1.5 shrink-0 rounded-full ${fill}`} /> {pt}
+              </li>
+            ))}
+          </ul>
+          <button onClick={() => setOpen(false)} className="blue-grad press mt-5 h-12 w-full rounded-full text-[15px] font-semibold">
+            OK
+          </button>
+        </PeekCard>
+      )}
+    </>
   );
 }
 
@@ -559,10 +658,10 @@ export function ActionListWidget({
   return (
     <WidgetCard title={title} icon={icon} className={className} aside={rows.length ? <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums ${chip}`}>{rows.length}</span> : undefined}>
       {rows.length ? (
-        <div className="mt-4 grid gap-2">
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2">
           {rows.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3">
-              <span className={`flex w-11 shrink-0 flex-col items-center rounded-[14px] py-1 ${chip}`}>
+            <div key={r.id} className="flex min-w-0 items-center gap-3 rounded-[18px] bg-g-card p-2.5 pr-2.5">
+              <span className={`flex w-12 shrink-0 flex-col items-center rounded-[14px] py-1 ${chip}`}>
                 <span className="text-[9px] leading-none font-semibold uppercase">{r.badgeLabel}</span>
                 <span className="text-[20px] leading-tight font-bold tabular-nums">{r.badge}</span>
               </span>

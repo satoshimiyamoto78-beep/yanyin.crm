@@ -46,7 +46,7 @@ import { useScheme } from "@/components/system/scheme";
 import { CabinetView, pastOrders } from "./Cabinet";
 import { noticeMeta } from "./notices";
 import { PeekActions, PeekHeader } from "@/components/system/PeekParts";
-import { ActionListWidget, DaysCompareWidget, FlowWidget, IconStat, LineWidget } from "@/components/system/Widgets";
+import { InsightCard, ActionListWidget, DaysCompareWidget, FlowWidget, IconStat, LineWidget } from "@/components/system/Widgets";
 import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useDish, useLocale, useTr, type TrVars } from "./prefs";
 import { Scanner } from "./Scanner";
@@ -737,7 +737,7 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           values={[1, 3, 6, busy]}
           format={(v) => tr("{v} of {n} tables", { v, n: tables.length })}
         />
-        <IconStat title={tr("Busy now")} art="tables" value={`${busy} / ${tables.length}`} sub={tr("tables taken")} />
+        <IconStat title={tr("Busy now")} art="floor" value={`${busy} / ${tables.length}`} sub={tr("tables taken")} />
         <IconStat title={tr("Free seats")} art="seats" value={String(seats)} sub={tr("{n} free table|{n} free tables", { n: tables.filter((x) => x.status === "free").length })} />
         <ActionListWidget
           className="col-span-2"
@@ -1625,14 +1625,56 @@ function OrdersView({
           ]}
           footnote={tr("{n} bill paid today|{n} bills paid today", { n: history.length })}
         />
-        <IconStat title={tr("Tips")} art="tips" value={compactMoney(tips)} sub={tr("team pool")} />
-        <IconStat
-          title={tr("Avg check")}
-          art="check"
-          value={compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0)}
-          sub={tr("per bill today")}
-         
-        />
+        {/* Full-width insight cards: the number, a bar per closed bill, three facts and an explainer. */}
+        {(() => {
+          const bills = [...history].reverse();
+          const axis = (): [string, string, string] => [bills[0]?.closedAt ?? "", bills[Math.floor(bills.length / 2)]?.closedAt ?? "", bills[bills.length - 1]?.closedAt ?? ""];
+          const tipped = bills.filter((o) => o.tip > 0);
+          const totals = bills.map(total5);
+          const avg = bills.length ? Math.round(takings / bills.length / 1000) * 1000 : 0;
+          return (
+            <>
+              <InsightCard
+                className="col-span-2"
+                title={tr("Tips")}
+                art="tips"
+                tone="green"
+                value={compactMoney(tips)}
+                bars={bills.map((o) => o.tip)}
+                labels={axis()}
+                facts={[
+                  { label: tr("Bills with a tip"), value: `${tipped.length} / ${bills.length}` },
+                  { label: tr("Average tip"), value: compactMoney(tipped.length ? Math.round(tips / tipped.length / 1000) * 1000 : 0) },
+                  { label: tr("Biggest"), value: compactMoney(Math.max(0, ...bills.map((o) => o.tip))) },
+                ]}
+                info={{
+                  title: tr("How tips work"),
+                  text: tr("Tips go to the team pool. Guests add them when they pay; at the end of the shift the pool is shared by everyone on shift, by hours worked."),
+                  points: [tr("Each bar is one closed bill today."), tr("A warm goodbye by name and a quick bill raise tips the most."), tr("Tips are counted separately from takings.")],
+                }}
+              />
+              <InsightCard
+                className="col-span-2"
+                title={tr("Avg check")}
+                art="check"
+                tone="red"
+                value={compactMoney(avg)}
+                bars={totals}
+                labels={axis()}
+                facts={[
+                  { label: tr("Bills today"), value: String(bills.length) },
+                  { label: tr("Smallest"), value: compactMoney(Math.min(...totals, totals.length ? Infinity : 0)) },
+                  { label: tr("Biggest"), value: compactMoney(Math.max(0, ...totals)) },
+                ]}
+                info={{
+                  title: tr("What is the average check"),
+                  text: tr("Today's takings with service, divided by the number of closed bills. It shows how much one table spends on average."),
+                  points: [tr("Each bar is one closed bill today."), tr("It grows when you offer a drink with the dish and a dessert after."), tr("Big groups raise it; quick coffees lower it.")],
+                }}
+              />
+            </>
+          );
+        })()}
       </Reveal>
       <div className="mt-8 flex rounded-full bg-g-fill p-1">
         {(

@@ -164,18 +164,23 @@ export function CabinetView({
             </span>
             <ChevronRight size={18} className="text-g-faint" />
           </button>
-          <button onClick={onQuests} className="press flex flex-col justify-between gap-6 rounded-[26px] bg-g-tint-blue p-4 text-left">
-            <Trophy size={22} className="text-g-blue" />
-            <span>
-              <span className="block text-[16px] font-semibold">{tr("Quests")}</span>
-              <span className="block text-[13px] text-g-muted">{tr("{n} in progress", { n: data.quests.filter((q) => q.state !== "available").length })}</span>
+          {/* Icon and text on one line: two low cards side by side. */}
+          <button onClick={onQuests} className="press flex min-w-0 items-center gap-3 rounded-[22px] bg-g-tint-blue p-3.5 text-left">
+            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-[13px]">
+              <Trophy size={19} strokeWidth={2} />
+            </span>
+            <span className="min-w-0">
+              <span className="line-clamp-2 text-[15px] leading-tight font-semibold">{tr("Quests")}</span>
+              <span className="block truncate text-[12.5px] text-g-muted">{tr("{n} in progress", { n: data.quests.filter((q) => q.state !== "available").length })}</span>
             </span>
           </button>
-          <div className="flex flex-col justify-between gap-6 rounded-[26px] bg-g-tint-green p-4">
-            <MessageCircle size={22} className="text-g-green" />
-            <span>
-              <span className="block text-[16px] font-semibold">{tr("Kind words")}</span>
-              <span className="block text-[13px] text-g-muted">{tr("12 reviews mention you")}</span>
+          <div className="flex min-w-0 items-center gap-3 rounded-[22px] bg-g-tint-green p-3.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-[13px] bg-g-green text-white">
+              <MessageCircle size={19} strokeWidth={2} />
+            </span>
+            <span className="min-w-0">
+              <span className="line-clamp-2 text-[15px] leading-tight font-semibold">{tr("Kind words")}</span>
+              <span className="block truncate text-[12.5px] text-g-muted">{tr("12 reviews mention you")}</span>
             </span>
           </div>
         </div>

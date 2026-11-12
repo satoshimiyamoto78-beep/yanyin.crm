@@ -13,7 +13,7 @@ import { useId, type CSSProperties, type ReactNode } from "react";
  */
 
 export type ArtTone = "blue" | "sunset" | "teal" | "green" | "coral" | "night";
-export type ArtName = "tables" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
+export type ArtName = "tables" | "floor" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats";
 
 const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; shadow: string }> = {
   blue: { a: "#8fb6ff", b: "#3d6bff", c: "#1a2a9e", glow: "#bcd2ff", shadow: "rgba(47,91,255,0.5)" },
@@ -27,6 +27,7 @@ const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; sh
 /** What each section is drawn as, and in which colour. */
 export const ART: Record<ArtName, ArtTone> = {
   tables: "blue",
+  floor: "blue",
   orders: "sunset",
   bookings: "teal",
   seated: "green",
@@ -244,28 +245,38 @@ export function ArtScene({
   );
 }
 
-type DecoKind = "rays" | "rings" | "petals" | "dots" | "waves" | "ticks";
+type DecoKind = "rays" | "sparkle" | "petals" | "dots" | "waves" | "ticks";
 /** Each picture gets its own ornament, so a row of cards never repeats itself. */
 const DECO: Record<ArtName, DecoKind> = {
-  tables: "rings",
+  tables: "sparkle",
+  floor: "dots",
   orders: "waves",
   bookings: "dots",
   seated: "petals",
-  guests: "rings",
+  guests: "sparkle",
   tips: "rays",
   check: "petals",
   shifts: "ticks",
   seats: "dots",
 };
 
-/** A quiet ornament centred on the subject: rays, rings, petals, a dot halo, ripples or clock ticks. */
+/** A quiet ornament centred on the subject: rays, sparkles, petals, a dot halo, ripples or clock ticks. */
 function Deco({ kind, size }: { kind: DecoKind; size: number }) {
   return (
     <svg aria-hidden viewBox="-60 -60 120 120" width={size} height={size} className="art-deco pointer-events-none absolute top-1/2 left-1/2 -z-10 -translate-x-1/2 -translate-y-1/2">
       <circle r="26" fill="#fff" className="art-halo" />
       {kind === "rays" &&
         Array.from({ length: 16 }, (_, i) => <path key={i} d="M0 0 L-3.2 -60 L3.2 -60 Z" fill="#fff" transform={`rotate(${i * 22.5})`} />)}
-      {kind === "rings" && [30, 40, 50].map((r, i) => <circle key={r} r={r} fill="none" stroke="#fff" strokeWidth={2.2 - i * 0.5} />)}
+      {kind === "sparkle" &&
+        [
+          [-36, -26, 9],
+          [38, -30, 6],
+          [42, 24, 8],
+          [-40, 30, 5],
+          [0, -48, 5],
+        ].map(([x, y, r], i) => (
+          <path key={i} transform={`translate(${x} ${y}) scale(${r / 12})`} d="M0 -12c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12Z" fill="#fff" />
+        ))}
       {kind === "petals" &&
         Array.from({ length: 10 }, (_, i) => <ellipse key={i} cx="0" cy="-36" rx="7" ry="16" fill="#fff" transform={`rotate(${i * 36})`} />)}
       {kind === "dots" &&
@@ -308,24 +319,70 @@ const Coin = ({ g, x, y, r = 16 }: { g: G; x: number; y: number; r?: number }) =
 );
 
 const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
-  // A round café table with a plate, a glass and two chairs.
+  // A round bistro table in three-quarter view: a stone top with a real edge,
+  // one pedestal, and on it a plate with food, a glass and a small vase.
   tables: (g) => (
     <g>
-      <rect x="33" y="54" width="6" height="30" rx="3" fill={url(g, "deep")} opacity="0.85" />
-      <rect x="81" y="54" width="6" height="30" rx="3" fill={url(g, "deep")} opacity="0.85" />
-      <path d="M26 46h12a6 6 0 0 1 6 6v8H26z" fill="#fff" opacity="0.92" />
-      <path d="M94 46H82a6 6 0 0 0-6 6v8h18z" fill="#fff" opacity="0.92" />
-      <rect x="57" y="62" width="6" height="28" rx="3" fill="#dfe6f7" />
-      <ellipse cx="60" cy="90" rx="14" ry="4" fill="#dfe6f7" />
-      <ellipse cx="60" cy="62" rx="34" ry="11" fill="#c9d4ee" />
-      <ellipse cx="60" cy="59" rx="34" ry="11" fill={url(g, "paper")} />
-      <ellipse cx="54" cy="58" rx="11" ry="4" fill="#fff" stroke={url(g, "tone")} strokeWidth="2" />
-      <ellipse cx="54" cy="57.5" rx="5.5" ry="1.8" fill={url(g, "tone")} opacity="0.5" />
-      <path d="M71 44h7l-1.2 13h-4.6z" fill="#fff" opacity="0.95" stroke={url(g, "tone")} strokeWidth="1.2" />
-      <path d="M72 50h5l-.6 6h-3.8z" fill={url(g, "tone")} opacity="0.6" />
-      <ellipse cx="46" cy="54" rx="10" ry="2" fill="#fff" opacity="0.8" />
+      <rect x="56.5" y="66" width="7" height="25" rx="3.5" fill={url(g, "deep")} />
+      <rect x="57.5" y="66" width="2" height="25" rx="1" fill="#fff" opacity="0.35" />
+      <ellipse cx="60" cy="92" rx="16" ry="4" fill={url(g, "deep")} />
+      <ellipse cx="60" cy="91" rx="13" ry="2.6" fill="#fff" opacity="0.25" />
+      {/* The top: its edge first, then the surface. */}
+      <ellipse cx="60" cy="63" rx="40" ry="13" fill="#b9c6e4" />
+      <ellipse cx="60" cy="59" rx="40" ry="13" fill={url(g, "paper")} />
+      <ellipse cx="48" cy="54.5" rx="18" ry="3.5" fill="#fff" opacity="0.9" />
+      {/* Plate with a dish. */}
+      <ellipse cx="47" cy="60.5" rx="13" ry="4.6" fill="#d5ddf0" />
+      <ellipse cx="47" cy="59.5" rx="13" ry="4.6" fill="#fff" />
+      <ellipse cx="47" cy="59.5" rx="8.5" ry="2.9" fill="none" stroke="#e3e8f4" strokeWidth="1" />
+      <ellipse cx="47" cy="58" rx="6.5" ry="2.8" fill={url(g, "gold")} />
+      <circle cx="44.5" cy="57" r="1.4" fill="#3fbf6a" />
+      <circle cx="49.5" cy="56.6" r="1.1" fill="#3fbf6a" />
+      {/* Glass with a drink. */}
+      <ellipse cx="74" cy="62.6" rx="4.5" ry="1.4" fill="#cfd8ee" />
+      <rect x="73.3" y="54" width="1.4" height="8.5" fill="#e6ecf8" />
+      <path d="M68.5 40h11l-1.3 10.5a4.2 4.2 0 0 1-8.4 0z" fill="#fff" opacity="0.85" stroke="#cfd8ee" strokeWidth="0.8" />
+      <path d="M69.3 45h9.4l-.6 5.3a3.6 3.6 0 0 1-8.2 0z" fill={url(g, "tone")} opacity="0.85" />
+      <rect x="70" y="41" width="1.6" height="8" rx="0.8" fill="#fff" opacity="0.9" />
+      {/* A small vase with a flower. */}
+      <path d="M60 51.5c-2.6 0-3.4-2-3.4-4.2 0-1.6 1-2.6 1.6-3.4h3.6c.6.8 1.6 1.8 1.6 3.4 0 2.2-.8 4.2-3.4 4.2z" fill={url(g, "tone")} />
+      <path d="M60 44v-7" stroke="#36b36a" strokeWidth="1.2" strokeLinecap="round" />
+      <ellipse cx="62.6" cy="40.5" rx="2.4" ry="1.1" fill="#36b36a" transform="rotate(-30 62.6 40.5)" />
+      <circle cx="60" cy="35.5" r="3.4" fill="#ff7a8a" />
+      <circle cx="60" cy="35.5" r="1.3" fill="#ffd27a" />
     </g>
   ),
+  // The hall from above: four tables, three taken (in the tone), one free.
+  floor: (g) => (
+    <g>
+      <g transform="rotate(-8 60 62)">
+        <rect x="24" y="30" width="72" height="62" rx="12" fill="#c7d2ea" transform="translate(3 4)" />
+        <rect x="24" y="30" width="72" height="62" rx="12" fill={url(g, "paper")} />
+        {[
+          [43, 48, true],
+          [77, 48, true],
+          [43, 75, false],
+          [77, 75, true],
+        ].map(([x, y, busy], k) => (
+          <g key={k} transform={`translate(${x} ${y})`}>
+            {[0, 90, 180, 270].map((a) => (
+              <rect key={a} x="-3.2" y="-14.5" width="6.4" height="4" rx="2" fill={busy ? "#9fb0d6" : "#dbe2f1"} transform={`rotate(${a})`} />
+            ))}
+            <circle r="9" fill={busy ? url(g, "tone") : "#fff"} stroke={busy ? "none" : "#cfd8ee"} strokeWidth="1.2" />
+            {busy ? (
+              <>
+                <circle cx="-3" cy="-2" r="2.2" fill="#fff" />
+                <circle cx="3" cy="2.4" r="2.2" fill="#fff" />
+              </>
+            ) : (
+              <path d="M-3 0h6M0 -3v6" stroke="#9fb0d6" strokeWidth="1.4" strokeLinecap="round" />
+            )}
+          </g>
+        ))}
+      </g>
+    </g>
+  ),
+
   // A bill curling off the printer, with a coin.
   orders: (g) => (
     <g>
