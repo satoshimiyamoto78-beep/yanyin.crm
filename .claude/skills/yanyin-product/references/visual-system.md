@@ -20,6 +20,7 @@ short, current rule set. When the founder changes a rule, update this file too.
 
 ## 3. Header sky
 
+- Content right under the sky is `relative z-10`, so the sky's soft lower edge never washes out the first rows.
 - Top of every main screen: the `NorthSky` — soft blue northern-light gradient with slowly drifting white mist. It fades into the page with no band; never paint a solid colour under it.
 
 ## 4. Illustrations (the signature)
