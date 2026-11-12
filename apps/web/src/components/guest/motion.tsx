@@ -348,21 +348,31 @@ const TONE: Record<IslandTone, string> = {
  * back. Every action in the guest and waiter apps reports through it.
  */
 export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** Told when the island unfolds or folds, so it is not dismissed while read. */ onExpand?: (open: boolean) => void }) {
-  // Keep the last notice on screen while it folds away.
+  // The island stays mounted once used. A new notice is painted while still
+  // hidden above the screen, and only on a later frame does it slide in, so the
+  // phone never has to draw text in the middle of the animation (that was the
+  // freeze in a half-open shape). The slide is a pure transform transition.
   const [shown, setShown] = useState<IslandNotice | null>(notice);
   const [prev, setPrev] = useState<IslandNotice | null>(notice);
   const [open, setOpen] = useState(false);
+  const [vis, setVis] = useState(false);
   if (notice !== prev) {
     setPrev(notice);
     if (notice) setShown(notice);
     setOpen(false);
+    setVis(false);
   }
-  const leaving = !notice && !!shown;
   useEffect(() => {
-    if (!leaving) return;
-    const id = setTimeout(() => setShown(null), 220);
-    return () => clearTimeout(id);
-  }, [leaving]);
+    if (!notice) return;
+    let b = 0;
+    const a = requestAnimationFrame(() => {
+      b = requestAnimationFrame(() => setVis(true));
+    });
+    return () => {
+      cancelAnimationFrame(a);
+      cancelAnimationFrame(b);
+    };
+  }, [notice]);
   if (!shown) return null;
   const toggle = (v: boolean) => {
     haptic("light");
@@ -387,10 +397,10 @@ export function Island({ notice, onExpand }: { notice: IslandNotice | null; /** 
     <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center pt-[max(10px,env(safe-area-inset-top))]">
       {open && <button aria-label="Fold" onClick={() => toggle(false)} className="animate-fade pointer-events-auto fixed inset-0 -z-10 bg-[rgba(11,11,15,0.32)]" />}
       <div
-        key={shown.title}
         role="status"
+        aria-hidden={!vis}
         onClick={shown.details && !open ? () => toggle(true) : undefined}
-        className={`${leaving ? "island-out" : "island-in"} overflow-hidden bg-[#0b0b0f] text-white transition-[width,border-radius] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`island-shell ${vis ? "on" : ""} overflow-hidden bg-[#0b0b0f] text-white ${
           open ? "pointer-events-auto w-[min(92vw,380px)] rounded-[30px] p-4" : `flex h-11 max-w-[92vw] min-w-[34vw] items-center gap-2.5 rounded-full py-1.5 pl-1.5 ${shown.action || shown.details ? "pointer-events-auto pr-1.5" : "pr-4"} ${shown.details ? "cursor-pointer" : ""}`
         }`}
       >

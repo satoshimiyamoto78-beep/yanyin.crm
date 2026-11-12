@@ -568,30 +568,29 @@ body {
 }
 
 /* Dynamic-Island notification: grows out of a dot, content fades in after. */
-/* Island: transform and opacity only, so the GPU runs it even when the page is busy
-   (clip-path and blur repainted on the main thread and stuttered on phones). */
-@keyframes island-in {
-  0% { transform: translateY(-6px) scale(0.55, 0.8); opacity: 0; }
-  55% { opacity: 1; }
-  100% { transform: none; opacity: 1; }
+/* Island: always mounted; it waits above the screen with its content already
+   painted, then slides down. Transform and opacity only, run by the GPU. */
+.island-shell {
+  transform: translateY(calc(-100% - 24px)) scale(0.92);
+  opacity: 0;
+  will-change: transform;
+  transition:
+    transform 0.26s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.2s ease-in,
+    width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
-@keyframes island-out {
-  to { transform: translateY(-4px) scale(0.6, 0.85); opacity: 0; }
+.island-shell:not(.on) {
+  pointer-events: none !important;
 }
-@keyframes island-content {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.island-in {
-  animation: island-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
-  will-change: transform, opacity;
-}
-.island-in .island-content {
-  animation: island-content 0.18s ease-out 0.08s both;
-}
-.island-out {
-  animation: island-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
-  will-change: transform, opacity;
+.island-shell.on {
+  transform: none;
+  opacity: 1;
+  transition:
+    transform 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.12),
+    opacity 0.16s ease-out,
+    width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Idle roulette wheel turns slowly. */
