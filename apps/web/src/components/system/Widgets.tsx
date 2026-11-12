@@ -1,7 +1,6 @@
 "use client";
 
-import { AppIcon, type IconTone } from "./AppIcon";
-import type { LucideIcon } from "lucide-react";
+import { ArtTile, type ArtName } from "./Art";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { haptic } from "@/lib/haptics";
@@ -409,14 +408,14 @@ export function FlowWidget({
  * without competing with the number (like the wheel in the roulette button).
  */
 /**
- * A number with its icon, in the "What's New" manner: a glossy app-icon tile,
- * the label, the number large, a short line under it. Neutral card, the colour
- * lives only in the icon.
+ * A number with its picture, in the "What's New" manner: an illustrated tile
+ * (see Art), then the label, the number large and a short line under it. The
+ * card itself stays neutral; the colour lives in the picture.
  */
-export function IconStat({ title, icon, value, sub, tone = "blue", className = "" }: { title: string; icon: LucideIcon; value: string; sub: string; tone?: IconTone; className?: string }) {
+export function IconStat({ title, art, value, sub, className = "" }: { title: string; art: ArtName; value: string; sub: string; className?: string }) {
   return (
-    <section className={`flex min-h-[150px] flex-col rounded-[24px] bg-g-fill p-4 ${className}`}>
-      <AppIcon icon={icon} tone={tone} size={42} />
+    <section className={`flex min-h-[168px] flex-col rounded-[24px] bg-g-fill p-4 ${className}`}>
+      <ArtTile name={art} size={60} tilt={-4} />
       <span className="mt-auto block pt-4 text-[13px] font-semibold text-g-ink-2">{title}</span>
       <span className="live mt-1 block text-[26px] leading-none font-semibold tracking-[-0.03em] whitespace-nowrap tabular-nums">{value}</span>
       <span className="mt-1.5 block truncate text-[12px] text-g-muted">{sub}</span>

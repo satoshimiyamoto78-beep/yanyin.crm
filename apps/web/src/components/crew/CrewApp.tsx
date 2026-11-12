@@ -4,7 +4,6 @@ import { allItems, formatMoney, type Menu, type MenuItem } from "@yanyin/domain"
 import {
   Armchair,
   Banknote,
-  HandCoins,
   CheckCheck,
   RotateCcw,
   PenLine,
@@ -26,7 +25,6 @@ import {
   Printer,
   QrCode,
   ReceiptText,
-  CalendarCheck,
   Search,
   Send,
   ScanLine,
@@ -53,7 +51,7 @@ import { createPortal } from "react-dom";
 import { CrewPrefsProvider, useDish, useLocale, useTr, type TrVars } from "./prefs";
 import { Scanner } from "./Scanner";
 import { CrewSearch } from "./Search";
-import { AppIcon, AppIconStack, type IconTone } from "@/components/system/AppIcon";
+import { ArtFan, ArtTile, type ArtName } from "@/components/system/Art";
 import { YanChat } from "./YanChat";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
@@ -222,9 +220,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
         {tab === "hall" && (
           <HallHome
             sections={[
-              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: LayoutGrid, tone: "blue" },
-              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: ReceiptText, tone: "orange" },
-              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: CalendarCheck, tone: "teal" },
+              { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: "tables", pill: <><Users size={13} strokeWidth={2.6} className="text-g-blue" /> {tables.reduce((n, x) => n + x.guests, 0)}</> },
+              { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: "orders" },
+              { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: "bookings" },
             ]}
             onOpen={(id) => go(id)}
             actions={[
@@ -239,8 +237,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           <SectionHead
             title={tr(tab === "tables" ? "Tables" : tab === "orders" ? "Orders" : "Bookings")}
             sub={tab === "tables" ? `Samarkand · ${tr("lunch")}` : tab === "orders" ? tr("Today") : tr("Today and the week ahead")}
-            art={tab === "tables" ? LayoutGrid : tab === "orders" ? ReceiptText : CalendarCheck}
-            tone={tab === "tables" ? "blue" : tab === "orders" ? "orange" : "teal"}
+            art={tab === "tables" ? "tables" : tab === "orders" ? "orders" : "bookings"}
             onBack={() => go("hall")}
           />
         )}
@@ -740,8 +737,8 @@ function TablesView({ tables, money, actions, itemById }: { tables: FloorTable[]
           values={[1, 3, 6, busy]}
           format={(v) => tr("{v} of {n} tables", { v, n: tables.length })}
         />
-        <IconStat title={tr("Busy now")} icon={LayoutGrid} value={`${busy} / ${tables.length}`} sub={tr("tables taken")} tone="blue" />
-        <IconStat title={tr("Free seats")} icon={Armchair} value={String(seats)} sub={tr("{n} free table|{n} free tables", { n: tables.filter((x) => x.status === "free").length })} tone="green" />
+        <IconStat title={tr("Busy now")} art="tables" value={`${busy} / ${tables.length}`} sub={tr("tables taken")} />
+        <IconStat title={tr("Free seats")} art="seats" value={String(seats)} sub={tr("{n} free table|{n} free tables", { n: tables.filter((x) => x.status === "free").length })} />
         <ActionListWidget
           className="col-span-2"
           title={tr("Waiting for the bill")}
@@ -1628,13 +1625,13 @@ function OrdersView({
           ]}
           footnote={tr("{n} bill paid today|{n} bills paid today", { n: history.length })}
         />
-        <IconStat title={tr("Tips")} icon={HandCoins} value={compactMoney(tips)} sub={tr("team pool")} tone="green" />
+        <IconStat title={tr("Tips")} art="tips" value={compactMoney(tips)} sub={tr("team pool")} />
         <IconStat
           title={tr("Avg check")}
-          icon={Banknote}
+          art="check"
           value={compactMoney(history.length ? Math.round(takings / history.length / 1000) * 1000 : 0)}
           sub={tr("per bill today")}
-          tone="blue"
+         
         />
       </Reveal>
       <div className="mt-8 flex rounded-full bg-g-fill p-1">
@@ -1815,7 +1812,7 @@ function HallHome({
 }
 
 /** Header of a Hall section: back to the Hall, the section's illustration, title and context. */
-function SectionHead({ title, sub, art: Art, tone, onBack }: { title: string; sub: string; art: LucideIcon; tone: IconTone; onBack: () => void }) {
+function SectionHead({ title, sub, art, onBack }: { title: string; sub: string; art: ArtName; onBack: () => void }) {
   const tr = useTr();
   return (
     <div className="px-5 pt-[max(14px,env(safe-area-inset-top))]">
@@ -1827,13 +1824,13 @@ function SectionHead({ title, sub, art: Art, tone, onBack }: { title: string; su
           <span className="block text-[30px] leading-tight font-bold tracking-[-0.03em]">{title}</span>
           <span className="mt-0.5 block text-[14px] text-g-muted">{sub}</span>
         </span>
-        <AppIconStack icon={Art} tone={tone} size={58} />
+        <ArtFan name={art} size={72} />
       </div>
     </div>
   );
 }
 
-type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: LucideIcon; tone: IconTone };
+type HallSection = { id: HallSeg; title: string; value: string; sub: string; hot?: boolean; art: ArtName; pill?: ReactNode };
 
 /** One Hall section as a big button with its app-icon illustration, as on the stat cards. */
 function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (s: HallSeg) => void }) {
@@ -1852,11 +1849,11 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
             <span className="live mt-0.5 block text-[34px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>
             <span className={`mt-0.5 block truncate text-[13px] ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</span>
           </span>
-          <AppIconStack icon={s.art} tone={s.tone} size={66} />
+          <ArtFan name={s.art} size={88} pill={s.pill} />
         </>
       ) : (
         <>
-          <AppIcon icon={s.art} tone={s.tone} size={50} tilt={-6} />
+          <ArtTile name={s.art} size={64} tilt={-6} />
           <span className="mt-auto block pr-4">
             <span className="block text-[15px] font-semibold text-g-ink-2">{s.title}</span>
             <span className="live mt-0.5 block text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">{s.value}</span>

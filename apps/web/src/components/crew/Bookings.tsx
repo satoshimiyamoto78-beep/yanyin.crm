@@ -1,6 +1,6 @@
 "use client";
 
-import { UserCheck, ChevronRight, History, ListOrdered, LogOut, Plus, UserRound, Armchair, Ban, CalendarDays, CalendarPlus, Check, Pencil, Phone, StickyNote, Users } from "lucide-react";
+import { ChevronRight, History, ListOrdered, LogOut, Plus, UserRound, Armchair, Ban, CalendarDays, CalendarPlus, Check, Pencil, Phone, StickyNote, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Booking, FloorTable } from "@/lib/demo-floor";
 import { haptic } from "@/lib/haptics";
@@ -87,12 +87,11 @@ export function BookingsView({
         <BookingRuler className="col-span-2" list={list} today={day === 0} initial={next?.id} />
         <IconStat
           title={tr("Seated")}
-          icon={UserCheck}
+          art="seated"
           value={`${list.filter((b) => b.status === "seated").length} / ${list.length}`}
           sub={tr("bookings have arrived")}
-          tone="green"
         />
-        <IconStat title={tr("Guests")} icon={Users} value={String(guests)} sub={tr("expected today")} tone="blue" />
+        <IconStat title={tr("Guests")} art="guests" value={String(guests)} sub={tr("expected today")} />
         {day === 0 && (
           <WaitingList
             className="col-span-2"

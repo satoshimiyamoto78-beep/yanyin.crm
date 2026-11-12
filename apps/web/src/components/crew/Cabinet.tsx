@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, ChevronRight, Clock, Flame, Heart, MessageCircle, QrCode, Receipt as ReceiptIcon, Search, ShieldCheck, Sparkles, Star, Trophy, UtensilsCrossed, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpen, ChevronRight, Flame, Heart, MessageCircle, QrCode, Search, ShieldCheck, Sparkles, Star, Trophy, UtensilsCrossed, Wallet, type LucideIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { MenuItem } from "@yanyin/domain";
 import type { CrewData } from "@/lib/demo-crew";
@@ -114,8 +114,8 @@ export function CabinetView({
           referenceName={tr("Last month")}
           format={k}
         />
-        <IconStat title={tr("Shifts")} icon={Clock} value={`${shifts}`} sub={tr("{n} hour this month|{n} hours this month", { n: shifts * 8 })} tone="blue" />
-        <IconStat title={tr("Orders")} icon={ReceiptIcon} value={`${orders}`} sub={tr("served this month")} tone="orange" />
+        <IconStat title={tr("Shifts")} art="shifts" value={`${shifts}`} sub={tr("{n} hour this month|{n} hours this month", { n: shifts * 8 })} />
+        <IconStat title={tr("Orders")} art="orders" value={`${orders}`} sub={tr("served this month")} />
         <BarsWidget
           className="col-span-2"
           title={tr("Tips by day")}
