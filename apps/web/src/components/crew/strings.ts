@@ -1,5 +1,9 @@
 /* Waiter app interface text in Russian and Vietnamese, keyed by the English source. Missing keys stay in English. */
 export const RU: Record<string, string> = {
+  "Till": "Касса",
+  "Shift till": "Касса смены",
+  "Everything about money on this shift": "Всё про деньги этой смены",
+  "Shift money": "Деньги смены",
   "History": "История",
   "{n} bill with a tip|{n} bills with a tip": "{n} чек с чаевыми|{n} чека с чаевыми|{n} чеков с чаевыми",
   "{n} shift|{n} shifts": "{n} смена|{n} смены|{n} смен",
@@ -788,6 +792,10 @@ export const RU: Record<string, string> = {
 };
 
 export const VI: Record<string, string> = {
+  "Till": "Thu ngân",
+  "Shift till": "Thu ngân ca",
+  "Everything about money on this shift": "Mọi thứ về tiền trong ca này",
+  "Shift money": "Tiền trong ca",
   "History": "Lịch sử",
   "{n} bill with a tip|{n} bills with a tip": "{n} hóa đơn có tip",
   "{n} shift|{n} shifts": "{n} ca",

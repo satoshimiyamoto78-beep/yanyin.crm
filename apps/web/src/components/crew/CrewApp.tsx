@@ -304,7 +304,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
               { id: "tables", title: tr("Tables"), value: `${hot.busy}/${hot.tables}`, sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("all calm"), hot: hot.bills > 0, art: "tables" },
               { id: "orders", title: tr("Orders"), value: String(hot.openOrders), sub: tr("{n} dish in the kitchen|{n} dishes in the kitchen", { n: hot.inKitchen }), art: "orders" },
               { id: "bookings", title: tr("Bookings"), value: String(hot.bookings), sub: hot.nextBooking ? tr("next at {t}", { t: hot.nextBooking }) : tr("nothing planned"), art: "bookings" },
-              { id: "bills", title: tr("Bills"), value: compactMoney(tables.reduce((n, x) => n + (x.status !== "free" && x.status !== "reserved" ? Math.round(ticketTotal(x.lines) * 1.05) : 0), 0)).replace(/(\.\d)\d(M)/, "$1$2"), sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("still to pay"), hot: hot.bills > 0, art: "check" },
+              { id: "bills", title: tr("Till"), value: compactMoney(tables.reduce((n, x) => n + (x.status !== "free" && x.status !== "reserved" ? Math.round(ticketTotal(x.lines) * 1.05) : 0), 0)).replace(/(\.\d)\d(M)/, "$1$2"), sub: hot.bills ? tr("{n} table wants the bill|{n} tables want the bill", { n: hot.bills }) : tr("still to pay"), hot: hot.bills > 0, art: "check" },
               { id: "kitchen", title: tr("Kitchen"), value: String(hot.inKitchen), sub: tr("dish in work|dishes in work", { n: hot.inKitchen }), art: "kitchen" },
             ]}
             onOpen={(id) => (id === "bills" || id === "kitchen" ? setHallPage(id) : go(id))}
@@ -355,7 +355,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
             }}
           />
         )}
-        {tab === "orders" && <OrdersView tables={tables} history={history} money={money} itemById={itemById} onOpenTable={setOpen} onReceipt={setReceipt} onHistory={() => go("cabinet")} />}
+        {tab === "orders" && <OrdersView tables={tables} history={history} money={money} itemById={itemById} onOpenTable={setOpen} />}
         {tab === "bookings" && (
           <BookingsView
             bookings={bookings}
@@ -1661,21 +1661,15 @@ function OrdersView({
   money,
   itemById,
   onOpenTable,
-  onReceipt,
-  onHistory,
 }: {
   tables: FloorTable[];
   history: ClosedOrder[];
   money: (n: number) => string;
   itemById: Map<string, MenuItem>;
   onOpenTable: (no: number) => void;
-  onReceipt: (o: ClosedOrder) => void;
-  onHistory?: () => void;
 }) {
   const tr = useTr();
   const dish = useDish();
-  const locale = useLocale();
-  const [view, setView] = useState<"open" | "closed">("open");
   const open = tables.filter((x) => x.lines.length);
   const dishes = (st: LineState) => open.reduce((n, x) => n + x.lines.filter((l) => l.state === st && !l.cancelled).reduce((q, l) => q + l.qty, 0), 0);
   const billTables = open.filter((x) => x.status === "bill").sort((a, b) => (a.since ?? "").localeCompare(b.since ?? ""));
@@ -1692,8 +1686,6 @@ function OrdersView({
     [tr("In the kitchen"), open.filter((x) => x.status !== "bill" && x.lines.some((l) => l.state !== "served"))],
     [tr("All served"), open.filter((x) => x.status !== "bill" && x.lines.every((l) => l.state === "served"))],
   ];
-  const takings = history.reduce((s, o) => s + total5(o), 0);
-  const tips = history.reduce((s, o) => s + o.tip, 0);
   const summary = (ls: TicketLine[]) => {
     const names = ls.map((l) => `${l.qty}× ${dish(itemById.get(l.itemId)?.name)}`);
     return names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "");
@@ -1702,14 +1694,6 @@ function OrdersView({
     <div className="px-5">
       {/* The day's money as a hero, the live pipeline of orders, then two small rings. */}
       <Reveal className="mt-6 grid grid-cols-2 gap-3">
-        <DaysCompareWidget
-          className="col-span-2"
-          title={tr("Taken today")}
-          icon={<Wallet size={13} strokeWidth={2.4} />}
-          days={lastDays(takings, locale)}
-          format={compactMoney}
-          todayNote={tr("tap a day to compare")}
-        />
         <FlowWidget
           className="col-span-2"
           title={tr("Orders now")}
@@ -1746,6 +1730,105 @@ function OrdersView({
             },
           ]}
           footnote={tr("{n} bill paid today|{n} bills paid today", { n: history.length })}
+        />
+      </Reveal>
+      {open.length ? (
+        groups.map(([title, list]) =>
+          list.length ? (
+            <section key={title} className="mt-7">
+              <h2 className="text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">
+                {title} · {list.length}
+              </h2>
+              <Reveal className="mt-1 divide-y divide-g-line">
+                {list.map((x) => {
+                  const cooking = x.lines.filter((l) => l.state !== "served" && !l.cancelled).length;
+                  return (
+                    <button key={x.no} onClick={() => onOpenTable(x.no)} className="press flex w-full gap-3.5 py-4 text-left">
+                      <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline justify-between gap-3">
+                          <span className="text-[16px] font-semibold">{tr("Table {n}", { n: x.no })}</span>
+                          <span className="live shrink-0 text-[16px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
+                        </span>
+                        <span className="live mt-0.5 block truncate text-[14px] text-g-ink-2">{summary(x.lines)}</span>
+                        <span className="mt-1.5 flex items-center gap-2 text-[12px] text-g-muted">
+                          {cooking > 0 && <span className="chip-orange inline-flex h-6 items-center rounded-full px-2 font-semibold">{tr("{n} cooking", { n: cooking })}</span>}
+                          <span className="live">
+                            {tr("since {t}", { t: x.since ?? "" })} · {tr("{n} guest|{n} guests", { n: x.guests })}
+                          </span>
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </Reveal>
+            </section>
+          ) : null,
+        )
+      ) : null}
+      {pickBill && (
+        <PeekCard label={tr("Waiting for the bill")} onClose={() => setPickBill(false)}>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[22px] leading-tight font-bold tracking-[-0.02em]">{tr("Waiting for the bill")}</p>
+            <span className="chip-orange rounded-full px-2.5 py-1 text-[12px] font-semibold tabular-nums">
+              {tr("{n} table|{n} tables", { n: billTables.length })}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2">
+            {billTables.map((x, i) => (
+              <button
+                key={x.no}
+                onClick={() => {
+                  haptic("light");
+                  setPickBill(false);
+                  onOpenTable(x.no);
+                }}
+                className="press flex items-center gap-3.5 rounded-[22px] bg-g-fill p-3 pr-3.5 text-left"
+              >
+                <span className="flex w-12 shrink-0 flex-col items-center">
+                  <span className="text-[11px] font-medium text-g-muted">{tr("Table")}</span>
+                  <span className="text-[30px] leading-none font-bold tracking-[-0.03em] tabular-nums">{x.no}</span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  {i === 0 && <span className="mb-1 inline-block rounded-full bg-[#ef6c1a] px-2 py-0.5 text-[10px] font-semibold text-white">{tr("Longest at the table")}</span>}
+                  <span className="block text-[17px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
+                  <span className="flex items-center gap-1 text-[12px] whitespace-nowrap text-g-muted tabular-nums">
+                    {tr("{n} guest|{n} guests", { n: x.guests })} · <Clock size={12} strokeWidth={2.2} className="shrink-0" /> {sat(x.since)}
+                  </span>
+                </span>
+                <span className="shrink-0 rounded-full bg-g-ink px-3.5 py-2 text-[13px] font-semibold text-white">{tr("Pay")}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 flex items-baseline justify-between px-1 text-[13px] text-g-muted">
+            <span>{tr("All bills")}</span>
+            <span className="text-[15px] font-semibold text-g-ink tabular-nums">{money(billTables.reduce((n, x) => n + ticketTotal(x.lines), 0))}</span>
+          </p>
+        </PeekCard>
+      )}
+      {!open.length && <p className="py-12 text-center text-[15px] text-g-muted">{tr("No open orders")}</p>}
+    </div>
+  );
+}
+
+/**
+ * The shift's money, for the till page: takings against the last days, then
+ * tips and the average check over the whole shift by hour.
+ */
+export function ShiftMoney({ history }: { history: ClosedOrder[] }) {
+  const tr = useTr();
+  const locale = useLocale();
+  const takings = history.reduce((s, o) => s + total5(o), 0);
+  const tips = history.reduce((s, o) => s + o.tip, 0);
+  return (
+    <Reveal className="grid grid-cols-2 gap-3">
+        <DaysCompareWidget
+          className="col-span-2"
+          title={tr("Taken today")}
+          icon={<Wallet size={13} strokeWidth={2.4} />}
+          days={lastDays(takings, locale)}
+          format={compactMoney}
+          todayNote={tr("tap a day to compare")}
         />
         {/* Full-width insight cards over the whole shift: worked hours in colour, the rest grey. */}
         {(() => {
@@ -1810,136 +1893,7 @@ function OrdersView({
             </>
           );
         })()}
-      </Reveal>
-      <div className="mt-8 flex rounded-full bg-g-fill p-1">
-        {(
-          [
-            ["open", `${tr("Open")} · ${open.length}`],
-            ["closed", `${tr("Closed today")} · ${history.length}`],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => {
-              haptic("tick");
-              setView(id);
-              loadIfChanged(`orders:${id}`, `${id}:${open.length}:${history.length}`, 450);
-            }}
-            aria-pressed={view === id}
-            className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${view === id ? "bg-white text-g-ink" : "text-g-muted"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {view === "open" ? (
-        groups.map(([title, list]) =>
-          list.length ? (
-            <section key={title} className="mt-7">
-              <h2 className="text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">
-                {title} · {list.length}
-              </h2>
-              <Reveal className="mt-1 divide-y divide-g-line">
-                {list.map((x) => {
-                  const cooking = x.lines.filter((l) => l.state !== "served" && !l.cancelled).length;
-                  return (
-                    <button key={x.no} onClick={() => onOpenTable(x.no)} className="press flex w-full gap-3.5 py-4 text-left">
-                      <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-semibold tabular-nums ${x.status === "bill" ? "blue-grad" : "bg-g-fill"}`}>{x.no}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline justify-between gap-3">
-                          <span className="text-[16px] font-semibold">{tr("Table {n}", { n: x.no })}</span>
-                          <span className="live shrink-0 text-[16px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
-                        </span>
-                        <span className="live mt-0.5 block truncate text-[14px] text-g-ink-2">{summary(x.lines)}</span>
-                        <span className="mt-1.5 flex items-center gap-2 text-[12px] text-g-muted">
-                          {cooking > 0 && <span className="chip-orange inline-flex h-6 items-center rounded-full px-2 font-semibold">{tr("{n} cooking", { n: cooking })}</span>}
-                          <span className="live">
-                            {tr("since {t}", { t: x.since ?? "" })} · {tr("{n} guest|{n} guests", { n: x.guests })}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </Reveal>
-            </section>
-          ) : null,
-        )
-      ) : (
-        <Reveal className="mt-4 divide-y divide-g-line">
-          {history.map((o) => {
-            const { icon: Icon, label } = METHOD[o.method];
-            return (
-              <button key={o.id} onClick={() => onReceipt(o)} className="press flex w-full gap-3.5 py-4 text-left">
-                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-g-fill text-g-blue">
-                  <Icon size={20} strokeWidth={1.8} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="text-[16px] font-semibold">{tr("Table {n}", { n: o.table })}</span>
-                    <span className="live shrink-0 text-[16px] font-semibold tabular-nums">{money(total5(o))}</span>
-                  </span>
-                  <span className="live mt-0.5 block truncate text-[14px] text-g-ink-2">{summary(o.lines)}</span>
-                  <span className="mt-1 flex items-center justify-between gap-2 text-[12px] text-g-muted">
-                    <span className="live">
-                      #{o.id} · {o.closedAt} · {tr(label)}
-                    </span>
-                    {o.tip > 0 && <span className="live shrink-0 font-semibold text-g-green tabular-nums">{tr("tip {sum}", { sum: money(o.tip) })}</span>}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-          {onHistory && (
-            <button onClick={onHistory} className="press flex w-full items-center justify-between py-4 text-left text-[15px] font-semibold text-g-blue">
-              {tr("All order history in the Cabinet")} <ChevronRight size={18} strokeWidth={2.4} />
-            </button>
-          )}
-        </Reveal>
-      )}
-      {pickBill && (
-        <PeekCard label={tr("Waiting for the bill")} onClose={() => setPickBill(false)}>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[22px] leading-tight font-bold tracking-[-0.02em]">{tr("Waiting for the bill")}</p>
-            <span className="chip-orange rounded-full px-2.5 py-1 text-[12px] font-semibold tabular-nums">
-              {tr("{n} table|{n} tables", { n: billTables.length })}
-            </span>
-          </div>
-          <div className="mt-4 grid gap-2">
-            {billTables.map((x, i) => (
-              <button
-                key={x.no}
-                onClick={() => {
-                  haptic("light");
-                  setPickBill(false);
-                  onOpenTable(x.no);
-                }}
-                className="press flex items-center gap-3.5 rounded-[22px] bg-g-fill p-3 pr-3.5 text-left"
-              >
-                <span className="flex w-12 shrink-0 flex-col items-center">
-                  <span className="text-[11px] font-medium text-g-muted">{tr("Table")}</span>
-                  <span className="text-[30px] leading-none font-bold tracking-[-0.03em] tabular-nums">{x.no}</span>
-                </span>
-                <span className="min-w-0 flex-1">
-                  {i === 0 && <span className="mb-1 inline-block rounded-full bg-[#ef6c1a] px-2 py-0.5 text-[10px] font-semibold text-white">{tr("Longest at the table")}</span>}
-                  <span className="block text-[17px] font-semibold tabular-nums">{money(ticketTotal(x.lines))}</span>
-                  <span className="flex items-center gap-1 text-[12px] whitespace-nowrap text-g-muted tabular-nums">
-                    {tr("{n} guest|{n} guests", { n: x.guests })} · <Clock size={12} strokeWidth={2.2} className="shrink-0" /> {sat(x.since)}
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-full bg-g-ink px-3.5 py-2 text-[13px] font-semibold text-white">{tr("Pay")}</span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 flex items-baseline justify-between px-1 text-[13px] text-g-muted">
-            <span>{tr("All bills")}</span>
-            <span className="text-[15px] font-semibold text-g-ink tabular-nums">{money(billTables.reduce((n, x) => n + ticketTotal(x.lines), 0))}</span>
-          </p>
-        </PeekCard>
-      )}
-      {view === "open" && !open.length && <p className="py-12 text-center text-[15px] text-g-muted">{tr("No open orders")}</p>}
-    </div>
+    </Reveal>
   );
 }
 

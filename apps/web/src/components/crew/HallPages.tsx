@@ -6,7 +6,7 @@ import { ticketTotal, type ClosedOrder, type FloorTable, type TicketLine } from 
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
 import { ArtScene } from "@/components/system/Art";
-import { compactMoney } from "./CrewApp";
+import { compactMoney, ShiftMoney } from "./CrewApp";
 import { useDish, useTr } from "./prefs";
 
 /** Minutes since a "HH:MM" time by the demo clock (12:45). */
@@ -20,7 +20,7 @@ const paidOf = (o: ClosedOrder) => withService(o.subtotal) + o.tip;
 const section = "mt-7 mb-2.5 flex items-center gap-2 text-[12px] font-semibold tracking-[0.06em] text-g-muted uppercase";
 
 /**
- * Bills: the money on the floor. A scene card with what is still to pay and
+ * Shift till: everything about money on this shift. A scene card with what is still to pay and
  * what is paid; then the tables that asked for the bill (longest first), the
  * other open tables, and today's paid bills. One tap opens a bill.
  */
@@ -59,9 +59,10 @@ export function BillsPage({ tables, history, money, onOpenBill, onReceipt, onClo
   );
 
   return (
-    <Sheet open onClose={onClose} label={tr("Bills")} title={false}>
+    <Sheet open onClose={onClose} label={tr("Shift till")} title={false}>
       <div className="px-5 pt-1 pb-10">
-        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Bills")}</h2>
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{tr("Shift till")}</h2>
+        <p className="mt-1 text-[14px] text-g-muted">{tr("Everything about money on this shift")}</p>
 
         <ArtScene
           name="check"
@@ -101,6 +102,10 @@ export function BillsPage({ tables, history, money, onOpenBill, onReceipt, onClo
             <div className="grid grid-cols-[minmax(0,1fr)] gap-2">{open.map((x) => row(x, false))}</div>
           </>
         )}
+
+        {/* The shift's money: takings, tips and the average check. */}
+        <h3 className={section}>{tr("Shift money")}</h3>
+        <ShiftMoney history={history} />
 
         {paid.length > 0 && (
           <>
