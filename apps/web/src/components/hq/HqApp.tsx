@@ -8,6 +8,7 @@ import { demoFloor, ticketTotal } from "@/lib/demo-floor";
 import { BAR_CHECKLIST, BAR_RUN, demoKitchen, KITCHEN_CHECKLIST, KITCHEN_RUN } from "@/lib/demo-kitchen";
 import { CHECKLIST_OWNER, TEAM, WAITER_CHECKLIST, WAITER_RUN } from "@/lib/demo-team";
 import { postNews, useNews } from "@/lib/news";
+import { useHandles, withHandles } from "@/lib/handles";
 import { useStopList } from "@/lib/stoplist";
 import { Island, type IslandNotice } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
@@ -60,7 +61,10 @@ function Console({ menu }: { menu: Menu }) {
   const tr = useTr();
   const scheme = useScheme();
   const [tab, setTab] = useState<Tab>("overview");
-  const [team, setTeam] = useState<Person[]>(TEAM);
+  const [rawTeam, setTeam] = useState<Person[]>(TEAM);
+  // Everyone's chosen @ID (a waiter may have picked a new one in their app).
+  const handles = useHandles();
+  const team = useMemo(() => withHandles(rawTeam, handles), [rawTeam, handles]);
   const [person, setPerson] = useState<Person | null>(null);
   const [draft, setDraft] = useState("");
   const [runs, setRuns] = useState<Record<string, ChecklistRun>>({ waiter: { ...WAITER_RUN, marks: { ...WAITER_RUN.marks, fridge: { at: "11:20", by: "staff-linh", value: "7" } } }, bar: BAR_RUN, kitchen: KITCHEN_RUN });

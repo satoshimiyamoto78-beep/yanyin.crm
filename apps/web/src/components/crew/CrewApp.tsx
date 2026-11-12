@@ -3,6 +3,7 @@
 import { allItems, formatMoney, type Menu, type MenuItem } from "@yanyin/domain";
 import {
   Armchair,
+  AtSign,
   Banknote,
   CheckCheck,
   RotateCcw,
@@ -58,6 +59,10 @@ import { YanChat } from "./YanChat";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { PersonalInfoPage, ProfilePage, type Me } from "./Settings";
 import { InboxPage, kindOf, seedInbox, type InboxItem } from "./Inbox";
+import { HandlePicker } from "./HandlePicker";
+import { TEAM } from "@/lib/demo-team";
+import { saveHandle, useHandles, withHandles } from "@/lib/handles";
+import { markRead, useNews } from "@/lib/news";
 import { BadgesPage } from "./Collections";
 import { levelFromXp } from "@yanyin/domain";
 
@@ -148,7 +153,22 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- seed the demo history once, with the real clock
     setInbox(seedInbox(Date.now()));
   }, []);
-  const unread = inbox.filter((i) => !i.read).length;
+  // The team with everyone's chosen @ID; mine is asked for on first entry.
+  const ME_ID = data.staff.id;
+  const handles = useHandles();
+  const team = useMemo(() => withHandles(TEAM, handles), [handles]);
+  const myHandle = handles[ME_ID];
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the @ID screen waits for the saved choice to load
+    setMounted(true);
+  }, []);
+  const [pickHandle, setPickHandle] = useState(false);
+  // News that mention me (or my station, or @all), from the admin console.
+  const news = useNews();
+  const myNews = useMemo(() => news.filter((p) => p.to.includes(ME_ID)), [news, ME_ID]);
+  const [inboxTab, setInboxTab] = useState<"notifications" | "news">("notifications");
+  const unread = inbox.filter((i) => !i.read).length + myNews.filter((p) => !p.read.includes(ME_ID)).length;
   const [cabBadges, setCabBadges] = useState(false);
   const [tables, setTables] = useState(floor.tables);
   const [bookings, setBookings] = useState(floor.bookings);
@@ -191,6 +211,34 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     setTimeout(() => startTransition(() => setInbox((xs) => [{ id: `i${at}${xs.length}`, kind: kindOf(raw.title), table: raw.table, title: raw.title, text: typeof raw.text === "string" ? raw.text : undefined, at, read: false }, ...xs].slice(0, 80))), 450);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the store setter is stable
   }, []);
+  // A new post that mentions me arrives as an island with a way to read it.
+  const seenNews = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!seenNews.current) {
+      seenNews.current = new Set(myNews.map((p) => p.id));
+      return;
+    }
+    for (const p of myNews) {
+      if (seenNews.current.has(p.id)) continue;
+      seenNews.current.add(p.id);
+      const by = team.find((x) => x.id === p.by);
+      notify({
+        title: tr("{who} mentioned you", { who: `@${by?.handle ?? "team"}` }),
+        text: p.text,
+        tone: "blue",
+        icon: <AtSign size={16} strokeWidth={2.4} />,
+        action: {
+          label: tr("Read it"),
+          onClick: () => {
+            setNotice(null);
+            setInboxTab("news");
+            setInboxOpen(true);
+          },
+        },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the notice store setter is stable
+  }, [myNews, team, notify, tr]);
   const patch = (no: number, f: (x: FloorTable) => FloorTable) => setTables((ts) => ts.map((x) => (x.no === no ? f(x) : x)));
   const now = () => new Date().toTimeString().slice(0, 5);
   const openBill = (no: number) => {
@@ -475,6 +523,8 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onNotify={(title, text) => notify({ title, text })}
           dark={scheme.dark}
           onTheme={scheme.toggle}
+          handle={myHandle}
+          onHandle={() => setPickHandle(true)}
         />
       )}
       {profile === "personal" && (
@@ -490,7 +540,36 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
       )}
       {profile === "badges" && <BadgesPage badges={data.badges} onClose={() => setProfile("profile")} />}
       {cabBadges && <BadgesPage badges={data.badges} onClose={() => setCabBadges(false)} />}
-      {inboxOpen && <InboxPage items={inbox} onOpenBill={openBill} onClose={() => setInboxOpen(false)} onReadAll={() => setInbox((xs) => xs.map((i) => ({ ...i, read: true })))} />}
+      {inboxOpen && (
+        <InboxPage
+          items={inbox}
+          tab={inboxTab}
+          news={myNews.map((p) => ({ id: p.id, by: team.find((x) => x.id === p.by)?.handle ?? "team", text: p.text, at: p.at, read: p.read.includes(ME_ID) }))}
+          known={(h) => team.some((x) => x.handle === h)}
+          onOpenBill={openBill}
+          onClose={() => {
+            setInboxOpen(false);
+            setInboxTab("notifications");
+          }}
+          onReadAll={() => {
+            setInbox((xs) => xs.map((i) => ({ ...i, read: true })));
+            myNews.filter((p) => !p.read.includes(ME_ID)).forEach((p) => markRead(p.id, ME_ID));
+          }}
+        />
+      )}
+      {mounted && (!myHandle || pickHandle) && (
+        <HandlePicker
+          me={me}
+          others={team.filter((x) => x.id !== ME_ID)}
+          current={myHandle}
+          onClose={myHandle ? () => setPickHandle(false) : undefined}
+          onDone={(h) => {
+            saveHandle(ME_ID, h);
+            setPickHandle(false);
+            notify({ title: tr("Your ID is @{h}", { h }), text: tr("The team can mention you now") });
+          }}
+        />
+      )}
 
       <CrewIsland
         onExpand={(open) => {

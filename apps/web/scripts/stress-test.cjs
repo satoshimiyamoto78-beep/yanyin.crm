@@ -7,7 +7,7 @@ const S=process.env.S||'stress-out';require('fs').mkdirSync(S+'/stress',{recursi
 const b=await chromium.launch();const report=[];
 async function run(app,theme){
   const ctx=await b.newContext({...devices['Pixel 5']});
-  await ctx.addInitScript(t=>{try{localStorage.setItem('yanyin:crew-prefs',JSON.stringify({lang:'ru'}));localStorage.setItem('yanyin:theme',t);}catch(e){}
+  await ctx.addInitScript(t=>{try{localStorage.setItem('yanyin:crew-prefs',JSON.stringify({lang:'ru'}));localStorage.setItem('yanyin:theme',t);localStorage.setItem('yanyin:handles',JSON.stringify({'staff-linh':'linh'}));}catch(e){}
     window.__lt=[];try{new PerformanceObserver(l=>l.getEntries().forEach(e=>window.__lt.push([e.startTime,e.duration]))).observe({type:'longtask'})}catch(e){}
     window.__f=[];let last=0;const loop=t=>{if(last)window.__f.push([t,t-last]);last=t;requestAnimationFrame(loop)};requestAnimationFrame(loop);},theme);
   const p=await ctx.newPage();p.setDefaultTimeout(4000);const c=await ctx.newCDPSession(p);await c.send('Emulation.setCPUThrottlingRate',{rate:6});

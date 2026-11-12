@@ -1,11 +1,12 @@
 "use client";
 
-import { Bell, ChevronRight, CalendarDays, ChefHat, Megaphone, ReceiptText, Sparkles, Trophy, UtensilsCrossed, type LucideIcon } from "lucide-react";
+import { AtSign, Bell, ChevronRight, CalendarDays, ChefHat, Megaphone, ReceiptText, Sparkles, Trophy, UtensilsCrossed, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
 import { useTr } from "./prefs";
 import { noticeMeta } from "./notices";
+import { MentionText } from "@/components/system/MentionInput";
 
 export type InboxKind = "orders" | "kitchen" | "bills" | "bookings" | "team";
 export type InboxItem = { id: string; kind: InboxKind; title: string; text?: string; at: number; read: boolean; /** The table it is about: a bill request opens that table's bill. */ table?: number };
@@ -41,7 +42,7 @@ export function seedInbox(now: number): InboxItem[] {
 }
 
 const NEWS = [
-  { id: "n1", icon: Megaphone, from: "Manager · Aziz", title: "Team meeting on Friday at 10:30", text: "New summer menu tasting before the shift. Lunch is on the house.", when: "Today" },
+  { id: "n1", icon: Megaphone, from: "@huong · Admin", title: "Team meeting on Friday at 10:30", text: "New summer menu tasting before the shift. Lunch is on the house.", when: "Today" },
   { id: "n2", icon: UtensilsCrossed, from: "Menu", title: "Pizza from halves is live", text: "Guests can combine two halves in the QR menu. Suggest it to groups of two.", when: "Yesterday" },
   { id: "n3", icon: Sparkles, from: "yanyin", title: "Dark theme and a new home", text: "Switch the theme from the header, and customize your main screen at the bottom of Home.", when: "Mon" },
 ];
@@ -55,9 +56,29 @@ const timeOf = (at: number, now: number, tr: (s: string, v?: Record<string, numb
 const dayOf = (at: number, now: number) => (new Date(at).toDateString() === new Date(now).toDateString() ? "Today" : "Earlier");
 
 /** Notifications (live history, filterable) and news from the venue and yanyin. */
-export function InboxPage({ items, onClose, onReadAll, onOpenBill }: { items: InboxItem[]; onClose: () => void; onReadAll: () => void; onOpenBill?: (table: number) => void }) {
+export type NewsItem = { id: string; by: string; text: string; at: string; read: boolean };
+
+export function InboxPage({
+  items,
+  onClose,
+  onReadAll,
+  onOpenBill,
+  news = [],
+  known = () => false,
+  tab: startTab = "notifications",
+}: {
+  items: InboxItem[];
+  onClose: () => void;
+  onReadAll: () => void;
+  onOpenBill?: (table: number) => void;
+  /** Posts from the admin console that mention me; newest first. */
+  news?: NewsItem[];
+  known?: (handle: string) => boolean;
+  tab?: "notifications" | "news";
+}) {
   const tr = useTr();
-  const [tab, setTab] = useState<"notifications" | "news">("notifications");
+  const [tab, setTab] = useState<"notifications" | "news">(startTab);
+  const newsUnread = news.filter((n) => !n.read).length;
   const [filter, setFilter] = useState<InboxKind | "all">("all");
   // Read once on open: the clock for "5 min ago" labels.
   const [now] = useState(() => Date.now());
@@ -94,7 +115,7 @@ export function InboxPage({ items, onClose, onReadAll, onOpenBill }: { items: In
           {(
             [
               ["notifications", `${tr("Notifications")}${unread ? ` · ${unread}` : ""}`],
-              ["news", tr("News")],
+              ["news", `${tr("News")}${newsUnread ? ` · ${newsUnread}` : ""}`],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -175,6 +196,22 @@ export function InboxPage({ items, onClose, onReadAll, onOpenBill }: { items: In
           </>
         ) : (
           <div className="mt-5 grid gap-3">
+            {/* Messages that mention me, from the admin console: the @IDs in blue, unread marked. */}
+            {news.map((n) => (
+              <article key={n.id} className={`rounded-[24px] p-4 ${n.read ? "bg-g-fill" : "bg-g-tint-blue"}`}>
+                <div className="flex items-center gap-2.5">
+                  <span className="blue-grad grid size-8 shrink-0 place-items-center rounded-full">
+                    <AtSign size={15} strokeWidth={2.2} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-g-ink-2">@{n.by}</span>
+                  {!n.read && <span className="size-2 shrink-0 rounded-full bg-g-blue" />}
+                  <span className="text-[12px] text-g-muted tabular-nums">{n.at}</span>
+                </div>
+                <p className="mt-2.5 text-[16px] leading-snug">
+                  <MentionText text={n.text} known={known} />
+                </p>
+              </article>
+            ))}
             {NEWS.map((n) => (
               <article key={n.id} className="rounded-[24px] bg-g-fill p-4">
                 <div className="flex items-center gap-2.5">

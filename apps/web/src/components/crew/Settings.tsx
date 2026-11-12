@@ -60,6 +60,8 @@ export function ProfilePage({
   onNotify,
   dark,
   onTheme,
+  handle,
+  onHandle,
 }: {
   me: Me;
   level: { level: number; title: string; xpIntoLevel: number; xpForNext: number };
@@ -70,6 +72,9 @@ export function ProfilePage({
   onNotify: (title: string, text?: string) => void;
   dark: boolean;
   onTheme: () => void;
+  /** My @ID and how to change it. */
+  handle?: string;
+  onHandle?: () => void;
 }) {
   const { prefs, set, tr } = usePrefs();
   const [sub, setSub] = useState<Sub>(null);
@@ -89,6 +94,11 @@ export function ProfilePage({
           <p className="mt-4 text-[24px] leading-tight font-bold tracking-[-0.02em]">
             {me.first} {me.last}
           </p>
+          {handle && (
+            <button onClick={onHandle} className="press mt-1 rounded-full bg-g-tint-blue px-3 py-1 text-[15px] font-semibold text-g-blue">
+              @{handle}
+            </button>
+          )}
           <p className="mt-1 text-[15px] text-g-muted">{tr(me.role)}</p>
         </div>
 
