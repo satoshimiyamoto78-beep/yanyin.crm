@@ -49,6 +49,7 @@ something like `yanyin.app` (not decided yet, see `docs/04-decisions.md`).
 - `docs/06-design-direction.md`: earlier design directions (history only)
 - `packages/seed/src/*.menu.json`: real pilot menus (Samarkand, Zabey), used as demo and seed data
 - `docs/08-roles-ids-checklists.md`: roles and stations (tickets go to a station, the whole station works them, nobody claims), staff @IDs and mentions, shift checklists, the bar/kitchen/admin screens
+- `docs/09-ui-map.md`: map of every screen (done / missing), device targets and the build order up to launch
 - `docs/05-pilot-vietnam.md`: first launch country (Vietnam, Da Nang), pilot venues Samarkand and Zabey, e-invoice and payments
 - Interactive architecture scheme: https://claude.ai/artifact/SG8DvbBNPCJQNdibfwJ7WQ
 
