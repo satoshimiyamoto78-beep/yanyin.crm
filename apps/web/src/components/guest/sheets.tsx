@@ -79,6 +79,23 @@ function ItemSheetBody({
   const price = unitPrice(item, variantId, optionIds);
   const alt = altName(item, lang);
 
+  // Hookah: strength is light / medium / strong and every tobacco has its own level.
+  const strengthGroup = item.modifierGroups.find((g) => g.display === "scale" && g.options.every((o) => o.level));
+  const level = strengthGroup?.options.find((o) => optionIds.includes(o.id))?.level;
+  const setLevel = (lv: number) => {
+    if (!strengthGroup) return;
+    const ids = strengthGroup.options.map((o) => o.id);
+    const next = strengthGroup.options.find((o) => o.level === lv);
+    if (!next) return;
+    setOptionIds((prev) => {
+      // A tobacco of another strength no longer fits: the guest picks again from the matching ones, now on top.
+      const brands = item.modifierGroups.filter((g) => g.display === "brands").flatMap((g) => g.options);
+      const keep = prev.filter((id) => !ids.includes(id) && !brands.some((b) => b.id === id && b.level && b.level !== lv));
+      return [...keep, next.id];
+    });
+  };
+  const isHookah = Boolean(strengthGroup && item.modifierGroups.some((g) => g.display === "brands"));
+
   const toggle = (groupId: string, optionId: string) => {
     const group = item.modifierGroups.find((g) => g.id === groupId)!;
     setOptionIds((prev) => {
@@ -146,6 +163,15 @@ function ItemSheetBody({
             </div>
           )}
         </div>
+      ) : isHookah && item.cover ? (
+        <div className="px-3 pt-3">
+          {/* The hookah builder: a wide crop of the photo with the live mix on top, so the steps start on the first screen. */}
+          <div className="relative aspect-[1.45] w-full overflow-hidden rounded-[28px] bg-[#0b0b0f]">
+            <Image src={item.cover} alt="" fill sizes="480px" className="object-cover object-[50%_40%]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <HookahSummary item={item} ids={optionIds} lang={lang} />
+          </div>
+        </div>
       ) : item.cover ? (
         <div className="px-3 pt-3">
           {/* On the dish's own page the photo is shown whole, in its own proportions; lists crop it to the venue's format. */}
@@ -195,7 +221,7 @@ function ItemSheetBody({
           return (
             <section key={g.id} className="mt-9">
               <div className="mb-4 flex items-baseline gap-2.5">
-                {steps && <span className="text-[13px] font-semibold text-g-blue tabular-nums">{String(gi + 1).padStart(2, "0")}</span>}
+                {steps && <span className="grid size-7 shrink-0 place-items-center self-center rounded-full bg-g-blue-soft text-[13px] font-bold text-g-blue tabular-nums">{gi + 1}</span>}
                 <h3 className="text-[17px] font-semibold">{t(g.name, lang)}</h3>
                 <span className={`ml-auto text-[13px] font-medium ${g.required && missing.includes(g.id) ? "text-g-blue" : "text-g-faint"}`}>
                   {(g.display === "chips" || g.display === "tiles") && g.max > 1 && g.max < g.options.length ? `${ui(lang, "pickUpTo")} ${g.max} · ` : ""}
@@ -265,9 +291,27 @@ function ItemSheetBody({
                   currency={currency}
                   basePrice={item.price}
                   value={optionIds}
+                  level={level}
                   onPick={(id) => {
                     haptic("light");
                     toggle(g.id, id);
+                    // Picking a tobacco sets the strength to match it.
+                    const lv = g.options.find((o) => o.id === id)?.level;
+                    if (lv && lv !== level && strengthGroup) {
+                      const sid = strengthGroup.options.find((o) => o.level === lv)?.id;
+                      const sids = strengthGroup.options.map((o) => o.id);
+                      if (sid) setOptionIds((prev) => [...prev.filter((x) => !sids.includes(x)), sid]);
+                    }
+                  }}
+                />
+              ) : g.display === "scale" && g === strengthGroup ? (
+                <StrengthLevels
+                  group={g}
+                  lang={lang}
+                  value={level}
+                  onPick={(lv) => {
+                    haptic("tick");
+                    setLevel(lv);
                   }}
                 />
               ) : g.display === "scale" ? (
@@ -280,6 +324,28 @@ function ItemSheetBody({
                     setOptionIds((prev) => [...prev.filter((id) => !ids.includes(id)), g.options[i]!.id]);
                   }}
                 />
+              ) : g.options.every((o) => o.price > 0) ? (
+                // Paid add-ons read as rows: name, price, a round tick. Long names wrap inside the row, never break the layout.
+                <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
+                  {g.options.map((o) => {
+                    const on = optionIds.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        onClick={() => {
+                          haptic("light");
+                          toggle(g.id, o.id);
+                        }}
+                        aria-pressed={on}
+                        className={`press flex min-h-14 items-center gap-3 rounded-[22px] py-2 pr-2 pl-4 text-left transition-colors ${on ? "bg-g-blue-soft" : "bg-g-fill"}`}
+                      >
+                        <span className="min-w-0 flex-1 text-[15px] leading-snug font-medium">{t(o.name, lang)}</span>
+                        <span className={`shrink-0 text-[14px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-muted"}`}>+{formatMoney(o.price, currency, lang)}</span>
+                        <span className={`grid size-9 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-card text-g-faint"}`}>{on ? <Check size={16} strokeWidth={3} /> : <Plus size={16} strokeWidth={2.4} />}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {g.options.map((o) => {
@@ -292,9 +358,9 @@ function ItemSheetBody({
                           toggle(g.id, o.id);
                         }}
                         aria-pressed={on}
-                        className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"}`}
+                        className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"} ${o.color ? "pl-2.5" : ""}`}
                       >
-                        {on && <Check size={15} strokeWidth={2.5} />}
+                        {on ? <Check size={15} strokeWidth={2.5} /> : o.color && <span className="size-4 shrink-0 rounded-full ring-2 ring-white/70" style={{ background: o.color }} />}
                         {t(o.name, lang)}
                         {o.price > 0 && <span className={on ? "text-white/60" : "text-g-muted"}>+{formatMoney(o.price, currency, lang)}</span>}
                       </button>
@@ -326,11 +392,55 @@ function ItemSheetBody({
   );
 }
 
-/* ---------------------------------------------------------------- Tobacco tiles */
+/* ---------------------------------------------------------------- Hookah */
+
+const LEVEL_KEYS = ["strength1", "strength2", "strength3"] as const;
+const levelWord = (lang: Lang, lv: number) => ui(lang, LEVEL_KEYS[Math.min(3, Math.max(1, lv)) - 1]!);
+
+/** Strength as three rising bars: one for light, two for medium, three for strong. */
+function LevelBars({ level, on, size = 18, light = false }: { level: number; on?: boolean; size?: number; light?: boolean }) {
+  const fill = light ? "#fff" : on ? "var(--g-blue)" : "var(--g-ink)";
+  const rest = light ? "rgba(255,255,255,0.3)" : "color-mix(in srgb, var(--g-faint) 35%, transparent)";
+  return (
+    <svg viewBox="0 0 18 18" width={size} height={size} aria-hidden className="shrink-0">
+      {[0, 1, 2].map((i) => (
+        <rect key={i} x={1 + i * 6} y={12 - i * 5} width={4} height={5 + i * 5} rx={2} fill={i < level ? fill : rest} className="transition-[fill] duration-300" />
+      ))}
+    </svg>
+  );
+}
+
+/** Light, medium or strong: three big cards, the bars, the word and what it means. */
+function StrengthLevels({ group, lang, value, onPick }: { group: ModifierGroup; lang: Lang; value?: number; onPick: (level: number) => void }) {
+  return (
+    <div role="radiogroup" aria-label={t(group.name, lang)} className="grid grid-cols-3 gap-2">
+      {group.options.map((o) => {
+        const lv = o.level ?? 1;
+        const on = value === lv;
+        return (
+          <button
+            key={o.id}
+            role="radio"
+            aria-checked={on}
+            onClick={() => onPick(lv)}
+            className={`press flex min-h-[128px] flex-col items-start rounded-[22px] p-3.5 text-left transition-colors ${on ? "spin-ring bg-g-blue-soft" : "bg-g-fill"}`}
+          >
+            <LevelBars level={lv} on={on} size={26} />
+            <span className="mt-4">
+              <span className={`block text-[16px] leading-tight font-bold tracking-[-0.01em] ${on ? "text-g-blue" : ""}`}>{t(o.name, lang)}</span>
+              {o.note && <span className="mt-1 block text-[12px] leading-[1.3] text-g-muted">{t(o.note, lang)}</span>}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 /**
- * Hookah tobacco as big brand tiles, two per row. The picked one gets the
- * spinning blue ring. A venue logo replaces the wordmark once uploaded.
+ * Hookah tobacco as brand tiles, two per row, each with its own strength.
+ * The ones that match the chosen strength come first; the rest stay pickable,
+ * a little quieter, under "Other strength" (picking one moves the strength).
  */
 function TobaccoTiles({
   group,
@@ -338,6 +448,7 @@ function TobaccoTiles({
   currency,
   basePrice,
   value,
+  level,
   onPick,
 }: {
   group: ModifierGroup;
@@ -345,41 +456,77 @@ function TobaccoTiles({
   currency: Currency;
   basePrice: number;
   value: string[];
+  level?: number;
   onPick: (optionId: string) => void;
 }) {
+  const fits = (lv?: number) => !level || !lv || lv === level;
+  const match = group.options.filter((o) => fits(o.level));
+  const rest = group.options.filter((o) => !fits(o.level));
+  const tile = (o: ModifierGroup["options"][number], quiet: boolean) => {
+    const on = value.includes(o.id);
+    return (
+      <button
+        key={o.id}
+        onClick={() => onPick(o.id)}
+        aria-pressed={on}
+        className={`press flex min-h-[104px] flex-col items-start justify-between rounded-[22px] p-3.5 text-left transition-[background-color,opacity] ${on ? "spin-ring bg-g-blue-soft" : "bg-g-fill"} ${quiet && !on ? "opacity-60" : ""}`}
+      >
+        <span className="flex w-full items-start justify-between gap-2">
+          {o.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={o.logo} alt={t(o.name, lang)} className="h-7 w-auto max-w-[80%] object-contain object-left" />
+          ) : (
+            <span className="text-[18px] leading-[1.1] font-bold tracking-[-0.02em]">{t(o.name, lang)}</span>
+          )}
+          <span className={`grid size-6 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "border-[1.5px] border-g-faint/50"}`}>{on && <Check size={13} strokeWidth={3} />}</span>
+        </span>
+        <span className="mt-2 flex w-full flex-col gap-1">
+          {o.level && (
+            <span className={`flex items-center gap-1.5 text-[12px] font-semibold ${on ? "text-g-blue" : "text-g-ink-2"}`}>
+              <LevelBars level={o.level} on={on} size={14} /> {levelWord(lang, o.level)}
+            </span>
+          )}
+          {o.note && <span className="line-clamp-1 text-[12px] leading-[1.3] text-g-muted">{t(o.note, lang).split(" · ").slice(1).join(" · ") || t(o.note, lang)}</span>}
+          <span className={`text-[14px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-ink"}`}>{formatMoney(basePrice + o.price, currency, lang)}</span>
+        </span>
+      </button>
+    );
+  };
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {group.options.map((o) => {
-        const on = value.includes(o.id);
-        return (
-          <button
-            key={o.id}
-            onClick={() => onPick(o.id)}
-            aria-pressed={on}
-            className={`press flex min-h-[92px] flex-col items-start justify-between rounded-[20px] p-3.5 text-left transition-colors ${on ? "spin-ring bg-g-blue-soft" : "bg-g-fill"}`}
-          >
-            <span className="flex w-full items-start justify-between gap-2">
-              {o.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={o.logo} alt={t(o.name, lang)} className="h-7 w-auto max-w-[80%] object-contain object-left" />
-              ) : (
-                <span className="text-[18px] leading-[1.1] font-bold tracking-[-0.02em]">{t(o.name, lang)}</span>
-              )}
-              <span
-                className={`grid size-5 shrink-0 place-items-center rounded-full transition-colors ${on ? "bg-g-blue text-white" : "border-[1.5px] border-g-faint/50"}`}
-              >
-                {on && <Check size={13} strokeWidth={3} />}
-              </span>
-            </span>
-            <span className="mt-2 flex w-full flex-col gap-0.5">
-              {o.note && <span className="text-[12px] leading-[1.3] text-g-muted">{t(o.note, lang)}</span>}
-              <span className={`text-[13px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-ink-2"}`}>
-                {formatMoney(basePrice + o.price, currency, lang)}
-              </span>
-            </span>
-          </button>
-        );
-      })}
+    <div>
+      <div className="grid grid-cols-2 gap-2">{match.map((o) => tile(o, false))}</div>
+      {rest.length > 0 && (
+        <>
+          <p className="mt-5 mb-2 text-[13px] font-semibold text-g-muted">{ui(lang, "otherStrength")}</p>
+          <div className="grid grid-cols-2 gap-2">{rest.map((o) => tile(o, true))}</div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** The live mix over the photo: strength bars and word, the tobacco, the flavours as colour dots. */
+function HookahSummary({ item, ids, lang }: { item: MenuItem; ids: string[]; lang: Lang }) {
+  const pick = (display: ModifierGroup["display"]) => item.modifierGroups.filter((g) => g.display === display).flatMap((g) => g.options.filter((o) => ids.includes(o.id)));
+  const strength = item.modifierGroups.find((g) => g.display === "scale")?.options.find((o) => ids.includes(o.id));
+  const tobacco = pick("brands")[0];
+  const flavors = item.modifierGroups.filter((g) => g.options.some((o) => o.color) && g.display === "chips").flatMap((g) => g.options.filter((o) => ids.includes(o.id)));
+  return (
+    <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+      <p key={`${strength?.id}-${tobacco?.id}`} className="animate-pop flex items-center gap-2 text-[22px] leading-tight font-bold tracking-[-0.02em]">
+        {strength?.level && <LevelBars level={strength.level} light size={22} />}
+        {strength ? t(strength.name, lang) : ""}
+        <span className="text-white/45">·</span>
+        <span className={tobacco ? "" : "text-white/60"}>{tobacco ? t(tobacco.name, lang) : ui(lang, "pickTobacco")}</span>
+      </p>
+      <p className="mt-1.5 flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-white/80">
+        {flavors.map((f) => (
+          <span key={f.id} className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full ring-1 ring-white/50" style={{ background: f.color }} />
+            {t(f.name, lang)}
+          </span>
+        ))}
+      </p>
     </div>
   );
 }

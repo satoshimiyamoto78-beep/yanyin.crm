@@ -31,6 +31,8 @@ import {
   Plus,
   ReceiptText,
   Search,
+  LayoutGrid,
+  List as ListIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
@@ -124,6 +126,8 @@ export function GuestApp({ menu: fullMenu }: { menu: Menu }) {
   // One light/dark choice for every yanyin surface.
   const { dark, toggle: toggleTheme } = useScheme();
   const [item, setItem] = useState<MenuItem | null>(null);
+  // Grid (photo cards) or list (rows with a thumbnail): the guest's choice, remembered on this phone.
+  const [view, setView] = useState<"grid" | "list">("grid");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [age, setAge] = useState<"unknown" | "ok" | "blocked">(
     brand.ageRestricted ? "unknown" : "ok",
@@ -134,6 +138,9 @@ export function GuestApp({ menu: fullMenu }: { menu: Menu }) {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time sync from browser-only APIs */
     setLang(initialLang());
     setTable(new URLSearchParams(window.location.search).get("table"));
+    try {
+      if (localStorage.getItem("yanyin:menu-view") === "list") setView("list");
+    } catch {}
     try {
       if (sessionStorage.getItem(`age:${menu.venue.slug}`) === "ok")
         setAge("ok");
@@ -225,6 +232,39 @@ export function GuestApp({ menu: fullMenu }: { menu: Menu }) {
   const menuList = useMemo(
     () => (
       <main className="px-5">
+        {/* Grid or list, one tap; the same choice for every category. */}
+        <div className="flex items-center justify-between gap-3 pt-6">
+          <p className="px-1 text-[14px] font-medium text-g-muted">
+            {ui(lang, "dishesCount").replace("{n}", String(menu.categories.reduce((n, c) => n + c.items.length, 0)))}
+          </p>
+          <div role="radiogroup" aria-label={ui(lang, "menuView")} className="relative grid h-10 w-[88px] grid-cols-2 rounded-full bg-g-fill p-1">
+            <span aria-hidden className="absolute top-1 bottom-1 left-1 w-[40px] rounded-full bg-white shadow-[0_1px_3px_rgba(11,11,15,0.12)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ transform: `translateX(${view === "list" ? 40 : 0}px)` }} />
+            {(
+              [
+                ["grid", LayoutGrid, ui(lang, "viewGrid")],
+                ["list", ListIcon, ui(lang, "viewList")],
+              ] as const
+            ).map(([v, Icon, label]) => (
+              <button
+                key={v}
+                role="radio"
+                aria-checked={view === v}
+                aria-label={label}
+                onClick={() => {
+                  if (view === v) return;
+                  haptic("tick");
+                  setView(v);
+                  try {
+                    localStorage.setItem("yanyin:menu-view", v);
+                  } catch {}
+                }}
+                className={`relative z-10 grid place-items-center rounded-full transition-colors ${view === v ? "text-g-ink" : "text-g-faint"}`}
+              >
+                <Icon size={18} strokeWidth={2.1} />
+              </button>
+            ))}
+          </div>
+        </div>
         {menu.categories.map((c) => (
           <section key={c.id} id={`cat-${c.id}`} className="pt-8">
             <h2 className="mb-3 flex items-baseline gap-2 px-1 text-[24px] leading-tight font-bold tracking-[-0.025em]">
@@ -247,6 +287,17 @@ export function GuestApp({ menu: fullMenu }: { menu: Menu }) {
                 onAdd: () => quickAdd(it),
                 onQty: (q: number) => setPlainQty(it, q),
               });
+              if (view === "list")
+                // List: every dish one row, with its photo as a thumbnail when it has one.
+                return (
+                  <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-3">
+                    {c.items.map((it, n) => (
+                      <Reveal key={`${it.id}-${lang}-l`} delay={(n % 4) * 40}>
+                        <DishRow {...props(it)} role={c.role} thumb={Boolean(it.photo || it.cover)} />
+                      </Reveal>
+                    ))}
+                  </div>
+                );
               return (
                 <>
                   {shots.length > 0 && (
@@ -280,7 +331,7 @@ export function GuestApp({ menu: fullMenu }: { menu: Menu }) {
       </main>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- callbacks only read state that is in the deps
-    [menu, lang, currency, lines],
+    [menu, lang, currency, lines, view],
   );
 
   return (

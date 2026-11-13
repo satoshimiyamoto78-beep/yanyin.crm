@@ -43,6 +43,8 @@ export type ModifierOption = {
   glyph?: string;
   /** Round cut-out photo (pizza halves). */
   photo?: string;
+  /** Strength level 1–3 (light, medium, strong): hookah strength steps and the tobaccos that match them. */
+  level?: 1 | 2 | 3;
 };
 
 export type ModifierGroup = {
@@ -52,7 +54,7 @@ export type ModifierGroup = {
   /** Maximum options a guest may pick; 1 means single choice. */
   max: number;
   /**
-   * "scale": ordered steps picked with a slider (hookah strength 1–10).
+   * "scale": ordered steps (hookah strength light / medium / strong; sweetness and ice on a slider).
    * "brands": large brand tiles (hookah tobacco).
    * "tiles": small visual tiles with a colour or glyph (sauces, toppings, flavours).
    */

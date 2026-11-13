@@ -29,6 +29,61 @@
       "age_restricted": true,
       "modifier_groups": [
         {
+          "id": "strength",
+          "name": {
+            "en": "Strength",
+            "ru": "Крепость",
+            "vi": "Độ mạnh"
+          },
+          "required": true,
+          "display": "scale",
+          "default": 1,
+          "options": [
+            {
+              "name": {
+                "en": "Light",
+                "ru": "Лёгкий",
+                "vi": "Nhẹ"
+              },
+              "price": 0,
+              "level": 1,
+              "note": {
+                "en": "Soft and long, lots of flavour",
+                "ru": "Мягкий и долгий, много вкуса",
+                "vi": "Êm, lâu, nhiều vị"
+              }
+            },
+            {
+              "name": {
+                "en": "Medium",
+                "ru": "Средний",
+                "vi": "Vừa"
+              },
+              "price": 0,
+              "level": 2,
+              "note": {
+                "en": "Balance of flavour and strength",
+                "ru": "Баланс вкуса и крепости",
+                "vi": "Cân bằng vị và độ mạnh"
+              }
+            },
+            {
+              "name": {
+                "en": "Strong",
+                "ru": "Крепкий",
+                "vi": "Mạnh"
+              },
+              "price": 0,
+              "level": 3,
+              "note": {
+                "en": "For those who know",
+                "ru": "Для опытных",
+                "vi": "Cho người quen hút"
+              }
+            }
+          ]
+        },
+        {
           "id": "tobacco",
           "name": {
             "en": "Tobacco",
@@ -50,7 +105,8 @@
                 "en": "Soft · Arabian classic",
                 "ru": "Мягкий · арабская классика",
                 "vi": "Nhẹ · cổ điển Ả Rập"
-              }
+              },
+              "level": 1
             },
             {
               "name": {
@@ -63,7 +119,8 @@
                 "en": "Light · Turkish, huge range",
                 "ru": "Лёгкий · турецкий, много вкусов",
                 "vi": "Nhẹ · Thổ Nhĩ Kỳ"
-              }
+              },
+              "level": 1
             },
             {
               "name": {
@@ -76,7 +133,8 @@
                 "en": "Light to medium · clean",
                 "ru": "Лёгкий–средний · чистый вкус",
                 "vi": "Nhẹ–vừa · vị trong"
-              }
+              },
+              "level": 1
             },
             {
               "name": {
@@ -89,7 +147,8 @@
                 "en": "Medium · juicy",
                 "ru": "Средний · сочный",
                 "vi": "Vừa · mọng nước"
-              }
+              },
+              "level": 2
             },
             {
               "name": {
@@ -102,7 +161,8 @@
                 "en": "Medium · thick smoke",
                 "ru": "Средний · густой дым",
                 "vi": "Vừa · khói dày"
-              }
+              },
+              "level": 2
             },
             {
               "name": {
@@ -115,7 +175,8 @@
                 "en": "Medium · fresh blends",
                 "ru": "Средний · свежие миксы",
                 "vi": "Vừa · tươi mát"
-              }
+              },
+              "level": 2
             },
             {
               "name": {
@@ -128,7 +189,8 @@
                 "en": "Medium · blond leaf",
                 "ru": "Средний · светлый лист",
                 "vi": "Vừa · lá vàng"
-              }
+              },
+              "level": 2
             },
             {
               "name": {
@@ -141,7 +203,8 @@
                 "en": "Strong · dark leaf",
                 "ru": "Крепкий · тёмный лист",
                 "vi": "Mạnh · lá sẫm"
-              }
+              },
+              "level": 3
             },
             {
               "name": {
@@ -154,7 +217,8 @@
                 "en": "Strong · bold",
                 "ru": "Крепкий · яркий",
                 "vi": "Mạnh · đậm"
-              }
+              },
+              "level": 3
             },
             {
               "name": {
@@ -167,100 +231,8 @@
                 "en": "Very strong · cult",
                 "ru": "Очень крепкий · культовый",
                 "vi": "Rất mạnh · huyền thoại"
-              }
-            }
-          ]
-        },
-        {
-          "id": "strength",
-          "name": {
-            "en": "Strength",
-            "vi": "Độ mạnh",
-            "ru": "Крепость"
-          },
-          "required": true,
-          "display": "scale",
-          "default": 4,
-          "options": [
-            {
-              "name": {
-                "en": "Strength 1/10",
-                "ru": "Крепость 1/10",
-                "vi": "Độ mạnh 1/10"
               },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 2/10",
-                "ru": "Крепость 2/10",
-                "vi": "Độ mạnh 2/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 3/10",
-                "ru": "Крепость 3/10",
-                "vi": "Độ mạnh 3/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 4/10",
-                "ru": "Крепость 4/10",
-                "vi": "Độ mạnh 4/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 5/10",
-                "ru": "Крепость 5/10",
-                "vi": "Độ mạnh 5/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 6/10",
-                "ru": "Крепость 6/10",
-                "vi": "Độ mạnh 6/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 7/10",
-                "ru": "Крепость 7/10",
-                "vi": "Độ mạnh 7/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 8/10",
-                "ru": "Крепость 8/10",
-                "vi": "Độ mạnh 8/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 9/10",
-                "ru": "Крепость 9/10",
-                "vi": "Độ mạnh 9/10"
-              },
-              "price": 0
-            },
-            {
-              "name": {
-                "en": "Strength 10/10",
-                "ru": "Крепость 10/10",
-                "vi": "Độ mạnh 10/10"
-              },
-              "price": 0
+              "level": 3
             }
           ]
         },
@@ -280,7 +252,8 @@
                 "vi": "Theo gợi ý của thợ shisha",
                 "ru": "На выбор кальянщика"
               },
-              "price": 0
+              "price": 0,
+              "color": "#2f6bff"
             },
             {
               "name": {
@@ -288,7 +261,8 @@
                 "vi": "Bạc hà–Chanh",
                 "ru": "Мята–лайм"
               },
-              "price": 0
+              "price": 0,
+              "color": "#3ccf7a"
             },
             {
               "name": {
@@ -296,7 +270,8 @@
                 "vi": "Mix quả mọng",
                 "ru": "Ягодный микс"
               },
-              "price": 0
+              "price": 0,
+              "color": "#c2357a"
             },
             {
               "name": {
@@ -304,7 +279,8 @@
                 "vi": "Dưa hấu–Bạc hà",
                 "ru": "Арбуз–мята"
               },
-              "price": 0
+              "price": 0,
+              "color": "#ff5d6c"
             },
             {
               "name": {
@@ -312,7 +288,8 @@
                 "vi": "Nho–Bạc hà",
                 "ru": "Виноград–мята"
               },
-              "price": 0
+              "price": 0,
+              "color": "#7b5cd6"
             },
             {
               "name": {
@@ -320,7 +297,8 @@
                 "vi": "Xoài–Chanh dây",
                 "ru": "Манго–маракуйя"
               },
-              "price": 0
+              "price": 0,
+              "color": "#ffb02e"
             },
             {
               "name": {
@@ -328,7 +306,8 @@
                 "vi": "Táo đôi",
                 "ru": "Двойное яблоко"
               },
-              "price": 0
+              "price": 0,
+              "color": "#e8473f"
             },
             {
               "name": {
@@ -336,7 +315,8 @@
                 "vi": "Đào lạnh",
                 "ru": "Персик-лёд"
               },
-              "price": 0
+              "price": 0,
+              "color": "#ffab7a"
             },
             {
               "name": {
@@ -344,7 +324,8 @@
                 "vi": "Việt quất",
                 "ru": "Черника"
               },
-              "price": 0
+              "price": 0,
+              "color": "#4a5fd1"
             },
             {
               "name": {
@@ -352,7 +333,8 @@
                 "vi": "Dứa",
                 "ru": "Ананас"
               },
-              "price": 0
+              "price": 0,
+              "color": "#f2c230"
             },
             {
               "name": {
@@ -360,7 +342,8 @@
                 "vi": "Cola–Chanh",
                 "ru": "Кола–лайм"
               },
-              "price": 0
+              "price": 0,
+              "color": "#6b3b22"
             },
             {
               "name": {
@@ -368,7 +351,8 @@
                 "vi": "Vải",
                 "ru": "Личи"
               },
-              "price": 0
+              "price": 0,
+              "color": "#f4a6b8"
             }
           ],
           "default": 0
@@ -437,8 +421,9 @@
           "price": 350000,
           "status": "suggested",
           "description": {
-            "en": "Pick a tobacco, strength, up to three flavours and extras",
-            "ru": "Выберите табак, крепость, до трёх вкусов и экстрас"
+            "en": "Pick the strength, a tobacco to match it and up to three flavours",
+            "ru": "Выберите крепость, подходящий табак и до трёх вкусов",
+            "vi": "Chọn độ mạnh, thuốc phù hợp và tối đa ba vị"
           },
           "cover": "/hero/zabey-hookah.webp"
         },

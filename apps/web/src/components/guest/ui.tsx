@@ -412,12 +412,16 @@ export function DishCard({ item, role, lang, currency, qty, onOpen, onAdd, onQty
  * the eye has something to hold on to), the name, a line about it, the price,
  * the add control.
  */
-export function DishRow({ item, role, lang, currency, qty, onOpen, onAdd, onQty }: DishProps) {
+export function DishRow({ item, role, lang, currency, qty, onOpen, onAdd, onQty, thumb }: DishProps & { /** List view: the dish photo as a bigger thumbnail. */ thumb?: boolean }) {
   const desc = describe(item, lang);
   return (
     <div className="flex items-center gap-3 py-3">
       <button onClick={onOpen} aria-label={t(item.name, lang)} className="press relative shrink-0">
-        <DishTile item={item} role={role} glyph={0.66} soft className="live size-[52px] rounded-[16px] !bg-g-card" />
+        {thumb ? (
+          <DishTile item={item} role={role} photoScale={0.96} className="live size-[76px] rounded-[18px]" />
+        ) : (
+          <DishTile item={item} role={role} glyph={0.66} soft className="live size-[52px] rounded-[16px] !bg-g-card" />
+        )}
       </button>
       <button onClick={onOpen} className="min-w-0 flex-1 text-left">
         <span className="flex items-center gap-1.5">

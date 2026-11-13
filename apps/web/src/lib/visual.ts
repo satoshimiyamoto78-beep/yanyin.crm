@@ -69,9 +69,9 @@ export function venueBrand(venue: Venue): VenueBrand {
           image: "/hero/zabey-hookah.webp",
           kicker: { en: "Zabey signature", ru: "Фирменный Zabey", vi: "Đặc trưng Zabey" },
           blurb: {
-            en: "Pick one of ten tobaccos, set the strength from 1 to 10 and mix up to three flavours.",
-            ru: "Выберите один из десяти табаков, крепость от 1 до 10 и до трёх вкусов.",
-            vi: "Chọn một trong mười loại thuốc, độ mạnh từ 1 đến 10 và tối đa ba vị.",
+            en: "Light, medium or strong: pick the strength, a tobacco to match and up to three flavours.",
+            ru: "Лёгкий, средний или крепкий: выберите крепость, табак под неё и до трёх вкусов.",
+            vi: "Nhẹ, vừa hay mạnh: chọn độ mạnh, loại thuốc phù hợp và tối đa ba vị.",
           },
           facts: [
             { en: "10 tobaccos", ru: "10 табаков", vi: "10 loại thuốc" },
