@@ -14,14 +14,14 @@ export type NewsPost = { id: string; by: string; text: string; at: string; to: s
 
 const KEY = "yanyin:news";
 const EVENT = "yanyin:news";
-const EMPTY: NewsPost[] = [];
-let cache: { raw: string | null; posts: NewsPost[] } = { raw: null, posts: EMPTY };
 
 /** Two posts already in the feed this morning. */
 export const SEED_NEWS: NewsPost[] = [
   { id: "n-seed-2", by: "staff-huong", text: "@all Briefing at 17:00 by the bar: new lemonades and the birthday at table 12.", at: "11:30", to: ["staff-linh", "staff-minh", "staff-thao", "staff-an", "staff-dima", "staff-lan"], read: ["staff-linh", "staff-thao", "staff-dima"] },
   { id: "n-seed-1", by: "staff-huong", text: "@thao_bar @an_bar the new syrups arrive at 14:00, please check the dates.", at: "10:05", to: ["staff-thao", "staff-an"], read: ["staff-thao", "staff-an"] },
 ];
+// Starts on the seed: an empty storage means "nothing posted yet", not "no news".
+let cache: { raw: string | null; posts: NewsPost[] } = { raw: null, posts: SEED_NEWS };
 
 function read(): NewsPost[] {
   let raw: string | null = null;

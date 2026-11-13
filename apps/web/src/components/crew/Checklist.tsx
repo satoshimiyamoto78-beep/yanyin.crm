@@ -26,7 +26,7 @@ const PHASES: { id: ChecklistPhase; label: string }[] = [
 ];
 
 /** Home card: the list at a glance. */
-export function ChecklistCard({ template, run, onOpen }: { template: ChecklistTemplate; run: ChecklistRun; onOpen: () => void }) {
+export function ChecklistCard({ template, run, onOpen, title, who, className = "mt-6" }: { template: ChecklistTemplate; run: ChecklistRun; onOpen: () => void; /** The card's title; the waiter's own card says "Shift checklist". */ title?: string; /** Who works the list, shown in the footer (the admin's view). */ who?: string; className?: string }) {
   const tr = useTr();
   const p = checklistProgress(template, run, NOW);
   return (
@@ -35,7 +35,7 @@ export function ChecklistCard({ template, run, onOpen }: { template: ChecklistTe
         haptic("light");
         onOpen();
       }}
-      className="press relative mt-6 block w-full text-left"
+      className={`press relative block w-full text-left ${className}`}
     >
       <ArtScene
         name="checklist"
@@ -48,13 +48,15 @@ export function ChecklistCard({ template, run, onOpen }: { template: ChecklistTe
               <span className="block h-full rounded-full bg-g-green transition-[width] duration-500" style={{ width: `${p.percent}%` }} />
             </div>
             <p className="mt-2.5 truncate pr-6 text-[13px] text-g-muted">
+              {p.flagged.length > 0 && <span className="font-semibold text-[#ef4444]">{tr("{n} out of range|{n} out of range", { n: p.flagged.length })} · </span>}
               {p.late.length > 0 && <span className="font-semibold text-g-orange">{tr("{n} late|{n} late", { n: p.late.length })} · </span>}
+              {who && <span className="font-medium text-g-ink-2">{who} · </span>}
               {p.next ? `${tr("Next")}: ${tr(p.next.title)}` : tr("All done")}
             </p>
           </>
         }
       >
-        <p className="truncate text-[14px] leading-tight font-semibold text-g-ink-2">{tr("Shift checklist")}</p>
+        <p className="truncate text-[14px] leading-tight font-semibold text-g-ink-2">{title ?? tr("Shift checklist")}</p>
         <p className="mt-1 text-[28px] leading-none font-bold tracking-[-0.03em] tabular-nums">
           {p.done}
           <span className="text-[18px] text-g-muted">/{p.total}</span>

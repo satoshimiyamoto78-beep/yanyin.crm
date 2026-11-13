@@ -39,6 +39,15 @@ short, current rule set. When the founder changes a rule, update this file too.
 - **Hold for a peek** (`PeekCard`), always centred. Full-screen pages slide in; sheets for short choices; `SlideToConfirm` for sending an order or taking a payment; `WheelPicker` for times.
 - Guest dish lists: photo cards in the venue's `imageFormat` (landscape 4:3, portrait 3:4, square); dishes without photos as plain rows; the dish page shows the whole photo.
 
+## 5a. Every surface has the same skeleton
+
+- **Home tab** of any app (waiter Home, admin Overview, station screen): the sky header with avatar or station pill, frosted round buttons (theme, bell, tools), the status line "● On shift · …", one big number, then the `Strip`. Below the sky: blocks under `SectionTitle` (24 px, count in grey, "See all ›").
+- **Other tabs** are plain pages: big `PageHead` (30 px bold, muted line), a hero `ArtScene` card, then lists in `card rounded-[24px] p-1.5` with 18 px rows.
+- **To-do rows** are `ActionListWidget` rows: round badge (number or value), title, sub, one black button. Primary actions are blue (`blue-grad`); green only means done or money in.
+- **Bottom bar**: the floating capsule plus a round blue action button with Yan's orb above it. Same sizes in every app; only the tabs and the action change.
+- One number per fact across apps (e.g. "Taken today" is the same sum in the waiter's till and the admin overview).
+- Dark: `bg-g-ink` buttons use `text-white` (the dark theme lifts them to grey).
+
 ## 6. Motion and feel
 
 - Native-app feel: no zoom, no text selection on controls, haptics on every meaningful tap, `press` scale on buttons, 60 fps.

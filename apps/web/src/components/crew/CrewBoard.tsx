@@ -605,10 +605,10 @@ function BadgeTile({ b, onPeek }: { b: CrewData["badges"][number]; onPeek: () =>
   );
 }
 
-function SectionTitle({ title, count, onAll }: { title: string; count?: number; onAll?: () => void }) {
+export function SectionTitle({ title, count, onAll, className = "mt-10 mb-2" }: { title: string; count?: number; onAll?: () => void; className?: string }) {
   const tr = useTr();
   return (
-    <div className="mt-10 mb-2 flex items-baseline justify-between gap-3">
+    <div className={`${className} flex items-baseline justify-between gap-3`}>
       <h2 className="flex items-baseline gap-2 text-[24px] leading-tight font-bold tracking-[-0.025em]">
         {title}
         {count !== undefined && <span className="text-[15px] font-medium tracking-normal text-g-faint">{count}</span>}
