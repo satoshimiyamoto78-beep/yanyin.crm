@@ -722,3 +722,9 @@ html[data-scrolling] .aurora::after,
 /* Scanner: the light line sliding over the frame (transform only). */
 .scan-line { animation: scan-line 1.4s ease-in-out infinite alternate; }
 @keyframes scan-line { from { transform: translateY(0); } to { transform: translateY(240px); } }
+
+/* Phone-first apps (guest menu, waiter) on tablets and computers: the app sits as one column on a soft page, like a phone on the desk. */
+@media (min-width: 768px) {
+  .app-column-page { background: var(--g-fill); }
+  .app-column { min-height: 100dvh; background: var(--g-bg); box-shadow: 0 0 0 1px var(--g-line), 0 40px 90px -50px rgba(11, 11, 15, 0.35); }
+}

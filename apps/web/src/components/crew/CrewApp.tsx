@@ -355,9 +355,9 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   };
 
   return (
-    <div className="min-h-dvh bg-white text-g-ink">
+    <div className="app-column-page min-h-dvh bg-white text-g-ink">
       <OfflineBar text={tr("No internet · orders are saved and go out when it is back")} />
-      <div key={tab} className="animate-tab mx-auto max-w-[480px] pb-28">
+      <div key={tab} className="app-column animate-tab mx-auto max-w-[480px] pb-28">
         {tab === "hall" && (
           <HallHome
             sections={[

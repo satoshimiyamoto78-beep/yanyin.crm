@@ -48,6 +48,15 @@ short, current rule set. When the founder changes a rule, update this file too.
 - One number per fact across apps (e.g. "Taken today" is the same sum in the waiter's till and the admin overview).
 - Dark: `bg-g-ink` buttons use `text-white` (the dark theme lifts them to grey).
 
+## 5b. Consoles, forms and flows
+
+- Forms, tables, codes, states and navigation come from `components/system/Kit.tsx`; never style a new input by hand.
+- Admin and platform consoles: phones get the tab capsule + round "+" + Yan; from 1024 px a left sidebar (264 px) and pages open beside it (`Sheet wide`, `html[data-console]`).
+- Data lists: `DataTable` (soft rows, sortable, cards on phones) under a `Toolbar` (search + chips).
+- Multi-step flows (login, invite, onboarding, bill) use `useStepHistory`: every step is a history entry, so back walks the steps.
+- Empty, offline and loading states are part of every screen (`EmptyState`, `OfflineBar`, `Skeleton`).
+- Phone-first apps on tablets and computers sit as one column on a soft page (`.app-column`).
+
 ## 6. Motion and feel
 
 - Native-app feel: no zoom, no text selection on controls, haptics on every meaningful tap, `press` scale on buttons, 60 fps.

@@ -342,9 +342,9 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
   );
 
   return (
-    <div className="min-h-dvh bg-g-bg text-g-ink">
+    <div className="app-column-page min-h-dvh bg-g-bg text-g-ink">
       <OfflineBar text={ui(lang, "offline")} />
-      <div className="mx-auto max-w-[480px] pb-32">
+      <div className="app-column mx-auto max-w-[480px] pb-32">
         {/* Top: the banking-app pattern, same as the waiter's home. */}
         <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
           {/* Northern lights in the Nomad blue: soft ribbons of light drift over a deep blue sky. */}
