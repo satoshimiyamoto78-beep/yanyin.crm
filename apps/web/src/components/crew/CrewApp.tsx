@@ -1915,7 +1915,7 @@ export function ShiftMoney({ history }: { history: ClosedOrder[] }) {
           return (
             <>
               <InsightCard
-                className="col-span-2"
+                className="col-span-2 lg:col-span-1"
                 title={tr("Tips")}
                 tone="green"
                 value={compactMoney(tips)}
@@ -1935,7 +1935,7 @@ export function ShiftMoney({ history }: { history: ClosedOrder[] }) {
                 }}
               />
               <InsightCard
-                className="col-span-2"
+                className="col-span-2 lg:col-span-1"
                 title={tr("Avg check")}
                 tone="red"
                 value={compactMoney(avg)}
@@ -1994,12 +1994,12 @@ function HallHome({
               haptic("light");
               a.onClick();
             }}
-            className="press flex h-14 items-center gap-2.5 rounded-[20px] bg-g-fill px-3.5 text-left"
+            className="press flex h-14 min-w-0 items-center gap-2.5 rounded-full bg-g-fill pr-4 pl-2 text-left"
           >
-            <span className="blue-grad grid size-9 shrink-0 place-items-center rounded-[12px]">
+            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full">
               <a.icon size={18} strokeWidth={2} />
             </span>
-            <span className="truncate text-[14px] font-semibold">{a.label}</span>
+            <span className="min-w-0 text-[14px] leading-tight font-semibold">{a.label}</span>
           </button>
         ))}
       </div>
@@ -2042,7 +2042,7 @@ function HallCard({ s, big, onOpen }: { s: HallSection; big?: boolean; onOpen: (
         layout="row"
         focal={big ? 64 : 42}
         className={`rounded-[26px] ${big ? "p-5" : "p-4"}`}
-        footer={<p className={`truncate pr-5 ${big ? "mt-4 text-[14px]" : "mt-3.5 text-[13px]"} ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</p>}
+        footer={<p className={`line-clamp-2 pr-5 leading-snug ${big ? "mt-4 text-[14px]" : "mt-3.5 text-[13px]"} ${s.hot ? "font-semibold text-g-orange" : "text-g-muted"}`}>{s.sub}</p>}
       >
         <p className={`truncate leading-tight font-semibold text-g-ink-2 ${big ? "text-[15px]" : "text-[14px]"}`}>{s.title}</p>
         <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums ${big ? "text-[34px]" : s.value.length > 5 ? "text-[18px]" : s.value.length > 3 ? "text-[23px]" : "text-[28px]"}`}>{s.value}</p>

@@ -102,7 +102,7 @@ export function ShiftsAdmin({ team, notify }: { team: Person[]; notify: (t: stri
                   <span className="truncate text-[14px] font-semibold">{p.name}</span>
                 </span>
                 {(week[p.id] ?? Array<Slot>(7).fill("off")).map((s, di) => (
-                  <button key={di} type="button" onClick={() => cycle(p.id, di)} className={`press flex h-11 flex-col items-center justify-center rounded-[14px] text-[12px] leading-tight font-semibold ${SLOT[s].cls} ${days[di]!.today ? "ring-2 ring-g-blue/40" : ""}`}>
+                  <button key={di} type="button" onClick={() => cycle(p.id, di)} className={`press flex h-11 flex-col items-center justify-center rounded-full text-[12px] leading-tight font-semibold ${SLOT[s].cls} ${days[di]!.today ? "ring-2 ring-g-blue/40" : ""}`}>
                     {tr(SLOT[s].label)}
                     {SLOT[s].time && <span className="text-[10.5px] font-medium opacity-70 tabular-nums">{SLOT[s].time}</span>}
                   </button>
@@ -367,7 +367,7 @@ function TemplateEditor({ tpl, onClose, onSave }: { tpl: ChecklistTemplate; onCl
               {items
                 .filter((i) => i.phase === ph)
                 .map((i) => (
-                  <div key={i.id} className="flex items-center gap-2 rounded-[18px] px-2.5 py-2">
+                  <div key={i.id} className="flex items-center gap-2 rounded-full px-2.5 py-2">
                     <span className={`grid size-9 shrink-0 place-items-center rounded-full ${i.proof ? "chip-blue" : "bg-g-card text-g-faint"}`}>{i.proof?.kind === "photo" ? <Camera size={16} /> : i.proof?.kind === "number" ? <Hash size={16} /> : <Check size={16} />}</span>
                     <input value={tr(i.title)} onChange={(e) => put(i.id, { title: e.target.value })} aria-label={tr("Item")} className="h-10 min-w-0 flex-1 rounded-full bg-transparent px-2 text-[15px] outline-none focus:bg-g-card" />
                     {i.due && <span className="shrink-0 text-[12.5px] font-semibold text-g-muted tabular-nums">{i.due}</span>}
@@ -406,7 +406,7 @@ function TemplateEditor({ tpl, onClose, onSave }: { tpl: ChecklistTemplate; onCl
                   </button>
                 </div>
               ) : (
-                <button type="button" onClick={() => (haptic("light"), setAdding(ph), setText(""), setProof(["none"]))} className="press flex h-12 w-full items-center gap-2 rounded-[18px] px-3 text-[14.5px] font-semibold text-g-blue">
+                <button type="button" onClick={() => (haptic("light"), setAdding(ph), setText(""), setProof(["none"]))} className="press flex h-12 w-full items-center gap-2 rounded-full px-3 text-[14.5px] font-semibold text-g-blue">
                   <Plus size={17} strokeWidth={2.4} /> {tr("Add an item")}
                 </button>
               )}

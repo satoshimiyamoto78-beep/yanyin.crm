@@ -153,7 +153,7 @@ export function HeroStat({
     <WidgetCard title={title} icon={icon} className={className} aside={<span className="text-[13px] text-g-muted">{at === nowI ? labels[at] : labels[at]}</span>}>
       <p className="live mt-3 text-[44px] leading-none font-semibold tracking-[-0.04em] tabular-nums">{at === nowI ? value : format(cur)}</p>
       <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px]">
-        <span className={`rounded-md px-1.5 py-0.5 font-semibold tabular-nums ${chip}`}>
+        <span className={`rounded-full px-2 py-0.5 font-semibold tabular-nums ${chip}`}>
           {ref ? `${arrow} ${Math.abs(Math.round(change * 100))}%` : "—"}
         </span>
         <span className="text-g-muted">
@@ -173,7 +173,7 @@ export function HeroStat({
           <path d={refPath} fill="none" stroke="currentColor" className="text-g-faint" strokeWidth="1.5" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
           {/* Today: area and line up to now, in the trend's colour. */}
           <path d={`${todayPath} L${X(nowI)},100 L0,100 Z`} fill={`url(#ha${id})`} style={{ opacity: on ? 1 : 0, transition: "opacity 0.8s ease 0.4s" }} />
-          <path d={todayPath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray="1" strokeDashoffset={on ? 0 : 1} style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1), stroke 0.3s" }} />
+          <path d={todayPath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" style={{ opacity: on ? 1 : 0, transition: "opacity 0.6s ease" }} />
         </svg>
         {/* Now: a dot with a soft pulse at the end of today's line. */}
         <Halo x={`${(X(nowI) / 300) * 100}%`} y={`${Y(today[nowI]!)}%`} color={color} />
@@ -224,7 +224,7 @@ export function LineWidget({ title, icon, labels, values, format, initial , clas
             </linearGradient>
           </defs>
           <path d={`${d} L300,100 L0,100 Z`} fill={`url(#la${id})`} style={{ opacity: on ? 1 : 0, transition: "opacity 0.8s ease 0.4s" }} />
-          <path d={d} fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray="1" strokeDashoffset={on ? 0 : 1} style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1)" }} />
+          <path d={d} fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" style={{ opacity: on ? 1 : 0, transition: "opacity 0.6s ease" }} />
         </svg>
         {/* Hairline, dot and the value pill at the scrubbed point. */}
         <span className="pointer-events-none absolute top-0 bottom-0 w-px bg-g-ink/25 transition-[left] duration-150" style={{ left: `${px}%` }} />
@@ -386,9 +386,14 @@ export function FlowWidget({
  */
 export function IconStat({ title, art, value, sub, className = "" }: { title: string; art: ArtName; value: string; sub: string; className?: string }) {
   return (
-    <ArtScene name={art} layout="row" focal={42} className={`rounded-[24px] p-3.5 ${className}`} footer={<p className="mt-3 truncate text-[12px] text-g-muted">{sub}</p>}>
-      <p className="line-clamp-2 text-[12.5px] leading-tight font-semibold text-g-ink-2">{title}</p>
-      <p className={`live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums ${value.length > 7 ? "text-[20px]" : "text-[24px]"}`}>{value}</p>
+    <ArtScene name={art} layout="row" focal={42} className={`rounded-[24px] p-3.5 ${className}`} footer={<p className="mt-3 line-clamp-2 text-[12px] leading-snug text-g-muted">{sub}</p>}>
+      {/* The number always fits whole: it scales down with its column instead of being cut. */}
+      <div className="[container-type:inline-size]">
+        <p className="line-clamp-2 text-[12.5px] leading-tight font-semibold text-g-ink-2">{title}</p>
+        <p className="live mt-1 leading-none font-bold tracking-[-0.03em] whitespace-nowrap tabular-nums" style={{ fontSize: `min(24px, calc(100cqw / ${(Math.max(value.length, 4) * 0.6).toFixed(2)}))` }}>
+          {value}
+        </p>
+      </div>
     </ArtScene>
   );
 }
@@ -590,7 +595,7 @@ export function DaysCompareWidget({
       icon={icon}
       className={className}
       aside={
-        <span key={pick} className={`animate-pop rounded-md px-1.5 py-0.5 text-[13px] font-semibold tabular-nums ${chip}`}>
+        <span key={pick} className={`animate-pop rounded-full px-2 py-0.5 text-[13px] font-semibold tabular-nums ${chip}`}>
           {arrow} {Math.abs(Math.round(change * 100))}%
         </span>
       }
@@ -598,7 +603,7 @@ export function DaysCompareWidget({
       <p className="mt-2 flex items-baseline justify-between gap-2">
         <span className="live text-[32px] leading-none font-semibold tracking-[-0.035em] tabular-nums">{format(today.value)}</span>
         <span className="truncate text-[12px] text-g-muted tabular-nums">
-          {ref.short} {ref.date} · {format(ref.value)}
+          {ref.date ? `${ref.short} ${ref.date}` : ref.short} · {format(ref.value)}
         </span>
       </p>
       <div className="relative mt-3 h-[60px] select-none">
@@ -610,13 +615,13 @@ export function DaysCompareWidget({
             </linearGradient>
           </defs>
           <path d={`${path} L${X(n - 1)},100 L${X(0)},100 Z`} fill={`url(#dc${id})`} style={{ opacity: on ? 1 : 0, transition: "opacity 0.8s ease 0.4s" }} />
-          <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray="1" strokeDashoffset={on ? 0 : 1} style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1), stroke 0.3s" }} />
+          <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" style={{ opacity: on ? 1 : 0, transition: "opacity 0.6s ease" }} />
         </svg>
         {/* The day we compare with: a dashed hairline and a ring. */}
         <span className="pointer-events-none absolute top-0 bottom-0 w-0 border-l-[1.5px] border-dashed border-g-faint transition-[left] duration-300" style={{ left: `${(X(pick) / 300) * 100}%` }} />
         {days.map((d, i) => (
           <span
-            key={d.date}
+            key={i}
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-300"
             style={{
               left: `${(X(i) / 300) * 100}%`,
@@ -638,13 +643,13 @@ export function DaysCompareWidget({
           const sel = i === pick;
           return (
             <button
-              key={d.date}
+              key={i}
               onClick={() => choose(i)}
               disabled={isToday}
               aria-pressed={sel}
               className={`press mx-0.5 h-7 rounded-full text-[12px] whitespace-nowrap tabular-nums transition-colors ${sel ? "bg-white font-semibold text-g-ink" : isToday ? "font-semibold text-g-ink" : "text-g-muted"}`}
             >
-              {d.short} {d.date}
+              {d.date ? `${d.short} ${d.date}` : d.short}
             </button>
           );
         })}
@@ -685,7 +690,7 @@ export function ActionListWidget({
                 {r.badge}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[14px] font-semibold">{r.title}</span>
+                <span className="line-clamp-2 text-[14px] leading-snug font-semibold">{r.title}</span>
                 <span className="block truncate text-[12px] text-g-muted tabular-nums">{r.sub}</span>
               </span>
               {r.action && (

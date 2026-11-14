@@ -30,12 +30,12 @@ export function Field({ label, hint, error, children, aside }: { label: string; 
   );
 }
 
-const inputCls = "block h-14 w-full rounded-[18px] bg-g-fill px-4 text-[16px] outline-none transition-shadow placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40";
+const inputCls = "block h-14 w-full rounded-full bg-g-fill px-5 text-[16px] outline-none transition-shadow placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40";
 
 export function TextField({ value, onChange, placeholder, type = "text", inputMode, prefix, suffix, autoFocus, maxLength }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; inputMode?: "text" | "numeric" | "tel" | "email" | "decimal"; prefix?: ReactNode; suffix?: ReactNode; autoFocus?: boolean; maxLength?: number }) {
   if (prefix || suffix)
     return (
-      <span className="flex h-14 w-full items-center gap-2 rounded-[18px] bg-g-fill px-4 transition-shadow focus-within:ring-2 focus-within:ring-g-blue/40">
+      <span className="flex h-14 w-full items-center gap-2 rounded-full bg-g-fill px-5 transition-shadow focus-within:ring-2 focus-within:ring-g-blue/40">
         {prefix && <span className="shrink-0 text-[16px] font-medium text-g-muted">{prefix}</span>}
         <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type} inputMode={inputMode} autoFocus={autoFocus} maxLength={maxLength} className="h-full min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-g-faint" />
         {suffix && <span className="shrink-0 text-[15px] font-medium text-g-muted">{suffix}</span>}
@@ -45,7 +45,7 @@ export function TextField({ value, onChange, placeholder, type = "text", inputMo
 }
 
 export function TextArea({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
-  return <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="block w-full resize-none rounded-[20px] bg-g-fill px-4 py-3.5 text-[16px] leading-relaxed outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40" />;
+  return <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="block w-full resize-none rounded-[24px] bg-g-fill px-4 py-3.5 text-[16px] leading-relaxed outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40" />;
 }
 
 /** Chips to pick one or several options; the picked ones turn blue. */
@@ -116,12 +116,12 @@ export function Row({ icon: Icon, title, sub, right, onClick, tone }: { icon?: L
         haptic("light");
         onClick();
       }}
-      className="press flex w-full items-center gap-3 rounded-[18px] px-2.5 py-2.5 text-left"
+      className="press flex w-full items-center gap-3 rounded-full px-2.5 py-2.5 text-left"
     >
       {body}
     </button>
   ) : (
-    <div className="flex w-full items-center gap-3 rounded-[18px] px-2.5 py-2.5">{body}</div>
+    <div className="flex w-full items-center gap-3 rounded-full px-2.5 py-2.5">{body}</div>
   );
 }
 
@@ -246,7 +246,7 @@ export function OtpInput({ value, onChange, length = 6, error }: { value: string
           const ch = value[i];
           const cur = i === value.length;
           return (
-            <span key={i} className={`grid h-16 flex-1 place-items-center rounded-[18px] text-[26px] font-bold tabular-nums transition-colors ${error ? "chip-red" : ch ? "bg-g-blue-soft text-g-blue" : "bg-g-fill"} ${cur && !error ? "ring-2 ring-g-blue/50" : ""}`}>
+            <span key={i} className={`grid h-16 flex-1 place-items-center rounded-[20px] text-[26px] font-bold tabular-nums transition-colors ${error ? "chip-red" : ch ? "bg-g-blue-soft text-g-blue" : "bg-g-fill"} ${cur && !error ? "ring-2 ring-g-blue/50" : ""}`}>
               {ch ?? ""}
             </span>
           );

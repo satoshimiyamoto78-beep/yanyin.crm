@@ -60,7 +60,7 @@ import { saveStopList, useStopList } from "@/lib/stoplist";
 import { Island, Reveal, type IslandNotice } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { YanOrb } from "@/components/guest/YanSheet";
-import { ArtScene, type ArtName } from "@/components/system/Art";
+import { ArtScene, ArtTile, type ArtName } from "@/components/system/Art";
 import {
   BrandQr,
   Choice,
@@ -73,7 +73,12 @@ import {
 import { RoleSwitch } from "@/components/auth/RoleSwitch";
 import { MenuAdmin } from "./MenuAdmin";
 import { FloorAdmin, OrdersAdmin, ReportsAdmin } from "./OpsAdmin";
-import { ChecklistsAdmin, QuestsAdmin, ShiftsAdmin, TasksAdmin } from "./PeopleAdmin";
+import {
+  ChecklistsAdmin,
+  QuestsAdmin,
+  ShiftsAdmin,
+  TasksAdmin,
+} from "./PeopleAdmin";
 import { SettingsAdmin } from "./SettingsAdmin";
 import { MentionInput, MentionText } from "@/components/system/MentionInput";
 import { NorthSky } from "@/components/system/NorthSky";
@@ -231,9 +236,17 @@ function Console({ menu }: { menu: Menu }) {
     setNotice(n);
     setTimeout(() => setNotice((c) => (c === n ? null : c)), 2800);
   };
+  // Picking a section closes whatever page or sheet is on top, so the new section is what you see.
   const go = (t: Tab) => {
     haptic("light");
     setSub(null);
+    setRoles(false);
+    setQuick(false);
+    setInviting(false);
+    setPerson(null);
+    setSheet(null);
+    setOpenList(null);
+    setYan(false);
     setTab(t);
     window.scrollTo({ top: 0 });
   };
@@ -473,7 +486,7 @@ function Console({ menu }: { menu: Menu }) {
                     <button
                       key={p.id}
                       onClick={() => setPerson(p.id)}
-                      className="press flex w-full items-center gap-3 rounded-[18px] px-2.5 py-2.5 text-left"
+                      className="press flex w-full items-center gap-3 rounded-full px-2.5 py-2.5 text-left"
                     >
                       <Avatar p={p} />
                       <span className="min-w-0 flex-1">
@@ -692,7 +705,7 @@ function Console({ menu }: { menu: Menu }) {
                   >
                     {me.name[0]}
                   </button>
-                  <span className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white">
+                  <span className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white lg:mr-auto lg:flex-none">
                     <Store
                       size={17}
                       strokeWidth={2}
@@ -841,39 +854,42 @@ function Console({ menu }: { menu: Menu }) {
                   />
                 </div>
 
-                <SectionTitle
-                  title={tr("On shift")}
-                  count={onShift.length}
-                  onAll={() => go("team")}
-                />
-                <div className="no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-4">
-                  {onShift.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setPerson(p.id)}
-                      className="press flex w-[68px] shrink-0 flex-col items-center gap-1.5 py-1"
-                    >
-                      <Avatar p={p} size={56} />
-                      <span className="w-full truncate text-center text-[13px] font-semibold">
-                        {p.name}
-                      </span>
-                      <span className="-mt-1.5 w-full truncate text-center text-[11px] text-g-muted">
-                        {tr(GROUP_NAMES[groupOf(p)])}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {news[0] && (
-                  <>
+                <div className="lg:grid lg:grid-cols-2 lg:gap-8">
+                  <div className="min-w-0">
                     <SectionTitle
-                      title={tr("News")}
-                      count={news.length}
-                      onAll={() => open("news")}
+                      title={tr("On shift")}
+                      count={onShift.length}
+                      onAll={() => go("team")}
                     />
-                    <Post n={news[0]} team={team} known={known} />
-                  </>
-                )}
+                    <div className="no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-4">
+                      {onShift.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => setPerson(p.id)}
+                          className="press flex w-[68px] shrink-0 flex-col items-center gap-1.5 py-1"
+                        >
+                          <Avatar p={p} size={56} />
+                          <span className="w-full truncate text-center text-[13px] font-semibold">
+                            {p.name}
+                          </span>
+                          <span className="-mt-1.5 w-full truncate text-center text-[11px] text-g-muted">
+                            {tr(GROUP_NAMES[groupOf(p)])}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {news[0] && (
+                    <div className="min-w-0">
+                      <SectionTitle
+                        title={tr("News")}
+                        count={news.length}
+                        onAll={() => open("news")}
+                      />
+                      <Post n={news[0]} team={team} known={known} />
+                    </div>
+                  )}
+                </div>
 
                 <div ref={moneyRef} className="scroll-mt-4">
                   <SectionTitle title={tr("Shift money")} />
@@ -954,7 +970,7 @@ function Console({ menu }: { menu: Menu }) {
           <button
             type="button"
             onClick={() => setRoles(true)}
-            className="press flex w-full items-center gap-3 rounded-[18px] p-1.5 text-left"
+            className="press flex w-full items-center gap-3 rounded-full p-1.5 text-left"
           >
             <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold">
               {me.name[0]}
@@ -1449,7 +1465,7 @@ function PersonSheet({
           {perms.map((pm) => (
             <p
               key={pm}
-              className="flex items-center gap-3 rounded-[18px] px-2.5 py-2 text-[15px]"
+              className="flex items-center gap-3 rounded-full px-2.5 py-2 text-[15px]"
             >
               <span className="grid size-7 shrink-0 place-items-center rounded-full chip-green">
                 <Check size={15} strokeWidth={2.8} />
@@ -1537,16 +1553,11 @@ function QuickSheet({
               key={r.k}
               type="button"
               onClick={() => (haptic("light"), onPick(r.k))}
-              className="press flex items-center gap-3 rounded-[22px] bg-g-fill p-2.5 pr-4 text-left"
+              className="press flex items-center gap-3 rounded-full bg-g-fill p-2 pr-4 text-left"
             >
-              <ArtScene
-                name={r.art}
-                layout="row"
-                focal={40}
-                className="size-14 shrink-0 rounded-[18px] p-2"
-              >
-                <span />
-              </ArtScene>
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-g-card">
+                <ArtTile name={r.art} size={34} bare />
+              </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[16px] font-semibold">
                   {r.title}

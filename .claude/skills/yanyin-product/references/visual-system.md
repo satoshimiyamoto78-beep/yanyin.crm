@@ -17,6 +17,9 @@ short, current rule set. When the founder changes a rule, update this file too.
 - Tokens `--g-*` in `globals.css`. Light: white page, `--g-fill` #f4f5f8, ink #0b0b0f. Dark: page #0c0d10, cards #17191e.
 - One brand blue **#2F5BFF** (dark #6c96ff) for the main action and the active state. Green, orange and red only for meaning (money in, waiting, late). **No violet or purple in the brand palette.** No emoji anywhere in the UI.
 - Lots of air: 16 px side gutters, generous radii (cards 22–28 px, rows and badges fully round when they are a single line), no hard borders; separation by fill and soft shadow.
+- **One radius rule:** anything one line tall (inputs, selects, list rows, chips, small badges, icon discs) is fully round; multi-line blocks (cards, notes, text areas) are 22–28 px. No 12–18 px "almost square" plaques, no square colour pads behind icons.
+- **Numbers never get cut:** a value scales down with its column (`IconStat` uses a container query) instead of overflowing; sub-lines may take two lines rather than end in "…" when they carry facts.
+- **No glow or outline to signal state** (no coloured rings around cards): state shows in the one element that owns it — a timer pill, a thin progress bar, a badge.
 
 ## 3. Header sky
 
@@ -44,6 +47,7 @@ short, current rule set. When the founder changes a rule, update this file too.
 - **Home tab** of any app (waiter Home, admin Overview, station screen): the sky header with avatar or station pill, frosted round buttons (theme, bell, tools), the status line "● On shift · …", one big number, then the `Strip`. Below the sky: blocks under `SectionTitle` (24 px, count in grey, "See all ›").
 - **Other tabs** are plain pages: big `PageHead` (30 px bold, muted line), a hero `ArtScene` card, then lists in `card rounded-[24px] p-1.5` with 18 px rows.
 - **To-do rows** are `ActionListWidget` rows: round badge (number or value), title, sub, one black button. Primary actions are blue (`blue-grad`); green only means done or money in.
+- **Station screen** (kitchen, bar): tickets are plain cards; age is the timer and a thin bar to 15 min; full dish names (two lines); "Start" and "Ready" one width; "All ready · N" only with two or more open lines; counters as one frosted capsule.
 - **Bottom bar**: the floating capsule plus a round blue action button with Yan's orb above it. Same sizes in every app; only the tabs and the action change.
 - One number per fact across apps (e.g. "Taken today" is the same sum in the waiter's till and the admin overview).
 - Dark: `bg-g-ink` buttons use `text-white` (the dark theme lifts them to grey).

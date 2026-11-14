@@ -334,9 +334,9 @@ body {
 /* Each scene card is its own layer: painted once, then only composited while scrolling. */
 .art-scene { background: var(--art-l); contain: paint; transform: translateZ(0); }
 [data-scheme="dark"] .art-scene { background: var(--art-d); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
-.art-deco { opacity: 0.75; }
+.art-deco { opacity: 0.38; }
 .art-deco .art-halo { opacity: 0.6; filter: blur(6px); }
-.art-ghost { opacity: 0.45; }
+.art-ghost { opacity: 0.24; }
 /* Dark: the scene stays quiet and clean; the sharp subject carries the colour. */
 [data-scheme="dark"] .art-deco { opacity: 0.07; }
 [data-scheme="dark"] .art-ghost { opacity: 0.16; }

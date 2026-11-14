@@ -226,7 +226,7 @@ export function ArtScene({
         <defs>
           <Materials g={g} t={t} />
           <filter id={g("blur")} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="5" />
+            <feGaussianBlur stdDeviation="9" />
           </filter>
         </defs>
         <g filter={`url(#${g("blur")})`}>

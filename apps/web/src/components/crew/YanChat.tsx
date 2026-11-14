@@ -346,7 +346,7 @@ export function YanChat({
               }}
               className="press mt-7 flex items-center gap-3.5 rounded-[22px] bg-g-tint-blue p-3.5 text-left"
             >
-              <span className="blue-grad grid size-11 shrink-0 place-items-center rounded-[14px]">
+              <span className="blue-grad grid size-11 shrink-0 place-items-center rounded-full">
                 <Languages size={21} strokeWidth={2} />
               </span>
               <span className="min-w-0 flex-1">

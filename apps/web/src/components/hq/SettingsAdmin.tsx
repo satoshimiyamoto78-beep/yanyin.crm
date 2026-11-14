@@ -135,7 +135,7 @@ export function SettingsAdmin({ notify }: { notify: (t: string) => void }) {
       )}
       {page === "einvoice" && (
         <Page label={tr("E-invoices")} onClose={() => setPage(null)} onDone={saved}>
-          <p className="rounded-[20px] bg-g-tint-blue px-4 py-3.5 text-[13.5px] leading-snug text-g-ink-2">{tr("Since 2025 every bill in Vietnam needs a POS e-invoice sent to the tax office. We send it for you when a bill is paid.")}</p>
+          <p className="rounded-[24px] bg-g-tint-blue px-4 py-3.5 text-[13.5px] leading-snug text-g-ink-2">{tr("Since 2025 every bill in Vietnam needs a POS e-invoice sent to the tax office. We send it for you when a bill is paid.")}</p>
           <div>
             <p className="mb-2 px-1 text-[14px] font-semibold text-g-ink-2">{tr("E-invoice provider")}</p>
             <Choice value={s.einvoice} onChange={(v) => put({ einvoice: v })} options={[{ id: "misa", label: "MISA" }, { id: "viettel", label: "Viettel" }, { id: "vnpt", label: "VNPT" }, { id: "bkav", label: "BKAV" }, { id: "none", label: tr("Not yet") }]} />

@@ -186,7 +186,7 @@ export function MyTasks({ me, team, onNotify }: { me: string; team: Person[]; on
             </span>
           </button>
         ))}
-        {!mine.length && <p className="rounded-[20px] bg-g-fill px-4 py-3.5 text-[14px] text-g-muted">{tr("No tasks for you right now")}</p>}
+        {!mine.length && <p className="rounded-full bg-g-fill px-5 py-3.5 text-[14px] text-g-muted">{tr("No tasks for you right now")}</p>}
       </div>
     </section>
   );

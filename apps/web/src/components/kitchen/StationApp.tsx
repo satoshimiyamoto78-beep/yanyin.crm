@@ -210,7 +210,8 @@ function Screen({ menu }: { menu: Menu }) {
     // A cook or bartender on their own phone is signed in personally: no tablet pairing (kitchen.html?me=chef_dima).
     const personal = new URLSearchParams(window.location.search).get("me");
     setPaired(personal ? true : read("yanyin:kds-paired", false));
-    if (personal && !read<Station | null>("yanyin:kds-station", null)) setStation(personal.includes("bar") ? "bar" : "hot");
+    if (personal && !read<Station | null>("yanyin:kds-station", null))
+      setStation(personal.includes("bar") ? "bar" : "hot");
     setDark(read("yanyin:kds-dark", true));
     setSound(read("yanyin:kds-sound", true));
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -370,7 +371,11 @@ function Screen({ menu }: { menu: Menu }) {
 
   return (
     <div className="min-h-dvh bg-white text-g-ink">
-      <OfflineBar text={tr("No internet · the queue keeps working and syncs when it is back")} />
+      <OfflineBar
+        text={tr(
+          "No internet · the queue keeps working and syncs when it is back",
+        )}
+      />
       <Island notice={notice} />
       {/* The same sky as the waiter's home: station, live counts, people on it, the clock and the tools. */}
       <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
@@ -378,10 +383,15 @@ function Screen({ menu }: { menu: Menu }) {
         <div className="flex items-center gap-2 px-4 sm:px-6">
           <button
             onClick={() => setPicking(true)}
-            className="press flex h-12 min-w-0 items-center gap-2 rounded-full bg-white/15 pr-4 pl-1.5"
+            className="press flex h-11 min-w-0 items-center gap-1.5 rounded-full bg-white/15 pr-3.5 pl-4 sm:h-12 sm:gap-2 sm:pl-1.5"
           >
-            <ArtTile name={info?.art ?? "kitchen"} size={40} bare />
-            <span className="truncate text-[19px] font-bold tracking-[-0.01em]">
+            <ArtTile
+              name={info?.art ?? "kitchen"}
+              size={40}
+              bare
+              className="hidden sm:block"
+            />
+            <span className="truncate text-[17px] font-bold tracking-[-0.01em] sm:text-[19px]">
               {tr(info?.label ?? "")}
             </span>
             <ChevronDown size={18} className="shrink-0 text-white/60" />
@@ -400,7 +410,7 @@ function Screen({ menu }: { menu: Menu }) {
               </span>
             ))}
           </span>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ToolButton
               label={tr("Stop-list")}
               onClick={() => setSheet("stop")}
@@ -461,17 +471,17 @@ function Screen({ menu }: { menu: Menu }) {
               {hhmm(now)}
             </p>
           </div>
-          <div className="flex gap-2">
-            {counters.map((c) => (
+          <div className="grid w-full grid-cols-3 rounded-[24px] bg-white/15 py-1 sm:w-auto">
+            {counters.map((c, i) => (
               <span
                 key={c.label}
-                className="flex h-[62px] min-w-[96px] flex-col justify-center rounded-[20px] bg-white/15 px-3.5"
+                className={`flex min-w-0 flex-col justify-center px-4 py-1.5 sm:min-w-[112px] ${i ? "border-l border-white/15" : ""}`}
               >
-                <span className="flex items-center gap-1.5 text-[12px] font-semibold text-white/75">
-                  <span className={`size-1.5 rounded-full ${c.dot}`} />{" "}
-                  {c.label}
+                <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] font-medium text-white/75">
+                  <span className={`size-1.5 shrink-0 rounded-full ${c.dot}`} />
+                  <span className="truncate">{c.label}</span>
                 </span>
-                <span className="live text-[24px] leading-tight font-bold tabular-nums">
+                <span className="live mt-0.5 text-[26px] leading-none font-bold tracking-[-0.02em] tabular-nums">
                   {c.n}
                 </span>
               </span>
@@ -483,7 +493,7 @@ function Screen({ menu }: { menu: Menu }) {
       {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
       <div className="relative z-10 flex flex-col gap-4 px-4 pb-10 sm:px-6 lg:flex-row lg:items-start">
         {/* The queue, oldest first. */}
-        <main className="grid min-w-0 flex-1 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-4">
+        <main className="grid min-w-0 flex-1 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] items-start gap-4">
           {queue.map((o) => (
             <OrderCard
               key={o.id}
@@ -515,13 +525,20 @@ function Screen({ menu }: { menu: Menu }) {
 
         {/* Ready to serve: the waiter or runner takes it. */}
         <aside className="order-first w-full shrink-0 lg:sticky lg:top-4 lg:order-none lg:w-[320px]">
-          <ArtScene
-            name="bell"
-            layout="row"
-            focal={48}
-            className="rounded-[28px] p-4"
-            footer={
-              <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2">
+          <div className="rounded-[28px] bg-g-fill p-4">
+            <div className="flex items-center gap-3 px-1">
+              <ArtTile name="bell" size={36} bare />
+              <p className="min-w-0 flex-1 truncate text-[17px] font-semibold">
+                {tr("Ready to serve")}
+              </p>
+              <span
+                className={`live grid h-9 min-w-9 place-items-center rounded-full px-2.5 text-[17px] font-bold tabular-nums ${ready.length ? "chip-green" : "bg-g-card text-g-muted"}`}
+              >
+                {ready.length}
+              </span>
+            </div>
+            {ready.length > 0 ? (
+              <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2">
                 {ready.map((o) => (
                   <div
                     key={o.id}
@@ -554,22 +571,13 @@ function Screen({ menu }: { menu: Menu }) {
                     </button>
                   </div>
                 ))}
-                {!ready.length && (
-                  <p className="flex items-center gap-2 px-1 py-1 text-[14px] text-g-muted">
-                    <span className="size-2 rounded-full bg-g-green" />{" "}
-                    {tr("Nothing waiting at the pass")}
-                  </p>
-                )}
               </div>
-            }
-          >
-            <p className="truncate text-[14px] leading-tight font-semibold text-g-ink-2">
-              {tr("Ready to serve")}
-            </p>
-            <p className="live mt-1 text-[28px] leading-none font-bold tracking-[-0.03em] tabular-nums">
-              {ready.length}
-            </p>
-          </ArtScene>
+            ) : (
+              <p className="mt-2 px-1 text-[14px] text-g-muted">
+                {tr("Nothing waiting at the pass")}
+              </p>
+            )}
+          </div>
         </aside>
       </div>
 
@@ -714,18 +722,17 @@ function OrderCard({
   );
   const min = Math.max(0, minute - Math.floor(secOf(o.at) / 60));
   const tone = ageTone(min);
-  const ring = {
-    ok: "",
-    long: "ring-2 ring-g-orange/60",
-    late: "ring-[3px] ring-[#ef4444]",
-  }[tone];
+  const left = lines.filter((l) => l.state !== "ready").length;
+  const bar = { ok: "bg-g-blue", long: "bg-g-orange", late: "bg-[#e5484d]" }[
+    tone
+  ];
   return (
     <section
-      className={`flex min-w-0 flex-col rounded-[28px] bg-g-fill p-4 ${ring} ${fresh ? "animate-pop" : ""}`}
+      className={`flex min-w-0 flex-col rounded-[28px] bg-g-fill p-4 ${fresh ? "animate-pop" : ""}`}
     >
       <header className="flex items-start justify-between gap-3 px-1">
         <span className="min-w-0">
-          <span className="block text-[30px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+          <span className="block text-[28px] leading-none font-bold tracking-[-0.03em] tabular-nums">
             {tr("Table {n}", { n: o.table })}
           </span>
           <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-g-muted">
@@ -740,7 +747,16 @@ function OrderCard({
         </span>
         <Elapsed since={o.at} tone={tone} />
       </header>
-      <div className="mt-3.5 grid grid-cols-[minmax(0,1fr)] gap-2">
+      <div
+        className="mx-1 mt-3.5 h-1 overflow-hidden rounded-full bg-g-card"
+        aria-hidden
+      >
+        <div
+          className={`h-full rounded-full transition-[width] duration-700 ${bar}`}
+          style={{ width: `${Math.min(100, Math.max(6, (min / 15) * 100))}%` }}
+        />
+      </div>
+      <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2">
         {lines.map((l) => {
           const out = stop.includes(l.itemId);
           const badge = {
@@ -753,17 +769,17 @@ function OrderCard({
               key={l.id}
               onClick={() => onLine(l)}
               disabled={l.state === "ready"}
-              className={`press flex min-w-0 items-center gap-3 rounded-full bg-g-card p-1.5 text-left ${l.state === "ready" ? "opacity-60" : ""}`}
+              className={`press flex min-h-[60px] min-w-0 items-center gap-3 rounded-full bg-g-card p-1.5 text-left ${l.state === "ready" ? "opacity-55" : ""}`}
             >
               <span
-                className={`grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-bold tabular-nums ${badge}`}
+                className={`grid size-12 shrink-0 place-items-center rounded-full text-[17px] font-bold tabular-nums ${badge}`}
               >
                 {l.qty}×
               </span>
               <span className="min-w-0 flex-1 py-1">
                 <DishName
                   name={l.name}
-                  className={`block truncate text-[18px] leading-snug font-semibold ${l.state === "ready" ? "line-through decoration-2" : ""}`}
+                  className={`line-clamp-2 text-[16px] leading-[1.2] font-semibold break-words sm:text-[17px] ${l.state === "ready" ? "text-g-muted line-through decoration-1" : ""}`}
                 />
                 {l.note && (
                   <span className="block truncate text-[13.5px] font-semibold text-g-orange">
@@ -792,15 +808,17 @@ function OrderCard({
             .join(" · ")}
         </p>
       )}
-      <button
-        onClick={() => {
-          haptic("success");
-          onAll();
-        }}
-        className="blue-grad press mt-3.5 flex h-14 items-center justify-center gap-2 rounded-full text-[16px] font-semibold"
-      >
-        <Check size={19} strokeWidth={2.6} /> {tr("All ready")}
-      </button>
+      {left > 1 && (
+        <button
+          onClick={() => {
+            haptic("success");
+            onAll();
+          }}
+          className="press mt-3 flex h-13 items-center justify-center gap-2 rounded-full bg-g-ink text-[15px] font-semibold text-white"
+        >
+          <Check size={18} strokeWidth={2.6} /> {tr("All ready")} · {left}
+        </button>
+      )}
     </section>
   );
 }
@@ -810,19 +828,19 @@ function StatePill({ state }: { state: KdsLine["state"] }) {
   const tr = useTr();
   if (state === "new")
     return (
-      <span className="h-11 shrink-0 rounded-full bg-g-ink px-4 text-[13px] leading-[44px] font-semibold text-white">
+      <span className="h-11 w-[92px] shrink-0 rounded-full bg-g-fill text-center text-[14px] leading-[44px] font-semibold text-g-ink">
         {tr("Start")}
       </span>
     );
   if (state === "making")
     return (
-      <span className="blue-grad h-11 shrink-0 rounded-full px-4 text-[13px] leading-[44px] font-semibold">
+      <span className="blue-grad h-11 w-[92px] shrink-0 rounded-full text-center text-[14px] leading-[44px] font-semibold">
         {tr("Ready")}
       </span>
     );
   return (
-    <span className="chip-green mr-2 flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold">
-      <Check size={14} strokeWidth={3} /> {tr("Done")}
+    <span className="chip-green flex h-11 w-[92px] shrink-0 items-center justify-center gap-1 rounded-full text-[14px] font-semibold">
+      <Check size={20} strokeWidth={2.8} aria-label={tr("Done")} />
     </span>
   );
 }
@@ -844,12 +862,12 @@ function Elapsed({
   }[tone];
   return (
     <span
-      className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[18px] font-bold tabular-nums ${cls}`}
+      className={`flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[17px] font-bold tabular-nums ${cls}`}
     >
       {tone === "late" ? (
-        <AlertTriangle size={17} strokeWidth={2.4} />
+        <AlertTriangle size={16} strokeWidth={2.4} />
       ) : (
-        <Clock size={17} strokeWidth={2.4} />
+        <Clock size={16} strokeWidth={2.4} />
       )}
       {Math.floor(s / 60)}:{String(s % 60).padStart(2, "0")}
     </span>
@@ -876,11 +894,20 @@ function StationPicker({
         <div className="mx-auto max-w-[960px]">
           <div className="mb-6 flex items-center gap-2">
             {onClose && (
-              <button type="button" aria-label={tr("Back")} onClick={onClose} className="press grid size-10 place-items-center rounded-full bg-white/15">
+              <button
+                type="button"
+                aria-label={tr("Back")}
+                onClick={onClose}
+                className="press grid size-10 place-items-center rounded-full bg-white/15"
+              >
                 <ChevronLeft size={22} strokeWidth={2} />
               </button>
             )}
-            <button type="button" onClick={onUnpair} className="press ml-auto flex h-10 items-center gap-1.5 rounded-full bg-white/15 px-3.5 text-[13px] font-semibold">
+            <button
+              type="button"
+              onClick={onUnpair}
+              className="press ml-auto flex h-10 items-center gap-1.5 rounded-full bg-white/15 px-3.5 text-[13px] font-semibold"
+            >
               <LogOut size={15} strokeWidth={2.2} /> {tr("Unpair this tablet")}
             </button>
           </div>
@@ -989,20 +1016,40 @@ function PairScreen({ onPaired }: { onPaired: () => void }) {
             <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
             <span className="font-semibold text-white">yanyin.kitchen</span>
           </p>
-          <h1 className="mt-3 text-[32px] leading-tight font-bold tracking-[-0.025em]">{tr("Connect this tablet")}</h1>
-          <p className="mt-1 max-w-[560px] text-[15px] text-white/75">{tr("Enter the code from the admin console: Settings → Station tablets. Nobody signs in on a shared screen.")}</p>
+          <h1 className="mt-3 text-[32px] leading-tight font-bold tracking-[-0.025em]">
+            {tr("Connect this tablet")}
+          </h1>
+          <p className="mt-1 max-w-[560px] text-[15px] text-white/75">
+            {tr(
+              "Enter the code from the admin console: Settings → Station tablets. Nobody signs in on a shared screen.",
+            )}
+          </p>
         </div>
       </section>
       <div className="relative z-10 px-5 pb-10 sm:px-8">
         <div className="mx-auto grid max-w-[960px] items-start gap-6 md:grid-cols-[1fr_300px]">
           <div className="card rounded-[28px] px-5 py-8">
             <PinPad value={pin} onChange={setPin} error={bad} />
-            <p className={`mt-6 text-center text-[14px] ${bad ? "font-semibold text-[#e5484d]" : "text-g-muted"}`}>{bad ? tr("Wrong code, try again") : tr("Demo code: {code}", { code: PAIR_CODE })}</p>
+            <p
+              className={`mt-6 text-center text-[14px] ${bad ? "font-semibold text-[#e5484d]" : "text-g-muted"}`}
+            >
+              {bad
+                ? tr("Wrong code, try again")
+                : tr("Demo code: {code}", { code: PAIR_CODE })}
+            </p>
           </div>
           <div className="card flex flex-col items-center rounded-[28px] p-6 text-center">
-            <BrandQr value="https://yanyin.app/pair/samarkand-4827" size={200} label={tr("Pairing QR code")} />
-            <p className="mt-4 text-[16px] font-bold">{tr("Or scan with the admin's phone")}</p>
-            <p className="mt-1 text-[13px] text-g-muted">{tr("Waiter app → Scan, or the admin console camera.")}</p>
+            <BrandQr
+              value="https://yanyin.app/pair/samarkand-4827"
+              size={200}
+              label={tr("Pairing QR code")}
+            />
+            <p className="mt-4 text-[16px] font-bold">
+              {tr("Or scan with the admin's phone")}
+            </p>
+            <p className="mt-1 text-[13px] text-g-muted">
+              {tr("Waiter app → Scan, or the admin console camera.")}
+            </p>
           </div>
         </div>
       </div>

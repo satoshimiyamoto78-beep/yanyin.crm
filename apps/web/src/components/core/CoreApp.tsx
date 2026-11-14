@@ -74,6 +74,8 @@ function Core() {
   };
   const go = (s: Section) => {
     haptic("light");
+    setRoles(false);
+    setVenue(null);
     setSec(s);
     window.scrollTo({ top: 0 });
   };
@@ -108,7 +110,7 @@ function Core() {
         onPick={(id) => go(id as Section)}
         groups={[{ items: nav }]}
         head={
-          <button type="button" onClick={() => setRoles(true)} className="press flex w-full items-center gap-3 rounded-[18px] p-1.5 text-left">
+          <button type="button" onClick={() => setRoles(true)} className="press flex w-full items-center gap-3 rounded-full p-1.5 text-left">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-g-ink text-[16px] font-bold text-[var(--g-bg)]">y</span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[15px] font-bold">yanyin.core</span>
@@ -221,7 +223,7 @@ function Mrr() {
   const vals = [0.6, 0.8, 1.0, 1.49, 1.49, 2.98, 2.98].map((m) => m * 1e6);
   const days = vals.map((value, i) => {
     const d = new Date(2026, 4 + i, 1);
-    return { short: d.toLocaleDateString(locale, { month: "short" }), date: String(d.getFullYear()), value };
+    return { short: d.toLocaleDateString(locale, { month: "short" }).replace(/\.$/, ""), date: "", value };
   });
   return <DaysCompareWidget title={tr("MRR by month")} icon={<Activity size={13} strokeWidth={2.4} />} days={days} format={compactMoney} todayNote={tr("tap a month to compare")} />;
 }
@@ -435,7 +437,7 @@ function Journal() {
   return (
     <div className="grid gap-2">
       {rows.map(([at, who, where, what]) => (
-        <div key={at + what} className="flex items-center gap-3 rounded-[20px] bg-g-fill px-4 py-3">
+        <div key={at + what} className="flex items-center gap-3 rounded-full bg-g-fill px-5 py-3">
           <span className="w-12 shrink-0 text-[13px] font-semibold text-g-muted tabular-nums">{at}</span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-medium">{tr(what!)}</span>

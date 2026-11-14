@@ -242,7 +242,7 @@ function DishEditor({ item, category, edit, stopped, money, onSave, onStop, onCl
             </div>
           ) : null}
           <PhotoPick value={undefined} onChange={setPhoto} label={photo ? tr("Replace the photo") : tr("Add a photo")} className="aspect-[3/1]" />
-          {item.status === "suggested" && <p className="rounded-[18px] bg-g-tint-orange px-4 py-3 text-[13px] leading-snug text-g-ink-2">{tr("Draft from Yan: check the text and the price, then save to confirm.")}</p>}
+          {item.status === "suggested" && <p className="rounded-[24px] bg-g-tint-orange px-4 py-3 text-[13px] leading-snug text-g-ink-2">{tr("Draft from Yan: check the text and the price, then save to confirm.")}</p>}
         </div>
         <div className="grid gap-5">
           <div className="flex rounded-full bg-g-fill p-1">
@@ -339,7 +339,7 @@ function AddWithYan({ categories, onClose, onAdd }: { categories: Category[]; on
                 <TextField value={draft.price} onChange={(v) => setDraft({ ...draft, price: v.replace(/\D/g, "") })} inputMode="numeric" suffix="₫" />
               </Field>
               <Field label={tr("Category")}>
-                <select value={draft.categoryId} onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })} className="h-14 w-full rounded-[18px] bg-g-fill px-4 text-[16px] outline-none focus:ring-2 focus:ring-g-blue/40">
+                <select value={draft.categoryId} onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })} className="h-14 w-full rounded-full bg-g-fill px-5 text-[16px] outline-none focus:ring-2 focus:ring-g-blue/40">
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {dish(c.name)}

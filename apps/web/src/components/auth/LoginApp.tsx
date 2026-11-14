@@ -138,7 +138,7 @@ export function ContactStep({ by, setBy, value, onChange, onNext }: { by: "phone
           {tr("Use the demo number")}
         </button>
       )}
-      <p className="mt-6 flex items-start gap-2.5 rounded-[20px] bg-g-fill px-4 py-3.5 text-[13px] leading-snug text-g-muted">
+      <p className="mt-6 flex items-start gap-2.5 rounded-[24px] bg-g-fill px-4 py-3.5 text-[13px] leading-snug text-g-muted">
         <ShieldCheck size={18} strokeWidth={2} className="mt-px shrink-0 text-g-green" />
         {tr("Your data stays with your venue. The owner decides who sees what; every action is in the journal.")}
       </p>

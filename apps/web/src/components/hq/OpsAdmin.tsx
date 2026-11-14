@@ -267,7 +267,7 @@ function BillPage({ bill, name, money, refunded, onClose, onRefund }: { bill: Bi
                   type="button"
                   disabled={!refunding}
                   onClick={() => (haptic("tick"), setPick((p) => (on ? p.filter((x) => x !== l.id) : [...p, l.id])))}
-                  className={`flex w-full items-center gap-3 rounded-[18px] px-3 py-3 text-left transition-colors ${on ? "bg-[#e5484d]/10" : ""}`}
+                  className={`flex w-full items-center gap-3 rounded-full px-3 py-3 text-left transition-colors ${on ? "bg-[#e5484d]/10" : ""}`}
                 >
                   {refunding && <span className={`grid size-6 shrink-0 place-items-center rounded-full ${on ? "bg-[#e5484d] text-white" : "bg-g-fill-2"}`}>{on && <Check size={14} strokeWidth={3} />}</span>}
                   <span className="w-8 shrink-0 text-[15px] font-bold tabular-nums">{l.qty}×</span>
@@ -306,7 +306,7 @@ function BillPage({ bill, name, money, refunded, onClose, onRefund }: { bill: Bi
             <Row icon={FileCheck2} title={bill.state === "open" ? tr("E-invoice after payment") : tr("E-invoice sent")} sub={bill.state === "open" ? tr("Goes to the tax office when the bill is paid") : `MISA · ${tr("code")} C26TAA-${bill.id}`} />
           </Group>
           {refunded && (
-            <p className="chip-red rounded-[20px] px-4 py-3 text-[13.5px] leading-snug font-medium">
+            <p className="chip-red rounded-[24px] px-4 py-3 text-[13.5px] leading-snug font-medium">
               {tr("Refunded {sum}: {reason}", { sum: money(refunded.amount), reason: refunded.reason })}
             </p>
           )}
@@ -330,7 +330,7 @@ export function ReportsAdmin({ floor, menu, notify }: { floor: FloorData; menu: 
   const days = week.map((v, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (6 - i));
-    return { short: d.toLocaleDateString(locale, { weekday: "short" }), date: d.toLocaleDateString(locale, { day: "numeric", month: "short" }), value: v };
+    return { short: d.toLocaleDateString(locale, { weekday: "short" }), date: String(d.getDate()), value: v };
   });
   const sum = week.reduce((a, b) => a + b, 0) * (range === "month" ? 4.2 : range === "day" ? 1 / 7 : 1);
   const bills = Math.round((range === "month" ? 1720 : range === "day" ? 58 : 410) * 1);
@@ -394,7 +394,7 @@ export function ReportsAdmin({ floor, menu, notify }: { floor: FloorData; menu: 
           <p className="text-[13px] font-semibold text-g-ink-2">{tr("Waiters")}</p>
           <div className="mt-2 grid gap-1">
             {waiters.map(([h, m, b, r]) => (
-              <div key={h} className="flex items-center gap-3 rounded-[16px] py-2">
+              <div key={h} className="flex items-center gap-3 rounded-full py-2">
                 <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-bold uppercase">{h[0]}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-semibold text-g-blue">@{h}</span>

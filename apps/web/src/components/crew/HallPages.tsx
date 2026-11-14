@@ -35,7 +35,7 @@ export function BillsPage({ tables, history, money, onOpenBill, onReceipt, onClo
 
   const row = (x: FloorTable, hot: boolean) => (
     <button key={x.no} onClick={() => onOpenBill(x.no)} className="press flex w-full min-w-0 items-center gap-3 rounded-[20px] bg-g-fill p-3 text-left">
-      <span className={`flex w-12 shrink-0 flex-col items-center rounded-[14px] py-1.5 ${hot ? "chip-orange" : "bg-g-card"}`}>
+      <span className={`flex w-12 shrink-0 flex-col items-center rounded-full py-2 ${hot ? "chip-orange" : "bg-g-card"}`}>
         <span className="text-[9px] leading-none font-semibold uppercase opacity-80">{tr("Table")}</span>
         <span className="text-[20px] leading-tight font-bold tabular-nums">{x.no}</span>
       </span>
@@ -211,7 +211,7 @@ export function KitchenPage({ tables, itemById, onServe, onServeAll, onHurry, on
             {groups.map(({ x, lines, wait }) => (
               <section key={x.no} className="rounded-[24px] bg-g-fill p-3.5">
                 <header className="flex items-center gap-3">
-                  <button onClick={() => onOpenTable(x.no)} className={`press flex w-12 shrink-0 flex-col items-center rounded-[14px] py-1.5 ${wait >= 15 ? "chip-orange" : "bg-g-card"}`}>
+                  <button onClick={() => onOpenTable(x.no)} className={`press flex w-12 shrink-0 flex-col items-center rounded-full py-2 ${wait >= 15 ? "chip-orange" : "bg-g-card"}`}>
                     <span className="text-[9px] leading-none font-semibold uppercase opacity-80">{tr("Table")}</span>
                     <span className="text-[20px] leading-tight font-bold tabular-nums">{x.no}</span>
                   </button>

@@ -28,10 +28,10 @@ const tap = (fn: () => void) => () => {
 /** One action, icon over a short label, on the same soft scene as the cards. */
 export function StripSquare({ icon, label, onClick, tone = "blue" }: { icon: ReactNode; label: string; onClick: () => void; tone?: ArtTone }) {
   return (
-    <button aria-label={label} onClick={tap(onClick)} style={sceneStyle(tone)} className="art-scene press relative isolate flex size-[62px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[20px] text-g-ink strip-tile">
+    <button aria-label={label} onClick={tap(onClick)} style={sceneStyle(tone)} className="art-scene press relative isolate flex h-[62px] min-w-[62px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[20px] px-1.5 text-g-ink strip-tile">
       <span aria-hidden className="art-grain pointer-events-none absolute inset-0 -z-10" />
       <span className={TONE_INK[tone]}>{icon}</span>
-      <span className="max-w-full truncate px-1 text-[10px] font-semibold">{label}</span>
+      <span className="max-w-full truncate text-[10px] font-semibold whitespace-nowrap">{label}</span>
     </button>
   );
 }

@@ -425,7 +425,7 @@ export function DishRow({ item, role, lang, currency, qty, onOpen, onAdd, onQty,
       </button>
       <button onClick={onOpen} className="min-w-0 flex-1 text-left">
         <span className="flex items-center gap-1.5">
-          <span className="live line-clamp-2 text-[15px] leading-tight font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
+          <span className="live line-clamp-2 min-w-0 text-[15px] break-words leading-tight font-semibold tracking-[-0.01em]">{t(item.name, lang)}</span>
           <DishMarks item={item} lang={lang} className="shrink-0 origin-left scale-[0.85]" />
         </span>
         {desc && <span className="live mt-0.5 block truncate text-[13px] text-g-muted">{desc}</span>}

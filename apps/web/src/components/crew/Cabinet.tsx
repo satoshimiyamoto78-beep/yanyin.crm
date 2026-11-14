@@ -346,7 +346,7 @@ export function CabinetView({
           </button>
           {/* Icon and text on one line: two low cards side by side. */}
           <button onClick={onQuests} className="press flex min-w-0 items-center gap-3 rounded-[22px] bg-g-tint-blue p-3.5 text-left">
-            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-[13px]">
+            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full">
               <Trophy size={19} strokeWidth={2} />
             </span>
             <span className="min-w-0">
@@ -355,7 +355,7 @@ export function CabinetView({
             </span>
           </button>
           <div className="flex min-w-0 items-center gap-3 rounded-[22px] bg-g-tint-green p-3.5">
-            <span className="grid size-10 shrink-0 place-items-center rounded-[13px] bg-g-green text-white">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-g-green text-white">
               <MessageCircle size={19} strokeWidth={2} />
             </span>
             <span className="min-w-0">
