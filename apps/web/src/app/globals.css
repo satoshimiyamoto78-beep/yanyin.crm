@@ -718,3 +718,7 @@ html[data-scrolling] .aurora::after,
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }
+
+/* Scanner: the light line sliding over the frame (transform only). */
+.scan-line { animation: scan-line 1.4s ease-in-out infinite alternate; }
+@keyframes scan-line { from { transform: translateY(0); } to { transform: translateY(240px); } }

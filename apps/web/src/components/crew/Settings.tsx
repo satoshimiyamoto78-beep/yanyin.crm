@@ -62,7 +62,10 @@ export function ProfilePage({
   onTheme,
   handle,
   onHandle,
+  onRoles,
 }: {
+  /** Opens "I am now…": the person's other roles. */
+  onRoles?: () => void;
   me: Me;
   level: { level: number; title: string; xpIntoLevel: number; xpForNext: number };
   badges: { id: string; name: string; earned: boolean }[];
@@ -232,9 +235,14 @@ export function ProfilePage({
           </Row>
         </Group>
 
-        <button onClick={() => onNotify(tr("Signed out"), tr("Demo: nothing changed"))} className="press mt-8 h-14 w-full rounded-full bg-g-fill text-[16px] font-semibold text-[#e5484d]">
+        {onRoles && (
+          <button onClick={onRoles} className="press mt-8 h-14 w-full rounded-full bg-g-fill text-[16px] font-semibold">
+            {tr("Switch role")}
+          </button>
+        )}
+        <a href="login.html" className="press mt-3 flex h-14 w-full items-center justify-center rounded-full bg-g-fill text-[16px] font-semibold text-[#e5484d]">
           {tr("Sign out")}
-        </button>
+        </a>
         <p className="mt-6 mb-4 text-center text-[12px] text-g-faint">{tr("Settings save on this phone and sync with your account later.")}</p>
       </div>
 

@@ -39,6 +39,8 @@ import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { useStopList } from "@/lib/stoplist";
 import { applyEdits, menuEdits } from "@/lib/menu-edits";
+import { RoleSwitch } from "@/components/auth/RoleSwitch";
+import { OfflineBar } from "@/components/system/Kit";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
 import { Island, loadIfChanged, markShown, PeekCard, Reveal, useLongPress, type IslandNotice } from "@/components/guest/motion";
@@ -165,6 +167,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
     setMounted(true);
   }, []);
   const [pickHandle, setPickHandle] = useState(false);
+  const [roles, setRoles] = useState(false);
   // News that mention me (or my station, or @all), from the admin console.
   const news = useNews();
   const myNews = useMemo(() => news.filter((p) => p.to.includes(ME_ID)), [news, ME_ID]);
@@ -318,6 +321,12 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   useEffect(() => {
     markShown("tab:me", JSON.stringify([floor.history.length])); // the first screen already played its load
   }, [floor.history.length]);
+  // A link can open a section directly (the host's seat opens Bookings: crew.html?tab=bookings).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time deep link on mount
+    if (t === "hall" || t === "tables" || t === "orders" || t === "bookings" || t === "cabinet") setTab(t);
+  }, []);
   const inHall = tab !== "me" && tab !== "cabinet";
   const go = (t: Tab) => {
     haptic("tick");
@@ -347,6 +356,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
 
   return (
     <div className="min-h-dvh bg-white text-g-ink">
+      <OfflineBar text={tr("No internet · orders are saved and go out when it is back")} />
       <div key={tab} className="animate-tab mx-auto max-w-[480px] pb-28">
         {tab === "hall" && (
           <HallHome
@@ -526,8 +536,10 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
           onTheme={scheme.toggle}
           handle={myHandle}
           onHandle={() => setPickHandle(true)}
+          onRoles={() => setRoles(true)}
         />
       )}
+      {roles && <RoleSwitch current="crew" onClose={() => setRoles(false)} />}
       {profile === "personal" && (
         <PersonalInfoPage
           me={me}

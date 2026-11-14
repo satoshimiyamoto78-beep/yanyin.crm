@@ -73,7 +73,7 @@ import {
 import { RoleSwitch } from "@/components/auth/RoleSwitch";
 import { MenuAdmin } from "./MenuAdmin";
 import { FloorAdmin, OrdersAdmin, ReportsAdmin } from "./OpsAdmin";
-import { ChecklistsAdmin, QuestsAdmin, ShiftsAdmin } from "./PeopleAdmin";
+import { ChecklistsAdmin, QuestsAdmin, ShiftsAdmin, TasksAdmin } from "./PeopleAdmin";
 import { SettingsAdmin } from "./SettingsAdmin";
 import { MentionInput, MentionText } from "@/components/system/MentionInput";
 import { NorthSky } from "@/components/system/NorthSky";
@@ -530,11 +530,12 @@ function Console({ menu }: { menu: Menu }) {
       body: <ShiftsAdmin team={team} notify={say} />,
     },
     news: {
-      title: tr("News"),
+      title: tr("News and tasks"),
       sub: tr("Mention people with @: only they get it"),
       art: "bell",
       body: (
         <>
+          <TasksAdmin team={team} me={ME} notify={say} />
           {/* Who to write to, one tap: the groups as chips above the field. */}
           <div className="no-scrollbar -mx-5 mt-6 flex gap-2 overflow-x-auto px-5">
             {groups.map((g) => (

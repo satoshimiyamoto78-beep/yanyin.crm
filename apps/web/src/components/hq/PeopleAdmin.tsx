@@ -5,6 +5,7 @@ import { useState } from "react";
 import { checklistProgress, type ChecklistItem, type ChecklistRun, type ChecklistTemplate, type Person, type Quest } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import { createStore } from "@/lib/store";
+import { nowHM, tasksStore } from "@/lib/team-stores";
 import { Sheet } from "@/components/guest/ui";
 import { ArtScene } from "@/components/system/Art";
 import { Choice, EmptyState, Field, Group, ListRow, Row, Switch, TextField } from "@/components/system/Kit";
@@ -419,5 +420,83 @@ function TemplateEditor({ tpl, onClose, onSave }: { tpl: ChecklistTemplate; onCl
         {!items.length && <EmptyState art="checklist" title={tr("The list is empty")} text={tr("Add the first item to a phase above.")} />}
       </div>
     </Sheet>
+  );
+}
+
+/* ---------------------------------------------------------------- Tasks */
+
+/** Tasks with an @assignee: set here, they land on the person's home screen; ticked there, they show done here. */
+export function TasksAdmin({ team, me, notify }: { team: Person[]; me: string; notify: (t: string) => void }) {
+  const tr = useTr();
+  const all = tasksStore.use();
+  const [adding, setAdding] = useState(false);
+  const [to, setTo] = useState<string[]>([]);
+  const [text, setText] = useState("");
+  const [due, setDue] = useState(["17:00"]);
+  const who = (id: string) => team.find((p) => p.id === id);
+  const open = all.filter((t) => !t.done);
+  return (
+    <section className="mb-8">
+      <div className="mb-3 flex items-center justify-between gap-3 px-1">
+        <h3 className="flex items-baseline gap-2 text-[20px] font-bold tracking-[-0.02em]">
+          {tr("Tasks")} <span className="text-[14px] font-medium text-g-faint">{open.length}</span>
+        </h3>
+        <button type="button" onClick={() => (haptic("light"), setAdding(true))} className="press flex h-10 items-center gap-1.5 rounded-full bg-g-fill px-4 text-[14px] font-semibold">
+          <Plus size={16} strokeWidth={2.4} className="text-g-blue" /> {tr("Give a task")}
+        </button>
+      </div>
+      <div className="grid gap-2 md:grid-cols-2">
+        {all.map((t) => (
+          <ListRow
+            key={t.id}
+            badge={t.done ? <Check size={19} strokeWidth={2.8} /> : (who(t.to)?.name[0] ?? "?")}
+            badgeTone={t.done ? "chip-green" : "chip-blue"}
+            title={t.title}
+            sub={`@${who(t.to)?.handle} · ${t.done ? tr("done at {t}", { t: t.done.at }) : t.due ? tr("by {t}", { t: t.due }) : t.at}`}
+          />
+        ))}
+      </div>
+      {adding && (
+        <Sheet
+          open
+          onClose={() => setAdding(false)}
+          label={tr("Give a task")}
+          title={false}
+          footer={
+            <button
+              type="button"
+              disabled={!to.length || text.trim().length < 3}
+              onClick={() => {
+                const p = who(to[0]!)!;
+                tasksStore.set([{ id: `t${Date.now()}`, title: `@${p.handle} ${text.trim()}`, to: p.id, by: me, due: due[0], at: nowHM() }, ...all]);
+                haptic("success");
+                notify(tr("Task sent to @{h}", { h: p.handle }));
+                setAdding(false);
+                setText("");
+                setTo([]);
+              }}
+              className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40"
+            >
+              {tr("Send the task")}
+            </button>
+          }
+        >
+          <div className="grid gap-5 px-5 pt-1 pb-10">
+            <h2 className="text-[30px] leading-tight font-bold tracking-[-0.025em]">{tr("Give a task")}</h2>
+            <div>
+              <p className="mb-2 px-1 text-[14px] font-semibold text-g-ink-2">{tr("Who")}</p>
+              <Choice value={to} onChange={setTo} options={team.filter((p) => p.onShift && p.id !== me).map((p) => ({ id: p.id, label: `@${p.handle}` }))} />
+            </div>
+            <Field label={tr("What to do")}>
+              <TextField value={text} onChange={setText} placeholder={tr("Change the tablecloth on table 12")} />
+            </Field>
+            <div>
+              <p className="mb-2 px-1 text-[14px] font-semibold text-g-ink-2">{tr("By")}</p>
+              <Choice value={due} onChange={setDue} options={["13:30", "15:00", "17:00", "22:00"].map((t) => ({ id: t, label: t }))} />
+            </div>
+          </div>
+        </Sheet>
+      )}
+    </section>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney, levelFromXp, questPercent } from "@yanyin/domain";
-import { Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, SlidersHorizontal, Info, Minus, Plus, Crown, Dices, Handshake, Moon, Martini, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import { Bell, CakeSlice, Check, ChevronRight, Clock, Coffee, CookingPot, Eye, EyeOff, LayoutGrid, ScanLine, Search, SlidersHorizontal, Info, MessagesSquare, Minus, Plus, Crown, Dices, Handshake, Moon, Martini, Flame, Heart, Recycle, Star, TrendingUp, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CrewData, CrewQuest } from "@/lib/demo-crew";
@@ -14,7 +14,10 @@ import { BadgeEmblem, type Tier } from "./Emblems";
 import { useTr } from "./prefs";
 import { BadgesPage, QuestsPage } from "./Collections";
 import { ChecklistCard, ChecklistPage } from "./Checklist";
-import { CHECKLIST_OWNER, WAITER_CHECKLIST, WAITER_RUN } from "@/lib/demo-team";
+import { ChatPage, ClockCard, MyTasks } from "./ShiftTools";
+import { chatStore } from "@/lib/team-stores";
+import { useHandles, withHandles } from "@/lib/handles";
+import { CHECKLIST_OWNER, TEAM, WAITER_CHECKLIST, WAITER_RUN } from "@/lib/demo-team";
 import { NorthSky } from "@/components/system/NorthSky";
 import { Strip, StripBig, StripSquare } from "@/components/system/Strip";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
@@ -165,7 +168,10 @@ export function CrewBoard({
   const [goalInfo, setGoalInfo] = useState(false);
   const [editing, setEditing] = useState(false);
   const tr = useTr();
-  const [page, setPage] = useState<"customize" | "yours" | "board" | "badges" | "checklist" | null>(null);
+  const [page, setPage] = useState<"customize" | "yours" | "board" | "badges" | "checklist" | "chat" | null>(null);
+  const handles = useHandles();
+  const team = withHandles(TEAM, handles);
+  const chat = chatStore.use();
   const [run, setRun] = useState(WAITER_RUN);
   const takeBtn = (q: CrewQuest) => (
     <button
@@ -191,6 +197,10 @@ export function CrewBoard({
       </button>
     ) : undefined;
   const blocks: Record<HomeBlock, React.ReactNode> = {
+    // Clock in with the door QR; then the hours on shift.
+    shift: <ClockCard me={data.staff.id} onNotify={(t, x) => onNotify?.(t, x)} />,
+    // Tasks the admin gave me with an @mention; tick when done.
+    tasks: <MyTasks me={data.staff.id} team={team} onNotify={(t, x) => onNotify?.(t, x)} />,
     // The shift checklist: how far along, what is next, what is late.
     checklist: <ChecklistCard template={WAITER_CHECKLIST} run={run} onOpen={() => setPage("checklist")} />,
     // Yan's tips for the shift: quest of the week, sales hints, the team goal.
@@ -373,6 +383,7 @@ export function CrewBoard({
               tone={hot?.bills ? "orange" : "muted"}
             />
             <StripSquare icon={<ScanLine size={21} strokeWidth={1.9} />} label={tr("Scan")} onClick={() => onScan?.()} />
+            <StripSquare tone="teal" icon={<MessagesSquare size={21} strokeWidth={1.9} />} label={`${tr("Chat")} ${chat.length}`} onClick={() => setPage("chat")} />
             <StripSquare tone="sunset" icon={<Coffee size={21} strokeWidth={1.9} />} label={tr("Break")} onClick={() => onNotify?.(tr("Break started"), tr("Tables see “back in 10 min”"))} />
             <StripBig art="sales" onClick={() => onGo?.("orders")} icon={<TrendingUp size={19} strokeWidth={2} />} title={hidden ? "•••" : `${short(data.today.sales)} ₫`} sub={`${tr("Sales today")} · +12%`} />
             <StripBig art="trophy" icon={<Trophy size={19} strokeWidth={2} />} badge={<span className="text-[12px] font-medium text-g-muted">{tr("Level {n}", { n: level.level })}</span>} title={tr(level.title)} wide>
@@ -466,6 +477,7 @@ export function CrewBoard({
         <p className="mt-6 text-center text-[13px] text-g-faint">{tr("Progress counts automatically from orders · leaderboards can be turned off by the venue")}</p>
       </div>
 
+      {page === "chat" && <ChatPage me={data.staff.id} team={team} onClose={() => setPage(null)} />}
       {page === "customize" && <CustomizePage layout={layout} onChange={setLayout} onClose={() => setPage(null)} />}
       {(page === "yours" || page === "board") && (
         <QuestsPage

@@ -15,6 +15,8 @@ export const SEATS: Seat[] = [
   { id: "hq", venue: "Samarkand", city: "Da Nang", role: "Admin", sub: "Overview, menu, team, reports", href: "hq.html", art: "sales" },
   { id: "crew", venue: "Samarkand", city: "Da Nang", role: "Waiter", sub: "Tables, orders, tips, quests", href: "crew.html", art: "tables" },
   { id: "kitchen", venue: "Samarkand", city: "Da Nang", role: "Station screen", sub: "Kitchen or bar tablet", href: "kitchen.html", art: "kitchen" },
+  { id: "cook", venue: "Samarkand", city: "Da Nang", role: "Cook", sub: "The kitchen queue on your phone", href: "kitchen.html?me=chef_dima", art: "salad" },
+  { id: "host", venue: "Samarkand", city: "Da Nang", role: "Host", sub: "Bookings, the queue, seating", href: "crew.html?tab=bookings", art: "bookings" },
 ];
 
 /** Where the app sends someone back to choose another role or account. */

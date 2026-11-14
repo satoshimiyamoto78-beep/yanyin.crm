@@ -22,6 +22,7 @@ export function MentionInput({
   placeholder,
   roleLabel,
   rows = 4,
+  up = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -31,6 +32,8 @@ export function MentionInput({
   /** How to show a person's role under their name. */
   roleLabel: (p: Person) => string;
   rows?: number;
+  /** Open the list above the field (a field docked at the bottom of the screen). */
+  up?: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [caret, setCaret] = useState(0);
@@ -69,7 +72,7 @@ export function MentionInput({
         className="block w-full resize-none rounded-[20px] bg-g-fill px-4 py-3.5 text-[16px] leading-relaxed outline-none placeholder:text-g-faint"
       />
       {at && (groupHits.length > 0 || peopleHits.length > 0) && (
-        <div role="listbox" className="animate-pop absolute inset-x-0 top-full z-20 mt-2 max-h-[320px] overflow-y-auto rounded-[22px] bg-g-card p-1.5 shadow-[0_18px_40px_-16px_rgba(11,11,15,0.35)] ring-1 ring-g-line">
+        <div role="listbox" className={`animate-pop absolute inset-x-0 z-20 max-h-[320px] ${up ? "bottom-full mb-2" : "top-full mt-2"} overflow-y-auto rounded-[22px] bg-g-card p-1.5 shadow-[0_18px_40px_-16px_rgba(11,11,15,0.35)] ring-1 ring-g-line`}>
           {groupHits.map((g) => (
             <Row key={g.handle} onPick={() => pick(g.handle)} avatar={<Users size={18} strokeWidth={2.2} />} tone="blue" title={g.label} sub={`@${g.handle} · ${g.count}`} />
           ))}

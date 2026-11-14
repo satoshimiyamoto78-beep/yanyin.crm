@@ -48,7 +48,7 @@ import { Island, type IslandNotice } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { ArtScene, ArtTile } from "@/components/system/Art";
 import { NorthSky } from "@/components/system/NorthSky";
-import { BrandQr, PinPad } from "@/components/system/Kit";
+import { BrandQr, OfflineBar, PinPad } from "@/components/system/Kit";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
 import { ChecklistPage } from "@/components/crew/Checklist";
 import { CrewPrefsProvider, useDish, useTr } from "@/components/crew/prefs";
@@ -207,7 +207,10 @@ function Screen({ menu }: { menu: Menu }) {
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- restore saved screen settings once on mount */
     setStation(read<Station | null>("yanyin:kds-station", null));
-    setPaired(read("yanyin:kds-paired", false));
+    // A cook or bartender on their own phone is signed in personally: no tablet pairing (kitchen.html?me=chef_dima).
+    const personal = new URLSearchParams(window.location.search).get("me");
+    setPaired(personal ? true : read("yanyin:kds-paired", false));
+    if (personal && !read<Station | null>("yanyin:kds-station", null)) setStation(personal.includes("bar") ? "bar" : "hot");
     setDark(read("yanyin:kds-dark", true));
     setSound(read("yanyin:kds-sound", true));
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -367,6 +370,7 @@ function Screen({ menu }: { menu: Menu }) {
 
   return (
     <div className="min-h-dvh bg-white text-g-ink">
+      <OfflineBar text={tr("No internet · the queue keeps working and syncs when it is back")} />
       <Island notice={notice} />
       {/* The same sky as the waiter's home: station, live counts, people on it, the clock and the tools. */}
       <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">

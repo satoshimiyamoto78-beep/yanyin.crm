@@ -63,6 +63,8 @@ import {
 import Image from "next/image";
 import { useStopList, withoutStopped } from "@/lib/stoplist";
 import { applyEdits, menuEdits } from "@/lib/menu-edits";
+import { MysterySheet } from "./MysterySheet";
+import { OfflineBar } from "@/components/system/Kit";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
 import {
@@ -90,6 +92,7 @@ type SheetName =
   | "about"
   | "lang"
   | "roulette"
+  | "mystery"
   | "yan"
   | "bill"
   | "categories"
@@ -340,6 +343,7 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
 
   return (
     <div className="min-h-dvh bg-g-bg text-g-ink">
+      <OfflineBar text={ui(lang, "offline")} />
       <div className="mx-auto max-w-[480px] pb-32">
         {/* Top: the banking-app pattern, same as the waiter's home. */}
         <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
@@ -481,6 +485,12 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
               }
               title={ui(lang, "qaRoulette")}
               sub={ui(lang, "qaRouletteShort")}
+            />
+            <StripWide
+              onClick={() => setSheet("mystery")}
+              art={<span className="blue-grad grid size-9 place-items-center rounded-full text-[19px] font-bold">?</span>}
+              title={ui(lang, "qaMystery")}
+              sub={ui(lang, "qaMysterySub")}
             />
             {halves && (
               <StripWide
@@ -667,6 +677,17 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
           setTimeout(() => scrollTo(id), 80);
         }}
       />
+      <MysterySheet
+        open={sheet === "mystery"}
+        onClose={() => setSheet(null)}
+        lang={lang}
+        currency={currency}
+        menu={menu}
+        onTake={(it) => {
+          setSheet(null);
+          addToCart(it, undefined, [], 1);
+        }}
+      />
       <BillSheet
         open={sheet === "bill"}
         onClose={() => setSheet(null)}
@@ -676,6 +697,14 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
         itemById={itemById}
         table={table}
         serviceRate={serviceRate}
+        onPaid={() =>
+          flash({
+            title: ui(lang, "paidIsland"),
+            text: ui(lang, "paidIslandHint"),
+            tone: "green",
+            icon: <Check size={16} strokeWidth={2.5} />,
+          })
+        }
         onRequest={(_, method) => {
           setSheet(null);
           flash({

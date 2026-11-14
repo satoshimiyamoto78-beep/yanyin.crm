@@ -8,10 +8,12 @@ import { DragList } from "./DragList";
 import { useTr } from "./prefs";
 
 /** Blocks of the waiter's home screen below the header. Order and visibility are the waiter's choice. */
-export type HomeBlock = "checklist" | "tips" | "streak" | "goal" | "quests" | "board" | "badges" | "week";
+export type HomeBlock = "shift" | "tasks" | "checklist" | "tips" | "streak" | "goal" | "quests" | "board" | "badges" | "week";
 
 export const HOME_BLOCKS: Record<HomeBlock, { label: string; hint: string }> = {
+  shift: { label: "Shift time", hint: "Clock in at the door, see your hours" },
   checklist: { label: "Shift checklist", hint: "Opening, during the shift, closing" },
+  tasks: { label: "My tasks", hint: "What the admin asked you to do" },
   tips: { label: "Yan suggests", hint: "Tips, the quest of the week, peak hours" },
   streak: { label: "Streak", hint: "Days on time in a row" },
   goal: { label: "Team goal", hint: "This week's shared target" },

@@ -16,7 +16,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { Banknote, Building2, CreditCard, Heart, QrCode, Star, BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -24,6 +24,7 @@ import Image from "next/image";
 import qrcode from "qrcode-generator";
 import { haptic } from "@/lib/haptics";
 import { SlideToConfirm } from "@/components/system/SlideToConfirm";
+import { BrandQr, useStepHistory } from "@/components/system/Kit";
 import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview, drinkColor, drinkName } from "./builders";
 
 const tint = (c: string, a: number) => {
@@ -1385,6 +1386,7 @@ export function BillSheet({
   itemById,
   table,
   onRequest,
+  onPaid,
   serviceRate = DEFAULT_SERVICE_RATE,
 }: {
   open: boolean;
@@ -1395,126 +1397,369 @@ export function BillSheet({
   itemById: Map<string, MenuItem>;
   table: string | null;
   onRequest: (total: number, method: string) => void;
+  /** Paid in the app (VietQR): the island says so and the waiter sees the table as paid. */
+  onPaid?: (total: number) => void;
   serviceRate?: number;
 }) {
-  const [tip, setTip] = useState(0);
-  const [method, setMethod] = useState<UiKey>("billQr");
-  const lines = orders.flatMap((o) => o.lines);
-  const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
-  const service = withService(subtotal, serviceRate).service;
-  const tipAmount = Math.round((subtotal * tip) / 100 / 1000) * 1000;
-  const total = subtotal + service + tipAmount;
-  const money = (n: number) => formatMoney(n, currency, lang);
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      label={ui(lang, "billTitle")}
-      title={false}
-      footer={
-        <button
-          onClick={() => {
-            haptic("success");
-            onRequest(total, ui(lang, method));
-          }}
-          className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold tabular-nums"
-        >
-          {ui(lang, "billRequest")} · {money(total)}
-        </button>
-      }
-    >
-      <div className="px-5 pt-1 pb-8">
-        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "billTitle")}</h2>
-        {table && (
-          <p className="mt-1 text-[14px] text-g-muted">
-            {ui(lang, "table")} {table.padStart(2, "0")} · {orders.length} × {ui(lang, "order").toLowerCase()}
-          </p>
-        )}
-        <div className="mt-5 rounded-[24px] bg-g-fill px-5 py-4">
-          <div className="grid gap-2.5">
-            {lines.map((l) => {
-              const it = itemById.get(l.itemId);
-              return (
-                <div key={l.key + l.qty} className="flex items-baseline gap-2 text-[15px]">
-                  <span className="w-6 shrink-0 text-g-muted tabular-nums">{l.qty}×</span>
-                  <span className="min-w-0 flex-1 truncate">{it ? t(it.name, lang) : l.itemId}</span>
-                  <span className="shrink-0 tabular-nums">{money(l.unitPrice * l.qty)}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="my-3.5 border-t border-dashed border-g-faint/60" />
-          <div className="grid gap-1.5 text-[14px] text-g-muted tabular-nums">
-            <p className="flex justify-between">
-              <span>{ui(lang, "billSubtotal")}</span>
-              <span className="text-g-ink">{money(subtotal)}</span>
-            </p>
-            <p className="flex justify-between">
-              <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
-              <span className="text-g-ink">{money(service)}</span>
-            </p>
-            {tipAmount > 0 && (
-              <p className="flex justify-between">
-                <span>{ui(lang, "billTip")}</span>
-                <span className="text-g-ink">{money(tipAmount)}</span>
-              </p>
-            )}
-          </div>
-          <p className="mt-3 flex items-baseline justify-between">
-            <span className="text-[15px] font-semibold">{ui(lang, "total")}</span>
-            <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{money(total)}</span>
-          </p>
-        </div>
-
-        <section className="mt-8">
-          <StepHeadline>{ui(lang, "billTip")}</StepHeadline>
-          <div className="flex rounded-full bg-g-fill p-1">
-            {[0, 5, 10, 15].map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  haptic("tick");
-                  setTip(p);
-                }}
-                aria-pressed={tip === p}
-                className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${tip === p ? "bg-white text-g-ink" : "text-g-muted"}`}
-              >
-                {p ? `${p}%` : ui(lang, "billNoTip")}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-8">
-          <StepHeadline>{ui(lang, "billMethod")}</StepHeadline>
-          <div className="grid grid-cols-3 gap-2">
-            {(["billQr", "billCard", "billCash"] as UiKey[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => {
-                  haptic("light");
-                  setMethod(m);
-                }}
-                aria-pressed={method === m}
-                className={`press h-14 rounded-[18px] text-[15px] font-semibold transition-colors ${method === m ? "bg-g-ink text-white" : "bg-g-fill"}`}
-              >
-                {ui(lang, m)}
-              </button>
-            ))}
-          </div>
-        </section>
-      </div>
-    </Sheet>
-  );
+  if (!open) return null;
+  return <BillFlow onClose={onClose} lang={lang} currency={currency} orders={orders} itemById={itemById} table={table} onRequest={onRequest} onPaid={onPaid} serviceRate={serviceRate} />;
 }
 
 function StepHeadline({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-3 text-[17px] font-semibold">{children}</h3>;
 }
 
-/* ---------------------------------------------------------------- Categories */
+type Split = "all" | "equal" | "items";
 
-/** All menu sections as one page: icon, name, how many dishes. Tap jumps to the section. */
+/**
+ * The bill as a short flow in one page (back walks it): the check and how to
+ * split it (whole, equally, by dishes), the tip, how to pay, a VAT invoice for a
+ * company; then VietQR right in the app (or the waiter brings card or cash),
+ * the payment confirmed, and a quick review of the visit.
+ */
+function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest, onPaid, serviceRate }: { onClose: () => void; lang: Lang; currency: Currency; orders: PlacedOrder[]; itemById: Map<string, MenuItem>; table: string | null; onRequest: (total: number, method: string) => void; onPaid?: (total: number) => void; serviceRate: number }) {
+  const { step, go, back } = useStepHistory();
+  const [tip, setTip] = useState(0);
+  const [method, setMethod] = useState<"billQr" | "billCard" | "billCash">("billQr");
+  const [split, setSplit] = useState<Split>("all");
+  const [people, setPeople] = useState(2);
+  const [mine, setMine] = useState<string[]>([]);
+  const [invoice, setInvoice] = useState(false);
+  const [company, setCompany] = useState({ name: "", tax: "", email: "" });
+  const [checking, setChecking] = useState(false);
+  const [stars, setStars] = useState(0);
+  const [liked, setLiked] = useState<UiKey[]>([]);
+  const [comment, setComment] = useState("");
+  const lines = orders.flatMap((o) => o.lines);
+  const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
+  const picked = lines.filter((l) => mine.includes(l.key)).reduce((s, l) => s + l.unitPrice * l.qty, 0);
+  const base = split === "all" ? subtotal : split === "equal" ? Math.round(subtotal / people / 1000) * 1000 : picked;
+  const service = withService(base, serviceRate).service;
+  const tipAmount = Math.round((base * tip) / 100 / 1000) * 1000;
+  const total = base + service + tipAmount;
+  const money = (n: number) => formatMoney(n, currency, lang);
+  const invoiceOk = !invoice || (company.name.trim().length > 1 && company.tax.replace(/\D/g, "").length >= 10 && /@/.test(company.email));
+  const ready = total > 0 && invoiceOk;
+
+  const footer =
+    step === 0 ? (
+      <button
+        disabled={!ready}
+        onClick={() => {
+          haptic("success");
+          if (method === "billQr") go(1);
+          else onRequest(total, ui(lang, method));
+        }}
+        className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold tabular-nums transition-opacity disabled:opacity-40"
+      >
+        {method === "billQr" ? `${ui(lang, "payNow")} · ${money(total)}` : `${ui(lang, "billRequest")} · ${money(total)}`}
+      </button>
+    ) : step === 1 ? (
+      <button
+        disabled={checking}
+        onClick={() => {
+          haptic("light");
+          setChecking(true);
+          setTimeout(() => {
+            setChecking(false);
+            haptic("success");
+            onPaid?.(total);
+            go(2);
+          }, 1300);
+        }}
+        className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold disabled:opacity-70"
+      >
+        {checking ? ui(lang, "payChecking") : ui(lang, "payDone")}
+      </button>
+    ) : step === 2 ? (
+      <button onClick={() => go(3)} className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold">
+        {ui(lang, "rateVisit")}
+      </button>
+    ) : step === 3 ? (
+      <button disabled={!stars} onClick={() => (haptic("success"), go(4))} className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40">
+        {ui(lang, "sendReview")}
+      </button>
+    ) : (
+      <button onClick={onClose} className="press h-14 w-full rounded-full bg-g-fill text-[16px] font-semibold">
+        {ui(lang, "close")}
+      </button>
+    );
+
+  return (
+    <Sheet open onClose={step > 0 && step < 2 ? back : onClose} label={ui(lang, "billTitle")} title={false} footer={footer}>
+      <div key={step} className="animate-tab px-5 pt-1 pb-8">
+        {step === 0 && (
+          <>
+            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "billTitle")}</h2>
+            {table && (
+              <p className="mt-1 text-[14px] text-g-muted">
+                {ui(lang, "table")} {table.padStart(2, "0")} · {orders.length} × {ui(lang, "order").toLowerCase()}
+              </p>
+            )}
+
+            {/* How the table splits it: whole, equally, or each picks their dishes. */}
+            <div className="mt-5 flex rounded-full bg-g-fill p-1">
+              {(["all", "equal", "items"] as Split[]).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    haptic("tick");
+                    setSplit(k);
+                  }}
+                  aria-pressed={split === k}
+                  className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${split === k ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
+                >
+                  {ui(lang, k === "all" ? "splitAll" : k === "equal" ? "splitEqual" : "splitItems")}
+                </button>
+              ))}
+            </div>
+            {split === "equal" && (
+              <div className="animate-rise mt-3 flex items-center justify-between rounded-full bg-g-fill p-1.5 pl-4">
+                <span className="text-[15px] font-semibold">{ui(lang, "splitPeople")}</span>
+                <span className="flex items-center gap-1 rounded-full bg-g-card p-1">
+                  <button aria-label="−" onClick={() => (haptic("tick"), setPeople((n) => Math.max(2, n - 1)))} className="press grid size-9 place-items-center rounded-full text-xl">
+                    −
+                  </button>
+                  <span className="w-7 text-center text-[17px] font-bold tabular-nums">{people}</span>
+                  <button aria-label="+" onClick={() => (haptic("tick"), setPeople((n) => Math.min(20, n + 1)))} className="press grid size-9 place-items-center rounded-full text-xl">
+                    +
+                  </button>
+                </span>
+              </div>
+            )}
+
+            <div className="mt-3 rounded-[24px] bg-g-fill px-5 py-4">
+              {split === "items" && <p className="mb-2.5 text-[13px] font-semibold text-g-blue">{ui(lang, "splitPick")}</p>}
+              <div className="grid gap-2.5">
+                {lines.map((l) => {
+                  const it = itemById.get(l.itemId);
+                  const on = mine.includes(l.key);
+                  const row = (
+                    <>
+                      {split === "items" ? (
+                        <span className={`grid size-6 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-fill-2"}`}>{on && <Check size={14} strokeWidth={3} />}</span>
+                      ) : (
+                        <span className="w-6 shrink-0 text-g-muted tabular-nums">{l.qty}×</span>
+                      )}
+                      <span className="min-w-0 flex-1 truncate text-left">
+                        {split === "items" && <span className="text-g-muted tabular-nums">{l.qty}× </span>}
+                        {it ? t(it.name, lang) : l.itemId}
+                      </span>
+                      <span className="shrink-0 tabular-nums">{money(l.unitPrice * l.qty)}</span>
+                    </>
+                  );
+                  return split === "items" ? (
+                    <button key={l.key + l.qty} onClick={() => (haptic("tick"), setMine((m) => (on ? m.filter((x) => x !== l.key) : [...m, l.key])))} className="flex items-center gap-2 text-[15px]">
+                      {row}
+                    </button>
+                  ) : (
+                    <div key={l.key + l.qty} className="flex items-baseline gap-2 text-[15px]">
+                      {row}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="my-3.5 border-t border-dashed border-g-faint/60" />
+              <div className="grid gap-1.5 text-[14px] text-g-muted tabular-nums">
+                <p className="flex justify-between">
+                  <span>{split === "all" ? ui(lang, "billSubtotal") : split === "equal" ? `${ui(lang, "splitShare")} · 1/${people}` : ui(lang, "splitYours")}</span>
+                  <span className="text-g-ink">{money(base)}</span>
+                </p>
+                <p className="flex justify-between">
+                  <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
+                  <span className="text-g-ink">{money(service)}</span>
+                </p>
+                {tipAmount > 0 && (
+                  <p className="flex justify-between">
+                    <span>{ui(lang, "billTip")}</span>
+                    <span className="text-g-ink">{money(tipAmount)}</span>
+                  </p>
+                )}
+              </div>
+              <p className="mt-3 flex items-baseline justify-between">
+                <span className="text-[15px] font-semibold">{split === "all" ? ui(lang, "total") : ui(lang, "splitToPay")}</span>
+                <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{money(total)}</span>
+              </p>
+            </div>
+
+            <section className="mt-8">
+              <StepHeadline>{ui(lang, "billTip")}</StepHeadline>
+              <div className="flex rounded-full bg-g-fill p-1">
+                {[0, 5, 10, 15].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      haptic("tick");
+                      setTip(p);
+                    }}
+                    aria-pressed={tip === p}
+                    className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${tip === p ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
+                  >
+                    {p ? `${p}%` : ui(lang, "billNoTip")}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-8">
+              <StepHeadline>{ui(lang, "billMethod")}</StepHeadline>
+              <div className="grid gap-2">
+                {(
+                  [
+                    ["billQr", "payQrSub"],
+                    ["billCard", "payCardSub"],
+                    ["billCash", "payCashSub"],
+                  ] as const
+                ).map(([m, sub]) => {
+                  const on = method === m;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        haptic("light");
+                        setMethod(m);
+                      }}
+                      aria-pressed={on}
+                      className={`press flex items-center gap-3 rounded-[22px] p-3 pr-4 text-left transition-colors ${on ? "bg-g-blue-soft" : "bg-g-fill"}`}
+                    >
+                      <span className={`grid size-11 shrink-0 place-items-center rounded-full ${on ? "blue-grad" : "bg-g-card text-g-ink-2"}`}>{m === "billQr" ? <QrCode size={20} /> : m === "billCard" ? <CreditCard size={20} /> : <Banknote size={20} />}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-[15.5px] font-semibold ${on ? "text-g-blue" : ""}`}>{m === "billQr" ? "VietQR" : ui(lang, m)}</span>
+                        <span className="block truncate text-[12.5px] text-g-muted">{ui(lang, sub)}</span>
+                      </span>
+                      <span className={`grid size-6 shrink-0 place-items-center rounded-full ${on ? "blue-grad" : "bg-g-fill-2"}`}>{on && <Check size={14} strokeWidth={3} />}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* A VAT invoice for a company (Vietnam): name, tax code, email; it is issued with the e-invoice. */}
+            <section className="mt-8">
+              <button onClick={() => (haptic("tick"), setInvoice((v) => !v))} aria-pressed={invoice} className="flex w-full items-center gap-3 rounded-[22px] bg-g-fill p-3 pr-4 text-left">
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-g-card text-g-blue">
+                  <Building2 size={20} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15.5px] font-semibold">{ui(lang, "vatInvoice")}</span>
+                  <span className="block truncate text-[12.5px] text-g-muted">{ui(lang, "vatInvoiceSub")}</span>
+                </span>
+                <span className={`relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors ${invoice ? "bg-g-blue" : "bg-g-fill-2"}`}>
+                  <span className="absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition-transform duration-300" style={{ transform: `translateX(${invoice ? 20 : 0}px)` }} />
+                </span>
+              </button>
+              {invoice && (
+                <div className="animate-rise mt-2 grid gap-2">
+                  {(
+                    [
+                      ["name", "vatCompany", "text"],
+                      ["tax", "vatTax", "numeric"],
+                      ["email", "vatEmail", "email"],
+                    ] as const
+                  ).map(([k, ph, mode]) => (
+                    <input
+                      key={k}
+                      value={company[k]}
+                      onChange={(e) => setCompany({ ...company, [k]: e.target.value })}
+                      placeholder={ui(lang, ph)}
+                      inputMode={mode}
+                      className="h-14 w-full rounded-[18px] bg-g-fill px-4 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40"
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {step === 1 && (
+          <div className="text-center">
+            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "payQrTitle")}</h2>
+            <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "payQrHint")}</p>
+            <div className="mx-auto mt-6 w-fit rounded-[28px] bg-white p-4 shadow-[0_1px_3px_rgba(11,11,15,0.1),0_18px_40px_-20px_rgba(11,11,15,0.35)]">
+              <BrandQr value={`https://vietqr.net/pay?bank=VCB&acc=0071000123456&amount=${total}&note=T${table ?? "0"}`} size={220} label="VietQR" />
+            </div>
+            <p className="mt-5 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">{money(total)}</p>
+            <p className="mt-2 text-[13.5px] text-g-muted">Vietcombank · SAMARKAND CO., LTD · 0071 000 123 456</p>
+            <div className="mt-6 grid gap-2 text-left">
+              {(["payQrStep1", "payQrStep2", "payQrStep3"] as UiKey[]).map((k, i) => (
+                <p key={k} className="flex items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-[14.5px]">
+                  <span className="chip-blue grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-bold">{i + 1}</span>
+                  {ui(lang, k)}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="pt-8 text-center">
+            <span className="animate-pop blue-grad mx-auto grid size-20 place-items-center rounded-full">
+              <Check size={38} strokeWidth={2.8} />
+            </span>
+            <h2 className="mt-6 text-[30px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, "paidTitle")}</h2>
+            <p className="mt-1 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">{money(total)}</p>
+            <div className="mt-6 grid gap-2 text-left">
+              <p className="flex items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-[14px]">
+                <span className="chip-green grid size-9 shrink-0 place-items-center rounded-full">
+                  <ReceiptText size={17} />
+                </span>
+                {invoice ? ui(lang, "paidInvoice").replace("{email}", company.email) : ui(lang, "paidReceipt")}
+              </p>
+              <p className="flex items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-[14px]">
+                <span className="chip-blue grid size-9 shrink-0 place-items-center rounded-full">
+                  <BellRing size={17} />
+                </span>
+                {ui(lang, "paidWaiter")}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div>
+            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "rateTitle")}</h2>
+            <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "rateHint")}</p>
+            <div className="mt-6 flex justify-between gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} aria-label={`${n}`} onClick={() => (haptic("tick"), setStars(n))} className={`press grid h-16 flex-1 place-items-center rounded-[20px] transition-colors ${n <= stars ? "bg-g-blue-soft" : "bg-g-fill"}`}>
+                  <Star size={28} strokeWidth={1.8} className={`transition-transform duration-300 ${n <= stars ? "scale-110 fill-g-blue text-g-blue" : "text-g-faint"}`} />
+                </button>
+              ))}
+            </div>
+            {stars > 0 && (
+              <div className="animate-rise mt-6">
+                <StepHeadline>{ui(lang, stars >= 4 ? "rateLiked" : "rateBetter")}</StepHeadline>
+                <div className="flex flex-wrap gap-2">
+                  {(["rateFood", "rateService", "rateAtmosphere", "rateSpeed", "ratePrice"] as UiKey[]).map((k) => {
+                    const on = liked.includes(k);
+                    return (
+                      <button key={k} onClick={() => (haptic("tick"), setLiked((l) => (on ? l.filter((x) => x !== k) : [...l, k])))} aria-pressed={on} className={`press h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-fill text-g-ink-2"}`}>
+                        {ui(lang, k)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder={ui(lang, "rateComment")} className="mt-4 w-full resize-none rounded-[20px] bg-g-fill px-4 py-3.5 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40" />
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="pt-8 text-center">
+            <span className="animate-pop blue-grad mx-auto grid size-20 place-items-center rounded-full">
+              <Heart size={34} strokeWidth={2.4} />
+            </span>
+            <h2 className="mt-6 text-[30px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, "thanksTitle")}</h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-g-muted">{ui(lang, stars >= 4 ? "thanksGood" : "thanksBad")}</p>
+          </div>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
 export function CategoriesSheet({ open, onClose, menu, lang, onPick }: { open: boolean; onClose: () => void; menu: Menu; lang: Lang; onPick: (id: string) => void }) {
   return (
     <Sheet open={open} onClose={onClose} label={ui(lang, "categories")} title={false}>
