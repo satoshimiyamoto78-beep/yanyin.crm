@@ -1,6 +1,16 @@
 "use client";
 
 import {
+  BarChart3,
+  CalendarDays,
+  LayoutGrid,
+  Plus,
+  Receipt,
+  Repeat2,
+  Settings2,
+  Trophy,
+  UserPlus,
+  UtensilsCrossed,
   Ban,
   Bell,
   Check,
@@ -10,12 +20,11 @@ import {
   EyeOff,
   LayoutDashboard,
   Megaphone,
-  PenLine,
   Send,
   Store,
   Users,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   allItems,
   checklistProgress,
@@ -51,14 +60,28 @@ import { saveStopList, useStopList } from "@/lib/stoplist";
 import { Island, Reveal, type IslandNotice } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { YanOrb } from "@/components/guest/YanSheet";
-import { ArtScene } from "@/components/system/Art";
+import { ArtScene, type ArtName } from "@/components/system/Art";
+import {
+  BrandQr,
+  Choice,
+  OfflineBar,
+  SectionTile,
+  Sidebar,
+  TabCapsule,
+  TextField,
+} from "@/components/system/Kit";
+import { RoleSwitch } from "@/components/auth/RoleSwitch";
+import { MenuAdmin } from "./MenuAdmin";
+import { FloorAdmin, OrdersAdmin, ReportsAdmin } from "./OpsAdmin";
+import { ChecklistsAdmin, QuestsAdmin, ShiftsAdmin } from "./PeopleAdmin";
+import { SettingsAdmin } from "./SettingsAdmin";
 import { MentionInput, MentionText } from "@/components/system/MentionInput";
 import { NorthSky } from "@/components/system/NorthSky";
 import { useScheme } from "@/components/system/scheme";
 import { Strip, StripBig, StripSquare } from "@/components/system/Strip";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
 import { ActionListWidget } from "@/components/system/Widgets";
-import { ChecklistCard, ChecklistPage } from "@/components/crew/Checklist";
+import { ChecklistPage } from "@/components/crew/Checklist";
 import { SectionTitle } from "@/components/crew/CrewBoard";
 import { compactMoney, ShiftMoney } from "@/components/crew/CrewApp";
 import { YanChat } from "@/components/crew/YanChat";
@@ -73,8 +96,20 @@ import { CrewPrefsProvider, useTr } from "@/components/crew/prefs";
  * The tab capsule, the round action button and Yan above it match the waiter's.
  */
 
-type Tab = "overview" | "team" | "news" | "checklists";
-const TABS: Tab[] = ["overview", "team", "news", "checklists"];
+type Tab =
+  | "overview"
+  | "menu"
+  | "team"
+  | "more"
+  | "floor"
+  | "orders"
+  | "reports"
+  | "shifts"
+  | "news"
+  | "checklists"
+  | "quests"
+  | "settings";
+type Section = Exclude<Tab, "overview" | "more">;
 const ME = "staff-huong";
 const NOW = "12:45";
 const ROLE_NAMES: Record<StaffRole, string> = {
@@ -145,6 +180,18 @@ function Console({ menu }: { menu: Menu }) {
   const tr = useTr();
   const scheme = useScheme();
   const [tab, setTab] = useState<Tab>("overview");
+  const [sub, setSub] = useState<Section | null>(null);
+  const [roles, setRoles] = useState(false);
+  const [quick, setQuick] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const desktop = useDesktop();
+  // Pages open beside the sidebar on computers (globals.css, html[data-console]).
+  useEffect(() => {
+    document.documentElement.dataset.console = "1";
+    return () => {
+      delete document.documentElement.dataset.console;
+    };
+  }, []);
   const [rawTeam, setTeam] = useState<Person[]>(TEAM);
   // Everyone's chosen @ID (a waiter may have picked a new one in their app).
   const handles = useHandles();
@@ -186,8 +233,23 @@ function Console({ menu }: { menu: Menu }) {
   };
   const go = (t: Tab) => {
     haptic("light");
+    setSub(null);
     setTab(t);
     window.scrollTo({ top: 0 });
+  };
+  const say = (title: string) =>
+    notify({
+      title,
+      tone: "green",
+      icon: <Check size={15} strokeWidth={2.6} />,
+    });
+  // A section: beside the sidebar on a computer; on a phone the main tabs switch, the rest open as a page (back returns).
+  const open = (id: Section) => {
+    if (desktop || id === "menu" || id === "team") go(id);
+    else {
+      haptic("light");
+      setSub(id);
+    }
   };
   const scrollTo = (el: HTMLElement | null) =>
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -238,7 +300,6 @@ function Console({ menu }: { menu: Menu }) {
   const flaggedN = progress.reduce((n, l) => n + l.p.flagged.length, 0);
   const lateN = progress.reduce((n, l) => n + l.p.late.length, 0);
   const openChecklist = (key: string) => {
-    setTab("checklists");
     setOpenList(key);
   };
 
@@ -341,479 +402,662 @@ function Console({ menu }: { menu: Menu }) {
   const roleLabel = (p: Person) =>
     p.roles.map((r) => tr(ROLE_NAMES[r])).join(", ");
   const compose = () => {
-    go("news");
+    open("news");
     requestAnimationFrame(() =>
       document.querySelector<HTMLTextAreaElement>("textarea")?.focus(),
     );
   };
+
+  // Every section once; the computer shows it beside the sidebar, the phone opens it as a page from "More".
+  const views: Record<
+    Section,
+    { title: string; sub: string; art: ArtName; body: React.ReactNode }
+  > = {
+    menu: {
+      title: tr("Menu"),
+      sub: tr("Dishes, prices, photos, what guests see"),
+      art: "menu",
+      body: <MenuAdmin menu={menu} notify={say} />,
+    },
+    team: {
+      title: tr("Team"),
+      sub: tr("{a} on shift of {b}", { a: onShift.length, b: team.length }),
+      art: "guests",
+      body: (
+        <>
+          <button
+            type="button"
+            onClick={() => (haptic("light"), setInviting(true))}
+            className="blue-grad press mb-5 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold sm:w-auto sm:px-6"
+          >
+            <UserPlus size={18} strokeWidth={2.2} /> {tr("Invite to the team")}
+          </button>
+
+          <Reveal className="mt-6">
+            <ArtScene
+              name="guests"
+              layout="row"
+              focal={64}
+              className="rounded-[26px] p-5"
+              footer={
+                <p className="mt-4 truncate text-[14px] text-g-muted">
+                  {(["hall", "bar", "kitchen", "lead"] as Group[])
+                    .map(
+                      (g) =>
+                        `${tr(GROUP_NAMES[g])} ${onShift.filter((p) => groupOf(p) === g).length}`,
+                    )
+                    .join(" · ")}
+                </p>
+              }
+            >
+              <p className="text-[15px] leading-tight font-semibold text-g-ink-2">
+                {tr("On shift")}
+              </p>
+              <p className="mt-1 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+                {onShift.length}
+                <span className="text-[20px] text-g-muted">/{team.length}</span>
+              </p>
+            </ArtScene>
+          </Reveal>
+          {(["hall", "bar", "kitchen", "lead"] as Group[]).map((g) => {
+            const people = team.filter((p) => groupOf(p) === g);
+            return (
+              <section key={g}>
+                <SectionTitle
+                  title={tr(GROUP_NAMES[g])}
+                  count={people.length}
+                  className="mt-8 mb-2"
+                />
+                <div className="card rounded-[24px] p-1.5">
+                  {people.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setPerson(p.id)}
+                      className="press flex w-full items-center gap-3 rounded-[18px] px-2.5 py-2.5 text-left"
+                    >
+                      <Avatar p={p} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline gap-1.5">
+                          <span className="truncate text-[16px] font-semibold">
+                            {p.name}
+                          </span>
+                          <span className="truncate text-[14px] text-g-blue">
+                            @{p.handle}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 block truncate text-[13px] text-g-muted">
+                          {[
+                            ...p.roles.map((r) => tr(ROLE_NAMES[r])),
+                            ...p.stations.map((s) => tr(STATION_NAMES[s])),
+                          ].join(" · ")}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={18}
+                        className="shrink-0 text-g-faint"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </>
+      ),
+    },
+    floor: {
+      title: tr("Halls and tables"),
+      sub: tr("Tables, states, QR codes"),
+      art: "tables",
+      body: <FloorAdmin floor={floor} notify={say} />,
+    },
+    orders: {
+      title: tr("Orders and bills"),
+      sub: tr("Today's bills, refunds, e-invoices"),
+      art: "orders",
+      body: <OrdersAdmin floor={floor} menu={menu} notify={say} />,
+    },
+    reports: {
+      title: tr("Reports"),
+      sub: tr("Takings, dishes, waiters, payments"),
+      art: "sales",
+      body: <ReportsAdmin floor={floor} menu={menu} notify={say} />,
+    },
+    shifts: {
+      title: tr("Shifts"),
+      sub: tr("Today's shift and the week's schedule"),
+      art: "shifts",
+      body: <ShiftsAdmin team={team} notify={say} />,
+    },
+    news: {
+      title: tr("News"),
+      sub: tr("Mention people with @: only they get it"),
+      art: "bell",
+      body: (
+        <>
+          {/* Who to write to, one tap: the groups as chips above the field. */}
+          <div className="no-scrollbar -mx-5 mt-6 flex gap-2 overflow-x-auto px-5">
+            {groups.map((g) => (
+              <button
+                key={g.handle}
+                onClick={() => {
+                  haptic("tick");
+                  setDraft((d) =>
+                    d.includes(`@${g.handle}`) ? d : `@${g.handle} ${d}`,
+                  );
+                }}
+                className="press flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-g-fill pr-4 pl-1.5 text-[14px] font-semibold"
+              >
+                <span className="blue-grad grid size-7 place-items-center rounded-full">
+                  <Users size={14} strokeWidth={2.4} />
+                </span>
+                @{g.handle}
+                <span className="font-medium text-g-faint tabular-nums">
+                  {g.count}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-3">
+            <MentionInput
+              value={draft}
+              onChange={setDraft}
+              people={team.filter((p) => p.id !== ME)}
+              groups={groups}
+              placeholder={tr(
+                "@linh please check table 7 · @bar new syrups at 14:00",
+              )}
+              roleLabel={roleLabel}
+            />
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              {recipients.length > 0 && (
+                <span className="flex shrink-0 -space-x-2">
+                  {recipients.slice(0, 4).map((id) => {
+                    const p = team.find((x) => x.id === id);
+                    return p ? (
+                      <Avatar key={id} p={p} size={28} dot={false} ring />
+                    ) : null;
+                  })}
+                </span>
+              )}
+              <span className="min-w-0 truncate text-[13px] text-g-muted">
+                {recipients.length
+                  ? tr("Goes to {n} person|Goes to {n} people", {
+                      n: recipients.length,
+                    })
+                  : tr("Add @someone, @bar, @kitchen or @all")}
+              </span>
+            </span>
+            <button
+              disabled={!draft.trim() || !recipients.length}
+              onClick={send}
+              className="blue-grad press flex h-12 shrink-0 items-center gap-2 rounded-full px-5 text-[15px] font-semibold disabled:opacity-40"
+            >
+              <Send size={17} strokeWidth={2.2} /> {tr("Send")}
+            </button>
+          </div>
+          <SectionTitle title={tr("Feed")} count={news.length} />
+          <Reveal className="grid gap-3">
+            {news.map((n) => (
+              <Post key={n.id} n={n} team={team} known={known} />
+            ))}
+          </Reveal>
+        </>
+      ),
+    },
+    checklists: {
+      title: tr("Checklists"),
+      sub:
+        lateN || flaggedN
+          ? [
+              flaggedN
+                ? tr("{n} out of range|{n} out of range", { n: flaggedN })
+                : "",
+              lateN ? tr("{n} late|{n} late", { n: lateN }) : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : tr("Everyone's lists for this shift"),
+      art: "checklist",
+      body: (
+        <ChecklistsAdmin
+          lists={lists}
+          runs={runs}
+          onOpenRun={setOpenList}
+          notify={say}
+        />
+      ),
+    },
+    quests: {
+      title: tr("Quests"),
+      sub: tr("Goals and rewards for the team"),
+      art: "trophy",
+      body: <QuestsAdmin notify={say} />,
+    },
+    settings: {
+      title: tr("Settings"),
+      sub: tr("Venue, payments, devices, plan"),
+      art: "wifi",
+      body: <SettingsAdmin notify={say} />,
+    },
+  };
+  const MORE: Section[] = [
+    "floor",
+    "orders",
+    "reports",
+    "shifts",
+    "news",
+    "checklists",
+    "quests",
+    "settings",
+  ];
+  const sectionPage = (id: Section, inline: boolean) => (
+    <div
+      className={
+        inline
+          ? "px-5 pt-[max(20px,env(safe-area-inset-top))] pb-10 lg:px-10 lg:pt-10"
+          : "px-5 pt-1 pb-10"
+      }
+    >
+      <PageHead title={views[id].title} sub={views[id].sub} />
+      <div className="mt-6">{views[id].body}</div>
+    </div>
+  );
   const short = (n: number) => compactMoney(n).replace(/(\.\d)\d(M)/, "$1$2");
 
   return (
     <main className="min-h-dvh overflow-x-hidden bg-white text-g-ink">
       <Island notice={notice} />
-      <div key={tab} className="animate-tab mx-auto max-w-[480px] pb-28">
-        {tab === "overview" && (
-          <>
-            {/* The waiter's home header: avatar, venue, theme, bell; takings big; the quick-action strip. */}
-            <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
-              <NorthSky />
-              <div className="flex items-center gap-2 px-5">
-                <button
-                  aria-label={tr("Profile")}
-                  onClick={() => setPerson(ME)}
-                  className="press grid size-10 shrink-0 place-items-center rounded-full bg-[#fff] text-[16px] font-bold text-[#0b0b0f]"
-                >
-                  {me.name[0]}
-                </button>
-                <span className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white">
-                  <Store
-                    size={17}
-                    strokeWidth={2}
-                    className="shrink-0 text-white/70"
-                  />
-                  <span className="truncate text-[15px] font-semibold">
-                    Samarkand
-                  </span>
-                  <span className="truncate text-[13px] text-white/60">
-                    @{me.handle}
-                  </span>
-                </span>
-                <ThemeToggle
-                  dark={scheme.dark}
-                  onToggle={scheme.toggle}
-                  label={tr("Light or dark theme")}
-                />
-                <button
-                  aria-label={
-                    attention.length
-                      ? tr("Notifications, {n} new", { n: attention.length })
-                      : tr("Notifications")
-                  }
-                  onClick={() => scrollTo(attentionRef.current)}
-                  className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white"
-                >
-                  <Bell size={19} strokeWidth={2} />
-                  {attention.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-g-orange px-1 text-[10px] font-bold text-white tabular-nums">
-                      {attention.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              <div className="mt-9 flex items-center justify-between gap-3 px-5">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 text-[14px] text-white/70">
-                    <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
-                    <span className="font-semibold text-white">
-                      {tr("Shift is on")}
-                    </span>
-                    <span className="text-white/45">·</span>
-                    {tr("Taken today")}
-                  </p>
+      <OfflineBar
+        text={tr("No internet · changes are saved and sync when it is back")}
+      />
+      <div className="lg:pl-[264px]">
+        <div
+          key={tab}
+          className="animate-tab mx-auto max-w-[480px] pb-28 lg:max-w-[1100px] lg:pb-12"
+        >
+          {tab === "overview" && (
+            <>
+              {/* The waiter's home header: avatar, venue, theme, bell; takings big; the quick-action strip. */}
+              <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
+                <NorthSky />
+                <div className="flex items-center gap-2 px-5">
                   <button
-                    onClick={() => scrollTo(moneyRef.current)}
-                    className="press mt-2 flex items-center gap-1 text-left"
+                    aria-label={tr("Profile")}
+                    onClick={() => setRoles(true)}
+                    className="press grid size-10 shrink-0 place-items-center rounded-full bg-[#fff] text-[16px] font-bold text-[#0b0b0f]"
                   >
-                    <span className="live text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">
-                      {hidden ? "••• •••" : money(takings)}
+                    {me.name[0]}
+                  </button>
+                  <span className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white">
+                    <Store
+                      size={17}
+                      strokeWidth={2}
+                      className="shrink-0 text-white/70"
+                    />
+                    <span className="truncate text-[15px] font-semibold">
+                      Samarkand
                     </span>
-                    <ChevronRight size={22} className="text-white/55" />
+                    <span className="truncate text-[13px] text-white/60">
+                      @{me.handle}
+                    </span>
+                  </span>
+                  <ThemeToggle
+                    dark={scheme.dark}
+                    onToggle={scheme.toggle}
+                    label={tr("Light or dark theme")}
+                  />
+                  <button
+                    aria-label={
+                      attention.length
+                        ? tr("Notifications, {n} new", { n: attention.length })
+                        : tr("Notifications")
+                    }
+                    onClick={() => scrollTo(attentionRef.current)}
+                    className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white"
+                  >
+                    <Bell size={19} strokeWidth={2} />
+                    {attention.length > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-g-orange px-1 text-[10px] font-bold text-white tabular-nums">
+                        {attention.length}
+                      </span>
+                    )}
                   </button>
                 </div>
-                <button
-                  aria-label={hidden ? tr("Show amounts") : tr("Hide amounts")}
-                  onClick={() => setHidden((v) => !v)}
-                  className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white"
-                >
-                  {hidden ? (
-                    <Eye size={19} strokeWidth={2} />
-                  ) : (
-                    <EyeOff size={19} strokeWidth={2} />
-                  )}
-                </button>
-              </div>
 
-              <Strip>
-                <StripBig
-                  art="tables"
-                  onClick={() => setSheet("tables")}
-                  icon={null}
-                  title={tr("{a}/{b} tables", {
-                    a: busy.length,
-                    b: floor.tables.length,
-                  })}
-                  sub={
-                    billTables
-                      ? tr(
-                          "{n} table wants the bill|{n} tables want the bill",
-                          { n: billTables },
-                        )
-                      : tr("all calm")
-                  }
-                  tone={billTables ? "orange" : "muted"}
-                />
-                <StripBig
-                  art="kitchen"
-                  onClick={openStation}
-                  icon={null}
-                  title={`${tr("Kitchen")} · ${inWork}`}
-                  sub={
-                    waitMin
-                      ? tr("longest {n} min", { n: waitMin })
-                      : tr("all calm")
-                  }
-                  tone={waitMin >= 15 ? "orange" : "muted"}
-                />
-                <StripSquare
-                  icon={<Megaphone size={21} strokeWidth={1.9} />}
-                  label={tr("News")}
-                  onClick={compose}
-                />
-                <StripSquare
-                  tone="coral"
-                  icon={<Ban size={21} strokeWidth={1.9} />}
-                  label={tr("Stop-list")}
-                  onClick={() => setSheet("stop")}
-                />
-                <StripBig
-                  art="check"
-                  onClick={() => scrollTo(moneyRef.current)}
-                  icon={null}
-                  title={hidden ? "•••" : `${short(due)} ₫`}
-                  sub={tr("still to pay")}
-                />
-                <StripBig
-                  art="checklist"
-                  onClick={() => go("checklists")}
-                  icon={null}
-                  title={`${listDone}/${listTotal}`}
-                  sub={
-                    flaggedN
-                      ? tr("{n} out of range|{n} out of range", { n: flaggedN })
-                      : tr("Checklists")
-                  }
-                  tone={flaggedN ? "orange" : "muted"}
-                  wide
-                />
-              </Strip>
-            </section>
-
-            {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
-            <div className="relative z-10 px-5 pb-10">
-              <div ref={attentionRef} className="scroll-mt-4">
-                <ActionListWidget
-                  title={tr("Needs attention")}
-                  icon={<Bell size={13} strokeWidth={2.4} />}
-                  rows={attention}
-                  empty={tr("Nothing needs you right now")}
-                />
-              </div>
-
-              <SectionTitle
-                title={tr("On shift")}
-                count={onShift.length}
-                onAll={() => go("team")}
-              />
-              <div className="no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-4">
-                {onShift.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setPerson(p.id)}
-                    className="press flex w-[68px] shrink-0 flex-col items-center gap-1.5 py-1"
-                  >
-                    <Avatar p={p} size={56} />
-                    <span className="w-full truncate text-center text-[13px] font-semibold">
-                      {p.name}
-                    </span>
-                    <span className="-mt-1.5 w-full truncate text-center text-[11px] text-g-muted">
-                      {tr(GROUP_NAMES[groupOf(p)])}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {news[0] && (
-                <>
-                  <SectionTitle
-                    title={tr("News")}
-                    count={news.length}
-                    onAll={() => go("news")}
-                  />
-                  <Post n={news[0]} team={team} known={known} />
-                </>
-              )}
-
-              <div ref={moneyRef} className="scroll-mt-4">
-                <SectionTitle title={tr("Shift money")} />
-                <ShiftMoney history={floor.history} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {tab === "team" && (
-          <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-            <PageHead
-              title={tr("Team")}
-              sub={tr("{a} on shift of {b}", {
-                a: onShift.length,
-                b: team.length,
-              })}
-            />
-            <Reveal className="mt-6">
-              <ArtScene
-                name="guests"
-                layout="row"
-                focal={64}
-                className="rounded-[26px] p-5"
-                footer={
-                  <p className="mt-4 truncate text-[14px] text-g-muted">
-                    {(["hall", "bar", "kitchen", "lead"] as Group[])
-                      .map(
-                        (g) =>
-                          `${tr(GROUP_NAMES[g])} ${onShift.filter((p) => groupOf(p) === g).length}`,
-                      )
-                      .join(" · ")}
-                  </p>
-                }
-              >
-                <p className="text-[15px] leading-tight font-semibold text-g-ink-2">
-                  {tr("On shift")}
-                </p>
-                <p className="mt-1 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">
-                  {onShift.length}
-                  <span className="text-[20px] text-g-muted">
-                    /{team.length}
-                  </span>
-                </p>
-              </ArtScene>
-            </Reveal>
-            {(["hall", "bar", "kitchen", "lead"] as Group[]).map((g) => {
-              const people = team.filter((p) => groupOf(p) === g);
-              return (
-                <section key={g}>
-                  <SectionTitle
-                    title={tr(GROUP_NAMES[g])}
-                    count={people.length}
-                    className="mt-8 mb-2"
-                  />
-                  <div className="card rounded-[24px] p-1.5">
-                    {people.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => setPerson(p.id)}
-                        className="press flex w-full items-center gap-3 rounded-[18px] px-2.5 py-2.5 text-left"
-                      >
-                        <Avatar p={p} />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-baseline gap-1.5">
-                            <span className="truncate text-[16px] font-semibold">
-                              {p.name}
-                            </span>
-                            <span className="truncate text-[14px] text-g-blue">
-                              @{p.handle}
-                            </span>
-                          </span>
-                          <span className="mt-0.5 block truncate text-[13px] text-g-muted">
-                            {[
-                              ...p.roles.map((r) => tr(ROLE_NAMES[r])),
-                              ...p.stations.map((s) => tr(STATION_NAMES[s])),
-                            ].join(" · ")}
-                          </span>
-                        </span>
-                        <ChevronRight
-                          size={18}
-                          className="shrink-0 text-g-faint"
-                        />
-                      </button>
-                    ))}
+                <div className="mt-9 flex items-center justify-between gap-3 px-5">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 text-[14px] text-white/70">
+                      <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
+                      <span className="font-semibold text-white">
+                        {tr("Shift is on")}
+                      </span>
+                      <span className="text-white/45">·</span>
+                      {tr("Taken today")}
+                    </p>
+                    <button
+                      onClick={() => scrollTo(moneyRef.current)}
+                      className="press mt-2 flex items-center gap-1 text-left"
+                    >
+                      <span className="live text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">
+                        {hidden ? "••• •••" : money(takings)}
+                      </span>
+                      <ChevronRight size={22} className="text-white/55" />
+                    </button>
                   </div>
-                </section>
-              );
-            })}
-          </div>
-        )}
+                  <button
+                    aria-label={
+                      hidden ? tr("Show amounts") : tr("Hide amounts")
+                    }
+                    onClick={() => setHidden((v) => !v)}
+                    className="press grid size-10 shrink-0 place-items-center rounded-full bg-white/15 text-white"
+                  >
+                    {hidden ? (
+                      <Eye size={19} strokeWidth={2} />
+                    ) : (
+                      <EyeOff size={19} strokeWidth={2} />
+                    )}
+                  </button>
+                </div>
 
-        {tab === "news" && (
-          <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-            <PageHead
-              title={tr("News")}
-              sub={tr("Mention people with @: only they get it")}
-            />
-            {/* Who to write to, one tap: the groups as chips above the field. */}
-            <div className="no-scrollbar -mx-5 mt-6 flex gap-2 overflow-x-auto px-5">
-              {groups.map((g) => (
-                <button
-                  key={g.handle}
-                  onClick={() => {
-                    haptic("tick");
-                    setDraft((d) =>
-                      d.includes(`@${g.handle}`) ? d : `@${g.handle} ${d}`,
-                    );
-                  }}
-                  className="press flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-g-fill pr-4 pl-1.5 text-[14px] font-semibold"
-                >
-                  <span className="blue-grad grid size-7 place-items-center rounded-full">
-                    <Users size={14} strokeWidth={2.4} />
-                  </span>
-                  @{g.handle}
-                  <span className="font-medium text-g-faint tabular-nums">
-                    {g.count}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div className="mt-3">
-              <MentionInput
-                value={draft}
-                onChange={setDraft}
-                people={team.filter((p) => p.id !== ME)}
-                groups={groups}
-                placeholder={tr(
-                  "@linh please check table 7 · @bar new syrups at 14:00",
-                )}
-                roleLabel={roleLabel}
-              />
-            </div>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="flex min-w-0 flex-1 items-center gap-2">
-                {recipients.length > 0 && (
-                  <span className="flex shrink-0 -space-x-2">
-                    {recipients.slice(0, 4).map((id) => {
-                      const p = team.find((x) => x.id === id);
-                      return p ? (
-                        <Avatar key={id} p={p} size={28} dot={false} ring />
-                      ) : null;
+                <Strip>
+                  <StripBig
+                    art="tables"
+                    onClick={() => open("floor")}
+                    icon={null}
+                    title={tr("{a}/{b} tables", {
+                      a: busy.length,
+                      b: floor.tables.length,
                     })}
-                  </span>
-                )}
-                <span className="min-w-0 truncate text-[13px] text-g-muted">
-                  {recipients.length
-                    ? tr("Goes to {n} person|Goes to {n} people", {
-                        n: recipients.length,
-                      })
-                    : tr("Add @someone, @bar, @kitchen or @all")}
-                </span>
-              </span>
-              <button
-                disabled={!draft.trim() || !recipients.length}
-                onClick={send}
-                className="blue-grad press flex h-12 shrink-0 items-center gap-2 rounded-full px-5 text-[15px] font-semibold disabled:opacity-40"
-              >
-                <Send size={17} strokeWidth={2.2} /> {tr("Send")}
-              </button>
-            </div>
-            <SectionTitle title={tr("Feed")} count={news.length} />
-            <Reveal className="grid gap-3">
-              {news.map((n) => (
-                <Post key={n.id} n={n} team={team} known={known} />
-              ))}
-            </Reveal>
-          </div>
-        )}
-
-        {tab === "checklists" && (
-          <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
-            <PageHead
-              title={tr("Checklists")}
-              sub={
-                lateN || flaggedN
-                  ? [
+                    sub={
+                      billTables
+                        ? tr(
+                            "{n} table wants the bill|{n} tables want the bill",
+                            { n: billTables },
+                          )
+                        : tr("all calm")
+                    }
+                    tone={billTables ? "orange" : "muted"}
+                  />
+                  <StripBig
+                    art="kitchen"
+                    onClick={openStation}
+                    icon={null}
+                    title={`${tr("Kitchen")} · ${inWork}`}
+                    sub={
+                      waitMin
+                        ? tr("longest {n} min", { n: waitMin })
+                        : tr("all calm")
+                    }
+                    tone={waitMin >= 15 ? "orange" : "muted"}
+                  />
+                  <StripSquare
+                    icon={<Megaphone size={21} strokeWidth={1.9} />}
+                    label={tr("News")}
+                    onClick={compose}
+                  />
+                  <StripSquare
+                    tone="coral"
+                    icon={<Ban size={21} strokeWidth={1.9} />}
+                    label={tr("Stop-list")}
+                    onClick={() => setSheet("stop")}
+                  />
+                  <StripBig
+                    art="check"
+                    onClick={() => scrollTo(moneyRef.current)}
+                    icon={null}
+                    title={hidden ? "•••" : short(due)}
+                    sub={tr("still to pay")}
+                  />
+                  <StripBig
+                    art="checklist"
+                    onClick={() => open("checklists")}
+                    icon={null}
+                    title={`${listDone}/${listTotal}`}
+                    sub={
                       flaggedN
                         ? tr("{n} out of range|{n} out of range", {
                             n: flaggedN,
                           })
-                        : "",
-                      lateN ? tr("{n} late|{n} late", { n: lateN }) : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")
-                  : tr("Everyone's lists for this shift")
-              }
-            />
-            <Reveal className="mt-6 grid gap-3">
-              {progress.map((l) => (
-                <ChecklistCard
-                  key={l.key}
-                  template={l.tpl}
-                  run={runs[l.key]!}
-                  title={tr(l.tpl.title)}
-                  who={l.who}
-                  className=""
-                  onOpen={() => setOpenList(l.key)}
+                        : tr("Checklists")
+                    }
+                    tone={flaggedN ? "orange" : "muted"}
+                    wide
+                  />
+                </Strip>
+              </section>
+
+              {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
+              <div className="relative z-10 px-5 pb-10">
+                <div ref={attentionRef} className="scroll-mt-4">
+                  <ActionListWidget
+                    title={tr("Needs attention")}
+                    icon={<Bell size={13} strokeWidth={2.4} />}
+                    rows={attention}
+                    empty={tr("Nothing needs you right now")}
+                  />
+                </div>
+
+                <SectionTitle
+                  title={tr("On shift")}
+                  count={onShift.length}
+                  onAll={() => go("team")}
                 />
-              ))}
-            </Reveal>
-            <p className="mt-6 text-center text-[13px] text-g-faint">
-              {tr(
-                "Lists are ticked on the phone and on the station screen; photos and readings are kept with the shift.",
-              )}
-            </p>
-          </div>
-        )}
+                <div className="no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-4">
+                  {onShift.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setPerson(p.id)}
+                      className="press flex w-[68px] shrink-0 flex-col items-center gap-1.5 py-1"
+                    >
+                      <Avatar p={p} size={56} />
+                      <span className="w-full truncate text-center text-[13px] font-semibold">
+                        {p.name}
+                      </span>
+                      <span className="-mt-1.5 w-full truncate text-center text-[11px] text-g-muted">
+                        {tr(GROUP_NAMES[groupOf(p)])}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {news[0] && (
+                  <>
+                    <SectionTitle
+                      title={tr("News")}
+                      count={news.length}
+                      onAll={() => open("news")}
+                    />
+                    <Post n={news[0]} team={team} known={known} />
+                  </>
+                )}
+
+                <div ref={moneyRef} className="scroll-mt-4">
+                  <SectionTitle title={tr("Shift money")} />
+                  <ShiftMoney history={floor.history} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === "more" && (
+            <div className="px-5 pt-[max(20px,env(safe-area-inset-top))]">
+              <PageHead
+                title={tr("More")}
+                sub={tr("Everything for running the venue")}
+              />
+              <Reveal className="mt-6 grid grid-cols-2 gap-3">
+                {MORE.map((id, i) => (
+                  <SectionTile
+                    key={id}
+                    art={views[id].art}
+                    title={views[id].title}
+                    sub={views[id].sub}
+                    onClick={() => open(id)}
+                    wide={i === 0}
+                  />
+                ))}
+              </Reveal>
+              <button
+                type="button"
+                onClick={() => setRoles(true)}
+                className="press mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-g-fill text-[15px] font-semibold"
+              >
+                <Repeat2 size={17} strokeWidth={2.2} className="text-g-blue" />{" "}
+                {tr("Switch role")}
+              </button>
+            </div>
+          )}
+          {tab !== "overview" && tab !== "more" && sectionPage(tab, true)}
+        </div>
       </div>
 
-      {/* Tab bar: the waiter's floating capsule, here with four sections; the round button writes news, Yan sits above it. */}
-      <nav
-        aria-label={tr("Sections")}
-        className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(10px,env(safe-area-inset-bottom))]"
-      >
-        <div className="mx-auto flex max-w-[440px] items-center gap-2.5">
-          <div className="relative grid h-[56px] flex-1 grid-cols-4 rounded-full bg-white/95 p-1 ring-1 ring-black/5">
-            <span
-              aria-hidden
-              className="absolute top-1 bottom-1 left-1 rounded-full bg-g-fill transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{
-                width: "calc((100% - 8px) / 4)",
-                transform: `translateX(${TABS.indexOf(tab) * 100}%)`,
-              }}
+      {/* Phones: the waiter's capsule (four tabs), the round "+" for quick actions, Yan above it. Computers: the sidebar. */}
+      <TabCapsule
+        label={tr("Sections")}
+        active={sub ?? tab}
+        onPick={(id) => go(id as Tab)}
+        items={[
+          {
+            id: "overview",
+            label: tr("Overview"),
+            icon: LayoutDashboard,
+            badge: attention.length,
+          },
+          { id: "menu", label: tr("Menu"), icon: UtensilsCrossed },
+          { id: "team", label: tr("Team"), icon: Users },
+          { id: "more", label: tr("More"), icon: LayoutGrid, badge: flaggedN },
+        ]}
+        action={{
+          icon: Plus,
+          label: tr("Quick actions"),
+          onClick: () => (haptic("light"), setQuick(true)),
+        }}
+        yan={
+          <button
+            type="button"
+            aria-label={tr("Ask Yan")}
+            onClick={() => (haptic("light"), setYan(true))}
+            className="press grid place-items-center rounded-full shadow-[0_8px_24px_-8px_rgba(47,91,255,0.55)] ring-4 ring-[var(--g-bg)]"
+          >
+            <YanOrb size={44} />
+          </button>
+        }
+      />
+      <Sidebar
+        active={tab}
+        onPick={(id) => go(id as Tab)}
+        head={
+          <button
+            type="button"
+            onClick={() => setRoles(true)}
+            className="press flex w-full items-center gap-3 rounded-[18px] p-1.5 text-left"
+          >
+            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold">
+              {me.name[0]}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-bold">
+                Samarkand
+              </span>
+              <span className="block truncate text-[12.5px] text-g-muted">
+                @{me.handle} · {tr("Admin")}
+              </span>
+            </span>
+          </button>
+        }
+        groups={[
+          {
+            items: [
+              {
+                id: "overview",
+                label: tr("Overview"),
+                icon: LayoutDashboard,
+                badge: attention.length,
+              },
+              { id: "orders", label: tr("Orders and bills"), icon: Receipt },
+              { id: "floor", label: tr("Halls and tables"), icon: LayoutGrid },
+            ],
+          },
+          {
+            title: tr("Menu"),
+            items: [{ id: "menu", label: tr("Menu"), icon: UtensilsCrossed }],
+          },
+          {
+            title: tr("People"),
+            items: [
+              { id: "team", label: tr("Team"), icon: Users },
+              { id: "shifts", label: tr("Shifts"), icon: CalendarDays },
+              { id: "news", label: tr("News"), icon: Megaphone },
+              {
+                id: "checklists",
+                label: tr("Checklists"),
+                icon: ClipboardCheck,
+                badge: flaggedN,
+              },
+              { id: "quests", label: tr("Quests"), icon: Trophy },
+            ],
+          },
+          {
+            title: tr("Business"),
+            items: [
+              { id: "reports", label: tr("Reports"), icon: BarChart3 },
+              { id: "settings", label: tr("Settings"), icon: Settings2 },
+            ],
+          },
+        ]}
+        foot={
+          <div className="flex items-center gap-2">
+            <ThemeToggle
+              dark={scheme.dark}
+              onToggle={scheme.toggle}
+              label={tr("Light or dark theme")}
+              look="plain"
             />
-            {(
-              [
-                ["overview", tr("Overview"), LayoutDashboard, attention.length],
-                ["team", tr("Team"), Users, 0],
-                ["news", tr("News"), Megaphone, 0],
-                ["checklists", tr("Checklists"), ClipboardCheck, flaggedN],
-              ] as const
-            ).map(([id, label, Icon, badge]) => (
-              <button
-                key={id}
-                onClick={() => go(id)}
-                aria-current={tab === id ? "page" : undefined}
-                className={`relative z-10 flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors ${tab === id ? "text-g-ink" : "text-g-faint"}`}
-              >
-                <Icon size={19} strokeWidth={tab === id ? 2.1 : 1.8} />
-                <span className="max-w-full truncate px-1">{label}</span>
-                {badge > 0 && (
-                  <span className="blue-grad absolute top-1 left-[calc(50%+6px)] grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold">
-                    {badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          <div className="relative shrink-0">
             <button
-              aria-label={tr("Ask Yan")}
-              onClick={() => {
-                haptic("light");
-                setYan(true);
-              }}
-              className="press absolute bottom-[calc(100%+10px)] left-1/2 grid -translate-x-1/2 place-items-center rounded-full shadow-[0_8px_24px_-8px_rgba(47,91,255,0.55)] ring-4 ring-[var(--g-bg)]"
+              type="button"
+              onClick={() => (haptic("light"), setYan(true))}
+              className="press flex h-10 flex-1 items-center gap-2 rounded-full bg-g-card px-1.5 pr-4 text-[14px] font-semibold"
             >
-              <YanOrb size={44} />
-            </button>
-            <button
-              aria-label={tr("Write news")}
-              onClick={compose}
-              className="blue-grad press grid size-[52px] place-items-center rounded-full"
-            >
-              <PenLine size={21} strokeWidth={2} />
+              <YanOrb size={30} /> {tr("Ask Yan")}
             </button>
           </div>
-        </div>
-      </nav>
+        }
+      />
+      {sub && (
+        <Sheet
+          open
+          wide
+          onClose={() => setSub(null)}
+          label={views[sub].title}
+          title={false}
+        >
+          {sectionPage(sub, false)}
+        </Sheet>
+      )}
+      {roles && <RoleSwitch current="hq" onClose={() => setRoles(false)} />}
+      {quick && (
+        <QuickSheet
+          onClose={() => setQuick(false)}
+          onPick={(k) => {
+            setQuick(false);
+            if (k === "news") setTimeout(compose, 60);
+            else if (k === "invite") setTimeout(() => setInviting(true), 60);
+            else setTimeout(() => open(k), 60);
+          }}
+        />
+      )}
+      {inviting && (
+        <InviteSheet
+          onClose={() => setInviting(false)}
+          onSent={(n) => (
+            setInviting(false),
+            say(tr("Invite sent to {name}", { name: n }))
+          )}
+        />
+      )}
 
       {sheet === "tables" && (
         <TablesSheet
@@ -1216,6 +1460,181 @@ function PersonSheet({
         <p className="mt-3 text-[12.5px] text-g-muted">
           {tr("Rights add up across roles and are checked on the server.")}
         </p>
+      </div>
+    </Sheet>
+  );
+}
+
+/** True on computers and big tablets (the sidebar layout, from 1024 px). */
+function useDesktop() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const set = () => setOn(mq.matches);
+    set();
+    mq.addEventListener("change", set);
+    return () => mq.removeEventListener("change", set);
+  }, []);
+  return on;
+}
+
+/** The "+" on phones: the five things an admin starts most often. */
+function QuickSheet({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick: (k: "news" | "menu" | "invite" | "quests" | "floor") => void;
+}) {
+  const tr = useTr();
+  const rows: {
+    k: "news" | "menu" | "invite" | "quests" | "floor";
+    art: ArtName;
+    title: string;
+    sub: string;
+  }[] = [
+    {
+      k: "news",
+      art: "bell",
+      title: tr("Write news"),
+      sub: tr("@mention people or a station"),
+    },
+    {
+      k: "menu",
+      art: "menu",
+      title: tr("Add a dish"),
+      sub: tr("With Yan, from a photo"),
+    },
+    {
+      k: "invite",
+      art: "guests",
+      title: tr("Invite to the team"),
+      sub: tr("A link, a QR or by phone"),
+    },
+    {
+      k: "quests",
+      art: "trophy",
+      title: tr("New quest"),
+      sub: tr("A goal and a reward for the team"),
+    },
+    {
+      k: "floor",
+      art: "tables",
+      title: tr("Print QR codes"),
+      sub: tr("Cards for every table"),
+    },
+  ];
+  return (
+    <Sheet open onClose={onClose} label={tr("Quick actions")} title={false}>
+      <div className="px-5 pt-1 pb-10">
+        <h2 className="text-[30px] leading-tight font-bold tracking-[-0.025em]">
+          {tr("Quick actions")}
+        </h2>
+        <div className="mt-6 grid gap-2">
+          {rows.map((r) => (
+            <button
+              key={r.k}
+              type="button"
+              onClick={() => (haptic("light"), onPick(r.k))}
+              className="press flex items-center gap-3 rounded-[22px] bg-g-fill p-2.5 pr-4 text-left"
+            >
+              <ArtScene
+                name={r.art}
+                layout="row"
+                focal={40}
+                className="size-14 shrink-0 rounded-[18px] p-2"
+              >
+                <span />
+              </ArtScene>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[16px] font-semibold">
+                  {r.title}
+                </span>
+                <span className="block truncate text-[13px] text-g-muted">
+                  {r.sub}
+                </span>
+              </span>
+              <ChevronRight size={18} className="shrink-0 text-g-faint" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+/** Invite: the team link and QR, or a phone number and a role. The person joins via join.html. */
+function InviteSheet({
+  onClose,
+  onSent,
+}: {
+  onClose: () => void;
+  onSent: (name: string) => void;
+}) {
+  const tr = useTr();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState(["Waiter"]);
+  const link = "https://yanyin.app/join/samarkand-8F2K";
+  const ok = name.trim().length > 1 && phone.replace(/\D/g, "").length >= 9;
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      label={tr("Invite to the team")}
+      title={false}
+      footer={
+        <button
+          type="button"
+          disabled={!ok}
+          onClick={() => (haptic("success"), onSent(name.trim()))}
+          className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40"
+        >
+          {tr("Send the invite")}
+        </button>
+      }
+    >
+      <div className="grid gap-5 px-5 pt-1 pb-10">
+        <h2 className="text-[30px] leading-tight font-bold tracking-[-0.025em]">
+          {tr("Invite to the team")}
+        </h2>
+        <a
+          href="join.html"
+          className="card press flex items-center gap-4 rounded-[26px] p-4"
+        >
+          <BrandQr value={link} size={104} label={tr("Invite QR code")} />
+          <span className="min-w-0">
+            <span className="block text-[16px] font-bold">
+              {tr("One link for the whole team")}
+            </span>
+            <span className="mt-0.5 block text-[13px] leading-snug text-g-muted">
+              {tr(
+                "They scan it, sign in and pick their @ID. Tap to see what they see.",
+              )}
+            </span>
+          </span>
+        </a>
+        <p className="px-1 text-[14px] font-semibold text-g-ink-2">
+          {tr("Or invite by phone")}
+        </p>
+        <div className="-mt-3 grid gap-2">
+          <TextField value={name} onChange={setName} placeholder={tr("Name")} />
+          <TextField
+            value={phone}
+            onChange={(v) => setPhone(v.replace(/[^\d ]/g, ""))}
+            prefix="+84"
+            placeholder="905 000 000"
+            type="tel"
+            inputMode="tel"
+          />
+          <Choice
+            value={role}
+            onChange={setRole}
+            options={["Waiter", "Bartender", "Cook", "Host", "Manager"].map(
+              (r) => ({ id: r, label: tr(r) }),
+            )}
+          />
+        </div>
       </div>
     </Sheet>
   );

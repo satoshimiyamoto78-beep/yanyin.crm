@@ -38,6 +38,7 @@ import { startTransition, useCallback, useEffect, useMemo, useRef, useState, use
 import type { CrewData } from "@/lib/demo-crew";
 import { ticketTotal, type Booking, type ClosedOrder, type FloorData, type FloorTable, type LineState, type PayMethod, type TicketLine } from "@/lib/demo-floor";
 import { useStopList } from "@/lib/stoplist";
+import { applyEdits, menuEdits } from "@/lib/menu-edits";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
 import { Island, loadIfChanged, markShown, PeekCard, Reveal, useLongPress, type IslandNotice } from "@/components/guest/motion";
@@ -1271,7 +1272,10 @@ export function Counter({ value, min, max, onChange }: { value: number; min: num
 let lineSeq = 0;
 const lineId = () => `n${++lineSeq}`;
 
-function OrderPicker({ table, menu, money, onClose, onSend }: { table: FloorTable; menu: Menu; money: (n: number) => string; onClose: () => void; onSend: (lines: TicketLine[]) => void }) {
+function OrderPicker({ table, menu: seedMenu, money, onClose, onSend }: { table: FloorTable; menu: Menu; money: (n: number) => string; onClose: () => void; onSend: (lines: TicketLine[]) => void }) {
+  // The waiter picks from the menu as the admin published it.
+  const edits = menuEdits(seedMenu.venue.slug).use();
+  const menu = useMemo(() => applyEdits(seedMenu, edits), [seedMenu, edits]);
   const tr = useTr();
   const dish = useDish();
   const [q, setQ] = useState("");

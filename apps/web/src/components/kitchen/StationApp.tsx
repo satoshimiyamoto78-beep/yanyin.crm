@@ -5,9 +5,11 @@ import {
   Ban,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ClipboardCheck,
   Clock,
+  LogOut,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -46,6 +48,7 @@ import { Island, type IslandNotice } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { ArtScene, ArtTile } from "@/components/system/Art";
 import { NorthSky } from "@/components/system/NorthSky";
+import { BrandQr, PinPad } from "@/components/system/Kit";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
 import { ChecklistPage } from "@/components/crew/Checklist";
 import { CrewPrefsProvider, useDish, useTr } from "@/components/crew/prefs";
@@ -63,6 +66,8 @@ import { CrewPrefsProvider, useDish, useTr } from "@/components/crew/prefs";
 
 // 12:45 when the screen opens, then real time.
 const START = 12 * 3600 + 45 * 60;
+/** The demo pairing code the admin console shows for a new station tablet. */
+export const PAIR_CODE = "4827";
 const clock = (() => {
   let now = START;
   let t0 = 0;
@@ -163,6 +168,8 @@ export function StationApp({ menu }: { menu: Menu }) {
 function Screen({ menu }: { menu: Menu }) {
   const tr = useTr();
   const [station, setStation] = useState<Station | null>(null);
+  // A shared wall tablet signs in with a code from the admin console, not a personal login.
+  const [paired, setPaired] = useState<boolean | null>(null);
   const [picking, setPicking] = useState(false);
   const [dark, setDark] = useState(true);
   const [sound, setSound] = useState(true);
@@ -185,10 +192,22 @@ function Screen({ menu }: { menu: Menu }) {
     soundRef.current = sound;
   }, [sound]);
 
+  // Changing the station from the header takes a history entry: back returns to the queue.
+  useEffect(() => {
+    if (!picking) return;
+    try {
+      history.pushState({ ...(history.state ?? {}), kdsPick: 1 }, "");
+    } catch {}
+    const onPop = () => setPicking(false);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [picking]);
+
   // Restore this tablet's station, theme, sound and the stop-list once.
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- restore saved screen settings once on mount */
     setStation(read<Station | null>("yanyin:kds-station", null));
+    setPaired(read("yanyin:kds-paired", false));
     setDark(read("yanyin:kds-dark", true));
     setSound(read("yanyin:kds-sound", true));
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -308,15 +327,34 @@ function Screen({ menu }: { menu: Menu }) {
     finishIfReady(next);
   };
 
+  if (paired === null) return <div className="min-h-dvh bg-g-bg" />;
+  if (!paired)
+    return (
+      <PairScreen
+        onPaired={() => {
+          write("yanyin:kds-paired", true);
+          setPaired(true);
+        }}
+      />
+    );
   if (!station || picking)
     return (
       <StationPicker
         current={station}
+        onClose={station ? () => history.back() : undefined}
+        onUnpair={() => {
+          write("yanyin:kds-paired", false);
+          write("yanyin:kds-station", null);
+          setStation(null);
+          setPicking(false);
+          setPaired(false);
+        }}
         onPick={(s) => {
           haptic("success");
           setStation(s);
-          setPicking(false);
           write("yanyin:kds-station", s);
+          if (picking) history.back();
+          setPicking(false);
         }}
       />
     );
@@ -818,9 +856,13 @@ function Elapsed({
 function StationPicker({
   current,
   onPick,
+  onClose,
+  onUnpair,
 }: {
   current: Station | null;
   onPick: (s: Station) => void;
+  onClose?: () => void;
+  onUnpair: () => void;
 }) {
   const tr = useTr();
   return (
@@ -828,6 +870,16 @@ function StationPicker({
       <section className="relative isolate px-5 pt-[max(28px,env(safe-area-inset-top))] pb-10 text-white sm:px-8">
         <NorthSky />
         <div className="mx-auto max-w-[960px]">
+          <div className="mb-6 flex items-center gap-2">
+            {onClose && (
+              <button type="button" aria-label={tr("Back")} onClick={onClose} className="press grid size-10 place-items-center rounded-full bg-white/15">
+                <ChevronLeft size={22} strokeWidth={2} />
+              </button>
+            )}
+            <button type="button" onClick={onUnpair} className="press ml-auto flex h-10 items-center gap-1.5 rounded-full bg-white/15 px-3.5 text-[13px] font-semibold">
+              <LogOut size={15} strokeWidth={2.2} /> {tr("Unpair this tablet")}
+            </button>
+          </div>
           <p className="flex items-center gap-1.5 text-[14px] text-white/70">
             <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
             <span className="font-semibold text-white">Samarkand</span>
@@ -898,6 +950,56 @@ function StationPicker({
               </button>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** First run on a wall tablet: the code from the admin console (Settings → Station tablets), or a scan of the admin's phone. */
+function PairScreen({ onPaired }: { onPaired: () => void }) {
+  const tr = useTr();
+  const [pin, setPin] = useState("");
+  const [bad, setBad] = useState(false);
+  useEffect(() => {
+    if (pin.length < 4) return;
+    if (pin === PAIR_CODE) {
+      haptic("success");
+      const t = setTimeout(onPaired, 300);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a wrong code shakes, then clears
+    setBad(true);
+    const t = setTimeout(() => {
+      setBad(false);
+      setPin("");
+    }, 650);
+    return () => clearTimeout(t);
+  }, [pin, onPaired]);
+  return (
+    <div className="min-h-dvh bg-white text-g-ink">
+      <section className="relative isolate px-5 pt-[max(28px,env(safe-area-inset-top))] pb-10 text-white sm:px-8">
+        <NorthSky />
+        <div className="mx-auto max-w-[960px]">
+          <p className="flex items-center gap-1.5 text-[14px] text-white/70">
+            <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
+            <span className="font-semibold text-white">yanyin.kitchen</span>
+          </p>
+          <h1 className="mt-3 text-[32px] leading-tight font-bold tracking-[-0.025em]">{tr("Connect this tablet")}</h1>
+          <p className="mt-1 max-w-[560px] text-[15px] text-white/75">{tr("Enter the code from the admin console: Settings → Station tablets. Nobody signs in on a shared screen.")}</p>
+        </div>
+      </section>
+      <div className="relative z-10 px-5 pb-10 sm:px-8">
+        <div className="mx-auto grid max-w-[960px] items-start gap-6 md:grid-cols-[1fr_300px]">
+          <div className="card rounded-[28px] px-5 py-8">
+            <PinPad value={pin} onChange={setPin} error={bad} />
+            <p className={`mt-6 text-center text-[14px] ${bad ? "font-semibold text-[#e5484d]" : "text-g-muted"}`}>{bad ? tr("Wrong code, try again") : tr("Demo code: {code}", { code: PAIR_CODE })}</p>
+          </div>
+          <div className="card flex flex-col items-center rounded-[28px] p-6 text-center">
+            <BrandQr value="https://yanyin.app/pair/samarkand-4827" size={200} label={tr("Pairing QR code")} />
+            <p className="mt-4 text-[16px] font-bold">{tr("Or scan with the admin's phone")}</p>
+            <p className="mt-1 text-[13px] text-g-muted">{tr("Waiter app → Scan, or the admin console camera.")}</p>
+          </div>
         </div>
       </div>
     </div>

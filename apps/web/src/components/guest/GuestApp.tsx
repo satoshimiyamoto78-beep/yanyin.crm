@@ -62,6 +62,7 @@ import {
 } from "./sheets";
 import Image from "next/image";
 import { useStopList, withoutStopped } from "@/lib/stoplist";
+import { applyEdits, menuEdits } from "@/lib/menu-edits";
 import { haptic } from "@/lib/haptics";
 import { ScrollLock } from "@/lib/scroll-lock";
 import {
@@ -101,7 +102,10 @@ type Notice = IslandNotice;
  * yanyin.menu — the guest app opened from a table QR code. One scrolling menu
  * (Yandex Eda pattern) with sheets for the dish, the order, search and more.
  */
-export function GuestApp({ menu: fullMenu }: { menu: Menu }) {
+export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
+  // The admin's published menu edits (prices, names, hidden and new dishes) apply at once.
+  const edits = menuEdits(seedMenu.venue.slug).use();
+  const fullMenu = useMemo(() => applyEdits(seedMenu, edits), [seedMenu, edits]);
   // Dishes a station marked as run out disappear at once (the full menu still resolves cart lines).
   const stop = useStopList();
   const menu = useMemo(() => withoutStopped(fullMenu, stop), [fullMenu, stop]);

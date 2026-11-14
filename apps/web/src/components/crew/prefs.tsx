@@ -1,8 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { RU, VI } from "./strings";
+import { RU as RU_BASE, VI as VI_BASE } from "./strings";
+import { RU_OPS, VI_OPS } from "./strings-ops";
+
 import { setHaptics } from "@/lib/haptics";
+
+const RU = { ...RU_BASE, ...RU_OPS };
+const VI = { ...VI_BASE, ...VI_OPS };
 
 /*
  * Waiter preferences that outlive a page: language, text size, notification

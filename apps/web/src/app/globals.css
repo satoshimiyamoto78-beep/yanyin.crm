@@ -700,3 +700,21 @@ html[data-scrolling] .aurora::after,
 @media (prefers-reduced-motion: reduce) {
   .halo { animation: none; opacity: 0.3; }
 }
+
+/* Loading placeholders: a soft light passing over the fill. */
+.skeleton {
+  background: linear-gradient(100deg, var(--g-fill) 30%, var(--g-fill-2) 50%, var(--g-fill) 70%);
+  background-size: 300% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+@keyframes skeleton {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+/* Console apps (admin, platform) on computers: pages open beside the sidebar, not over it. */
+@media (min-width: 1024px) {
+  html[data-console] .sheet-page { left: 264px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}

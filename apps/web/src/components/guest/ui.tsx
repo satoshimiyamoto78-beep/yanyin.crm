@@ -546,12 +546,15 @@ export function Sheet({
   footer,
   label,
   title = true,
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
   label: string;
+  /** Console pages (admin, platform): a wider column on tablets and computers. */
+  wide?: boolean;
   /** Show `label` in the top bar (off when the page has its own big heading). */
   title?: boolean;
   /** @deprecated pages are always full screen */
@@ -621,8 +624,8 @@ export function Sheet({
 
   if (!open) return null;
   return (
-    <div ref={node} role="dialog" aria-modal="true" aria-label={label} className="animate-page fixed inset-0 z-50 flex flex-col bg-white text-g-ink">
-      <div className="mx-auto flex min-h-0 w-full max-w-[480px] flex-1 flex-col">
+    <div ref={node} role="dialog" aria-modal="true" aria-label={label} className="sheet-page animate-page fixed inset-0 z-50 flex flex-col bg-white text-g-ink">
+      <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col ${wide ? "max-w-[880px]" : "max-w-[480px]"}`}>
         <header className="flex shrink-0 items-center gap-2 px-4 pt-[max(10px,env(safe-area-inset-top))] pb-1.5">
           <button onClick={onClose} aria-label="Back" className="press grid size-11 shrink-0 place-items-center rounded-full bg-g-fill">
             <ChevronLeft size={22} strokeWidth={2} />
