@@ -447,7 +447,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRow, mobile, empty }: { 
 export function ListRow({ badge, badgeTone = "chip-blue", title, sub, right, onClick }: { badge: ReactNode; badgeTone?: string; title: ReactNode; sub?: ReactNode; right?: ReactNode; onClick?: () => void }) {
   const inner = (
     <>
-      <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[17px] font-bold tabular-nums ${badgeTone}`}>{badge}</span>
+      <span className={`grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-bold tabular-nums ${badgeTone}`}>{badge}</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[15px] font-semibold">{title}</span>
         {sub && <span className="block truncate text-[12.5px] text-g-muted">{sub}</span>}
@@ -455,7 +455,7 @@ export function ListRow({ badge, badgeTone = "chip-blue", title, sub, right, onC
       {right}
     </>
   );
-  const cls = "flex min-w-0 w-full items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-left";
+  const cls = "flex min-w-0 w-full items-center gap-3 rounded-full bg-g-fill py-1.5 pr-4 pl-1.5 text-left min-h-[52px]";
   return onClick ? (
     <button
       type="button"

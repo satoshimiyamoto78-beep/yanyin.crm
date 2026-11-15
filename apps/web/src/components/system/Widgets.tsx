@@ -683,10 +683,10 @@ export function ActionListWidget({
   return (
     <WidgetCard title={title} icon={icon} className={className} aside={rows.length ? <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums ${chip}`}>{rows.length}</span> : undefined}>
       {rows.length ? (
-        <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2">
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-1.5">
           {rows.map((r) => (
-            <div key={r.id} className="flex min-w-0 items-center gap-3 rounded-full bg-g-card p-1.5 pr-1.5">
-              <span className={`grid size-12 shrink-0 place-items-center rounded-full text-[19px] font-bold tabular-nums ${chip}`} aria-label={`${r.badgeLabel} ${r.badge}`}>
+            <div key={r.id} className="flex min-h-[52px] min-w-0 items-center gap-3 rounded-full bg-g-card py-1.5 pr-1.5 pl-1.5">
+              <span className={`grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-bold tabular-nums ${chip}`} aria-label={`${r.badgeLabel} ${r.badge}`}>
                 {r.badge}
               </span>
               <span className="min-w-0 flex-1">
@@ -699,7 +699,7 @@ export function ActionListWidget({
                     haptic("light");
                     r.action!.onClick();
                   }}
-                  className="press h-11 shrink-0 rounded-full bg-g-ink px-4 text-[13px] font-semibold text-white"
+                  className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[13px] font-semibold text-white"
                 >
                   {r.action.label}
                 </button>

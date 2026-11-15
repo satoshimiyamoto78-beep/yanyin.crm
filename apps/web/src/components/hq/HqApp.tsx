@@ -30,14 +30,10 @@ import {
   checklistProgress,
   formatMoney,
   recipientsOf,
-  ROLE_PERMISSIONS,
   type ChecklistRun,
   type ChecklistTemplate,
   type Menu,
-  type Permission,
   type Person,
-  type StaffRole,
-  type Station,
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import { demoFloor, ticketTotal, type FloorTable } from "@/lib/demo-floor";
@@ -60,7 +56,7 @@ import { saveStopList, useStopList } from "@/lib/stoplist";
 import { Island, Reveal, type IslandNotice } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { YanOrb } from "@/components/guest/YanSheet";
-import { ArtScene, ArtTile, type ArtName } from "@/components/system/Art";
+import { ArtTile, type ArtName } from "@/components/system/Art";
 import {
   BrandQr,
   Choice,
@@ -80,6 +76,16 @@ import {
   TasksAdmin,
 } from "./PeopleAdmin";
 import { SettingsAdmin } from "./SettingsAdmin";
+import {
+  GROUP_NAMES,
+  groupOf,
+  OnShiftGrid,
+  PersonEdit,
+  PersonPage,
+  PersonRow,
+  ROLE_NAMES,
+  type Group,
+} from "./People";
 import { MentionInput, MentionText } from "@/components/system/MentionInput";
 import { NorthSky } from "@/components/system/NorthSky";
 import { useScheme } from "@/components/system/scheme";
@@ -117,57 +123,6 @@ type Tab =
 type Section = Exclude<Tab, "overview" | "more">;
 const ME = "staff-huong";
 const NOW = "12:45";
-const ROLE_NAMES: Record<StaffRole, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  manager: "Manager",
-  waiter: "Waiter",
-  bartender: "Bartender",
-  cook: "Cook",
-  host: "Host",
-  runner: "Runner",
-  accountant: "Accountant",
-};
-const STATION_NAMES: Record<Station, string> = {
-  hall: "Hall",
-  bar: "Bar",
-  hot: "Hot kitchen",
-  cold: "Cold kitchen",
-  grill: "Grill",
-  pastry: "Pastry",
-  hookah: "Hookah",
-};
-const PERM_NAMES: Record<Permission, string> = {
-  "orders.take": "Take orders",
-  "orders.void": "Cancel dishes",
-  "orders.discount": "Give discounts",
-  "payments.take": "Take payments",
-  "kds.bump": "Work the station screen",
-  "menu.edit": "Edit the menu",
-  "stoplist.edit": "Edit the stop-list",
-  "staff.manage": "Manage the team",
-  "news.post": "Post news to groups",
-  "reports.view": "See reports",
-  "checklists.manage": "Set up checklists",
-  "billing.manage": "Billing and plan",
-};
-const LEAD_ROLES: StaffRole[] = ["owner", "admin", "manager", "accountant"];
-type Group = "hall" | "bar" | "kitchen" | "lead";
-const GROUP_NAMES: Record<Group, string> = {
-  hall: "Hall",
-  bar: "Bar",
-  kitchen: "Kitchen",
-  lead: "Management",
-};
-/** Where a person sits in the team list: management first by role, the rest by their first station. */
-const groupOf = (p: Person): Group =>
-  p.roles.some((r) => LEAD_ROLES.includes(r))
-    ? "lead"
-    : p.stations.some((s) => s === "bar" || s === "hookah")
-      ? "bar"
-      : p.stations.some((s) => s !== "hall")
-        ? "kitchen"
-        : "hall";
 /** The station screen is its own page (a wall tablet); the console links to it. */
 const openStation = () => window.open("kitchen.html", "_self");
 const total5 = (subtotal: number, tip: number) =>
@@ -203,6 +158,9 @@ function Console({ menu }: { menu: Menu }) {
   const team = useMemo(() => withHandles(rawTeam, handles), [rawTeam, handles]);
   const me = team.find((p) => p.id === ME)!;
   const [person, setPerson] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [offIds, setOffIds] = useState<string[]>([]);
+  const [teamView, setTeamView] = useState<"all" | "on" | "off">("all");
   const [draft, setDraft] = useState("");
   const [runs, setRuns] = useState<Record<string, ChecklistRun>>({
     waiter: {
@@ -244,6 +202,7 @@ function Console({ menu }: { menu: Menu }) {
     setQuick(false);
     setInviting(false);
     setPerson(null);
+    setEditing(null);
     setSheet(null);
     setOpenList(null);
     setYan(false);
@@ -446,70 +405,54 @@ function Console({ menu }: { menu: Menu }) {
             <UserPlus size={18} strokeWidth={2.2} /> {tr("Invite to the team")}
           </button>
 
-          <Reveal className="mt-6">
-            <ArtScene
-              name="guests"
-              layout="row"
-              focal={64}
-              className="rounded-[26px] p-5"
-              footer={
-                <p className="mt-4 truncate text-[14px] text-g-muted">
-                  {(["hall", "bar", "kitchen", "lead"] as Group[])
-                    .map(
-                      (g) =>
-                        `${tr(GROUP_NAMES[g])} ${onShift.filter((p) => groupOf(p) === g).length}`,
-                    )
-                    .join(" · ")}
-                </p>
-              }
-            >
-              <p className="text-[15px] leading-tight font-semibold text-g-ink-2">
-                {tr("On shift")}
-              </p>
-              <p className="mt-1 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">
-                {onShift.length}
-                <span className="text-[20px] text-g-muted">/{team.length}</span>
-              </p>
-            </ArtScene>
-          </Reveal>
-          {(["hall", "bar", "kitchen", "lead"] as Group[]).map((g) => {
-            const people = team.filter((p) => groupOf(p) === g);
+          {/* Who is here, who is not, and who has no access: one filter, then the groups. */}
+          <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
+            {(
+              [
+                ["all", tr("Everyone"), team.length],
+                ["on", tr("On shift"), onShift.length],
+                ["off", tr("Not on shift"), team.length - onShift.length],
+              ] as const
+            ).map(([id, label, n]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={teamView === id}
+                onClick={() => (haptic("tick"), setTeamView(id))}
+                className={`press flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold transition-colors ${teamView === id ? "bg-g-ink text-white" : "bg-g-fill text-g-ink-2"}`}
+              >
+                {label}
+                <span
+                  className={`tabular-nums ${teamView === id ? "text-white/60" : "text-g-faint"}`}
+                >
+                  {n}
+                </span>
+              </button>
+            ))}
+          </div>
+          {(["lead", "hall", "bar", "kitchen"] as Group[]).map((g) => {
+            const people = team.filter(
+              (p) =>
+                groupOf(p) === g &&
+                (teamView === "all" ||
+                  (teamView === "on" ? p.onShift : !p.onShift)),
+            );
+            if (!people.length) return null;
             return (
               <section key={g}>
                 <SectionTitle
                   title={tr(GROUP_NAMES[g])}
                   count={people.length}
-                  className="mt-8 mb-2"
+                  className="mt-7 mb-2"
                 />
-                <div className="card rounded-[24px] p-1.5">
+                <div className="card rounded-[24px] p-1">
                   {people.map((p) => (
-                    <button
+                    <PersonRow
                       key={p.id}
-                      onClick={() => setPerson(p.id)}
-                      className="press flex w-full items-center gap-3 rounded-full px-2.5 py-2.5 text-left"
-                    >
-                      <Avatar p={p} />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline gap-1.5">
-                          <span className="truncate text-[16px] font-semibold">
-                            {p.name}
-                          </span>
-                          <span className="truncate text-[14px] text-g-blue">
-                            @{p.handle}
-                          </span>
-                        </span>
-                        <span className="mt-0.5 block truncate text-[13px] text-g-muted">
-                          {[
-                            ...p.roles.map((r) => tr(ROLE_NAMES[r])),
-                            ...p.stations.map((s) => tr(STATION_NAMES[s])),
-                          ].join(" · ")}
-                        </span>
-                      </span>
-                      <ChevronRight
-                        size={18}
-                        className="shrink-0 text-g-faint"
-                      />
-                    </button>
+                      p={p}
+                      disabled={offIds.includes(p.id)}
+                      onOpen={() => (haptic("light"), setPerson(p.id))}
+                    />
                   ))}
                 </div>
               </section>
@@ -522,7 +465,7 @@ function Console({ menu }: { menu: Menu }) {
       title: tr("Halls and tables"),
       sub: tr("Tables, states, QR codes"),
       art: "tables",
-      body: <FloorAdmin floor={floor} notify={say} />,
+      body: <FloorAdmin floor={floor} menu={menu} notify={say} />,
     },
     orders: {
       title: tr("Orders and bills"),
@@ -861,23 +804,12 @@ function Console({ menu }: { menu: Menu }) {
                       count={onShift.length}
                       onAll={() => go("team")}
                     />
-                    <div className="no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-4">
-                      {onShift.map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => setPerson(p.id)}
-                          className="press flex w-[68px] shrink-0 flex-col items-center gap-1.5 py-1"
-                        >
-                          <Avatar p={p} size={56} />
-                          <span className="w-full truncate text-center text-[13px] font-semibold">
-                            {p.name}
-                          </span>
-                          <span className="-mt-1.5 w-full truncate text-center text-[11px] text-g-muted">
-                            {tr(GROUP_NAMES[groupOf(p)])}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
+                    <OnShiftGrid
+                      team={team}
+                      venue="Samarkand"
+                      best="staff-linh"
+                      onOpen={setPerson}
+                    />
                   </div>
                   {news[0] && (
                     <div className="min-w-0">
@@ -1096,17 +1028,41 @@ function Console({ menu }: { menu: Menu }) {
           onClose={() => setSheet(null)}
         />
       )}
-      {person && (
-        <PersonSheet
+      {person && team.some((x) => x.id === person) && (
+        <PersonPage
           p={team.find((x) => x.id === person)!}
+          self={person === ME}
+          disabled={offIds.includes(person)}
           onClose={() => setPerson(null)}
-          onChange={(np) =>
-            setTeam((t) => t.map((x) => (x.id === np.id ? np : x)))
-          }
-          onWrite={(h) => {
+          onEdit={() => setEditing(person)}
+          onWrite={() => {
+            const h = team.find((x) => x.id === person)!.handle;
             setPerson(null);
             setDraft(`@${h} `);
             compose();
+          }}
+        />
+      )}
+      {editing && team.some((x) => x.id === editing) && (
+        <PersonEdit
+          p={team.find((x) => x.id === editing)!}
+          disabled={offIds.includes(editing)}
+          onClose={() => setEditing(null)}
+          onChange={(np) =>
+            setTeam((t) => t.map((x) => (x.id === np.id ? np : x)))
+          }
+          onDisabled={(off) => {
+            setOffIds((ids) =>
+              off ? [...ids, editing] : ids.filter((x) => x !== editing),
+            );
+            say(off ? tr("Access is off") : tr("Access is back"));
+          }}
+          onRemove={() => {
+            const gone = team.find((x) => x.id === editing)!;
+            setEditing(null);
+            setPerson(null);
+            setTeam((t) => t.filter((x) => x.id !== gone.id));
+            say(tr("{n} removed from the team", { n: gone.name }));
           }}
         />
       )}
@@ -1348,140 +1304,6 @@ function StopSheet({
 }
 
 /** One person: @ID, roles and stations (tap to switch), what they can do, write to them. */
-function PersonSheet({
-  p,
-  onClose,
-  onChange,
-  onWrite,
-}: {
-  p: Person;
-  onClose: () => void;
-  onChange: (p: Person) => void;
-  onWrite: (handle: string) => void;
-}) {
-  const tr = useTr();
-  const perms = [...new Set(p.roles.flatMap((r) => ROLE_PERMISSIONS[r]))];
-  const toggle = <T,>(list: T[], v: T) =>
-    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-  return (
-    <Sheet
-      open
-      onClose={onClose}
-      label={p.name}
-      title={false}
-      footer={
-        p.id === ME ? undefined : (
-          <button
-            onClick={() => onWrite(p.handle)}
-            className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold"
-          >
-            <Send size={18} strokeWidth={2.2} />{" "}
-            {tr("Write to @{h}", { h: p.handle })}
-          </button>
-        )
-      }
-    >
-      <div className="px-5 pt-1 pb-10">
-        <ArtScene
-          name="guests"
-          layout="row"
-          focal={0}
-          className="rounded-[26px] p-5"
-          footer={
-            <p className="mt-3 text-[14px] text-g-muted">
-              {p.onShift ? tr("On shift now") : tr("Off today")}
-            </p>
-          }
-        >
-          <span className="flex items-center gap-4">
-            <Avatar p={p} size={64} dot={false} />
-            <span className="min-w-0">
-              <span className="block truncate text-[26px] leading-tight font-bold tracking-[-0.02em]">
-                {p.name}
-              </span>
-              <span className="block truncate text-[15px] font-semibold text-g-blue">
-                @{p.handle}
-              </span>
-            </span>
-          </span>
-        </ArtScene>
-        <h3 className="mt-7 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">
-          {tr("Roles")}
-        </h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(Object.keys(ROLE_NAMES) as StaffRole[]).map((r) => {
-            const on = p.roles.includes(r);
-            return (
-              <button
-                key={r}
-                onClick={() => {
-                  haptic("tick");
-                  const roles = toggle(p.roles, r);
-                  if (roles.length) onChange({ ...p, roles });
-                }}
-                aria-pressed={on}
-                className={`press h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-fill text-g-ink-2"}`}
-              >
-                {tr(ROLE_NAMES[r])}
-              </button>
-            );
-          })}
-        </div>
-        <h3 className="mt-6 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">
-          {tr("Stations")}
-        </h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(
-            [
-              "hall",
-              "bar",
-              "hot",
-              "cold",
-              "grill",
-              "pastry",
-              "hookah",
-            ] as Station[]
-          ).map((s) => {
-            const on = p.stations.includes(s);
-            return (
-              <button
-                key={s}
-                onClick={() => {
-                  haptic("tick");
-                  onChange({ ...p, stations: toggle(p.stations, s) });
-                }}
-                aria-pressed={on}
-                className={`press h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-fill text-g-ink-2"}`}
-              >
-                {tr(STATION_NAMES[s])}
-              </button>
-            );
-          })}
-        </div>
-        <h3 className="mt-6 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">
-          {tr("Can")}
-        </h3>
-        <div className="card mt-2 rounded-[24px] p-1.5">
-          {perms.map((pm) => (
-            <p
-              key={pm}
-              className="flex items-center gap-3 rounded-full px-2.5 py-2 text-[15px]"
-            >
-              <span className="grid size-7 shrink-0 place-items-center rounded-full chip-green">
-                <Check size={15} strokeWidth={2.8} />
-              </span>
-              {tr(PERM_NAMES[pm])}
-            </p>
-          ))}
-        </div>
-        <p className="mt-3 text-[12.5px] text-g-muted">
-          {tr("Rights add up across roles and are checked on the server.")}
-        </p>
-      </div>
-    </Sheet>
-  );
-}
-
 /** True on computers and big tablets (the sidebar layout, from 1024 px). */
 function useDesktop() {
   const [on, setOn] = useState(false);
