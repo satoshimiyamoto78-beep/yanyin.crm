@@ -1,14 +1,14 @@
 "use client";
 
+import { Check, ChevronRight, Send, Star, Trash2 } from "lucide-react";
 import {
-  Check,
-  ChevronRight,
-  MousePointer2,
-  Send,
-  Star,
-  Trash2,
-} from "lucide-react";
-import { useState, type CSSProperties } from "react";
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   ROLE_PERMISSIONS,
   type Permission,
@@ -18,7 +18,7 @@ import {
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import { Sheet } from "@/components/guest/ui";
-import { Field, Switch, TextField } from "@/components/system/Kit";
+import { Switch } from "@/components/system/Kit";
 import { useTr } from "@/components/crew/prefs";
 import { compactMoney } from "@/components/crew/CrewApp";
 
@@ -87,7 +87,7 @@ export const groupOf = (p: Person): Group =>
         ? "kitchen"
         : "hall";
 
-/** A person's face: a rounded square with continuous corners, like the reference tiles. Initials until photos come. */
+/** A person's face: a circle; initials until photos come. */
 export function Face({
   p,
   size = 48,
@@ -111,7 +111,7 @@ export function Face({
       style={{
         width: size,
         height: size,
-        borderRadius: Math.round(size * 0.3),
+        borderRadius: "50%",
         fontSize: Math.round(size * 0.38),
         ...style,
       }}
@@ -218,156 +218,349 @@ export function staffStats(p: Person): StaffStats {
   };
 }
 
-/* --------------------------------------------------------- On-shift grid */
+/* --------------------------------------------------------- On-shift field */
 
-type Slot = { row: number; col: number; x: number; d: number };
+/** Hex positions in rings around the middle (axial coordinates), nearest first. */
+function hexRings(n: number) {
+  const out: { q: number; r: number }[] = [{ q: 0, r: 0 }];
+  const dirs = [
+    [1, 0],
+    [1, -1],
+    [0, -1],
+    [-1, 0],
+    [-1, 1],
+    [0, 1],
+  ];
+  for (let k = 1; out.length < n; k++) {
+    let q = -k,
+      r = k;
+    for (const [dq, dr] of dirs)
+      for (let i = 0; i < k && out.length < n; i++) {
+        out.push({ q, r });
+        q += dq!;
+        r += dr!;
+      }
+  }
+  return out;
+}
 
 /**
- * The team as rounded squares on a soft honeycomb of empty dashed slots:
- * the venue in the middle, people on shift around it, people off today
- * faded further out. Two dark pointer labels name the manager on shift and
- * today's best. Tap a face to open the person.
+ * The team as round faces on a honeycomb, like the Apple Watch home screen:
+ * drag it any way, it glides on and settles; faces shrink and fade towards
+ * the edges, the one in the middle is named under the field. Tap a face to
+ * open the person. Only transform and opacity change, set straight on the
+ * nodes in one animation frame, so it stays smooth.
  */
 export function OnShiftGrid({
   team,
-  venue,
   onOpen,
-  best,
 }: {
   team: Person[];
-  venue: string;
   onOpen: (id: string) => void;
-  best?: string;
 }) {
   const tr = useTr();
-  const cols = 7;
-  const people = [...team].sort(
-    (a, b) => Number(!!b.onShift) - Number(!!a.onShift),
+  const people = useMemo(() => {
+    const on = team.filter((p) => p.onShift);
+    const lead = on.filter((p) => groupOf(p) === "lead");
+    return [
+      ...lead,
+      ...on.filter((p) => !lead.includes(p)),
+      ...team.filter((p) => !p.onShift),
+    ];
+  }, [team]);
+  const B = 46; // face size
+  const S = 56; // distance between neighbours
+  const spots = useMemo(
+    () =>
+      hexRings(people.length).map(({ q, r }) => ({
+        x: S * (q + r / 2),
+        y: S * r * 0.866,
+      })),
+    [people.length],
   );
-  // Rows grow in odd numbers so the venue stays in the middle; always some empty slots around the team.
-  let rows = 3;
-  while (rows * cols < people.length + 1 + 6) rows += 2;
-  const mid = Math.floor(rows / 2);
-  const slots: Slot[] = [];
-  for (let row = 0; row < rows; row++)
-    for (let col = 0; col < cols; col++) {
-      const x = col + ((row - mid) % 2 ? 0.5 : 0);
-      slots.push({
-        row,
-        col,
-        x,
-        d: Math.hypot(x - (cols - 1) / 2, (row - mid) * 0.95),
-      });
-    }
-  slots.sort((a, b) => a.d - b.d);
-  const [center, ...ring] = slots;
-  // The manager on shift sits above the middle, today's best below it: their labels go above and below the grid.
-  const lead = people.find((p) => p.onShift && groupOf(p) === "lead");
-  const top = people.find((p) => p.id === best);
-  const placed = new Map<string, Slot>();
-  const free = [...ring];
-  const take = (pred: (s: Slot) => boolean) => {
-    const i = free.findIndex(pred);
-    return i >= 0 ? free.splice(i, 1)[0] : undefined;
-  };
-  if (lead) placed.set(lead.id, take((s) => s.row === 0)!);
-  if (top && top.id !== lead?.id)
-    placed.set(top.id, take((s) => s.row === rows - 1)!);
-  for (const p of people)
-    if (!placed.has(p.id)) placed.set(p.id, free.shift()!);
-  const W = cols + 0.5;
-  const pos = (s: Slot): CSSProperties => ({
-    left: `${((s.x + 0.08) / W) * 100}%`,
-    top: `${((s.row + 0.08) / rows) * 100}%`,
-    width: `${(0.84 / W) * 100}%`,
+  const field = useRef<HTMLDivElement>(null);
+  const nodes = useRef<(HTMLButtonElement | null)[]>([]);
+  const caption = useRef<HTMLSpanElement>(null);
+  const st = useRef({
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    drag: false,
+    moved: 0,
+    px: 0,
+    py: 0,
+    t: 0,
+    raf: 0,
   });
-  const label = (p: Person | undefined, text: string, above: boolean) => {
-    const s = p && placed.get(p.id);
-    if (!p || !s) return null;
-    return (
-      <button
-        type="button"
-        onClick={() => (haptic("light"), onOpen(p.id))}
-        className={`press absolute z-10 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap ${above ? "-translate-y-full flex-col-reverse" : "flex-col"}`}
-        style={{
-          left: `${((s.x + 0.5) / W) * 100}%`,
-          top: `${((s.row + (above ? 0 : 1)) / rows) * 100}%`,
-        }}
-      >
-        <MousePointer2
-          size={14}
-          strokeWidth={0}
-          fill="currentColor"
-          className={`text-[#3a3c42] ${above ? "rotate-180" : ""}`}
-        />
-        <span className="rounded-full bg-[#3a3c42] px-3 py-1.5 text-[12.5px] font-semibold text-white">
-          {text}
-        </span>
-      </button>
-    );
+  const reach = useMemo(
+    () => Math.max(S, ...spots.map((p) => Math.hypot(p.x, p.y))),
+    [spots],
+  );
+
+  const paint = useCallback(() => {
+    const el = field.current;
+    if (!el) return;
+    const w = el.clientWidth / 2,
+      h = el.clientHeight / 2;
+    const s = st.current;
+    let best = -1,
+      bestD = Infinity;
+    spots.forEach((p, i) => {
+      const n = nodes.current[i];
+      if (!n) return;
+      const x = p.x + s.x,
+        y = p.y + s.y;
+      // Fisheye: full size in the middle, smaller and fainter towards the edges.
+      const d = Math.hypot(x / w, y / h);
+      const k = Math.max(0.35, Math.min(1, 1.18 - d * 0.62));
+      n.style.transform = `translate(${x - B / 2}px, ${y - B / 2}px) scale(${k.toFixed(3)})`;
+      n.style.opacity = String(Math.max(0, Math.min(1, 1.6 - d)).toFixed(3));
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    const p = people[best];
+    if (caption.current && p)
+      caption.current.textContent = `${p.name} · ${p.onShift ? tr(GROUP_NAMES[groupOf(p)]) : tr("Day off")}`;
+  }, [spots, people, tr]);
+
+  // Glide after release, then settle back inside the honeycomb.
+  const glide = useCallback(() => {
+    const s = st.current;
+    cancelAnimationFrame(s.raf);
+    const step = () => {
+      s.vx *= 0.92;
+      s.vy *= 0.92;
+      s.x += s.vx;
+      s.y += s.vy;
+      const lim = reach * 0.4;
+      const r = Math.hypot(s.x, s.y);
+      if (r > lim) {
+        const pull = ((r - lim) / r) * 0.18;
+        s.x -= s.x * pull;
+        s.y -= s.y * pull;
+      }
+      paint();
+      if (Math.abs(s.vx) + Math.abs(s.vy) > 0.05 || r > lim + 0.5)
+        s.raf = requestAnimationFrame(step);
+    };
+    s.raf = requestAnimationFrame(step);
+  }, [paint, reach]);
+
+  useEffect(() => {
+    paint();
+    const el = field.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => paint());
+    ro.observe(el);
+    const s = st.current;
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(s.raf);
+    };
+  }, [paint]);
+
+  const down = (e: React.PointerEvent) => {
+    const s = st.current;
+    cancelAnimationFrame(s.raf);
+    Object.assign(s, {
+      drag: true,
+      moved: 0,
+      px: e.clientX,
+      py: e.clientY,
+      t: e.timeStamp,
+      vx: 0,
+      vy: 0,
+    });
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
+  const move = (e: React.PointerEvent) => {
+    const s = st.current;
+    if (!s.drag) return;
+    const dx = e.clientX - s.px,
+      dy = e.clientY - s.py;
+    const dt = Math.max(1, e.timeStamp - s.t);
+    s.moved += Math.abs(dx) + Math.abs(dy);
+    // Past the edge it follows the finger at half speed (rubber band).
+    const r = Math.hypot(s.x, s.y);
+    const f = r > reach * 0.4 ? 0.45 : 1;
+    s.x += dx * f;
+    s.y += dy * f;
+    s.vx = (dx / dt) * 16 * f;
+    s.vy = (dy / dt) * 16 * f;
+    s.px = e.clientX;
+    s.py = e.clientY;
+    s.t = e.timeStamp;
+    paint();
+  };
+  const up = (e: React.PointerEvent) => {
+    const s = st.current;
+    if (!s.drag) return;
+    s.drag = false;
+    if (s.moved < 6) {
+      // A tap: open the face under the finger.
+      const hit = document
+        .elementsFromPoint(e.clientX, e.clientY)
+        .find((n) => (n as HTMLElement).dataset?.person);
+      const id = (hit as HTMLElement | undefined)?.dataset.person;
+      if (id) {
+        haptic("light");
+        onOpen(id);
+      }
+      return;
+    }
+    glide();
+  };
+
   return (
-    <div className="relative mx-auto w-full max-w-[420px] py-10">
+    <div>
       <div
-        className="relative w-full"
-        style={{ aspectRatio: `${W} / ${rows}` }}
+        ref={field}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+        className="relative h-[196px] cursor-grab touch-none overflow-hidden select-none active:cursor-grabbing [mask-image:radial-gradient(ellipse_at_center,#000_55%,transparent_96%)]"
       >
-        {/* Empty slots, fading out towards the edges. */}
-        <div
-          aria-hidden
-          className="absolute inset-0 [mask-image:radial-gradient(closest-side,#000_55%,transparent)]"
-        >
-          {free.map((s) => (
-            <span
-              key={`${s.row}-${s.col}`}
-              className="absolute aspect-square rounded-[30%] border border-dashed border-g-faint/40 [background:repeating-linear-gradient(135deg,rgba(128,130,140,0.12)_0_1px,transparent_1px_7px)]"
-              style={pos(s)}
-            />
-          ))}
-        </div>
-        <span
-          className="absolute grid aspect-square place-items-center rounded-[30%] bg-g-card text-[22px] font-bold text-g-ink shadow-[0_0_0_1px_var(--g-line),0_10px_24px_-14px_rgba(11,11,15,0.45)]"
-          style={pos(center)}
-        >
-          {venue.slice(0, 1)}
-        </span>
-        {people.map((p) => {
-          const s = placed.get(p.id)!;
-          return (
+        <div className="absolute top-1/2 left-1/2">
+          {people.map((p, i) => (
             <button
               key={p.id}
+              ref={(n) => {
+                nodes.current[i] = n;
+              }}
               type="button"
+              data-person={p.id}
               aria-label={`${p.name} @${p.handle}`}
-              onClick={() => (haptic("light"), onOpen(p.id))}
-              className="press absolute aspect-square [container-type:inline-size]"
-              style={pos(s)}
+              onKeyDown={(e) => e.key === "Enter" && onOpen(p.id)}
+              onClick={(e) => e.detail === 0 && onOpen(p.id)}
+              className="absolute top-0 left-0 will-change-transform"
+              style={{ width: B, height: B }}
             >
-              <Face
-                p={p}
-                size={0}
-                off={!p.onShift}
-                className="!size-full !text-[38cqw]"
-                style={{ borderRadius: "30%" }}
-              />
+              <span
+                className="block size-full animate-[bubble-in_0.6s_cubic-bezier(0.22,1,0.36,1)_both]"
+                style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}
+              >
+                <Face
+                  p={p}
+                  size={B}
+                  off={!p.onShift}
+                  className="pointer-events-none"
+                />
+              </span>
             </button>
-          );
-        })}
-        {label(
-          lead,
-          `${lead?.name} · ${tr(ROLE_NAMES[lead?.roles[0] ?? "admin"])}`,
-          true,
-        )}
-        {top &&
-          top.id !== lead?.id &&
-          label(top, `${top.name} · ${tr("best today")}`, false)}
+          ))}
+        </div>
       </div>
+      <p className="mt-1 text-center text-[13px] text-g-muted">
+        <span ref={caption} className="font-medium text-g-ink-2" />
+      </p>
     </div>
   );
 }
 
 /* ------------------------------------------------------------ Person page */
 
-/** Everything about one person: level and XP, today's numbers, the week, quests, badges; write, edit. */
+/** The face inside a thin ring that fills with XP towards the next level. */
+function LevelRing({
+  p,
+  st,
+  off,
+}: {
+  p: Person;
+  st: StaffStats;
+  off: boolean;
+}) {
+  const R = 44;
+  const C = 2 * Math.PI * R;
+  return (
+    <span className="relative grid size-[100px] place-items-center">
+      <svg
+        viewBox="0 0 100 100"
+        className="absolute inset-0 -rotate-90"
+        aria-hidden
+      >
+        <circle
+          cx="50"
+          cy="50"
+          r={R}
+          fill="none"
+          stroke="var(--g-line)"
+          strokeWidth="3.5"
+        />
+        <circle
+          cx="50"
+          cy="50"
+          r={R}
+          fill="none"
+          stroke="var(--g-blue)"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={C * (1 - st.xp / st.next)}
+          className="transition-[stroke-dashoffset] duration-1000 ease-out"
+        />
+      </svg>
+      <Face p={p} size={78} off={off} dot={false} />
+      <span className="blue-grad absolute -bottom-1 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ring-2 ring-[var(--g-bg)]">
+        {st.level}
+      </span>
+    </span>
+  );
+}
+
+/** Small grey caption over a group, like iOS settings. */
+function Caption({
+  children,
+  aside,
+}: {
+  children: string;
+  aside?: React.ReactNode;
+}) {
+  return (
+    <p className="mt-6 mb-2 flex items-baseline justify-between px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">
+      {children}
+      {aside}
+    </p>
+  );
+}
+
+/** Numbers in one card, split by hairlines, the figure over its label. */
+function Figures({
+  items,
+  cols,
+}: {
+  items: { label: string; value: React.ReactNode }[];
+  cols: 2 | 4;
+}) {
+  return (
+    <div
+      className={`grid gap-px overflow-hidden rounded-[22px] bg-g-line ${cols === 4 ? "grid-cols-4" : "grid-cols-2"}`}
+    >
+      {items.map((x) => (
+        <div
+          key={x.label}
+          className={`min-w-0 bg-g-fill ${cols === 4 ? "px-2 py-3 text-center" : "px-4 py-3.5"}`}
+        >
+          <p
+            className={`flex items-center gap-1 leading-tight font-bold tracking-[-0.02em] tabular-nums ${cols === 4 ? "justify-center text-[17px]" : "text-[21px]"}`}
+          >
+            {x.value}
+          </p>
+          <p
+            className={`mt-0.5 truncate text-g-muted ${cols === 4 ? "text-[11px]" : "text-[12.5px]"}`}
+          >
+            {x.label}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Everything about one person: level, today, the week, quests, badges; write, edit. */
 export function PersonPage({
   p,
   disabled,
@@ -397,181 +590,138 @@ export function PersonPage({
       label={p.name}
       title={false}
       footer={
-        <div className="flex gap-2.5">
+        <div className="mx-auto flex max-w-[520px] gap-2">
           {!self && (
             <button
               type="button"
               onClick={onWrite}
-              className="blue-grad press flex h-13 flex-1 items-center justify-center gap-2 rounded-full text-[15px] font-semibold"
+              className="blue-grad press flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[15px] font-semibold"
             >
-              <Send size={17} strokeWidth={2.2} />{" "}
-              {tr("Write to @{h}", { h: p.handle })}
+              <Send size={16} strokeWidth={2.2} /> {tr("Write")}
             </button>
           )}
           <button
             type="button"
             onClick={onEdit}
-            className={`press h-13 rounded-full bg-g-fill px-6 text-[15px] font-semibold ${self ? "flex-1" : ""}`}
+            className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold"
           >
             {tr("Edit")}
           </button>
         </div>
       }
     >
-      <div className="px-5 pt-1 pb-10">
-        <div className="flex items-center gap-4">
-          <Face p={p} size={72} off={disabled} />
-          <div className="min-w-0">
-            <h2 className="truncate text-[26px] leading-tight font-bold tracking-[-0.02em]">
-              {p.name}
-            </h2>
-            <p className="truncate text-[14px] text-g-muted">
-              <span className="font-semibold text-g-blue">@{p.handle}</span> ·{" "}
-              {roles}
-            </p>
-            <p className="mt-1 flex items-center gap-1.5 text-[13px] text-g-muted">
-              <span
-                className={`size-1.5 rounded-full ${disabled ? "bg-[#e5484d]" : p.onShift ? "bg-[#22c55e]" : "bg-g-faint"}`}
-              />
-              {disabled
-                ? tr("Access is off")
-                : st.since
-                  ? tr("On shift since {t}", { t: st.since })
-                  : tr("Off today")}
-            </p>
-          </div>
-        </div>
-
-        {/* Level: the number, the XP bar, what is left. */}
-        <div className="mt-6 rounded-[24px] bg-g-fill p-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-[17px] font-bold">
-              {tr("Level {n}", { n: st.level })}
-            </p>
-            <p className="text-[13px] text-g-muted tabular-nums">
-              {st.xp.toLocaleString("ru-RU")} /{" "}
-              {st.next.toLocaleString("ru-RU")} XP
-            </p>
-          </div>
-          <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-g-card">
-            <div
-              className="blue-grad h-full rounded-full"
-              style={{ width: `${(st.xp / st.next) * 100}%` }}
+      <div className="mx-auto max-w-[520px] px-5 pt-1 pb-10">
+        {/* Who: the face in its level ring, the name, the @ID and the work, where they are now. */}
+        <div className="flex flex-col items-center text-center">
+          <LevelRing p={p} st={st} off={disabled} />
+          <h2 className="mt-3 text-[24px] leading-tight font-bold tracking-[-0.02em]">
+            {p.name}
+          </h2>
+          <p className="mt-0.5 text-[13.5px] text-g-muted">
+            <span className="font-semibold text-g-blue">@{p.handle}</span> ·{" "}
+            {roles}
+          </p>
+          <p className="mt-2 flex items-center gap-1.5 text-[13px] text-g-ink-2">
+            <span
+              className={`size-1.5 rounded-full ${disabled ? "bg-[#e5484d]" : p.onShift ? "bg-[#22c55e]" : "bg-g-faint"}`}
             />
-          </div>
-          <p className="mt-2 text-[12.5px] text-g-muted">
-            {tr("{n} XP to level {l}", {
-              n: (st.next - st.xp).toLocaleString("ru-RU"),
-              l: st.level + 1,
-            })}
+            {disabled
+              ? tr("Access is off")
+              : st.since
+                ? tr("On shift since {t}", { t: st.since })
+                : tr("Off today")}
+            <span className="text-g-faint">·</span>
+            <span className="text-g-muted">
+              {tr("{n} XP to level {l}", {
+                n: (st.next - st.xp).toLocaleString("ru-RU"),
+                l: st.level + 1,
+              })}
+            </span>
           </p>
         </div>
 
-        <Heading>{tr("Today")}</Heading>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {st.today.map((x) => (
-            <Stat key={x.label} label={tr(x.label)} value={x.value} />
-          ))}
-        </div>
+        <Caption>{tr("Today")}</Caption>
+        <Figures
+          cols={2}
+          items={st.today.map((x) => ({ label: tr(x.label), value: x.value }))}
+        />
 
-        <Heading>{tr("This week")}</Heading>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Stat label={tr("Hours")} value={String(st.hoursWeek)} />
-          <Stat label={tr("Shifts")} value={String(st.shiftsWeek)} />
-          <Stat
-            label={tr("Late")}
-            value={String(st.late)}
-            tone={st.late ? "text-g-orange" : undefined}
-          />
-          <Stat
-            label={tr("Guest rating")}
-            value={st.rating.toFixed(1)}
-            icon={
-              <Star
-                size={14}
-                className="fill-current text-[#f5a524]"
-                strokeWidth={0}
-              />
-            }
-          />
-        </div>
+        <Caption>{tr("This week")}</Caption>
+        <Figures
+          cols={4}
+          items={[
+            { label: tr("Hours"), value: st.hoursWeek },
+            { label: tr("Shifts"), value: st.shiftsWeek },
+            {
+              label: tr("Late"),
+              value: (
+                <span className={st.late ? "text-g-orange" : ""}>
+                  {st.late}
+                </span>
+              ),
+            },
+            {
+              label: tr("Rating"),
+              value: (
+                <>
+                  {st.rating.toFixed(1)}
+                  <Star
+                    size={12}
+                    className="fill-current text-[#f5a524]"
+                    strokeWidth={0}
+                  />
+                </>
+              ),
+            },
+          ]}
+        />
 
-        <Heading>{tr("Quests")}</Heading>
-        <div className="grid gap-2">
+        <Caption
+          aside={
+            <span className="normal-case tracking-normal">
+              {tr("Checklist")} {st.checklist[0]}/{st.checklist[1]}
+            </span>
+          }
+        >
+          {tr("Quests")}
+        </Caption>
+        <div className="divide-y divide-g-line rounded-[22px] bg-g-fill px-4">
           {st.quests.map((q) => (
-            <div key={q.title} className="rounded-[22px] bg-g-fill px-4 py-3">
+            <div key={q.title} className="py-3">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="min-w-0 truncate text-[15px] font-semibold">
+                <p className="min-w-0 truncate text-[14.5px] font-semibold">
                   {tr(q.title)}
                 </p>
-                <p className="shrink-0 text-[13px] font-semibold text-g-ink-2 tabular-nums">
-                  {q.progress}/{q.goal}
+                <p className="shrink-0 text-[12.5px] text-g-muted tabular-nums">
+                  {q.progress}/{q.goal} ·{" "}
+                  <span className="font-semibold text-g-blue">
+                    {tr(q.reward)}
+                  </span>
                 </p>
               </div>
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-g-card">
                 <div
-                  className="h-full rounded-full bg-g-blue"
+                  className="h-full rounded-full bg-g-blue transition-[width] duration-700"
                   style={{ width: `${(q.progress / q.goal) * 100}%` }}
                 />
               </div>
-              <p className="mt-1.5 text-[12.5px] font-medium text-g-blue">
-                {tr(q.reward)}
-              </p>
             </div>
           ))}
         </div>
 
-        <Heading>{tr("Badges and checklist")}</Heading>
-        <div className="flex flex-wrap gap-2">
+        <Caption>{tr("Badges")}</Caption>
+        <div className="flex flex-wrap gap-1.5">
           {st.badges.map((b) => (
             <span
               key={b}
-              className="rounded-full bg-g-fill px-3.5 py-2 text-[13.5px] font-semibold"
+              className="rounded-full bg-g-fill px-3 py-1.5 text-[13px] font-medium"
             >
               {tr(b)}
             </span>
           ))}
-          <span className="rounded-full bg-g-fill px-3.5 py-2 text-[13.5px] text-g-muted">
-            {tr("Checklist")}{" "}
-            <b className="font-semibold text-g-ink tabular-nums">
-              {st.checklist[0]}/{st.checklist[1]}
-            </b>
-          </span>
         </div>
       </div>
     </Sheet>
-  );
-}
-
-function Heading({ children }: { children: string }) {
-  return (
-    <h3 className="mt-7 mb-2.5 text-[17px] font-bold tracking-[-0.01em]">
-      {children}
-    </h3>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-  icon,
-}: {
-  label: string;
-  value: string;
-  tone?: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="min-w-0 rounded-[22px] bg-g-fill px-4 py-3">
-      <p className="truncate text-[12.5px] text-g-muted">{label}</p>
-      <p
-        className={`mt-0.5 flex items-center gap-1 text-[20px] leading-tight font-bold tracking-[-0.02em] tabular-nums ${tone ?? ""}`}
-      >
-        {value}
-        {icon}
-      </p>
-    </div>
   );
 }
 
@@ -587,7 +737,7 @@ const ALL_STATIONS: Station[] = [
   "hookah",
 ];
 
-/** Roles, stations and access for one person; removing asks once more and keeps their history. */
+/** Name, roles, stations, rights and access, grouped like iOS settings; removing asks once more and keeps their history. */
 export function PersonEdit({
   p,
   disabled,
@@ -609,29 +759,37 @@ export function PersonEdit({
   const toggle = <T,>(list: T[], v: T) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
   const chip = (on: boolean) =>
-    `press h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-fill text-g-ink-2"}`;
+    `press h-9 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-card text-g-ink-2"}`;
   return (
     <Sheet open wide onClose={onClose} label={tr("Edit")} title={false}>
-      <div className="px-5 pt-1 pb-10">
-        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.025em]">
-          {p.name}
-        </h2>
-        <p className="mt-0.5 text-[14px] text-g-muted">
-          @{p.handle} · {tr("the @ID is chosen by the person")}
-        </p>
-
-        <div className="mt-6">
-          <Field label={tr("Name")}>
-            <TextField
-              value={p.name}
-              onChange={(v) => onChange({ ...p, name: v })}
-              maxLength={40}
-            />
-          </Field>
+      <div className="mx-auto max-w-[520px] px-5 pt-1 pb-10">
+        <div className="flex items-center gap-3.5">
+          <Face p={p} size={56} off={disabled} dot={false} />
+          <div className="min-w-0">
+            <h2 className="truncate text-[22px] leading-tight font-bold tracking-[-0.02em]">
+              {p.name}
+            </h2>
+            <p className="truncate text-[13px] text-g-muted">
+              @{p.handle} · {tr("the @ID is chosen by the person")}
+            </p>
+          </div>
         </div>
 
-        <Heading>{tr("Roles")}</Heading>
-        <div className="flex flex-wrap gap-2">
+        <Caption>{tr("Profile")}</Caption>
+        <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-5">
+          <span className="w-16 shrink-0 text-[14px] text-g-muted">
+            {tr("Name")}
+          </span>
+          <input
+            value={p.name}
+            maxLength={40}
+            onChange={(e) => onChange({ ...p, name: e.target.value })}
+            className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none"
+          />
+        </label>
+
+        <Caption>{tr("Roles")}</Caption>
+        <div className="flex flex-wrap gap-1.5 rounded-[22px] bg-g-fill p-2.5">
           {(Object.keys(ROLE_NAMES) as StaffRole[]).map((r) => (
             <button
               key={r}
@@ -649,8 +807,8 @@ export function PersonEdit({
           ))}
         </div>
 
-        <Heading>{tr("Stations")}</Heading>
-        <div className="flex flex-wrap gap-2">
+        <Caption>{tr("Stations")}</Caption>
+        <div className="flex flex-wrap gap-1.5 rounded-[22px] bg-g-fill p-2.5">
           {ALL_STATIONS.map((s) => (
             <button
               key={s}
@@ -667,15 +825,15 @@ export function PersonEdit({
           ))}
         </div>
 
-        <Heading>{tr("Can")}</Heading>
-        <div className="rounded-[24px] bg-g-fill p-1.5">
+        <Caption>{tr("Can")}</Caption>
+        <div className="divide-y divide-g-line rounded-[22px] bg-g-fill px-4">
           {perms.map((pm) => (
             <p
               key={pm}
-              className="flex items-center gap-3 rounded-full px-3 py-2 text-[14.5px]"
+              className="flex items-center gap-2.5 py-2.5 text-[14px]"
             >
               <Check
-                size={16}
+                size={15}
                 strokeWidth={2.6}
                 className="shrink-0 text-g-green"
               />
@@ -683,17 +841,17 @@ export function PersonEdit({
             </p>
           ))}
         </div>
-        <p className="mt-2 px-1 text-[12.5px] text-g-muted">
+        <p className="mt-1.5 px-1 text-[12px] text-g-muted">
           {tr("Rights add up across roles and are checked on the server.")}
         </p>
 
-        <Heading>{tr("Access")}</Heading>
+        <Caption>{tr("Access")}</Caption>
         <div className="flex items-center gap-3 rounded-full bg-g-fill py-2 pr-2 pl-5">
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold">
+            <span className="block text-[14.5px] font-semibold">
               {tr("Can sign in")}
             </span>
-            <span className="block truncate text-[12.5px] text-g-muted">
+            <span className="block truncate text-[12px] text-g-muted">
               {disabled
                 ? tr("Off: the app is closed for them, history stays")
                 : tr("On: works in the app by role")}
@@ -707,11 +865,11 @@ export function PersonEdit({
         </div>
 
         {confirm ? (
-          <div className="mt-4 rounded-[24px] bg-[#e5484d]/10 p-4">
+          <div className="animate-rise mt-5 rounded-[22px] bg-[#e5484d]/10 p-4">
             <p className="text-[15px] font-semibold">
               {tr("Remove {n} from the team?", { n: p.name })}
             </p>
-            <p className="mt-1 text-[13px] text-g-muted">
+            <p className="mt-1 text-[12.5px] text-g-muted">
               {tr(
                 "Orders, tips and payroll history stay in reports. The @ID is freed in 30 days.",
               )}
@@ -720,14 +878,14 @@ export function PersonEdit({
               <button
                 type="button"
                 onClick={() => setConfirm(false)}
-                className="press h-11 flex-1 rounded-full bg-g-card text-[14px] font-semibold"
+                className="press h-10 flex-1 rounded-full bg-g-card text-[14px] font-semibold"
               >
                 {tr("Cancel")}
               </button>
               <button
                 type="button"
                 onClick={() => (haptic("success"), onRemove())}
-                className="press h-11 flex-1 rounded-full bg-[#e5484d] text-[14px] font-semibold text-white"
+                className="press h-10 flex-1 rounded-full bg-[#e5484d] text-[14px] font-semibold text-white"
               >
                 {tr("Remove")}
               </button>
@@ -737,9 +895,9 @@ export function PersonEdit({
           <button
             type="button"
             onClick={() => (haptic("light"), setConfirm(true))}
-            className="press mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-[#e5484d]"
+            className="press mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-semibold text-[#e5484d]"
           >
-            <Trash2 size={17} strokeWidth={2.2} /> {tr("Remove from the team")}
+            <Trash2 size={16} strokeWidth={2.2} /> {tr("Remove from the team")}
           </button>
         )}
       </div>

@@ -591,6 +591,8 @@ export const RU_OPS: Record<string, string> = {
   "Nothing ordered yet": "Пока ничего не заказано",
   "Day off": "Выходной",
   "Lv {n}": "Ур. {n}",
+  "Rating": "Оценка",
+  "Write": "Написать",
 };
 export const VI_OPS: Record<string, string> = {
   "You are invited to {venue}": "Bạn được mời vào {venue}",
@@ -725,4 +727,6 @@ export const VI_OPS: Record<string, string> = {
   "Nothing ordered yet": "Chưa gọi món nào",
   "Day off": "Nghỉ",
   "Lv {n}": "Cấp {n}",
+  "Rating": "Đánh giá",
+  "Write": "Nhắn tin",
 };

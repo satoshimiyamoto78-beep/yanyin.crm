@@ -804,12 +804,7 @@ function Console({ menu }: { menu: Menu }) {
                       count={onShift.length}
                       onAll={() => go("team")}
                     />
-                    <OnShiftGrid
-                      team={team}
-                      venue="Samarkand"
-                      best="staff-linh"
-                      onOpen={setPerson}
-                    />
+                    <OnShiftGrid team={team} onOpen={setPerson} />
                   </div>
                   {news[0] && (
                     <div className="min-w-0">
