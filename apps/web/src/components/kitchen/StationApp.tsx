@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
-  Clock,
   LogOut,
   Volume2,
   VolumeX,
@@ -380,36 +379,28 @@ function Screen({ menu }: { menu: Menu }) {
       {/* The same sky as the waiter's home: station, live counts, people on it, the clock and the tools. */}
       <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
         <NorthSky />
-        <div className="flex items-center gap-2 px-4 sm:px-6">
+        {/* One quiet row: the station by name (tap to change) with who is on it, the tools on the right. */}
+        <div className="flex items-start gap-3 px-4 sm:px-6">
           <button
             onClick={() => setPicking(true)}
-            className="press flex h-11 min-w-0 items-center gap-1.5 rounded-full bg-white/15 pr-3.5 pl-4 sm:h-12 sm:gap-2 sm:pl-1.5"
+            className="press min-w-0 text-left"
           >
-            <ArtTile
-              name={info?.art ?? "kitchen"}
-              size={40}
-              bare
-              className="hidden sm:block"
-            />
-            <span className="truncate text-[17px] font-bold tracking-[-0.01em] sm:text-[19px]">
-              {tr(info?.label ?? "")}
-            </span>
-            <ChevronDown size={18} className="shrink-0 text-white/60" />
-          </button>
-          <span
-            className="hidden shrink-0 -space-x-2 sm:flex"
-            aria-label={onShift.map((p) => `@${p.handle}`).join(", ")}
-          >
-            {onShift.map((p) => (
-              <span
-                key={p.id}
-                title={`@${p.handle}`}
-                className="grid size-9 place-items-center rounded-full bg-[#fff] text-[14px] font-bold text-[#0b0b0f] ring-2 ring-white/30"
-              >
-                {p.name.slice(0, 1)}
+            <span className="flex items-center gap-1">
+              <span className="truncate text-[22px] leading-tight font-bold tracking-[-0.02em]">
+                {tr(info?.label ?? "")}
               </span>
-            ))}
-          </span>
+              <ChevronDown
+                size={20}
+                strokeWidth={2.4}
+                className="shrink-0 text-white/60"
+              />
+            </span>
+            <span className="mt-0.5 block truncate text-[13px] text-white/65">
+              {onShift.length
+                ? onShift.map((p) => `@${p.handle}`).join(" · ")
+                : tr("Nobody on shift")}
+            </span>
+          </button>
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ToolButton
               label={tr("Stop-list")}
@@ -452,41 +443,49 @@ function Screen({ menu }: { menu: Menu }) {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 px-4 sm:px-6">
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-[14px] text-white/70">
-              <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
-              <span className="font-semibold text-white">
-                {tr("Shift is on")}
-              </span>
-              <span className="text-white/45">·</span>
+        {/* Like the waiter's home: a status line, one big number, then plain facts. No tiles. */}
+        <div className="mt-8 px-4 sm:px-6">
+          <p className="flex items-center gap-1.5 text-[14px] text-white/70">
+            <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
+            <span className="font-semibold text-white">
+              {tr("Shift is on")}
+            </span>
+            <span className="text-white/45">·</span>
+            <span className="tabular-nums">{hhmm(now)}</span>
+            <span className="text-white/45">·</span>
+            <span
+              className={
+                progress.late.length ? "font-semibold text-[#ffd2a8]" : ""
+              }
+            >
               {progress.late.length
                 ? tr("{n} late|{n} late", { n: progress.late.length })
                 : tr("Checklist {a}/{b}", {
                     a: progress.done,
                     b: progress.total,
                   })}
-            </p>
-            <p className="mt-1 text-[44px] leading-none font-bold tracking-[-0.03em] tabular-nums">
-              {hhmm(now)}
-            </p>
-          </div>
-          <div className="grid w-full grid-cols-3 rounded-[24px] bg-white/15 py-1 sm:w-auto">
-            {counters.map((c, i) => (
-              <span
-                key={c.label}
-                className={`flex min-w-0 flex-col justify-center px-4 py-1.5 sm:min-w-[112px] ${i ? "border-l border-white/15" : ""}`}
-              >
-                <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] font-medium text-white/75">
-                  <span className={`size-1.5 shrink-0 rounded-full ${c.dot}`} />
-                  <span className="truncate">{c.label}</span>
-                </span>
-                <span className="live mt-0.5 text-[26px] leading-none font-bold tracking-[-0.02em] tabular-nums">
+            </span>
+          </p>
+          <p className="mt-2 flex items-baseline gap-2">
+            <span className="live text-[40px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+              {count("new") + count("making")}
+            </span>
+            <span className="text-[17px] font-semibold text-white/75">
+              {tr("dish in work|dishes in work", {
+                n: count("new") + count("making"),
+              })}
+            </span>
+          </p>
+          <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[14px] text-white/70">
+            {counters.map((c) => (
+              <span key={c.label} className="flex items-baseline gap-1.5">
+                <span className="live text-[17px] font-semibold text-white tabular-nums">
                   {c.n}
                 </span>
+                {c.label.toLowerCase()}
               </span>
             ))}
-          </div>
+          </p>
         </div>
       </section>
 
@@ -527,12 +526,12 @@ function Screen({ menu }: { menu: Menu }) {
         <aside className="order-first w-full shrink-0 lg:sticky lg:top-4 lg:order-none lg:w-[320px]">
           <div className="rounded-[28px] bg-g-fill p-4">
             <div className="flex items-center gap-3 px-1">
-              <ArtTile name="bell" size={36} bare />
+              <ArtTile name="bell" size={30} bare />
               <p className="min-w-0 flex-1 truncate text-[17px] font-semibold">
                 {tr("Ready to serve")}
               </p>
               <span
-                className={`live grid h-9 min-w-9 place-items-center rounded-full px-2.5 text-[17px] font-bold tabular-nums ${ready.length ? "chip-green" : "bg-g-card text-g-muted"}`}
+                className={`live text-[17px] font-semibold tabular-nums ${ready.length ? "text-g-green" : "text-g-muted"}`}
               >
                 {ready.length}
               </span>
@@ -542,11 +541,8 @@ function Screen({ menu }: { menu: Menu }) {
                 {ready.map((o) => (
                   <div
                     key={o.id}
-                    className="animate-pop flex min-w-0 items-center gap-3 rounded-full bg-g-card p-1.5"
+                    className="animate-pop flex min-h-[52px] min-w-0 items-center gap-3 rounded-full bg-g-card py-1.5 pr-1.5 pl-4"
                   >
-                    <span className="chip-green grid size-12 shrink-0 place-items-center rounded-full text-[19px] font-bold tabular-nums">
-                      {o.table}
-                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">
                         {tr("Table {n}", { n: o.table })}
@@ -565,7 +561,7 @@ function Screen({ menu }: { menu: Menu }) {
                         haptic("success");
                         setServed((s) => [...s, o.id]);
                       }}
-                      className="press h-11 shrink-0 rounded-full bg-g-ink px-4 text-[13px] font-semibold text-white"
+                      className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[13px] font-semibold text-white"
                     >
                       {tr("Served")}
                     </button>
@@ -730,25 +726,30 @@ function OrderCard({
     <section
       className={`flex min-w-0 flex-col rounded-[28px] bg-g-fill p-4 ${fresh ? "animate-pop" : ""}`}
     >
-      <header className="flex items-start justify-between gap-3 px-1">
-        <span className="min-w-0">
-          <span className="block text-[28px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+      {/* The table big, its waiting time as plain figures on the same line; who and when under it. */}
+      <header className="px-1">
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="truncate text-[26px] leading-none font-bold tracking-[-0.03em] tabular-nums">
             {tr("Table {n}", { n: o.table })}
           </span>
-          <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-g-muted">
-            <span className="font-semibold text-g-blue">@{o.waiter}</span>
-            <span>· {o.at}</span>
-            {o.guest && (
-              <span className="chip-blue rounded-full px-2 py-0.5 font-semibold">
+          <Elapsed since={o.at} tone={tone} />
+        </span>
+        <span className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[13px] text-g-muted">
+          <span className="font-semibold text-g-ink-2">@{o.waiter}</span>
+          <span>·</span>
+          <span className="tabular-nums">{o.at}</span>
+          {o.guest && (
+            <>
+              <span>·</span>
+              <span className="font-medium text-g-blue">
                 {tr("from the QR menu")}
               </span>
-            )}
-          </span>
+            </>
+          )}
         </span>
-        <Elapsed since={o.at} tone={tone} />
       </header>
       <div
-        className="mx-1 mt-3.5 h-1 overflow-hidden rounded-full bg-g-card"
+        className="mx-1 mt-3 h-[3px] overflow-hidden rounded-full bg-g-card"
         aria-hidden
       >
         <div
@@ -759,30 +760,30 @@ function OrderCard({
       <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2">
         {lines.map((l) => {
           const out = stop.includes(l.itemId);
-          const badge = {
-            new: "chip-blue",
-            making: "chip-orange",
-            ready: "chip-green",
+          const qtyInk = {
+            new: "text-g-blue",
+            making: "text-g-orange",
+            ready: "text-g-green",
           }[l.state];
           return (
             <button
               key={l.id}
               onClick={() => onLine(l)}
               disabled={l.state === "ready"}
-              className={`press flex min-h-[60px] min-w-0 items-center gap-3 rounded-full bg-g-card p-1.5 text-left ${l.state === "ready" ? "opacity-55" : ""}`}
+              className={`press flex min-h-[52px] min-w-0 items-center gap-2.5 rounded-full bg-g-card py-1.5 pr-1.5 pl-4 text-left ${l.state === "ready" ? "opacity-55" : ""}`}
             >
               <span
-                className={`grid size-12 shrink-0 place-items-center rounded-full text-[17px] font-bold tabular-nums ${badge}`}
+                className={`w-7 shrink-0 text-[16px] font-bold tabular-nums ${qtyInk}`}
               >
                 {l.qty}×
               </span>
-              <span className="min-w-0 flex-1 py-1">
+              <span className="min-w-0 flex-1">
                 <DishName
                   name={l.name}
-                  className={`line-clamp-2 text-[16px] leading-[1.2] font-semibold break-words sm:text-[17px] ${l.state === "ready" ? "text-g-muted line-through decoration-1" : ""}`}
+                  className={`line-clamp-2 text-[16px] leading-[1.25] font-semibold break-words ${l.state === "ready" ? "text-g-muted line-through decoration-1" : ""}`}
                 />
                 {l.note && (
-                  <span className="block truncate text-[13.5px] font-semibold text-g-orange">
+                  <span className="block truncate text-[13px] font-medium text-g-orange">
                     {tr(l.note)}
                   </span>
                 )}
@@ -814,9 +815,9 @@ function OrderCard({
             haptic("success");
             onAll();
           }}
-          className="press mt-3 flex h-13 items-center justify-center gap-2 rounded-full bg-g-ink text-[15px] font-semibold text-white"
+          className="press mt-3 flex h-11 items-center justify-center gap-2 rounded-full bg-g-ink text-[14px] font-semibold text-white"
         >
-          <Check size={18} strokeWidth={2.6} /> {tr("All ready")} · {left}
+          <Check size={16} strokeWidth={2.6} /> {tr("All ready")} · {left}
         </button>
       )}
     </section>
@@ -828,19 +829,19 @@ function StatePill({ state }: { state: KdsLine["state"] }) {
   const tr = useTr();
   if (state === "new")
     return (
-      <span className="h-11 w-[92px] shrink-0 rounded-full bg-g-fill text-center text-[14px] leading-[44px] font-semibold text-g-ink">
+      <span className="h-9 w-[78px] shrink-0 rounded-full bg-g-fill text-center text-[13px] leading-9 font-semibold text-g-ink">
         {tr("Start")}
       </span>
     );
   if (state === "making")
     return (
-      <span className="blue-grad h-11 w-[92px] shrink-0 rounded-full text-center text-[14px] leading-[44px] font-semibold">
+      <span className="blue-grad h-9 w-[78px] shrink-0 rounded-full text-center text-[13px] leading-9 font-semibold">
         {tr("Ready")}
       </span>
     );
   return (
-    <span className="chip-green flex h-11 w-[92px] shrink-0 items-center justify-center gap-1 rounded-full text-[14px] font-semibold">
-      <Check size={20} strokeWidth={2.8} aria-label={tr("Done")} />
+    <span className="chip-green flex h-9 w-[78px] shrink-0 items-center justify-center rounded-full">
+      <Check size={17} strokeWidth={2.8} aria-label={tr("Done")} />
     </span>
   );
 }
@@ -855,20 +856,16 @@ function Elapsed({
 }) {
   const now = useClock();
   const s = Math.max(0, now - secOf(since));
-  const cls = {
-    ok: "bg-g-card text-g-ink",
-    long: "chip-orange",
-    late: "chip-red",
+  const ink = {
+    ok: "text-g-muted",
+    long: "text-g-orange",
+    late: "text-[#e5484d]",
   }[tone];
   return (
     <span
-      className={`flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[17px] font-bold tabular-nums ${cls}`}
+      className={`flex shrink-0 items-center gap-1 text-[17px] font-semibold tabular-nums ${ink}`}
     >
-      {tone === "late" ? (
-        <AlertTriangle size={16} strokeWidth={2.4} />
-      ) : (
-        <Clock size={16} strokeWidth={2.4} />
-      )}
+      {tone === "late" && <AlertTriangle size={15} strokeWidth={2.4} />}
       {Math.floor(s / 60)}:{String(s % 60).padStart(2, "0")}
     </span>
   );
