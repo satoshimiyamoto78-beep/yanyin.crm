@@ -30,6 +30,7 @@ import {
   type Station,
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
+import { PersonPic } from "@/components/system/PersonPic";
 import { saveStopList, useStopList } from "@/lib/stoplist";
 import { TEAM } from "@/lib/demo-team";
 import {
@@ -950,9 +951,9 @@ function StationPicker({
                         {people.map((p) => (
                           <span
                             key={p.id}
-                            className="blue-grad grid size-8 place-items-center rounded-full text-[13px] font-bold ring-2 ring-[var(--g-bg)]"
+                            className="blue-grad relative grid size-8 place-items-center rounded-full text-[13px] font-bold ring-2 ring-[var(--g-bg)]"
                           >
-                            {p.name.slice(0, 1)}
+                            <PersonPic p={p} />
                           </span>
                         ))}
                       </span>

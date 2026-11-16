@@ -6,14 +6,14 @@ import type { ChecklistRun, ChecklistTemplate, Person } from "@yanyin/domain";
  * Three bartenders share the bar: tickets go to the bar, one of them takes it.
  */
 export const TEAM: Person[] = [
-  { id: "staff-linh", handle: "linh", name: "Linh", roles: ["waiter"], stations: ["hall"], onShift: true },
-  { id: "staff-minh", handle: "minh", name: "Minh", roles: ["waiter"], stations: ["hall"], onShift: true },
-  { id: "staff-thao", handle: "thao_bar", name: "Thảo", roles: ["bartender"], stations: ["bar"], onShift: true },
+  { id: "staff-linh", handle: "linh", name: "Linh", avatar: "/staff/linh.webp", roles: ["waiter"], stations: ["hall"], onShift: true },
+  { id: "staff-minh", handle: "minh", name: "Minh", avatar: "/staff/minh.webp", roles: ["waiter"], stations: ["hall"], onShift: true },
+  { id: "staff-thao", handle: "thao_bar", name: "Thảo", avatar: "/staff/thao.webp", roles: ["bartender"], stations: ["bar"], onShift: true },
   { id: "staff-an", handle: "an_bar", name: "An", roles: ["bartender"], stations: ["bar"], onShift: true },
-  { id: "staff-tuan", handle: "tuan_bar", name: "Tuấn", roles: ["bartender"], stations: ["bar"], onShift: false },
-  { id: "staff-dima", handle: "chef_dima", name: "Dima", roles: ["cook"], stations: ["hot", "grill"], onShift: true },
+  { id: "staff-tuan", handle: "tuan_bar", name: "Tuấn", avatar: "/staff/tuan.webp", roles: ["bartender"], stations: ["bar"], onShift: false },
+  { id: "staff-dima", handle: "chef_dima", name: "Dima", avatar: "/staff/dima.webp", roles: ["cook"], stations: ["hot", "grill"], onShift: true },
   { id: "staff-lan", handle: "lan_cold", name: "Lan", roles: ["cook"], stations: ["cold", "pastry"], onShift: true },
-  { id: "staff-huong", handle: "huong", name: "Hương", roles: ["admin", "manager"], stations: ["hall"], onShift: true },
+  { id: "staff-huong", handle: "huong", name: "Hương", avatar: "/staff/huong.webp", roles: ["admin", "manager"], stations: ["hall"], onShift: true },
   { id: "staff-owner", handle: "rustam", name: "Rustam", roles: ["owner"], stations: [], onShift: false },
 ];
 

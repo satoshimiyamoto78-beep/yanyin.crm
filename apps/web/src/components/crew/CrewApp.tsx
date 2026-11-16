@@ -148,7 +148,7 @@ function CrewAppInner({ data, floor, menu }: { data: CrewData; floor: FloorData;
   // The same light/dark choice as the guest menu: one system, one preference.
   const scheme = useScheme();
   // Profile (from the avatar), personal info, all badges and the notification inbox are full pages.
-  const [me, setMe] = useState<Me>({ first: data.staff.name, last: "Nguyen", phone: "+84 905 123 456", email: "linh@samarkand.vn", role: "Waiter · Samarkand" });
+  const [me, setMe] = useState<Me>({ first: data.staff.name, last: "Nguyen", phone: "+84 905 123 456", email: "linh@samarkand.vn", photo: "/staff/linh.webp", role: "Waiter · Samarkand" });
   const [profile, setProfile] = useState<"profile" | "personal" | "badges" | null>(null);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inbox, setInbox] = useState<InboxItem[]>([]);

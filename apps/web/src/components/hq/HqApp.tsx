@@ -36,6 +36,7 @@ import {
   type Person,
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
+import { PersonPic } from "@/components/system/PersonPic";
 import { demoFloor, ticketTotal, type FloorTable } from "@/lib/demo-floor";
 import {
   BAR_CHECKLIST,
@@ -644,9 +645,9 @@ function Console({ menu }: { menu: Menu }) {
                   <button
                     aria-label={tr("Profile")}
                     onClick={() => setRoles(true)}
-                    className="press grid size-10 shrink-0 place-items-center rounded-full bg-[#fff] text-[16px] font-bold text-[#0b0b0f]"
+                    className="press relative grid size-10 shrink-0 place-items-center rounded-full bg-[#fff] text-[16px] font-bold text-[#0b0b0f]"
                   >
-                    {me.name[0]}
+                    <PersonPic p={me} />
                   </button>
                   <span className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-white/15 px-3.5 text-white lg:mr-auto lg:flex-none">
                     <Store
@@ -899,8 +900,8 @@ function Console({ menu }: { menu: Menu }) {
             onClick={() => setRoles(true)}
             className="press flex w-full items-center gap-3 rounded-full p-1.5 text-left"
           >
-            <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold">
-              {me.name[0]}
+            <span className="blue-grad relative grid size-10 shrink-0 place-items-center rounded-full text-[16px] font-bold">
+              <PersonPic p={me} />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[15px] font-bold">
@@ -1119,7 +1120,7 @@ function Avatar({
       className={`relative grid shrink-0 place-items-center rounded-full font-bold ${p.onShift ? "blue-grad" : "bg-g-card text-g-ink-2"} ${ring ? "ring-2 ring-[var(--g-bg)]" : ""}`}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
     >
-      {p.name.slice(0, 1)}
+      <PersonPic p={p} />
       {dot && p.onShift && (
         <span className="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full border-2 border-[var(--g-bg)] bg-[#22c55e]" />
       )}

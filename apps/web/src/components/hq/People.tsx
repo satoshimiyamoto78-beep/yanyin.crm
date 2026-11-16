@@ -17,6 +17,7 @@ import {
   type Station,
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
+import { PersonPic } from "@/components/system/PersonPic";
 import { Sheet } from "@/components/guest/ui";
 import { Switch } from "@/components/system/Kit";
 import { useTr } from "@/components/crew/prefs";
@@ -116,7 +117,7 @@ export function Face({
         ...style,
       }}
     >
-      {p.name.slice(0, 1)}
+      <PersonPic p={p} />
       {dot && on && (
         <span className="absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-[var(--g-bg)] bg-[#22c55e]" />
       )}
