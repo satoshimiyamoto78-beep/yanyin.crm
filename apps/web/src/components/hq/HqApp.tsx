@@ -77,13 +77,12 @@ import {
   TasksAdmin,
 } from "./PeopleAdmin";
 import { SettingsAdmin } from "./SettingsAdmin";
+import { PersonPage } from "./Player";
 import {
-  GROUP_NAMES,
-  groupOf,
   OnShiftGrid,
   PersonEdit,
-  PersonPage,
-  PersonRow,
+  TeamGroupPage,
+  TeamGroups,
   ROLE_NAMES,
   type Group,
 } from "./People";
@@ -161,7 +160,7 @@ function Console({ menu }: { menu: Menu }) {
   const [person, setPerson] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [offIds, setOffIds] = useState<string[]>([]);
-  const [teamView, setTeamView] = useState<"all" | "on" | "off">("all");
+  const [teamGroup, setTeamGroup] = useState<Group | null>(null);
   const [draft, setDraft] = useState("");
   const [runs, setRuns] = useState<Record<string, ChecklistRun>>({
     waiter: {
@@ -204,6 +203,7 @@ function Console({ menu }: { menu: Menu }) {
     setInviting(false);
     setPerson(null);
     setEditing(null);
+    setTeamGroup(null);
     setSheet(null);
     setOpenList(null);
     setYan(false);
@@ -384,7 +384,13 @@ function Console({ menu }: { menu: Menu }) {
   // Every section once; the computer shows it beside the sidebar, the phone opens it as a page from "More".
   const views: Record<
     Section,
-    { title: string; sub: string; art: ArtName; body: React.ReactNode }
+    {
+      title: string;
+      sub: string;
+      art: ArtName;
+      body: React.ReactNode;
+      action?: React.ReactNode;
+    }
   > = {
     menu: {
       title: tr("Menu"),
@@ -396,70 +402,21 @@ function Console({ menu }: { menu: Menu }) {
       title: tr("Team"),
       sub: tr("{a} on shift of {b}", { a: onShift.length, b: team.length }),
       art: "guests",
+      action: (
+        <button
+          type="button"
+          onClick={() => (haptic("light"), setInviting(true))}
+          className="press flex h-9 items-center gap-1.5 rounded-full px-1 text-[14.5px] font-semibold text-g-blue"
+        >
+          <UserPlus size={17} strokeWidth={2.2} /> {tr("Invite")}
+        </button>
+      ),
       body: (
-        <>
-          <button
-            type="button"
-            onClick={() => (haptic("light"), setInviting(true))}
-            className="blue-grad press mb-5 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold sm:w-auto sm:px-6"
-          >
-            <UserPlus size={18} strokeWidth={2.2} /> {tr("Invite to the team")}
-          </button>
-
-          {/* Who is here, who is not, and who has no access: one filter, then the groups. */}
-          <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
-            {(
-              [
-                ["all", tr("Everyone"), team.length],
-                ["on", tr("On shift"), onShift.length],
-                ["off", tr("Not on shift"), team.length - onShift.length],
-              ] as const
-            ).map(([id, label, n]) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={teamView === id}
-                onClick={() => (haptic("tick"), setTeamView(id))}
-                className={`press flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold transition-colors ${teamView === id ? "bg-g-ink text-white" : "bg-g-fill text-g-ink-2"}`}
-              >
-                {label}
-                <span
-                  className={`tabular-nums ${teamView === id ? "text-white/60" : "text-g-faint"}`}
-                >
-                  {n}
-                </span>
-              </button>
-            ))}
-          </div>
-          {(["lead", "hall", "bar", "kitchen"] as Group[]).map((g) => {
-            const people = team.filter(
-              (p) =>
-                groupOf(p) === g &&
-                (teamView === "all" ||
-                  (teamView === "on" ? p.onShift : !p.onShift)),
-            );
-            if (!people.length) return null;
-            return (
-              <section key={g}>
-                <SectionTitle
-                  title={tr(GROUP_NAMES[g])}
-                  count={people.length}
-                  className="mt-7 mb-2"
-                />
-                <div className="card rounded-[24px] p-1">
-                  {people.map((p) => (
-                    <PersonRow
-                      key={p.id}
-                      p={p}
-                      disabled={offIds.includes(p.id)}
-                      onOpen={() => (haptic("light"), setPerson(p.id))}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </>
+        <TeamGroups
+          team={team}
+          offIds={offIds}
+          onGroup={(g) => (haptic("light"), setTeamGroup(g))}
+        />
       ),
     },
     floor: {
@@ -619,7 +576,11 @@ function Console({ menu }: { menu: Menu }) {
           : "px-5 pt-1 pb-10"
       }
     >
-      <PageHead title={views[id].title} sub={views[id].sub} />
+      <PageHead
+        title={views[id].title}
+        sub={views[id].sub}
+        action={views[id].action}
+      />
       <div className="mt-6">{views[id].body}</div>
     </div>
   );
@@ -1024,6 +985,15 @@ function Console({ menu }: { menu: Menu }) {
           onClose={() => setSheet(null)}
         />
       )}
+      {teamGroup && (
+        <TeamGroupPage
+          group={teamGroup}
+          team={team}
+          offIds={offIds}
+          onClose={() => setTeamGroup(null)}
+          onOpen={(id) => (haptic("light"), setPerson(id))}
+        />
+      )}
       {person && team.some((x) => x.id === person) && (
         <PersonPage
           p={team.find((x) => x.id === person)!}
@@ -1093,13 +1063,24 @@ function Console({ menu }: { menu: Menu }) {
 }
 
 /** The waiter's page title: big, bold, a muted line under it. */
-function PageHead({ title, sub }: { title: string; sub?: string }) {
+function PageHead({
+  title,
+  sub,
+  action,
+}: {
+  title: string;
+  sub?: string;
+  action?: React.ReactNode;
+}) {
   return (
-    <header>
-      <h1 className="text-[30px] leading-tight font-bold tracking-[-0.025em]">
-        {title}
-      </h1>
-      {sub && <p className="mt-0.5 text-[14px] text-g-muted">{sub}</p>}
+    <header className="flex items-start justify-between gap-3">
+      <span className="min-w-0">
+        <h1 className="text-[30px] leading-tight font-bold tracking-[-0.025em]">
+          {title}
+        </h1>
+        {sub && <p className="mt-0.5 text-[14px] text-g-muted">{sub}</p>}
+      </span>
+      {action && <span className="shrink-0 pt-1.5">{action}</span>}
     </header>
   );
 }

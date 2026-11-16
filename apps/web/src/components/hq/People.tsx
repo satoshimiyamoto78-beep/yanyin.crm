@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Send, Star, Trash2 } from "lucide-react";
+import { Check, ChevronRight, Trash2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -18,6 +18,7 @@ import {
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import { PersonPic } from "@/components/system/PersonPic";
+import { ArtScene, type ArtName } from "@/components/system/Art";
 import { Sheet } from "@/components/guest/ui";
 import { Switch } from "@/components/system/Kit";
 import { useTr } from "@/components/crew/prefs";
@@ -464,56 +465,8 @@ export function OnShiftGrid({
 
 /* ------------------------------------------------------------ Person page */
 
-/** The face inside a thin ring that fills with XP towards the next level. */
-function LevelRing({
-  p,
-  st,
-  off,
-}: {
-  p: Person;
-  st: StaffStats;
-  off: boolean;
-}) {
-  const R = 44;
-  const C = 2 * Math.PI * R;
-  return (
-    <span className="relative grid size-[100px] place-items-center">
-      <svg
-        viewBox="0 0 100 100"
-        className="absolute inset-0 -rotate-90"
-        aria-hidden
-      >
-        <circle
-          cx="50"
-          cy="50"
-          r={R}
-          fill="none"
-          stroke="var(--g-line)"
-          strokeWidth="3.5"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r={R}
-          fill="none"
-          stroke="var(--g-blue)"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeDasharray={C}
-          strokeDashoffset={C * (1 - st.xp / st.next)}
-          className="transition-[stroke-dashoffset] duration-1000 ease-out"
-        />
-      </svg>
-      <Face p={p} size={78} off={off} dot={false} />
-      <span className="blue-grad absolute -bottom-1 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ring-2 ring-[var(--g-bg)]">
-        {st.level}
-      </span>
-    </span>
-  );
-}
-
 /** Small grey caption over a group, like iOS settings. */
-function Caption({
+export function Caption({
   children,
   aside,
 }: {
@@ -525,204 +478,6 @@ function Caption({
       {children}
       {aside}
     </p>
-  );
-}
-
-/** Numbers in one card, split by hairlines, the figure over its label. */
-function Figures({
-  items,
-  cols,
-}: {
-  items: { label: string; value: React.ReactNode }[];
-  cols: 2 | 4;
-}) {
-  return (
-    <div
-      className={`grid gap-px overflow-hidden rounded-[22px] bg-g-line ${cols === 4 ? "grid-cols-4" : "grid-cols-2"}`}
-    >
-      {items.map((x) => (
-        <div
-          key={x.label}
-          className={`min-w-0 bg-g-fill ${cols === 4 ? "px-2 py-3 text-center" : "px-4 py-3.5"}`}
-        >
-          <p
-            className={`flex items-center gap-1 leading-tight font-bold tracking-[-0.02em] tabular-nums ${cols === 4 ? "justify-center text-[17px]" : "text-[21px]"}`}
-          >
-            {x.value}
-          </p>
-          <p
-            className={`mt-0.5 truncate text-g-muted ${cols === 4 ? "text-[11px]" : "text-[12.5px]"}`}
-          >
-            {x.label}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Everything about one person: level, today, the week, quests, badges; write, edit. */
-export function PersonPage({
-  p,
-  disabled,
-  onClose,
-  onEdit,
-  onWrite,
-  self,
-}: {
-  p: Person;
-  disabled: boolean;
-  onClose: () => void;
-  onEdit: () => void;
-  onWrite: () => void;
-  self: boolean;
-}) {
-  const tr = useTr();
-  const st = staffStats(p);
-  const roles = [
-    ...p.roles.map((r) => tr(ROLE_NAMES[r])),
-    ...p.stations.map((s) => tr(STATION_NAMES[s])),
-  ].join(" · ");
-  return (
-    <Sheet
-      open
-      wide
-      onClose={onClose}
-      label={p.name}
-      title={false}
-      footer={
-        <div className="mx-auto flex max-w-[520px] gap-2">
-          {!self && (
-            <button
-              type="button"
-              onClick={onWrite}
-              className="blue-grad press flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[15px] font-semibold"
-            >
-              <Send size={16} strokeWidth={2.2} /> {tr("Write")}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onEdit}
-            className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold"
-          >
-            {tr("Edit")}
-          </button>
-        </div>
-      }
-    >
-      <div className="mx-auto max-w-[520px] px-5 pt-1 pb-10">
-        {/* Who: the face in its level ring, the name, the @ID and the work, where they are now. */}
-        <div className="flex flex-col items-center text-center">
-          <LevelRing p={p} st={st} off={disabled} />
-          <h2 className="mt-3 text-[24px] leading-tight font-bold tracking-[-0.02em]">
-            {p.name}
-          </h2>
-          <p className="mt-0.5 text-[13.5px] text-g-muted">
-            <span className="font-semibold text-g-blue">@{p.handle}</span> ·{" "}
-            {roles}
-          </p>
-          <p className="mt-2 flex items-center gap-1.5 text-[13px] text-g-ink-2">
-            <span
-              className={`size-1.5 rounded-full ${disabled ? "bg-[#e5484d]" : p.onShift ? "bg-[#22c55e]" : "bg-g-faint"}`}
-            />
-            {disabled
-              ? tr("Access is off")
-              : st.since
-                ? tr("On shift since {t}", { t: st.since })
-                : tr("Off today")}
-            <span className="text-g-faint">·</span>
-            <span className="text-g-muted">
-              {tr("{n} XP to level {l}", {
-                n: (st.next - st.xp).toLocaleString("ru-RU"),
-                l: st.level + 1,
-              })}
-            </span>
-          </p>
-        </div>
-
-        <Caption>{tr("Today")}</Caption>
-        <Figures
-          cols={2}
-          items={st.today.map((x) => ({ label: tr(x.label), value: x.value }))}
-        />
-
-        <Caption>{tr("This week")}</Caption>
-        <Figures
-          cols={4}
-          items={[
-            { label: tr("Hours"), value: st.hoursWeek },
-            { label: tr("Shifts"), value: st.shiftsWeek },
-            {
-              label: tr("Late"),
-              value: (
-                <span className={st.late ? "text-g-orange" : ""}>
-                  {st.late}
-                </span>
-              ),
-            },
-            {
-              label: tr("Rating"),
-              value: (
-                <>
-                  {st.rating.toFixed(1)}
-                  <Star
-                    size={12}
-                    className="fill-current text-[#f5a524]"
-                    strokeWidth={0}
-                  />
-                </>
-              ),
-            },
-          ]}
-        />
-
-        <Caption
-          aside={
-            <span className="normal-case tracking-normal">
-              {tr("Checklist")} {st.checklist[0]}/{st.checklist[1]}
-            </span>
-          }
-        >
-          {tr("Quests")}
-        </Caption>
-        <div className="divide-y divide-g-line rounded-[22px] bg-g-fill px-4">
-          {st.quests.map((q) => (
-            <div key={q.title} className="py-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="min-w-0 truncate text-[14.5px] font-semibold">
-                  {tr(q.title)}
-                </p>
-                <p className="shrink-0 text-[12.5px] text-g-muted tabular-nums">
-                  {q.progress}/{q.goal} ·{" "}
-                  <span className="font-semibold text-g-blue">
-                    {tr(q.reward)}
-                  </span>
-                </p>
-              </div>
-              <div className="mt-2 h-1 overflow-hidden rounded-full bg-g-card">
-                <div
-                  className="h-full rounded-full bg-g-blue transition-[width] duration-700"
-                  style={{ width: `${(q.progress / q.goal) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <Caption>{tr("Badges")}</Caption>
-        <div className="flex flex-wrap gap-1.5">
-          {st.badges.map((b) => (
-            <span
-              key={b}
-              className="rounded-full bg-g-fill px-3 py-1.5 text-[13px] font-medium"
-            >
-              {tr(b)}
-            </span>
-          ))}
-        </div>
-      </div>
-    </Sheet>
   );
 }
 
@@ -953,5 +708,161 @@ export function PersonRow({
       </span>
       <ChevronRight size={17} className="shrink-0 text-g-faint" />
     </button>
+  );
+}
+
+/* ------------------------------------------------------------ Team groups */
+
+const GROUP_ART: Record<Group, ArtName> = {
+  lead: "trophy",
+  hall: "tables",
+  bar: "drink",
+  kitchen: "kitchen",
+};
+export const GROUPS: Group[] = ["lead", "hall", "bar", "kitchen"];
+
+/** The team page: one scene card per department (management, hall, bar, kitchen); a tap opens its people. */
+export function TeamGroups({
+  team,
+  offIds,
+  onGroup,
+}: {
+  team: Person[];
+  offIds: string[];
+  onGroup: (g: Group) => void;
+}) {
+  const tr = useTr();
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {GROUPS.map((g) => {
+        const people = team.filter((p) => groupOf(p) === g);
+        const on = people.filter(
+          (p) => p.onShift && !offIds.includes(p.id),
+        ).length;
+        return (
+          <button
+            key={g}
+            type="button"
+            onClick={() => onGroup(g)}
+            className="press block text-left"
+          >
+            <ArtScene
+              name={GROUP_ART[g]}
+              focal={40}
+              className="h-[164px] rounded-[24px] p-4"
+            >
+              <span className="mt-auto block">
+                <span className="block text-[18px] leading-tight font-bold tracking-[-0.01em]">
+                  {tr(GROUP_NAMES[g])}
+                </span>
+                <span className="mt-0.5 block text-[12.5px] text-g-muted tabular-nums">
+                  {tr("{a} on shift of {b}", { a: on, b: people.length })}
+                </span>
+                <span className="mt-2.5 flex -space-x-1.5">
+                  {people.slice(0, 5).map((p) => (
+                    <span
+                      key={p.id}
+                      className={`relative grid size-7 place-items-center rounded-full text-[11px] font-bold ring-2 ring-[var(--g-bg)] ${p.onShift ? "blue-grad" : "bg-g-card text-g-muted"} ${p.onShift ? "" : "opacity-60"}`}
+                    >
+                      <PersonPic p={p} />
+                    </span>
+                  ))}
+                </span>
+              </span>
+            </ArtScene>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** One department: who is in it, filtered by on shift or not; a tap opens the person. */
+export function TeamGroupPage({
+  group,
+  team,
+  offIds,
+  onClose,
+  onOpen,
+}: {
+  group: Group;
+  team: Person[];
+  offIds: string[];
+  onClose: () => void;
+  onOpen: (id: string) => void;
+}) {
+  const tr = useTr();
+  const [view, setView] = useState<"all" | "on" | "off">("all");
+  const people = team.filter((p) => groupOf(p) === group);
+  const shown = people.filter(
+    (p) => view === "all" || (view === "on" ? p.onShift : !p.onShift),
+  );
+  return (
+    <Sheet
+      open
+      wide
+      onClose={onClose}
+      label={tr(GROUP_NAMES[group])}
+      title={false}
+    >
+      <div className="mx-auto max-w-[620px] px-5 pt-1 pb-10">
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.025em]">
+          {tr(GROUP_NAMES[group])}
+        </h2>
+        <p className="mt-0.5 text-[14px] text-g-muted">
+          {tr("{a} on shift of {b}", {
+            a: people.filter((p) => p.onShift).length,
+            b: people.length,
+          })}
+        </p>
+        <div className="mt-5 flex gap-1.5">
+          {(
+            [
+              ["all", tr("Everyone"), people.length],
+              ["on", tr("On shift"), people.filter((p) => p.onShift).length],
+              [
+                "off",
+                tr("Not on shift"),
+                people.filter((p) => !p.onShift).length,
+              ],
+            ] as const
+          ).map(([id, label, n]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={view === id}
+              onClick={() => (haptic("tick"), setView(id))}
+              className={`press flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors ${view === id ? "bg-g-ink text-white" : "bg-g-fill text-g-ink-2"}`}
+            >
+              {label}
+              <span
+                className={`tabular-nums ${view === id ? "text-white/60" : "text-g-faint"}`}
+              >
+                {n}
+              </span>
+            </button>
+          ))}
+        </div>
+        {shown.length ? (
+          <div
+            key={view}
+            className="animate-rise mt-4 rounded-[24px] bg-g-fill p-1"
+          >
+            {shown.map((p) => (
+              <PersonRow
+                key={p.id}
+                p={p}
+                disabled={offIds.includes(p.id)}
+                onOpen={() => onOpen(p.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-full bg-g-fill px-5 py-3.5 text-[14px] text-g-muted">
+            {tr("Nobody here right now")}
+          </p>
+        )}
+      </div>
+    </Sheet>
   );
 }
