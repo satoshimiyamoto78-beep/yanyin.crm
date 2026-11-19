@@ -947,7 +947,7 @@ function QuestEditor({
                   type="button"
                   aria-pressed={ends === e}
                   onClick={() => (haptic("tick"), setEnds(e))}
-                  className={`press h-10 rounded-full px-4 text-[13.5px] font-semibold ${ends === e ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-white [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill"}`}
+                  className={`press h-10 rounded-full px-4 text-[13.5px] font-semibold ${ends === e ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill"}`}
                 >
                   {tr(e)}
                 </button>

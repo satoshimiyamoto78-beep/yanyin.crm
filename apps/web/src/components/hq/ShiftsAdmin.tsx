@@ -934,7 +934,7 @@ function CloseFlow({
                           type="button"
                           aria-pressed={why === r}
                           onClick={() => (haptic("tick"), setWhy(r))}
-                          className={`press h-8 rounded-full px-3 text-[13px] font-semibold ${why === r ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-white [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-white/60 text-g-ink [[data-scheme=dark]_&]:bg-white/10 [[data-scheme=dark]_&]:text-white"}`}
+                          className={`press h-8 rounded-full px-3 text-[13px] font-semibold ${why === r ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-white/60 text-g-ink [[data-scheme=dark]_&]:bg-white/10 [[data-scheme=dark]_&]:text-white"}`}
                         >
                           {r}
                         </button>
@@ -1048,7 +1048,7 @@ function PlanView({
             type="button"
             onClick={() => (haptic("tick"), setDay(d.i))}
             aria-pressed={day === d.i}
-            className={`press relative flex h-16 flex-col items-center justify-center rounded-[18px] transition-colors ${day === d.i ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-white [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill"}`}
+            className={`press relative flex h-16 flex-col items-center justify-center rounded-[18px] transition-colors ${day === d.i ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill"}`}
           >
             <span
               className={`text-[11.5px] font-semibold capitalize ${day === d.i ? "opacity-70" : "text-g-muted"}`}
@@ -1303,7 +1303,7 @@ function PlanSheet({
             type="button"
             aria-pressed={off}
             onClick={() => (haptic("tick"), setOff(true))}
-            className={`press h-11 rounded-full px-4 text-[13.5px] font-semibold ${off ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-white [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill"}`}
+            className={`press h-11 rounded-full px-4 text-[13.5px] font-semibold ${off ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill"}`}
           >
             {tr("Day off")}
           </button>

@@ -358,7 +358,7 @@ export function ReportsAdmin({
             type="button"
             aria-pressed={report === id}
             onClick={() => (haptic("tick"), setReport(id))}
-            className={`press h-10 shrink-0 rounded-full px-4 text-[14px] font-semibold transition-colors ${report === id ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-white [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill text-g-ink-2"}`}
+            className={`press h-10 shrink-0 rounded-full px-4 text-[14px] font-semibold transition-colors ${report === id ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill text-g-ink-2"}`}
           >
             {tr(name)}
           </button>

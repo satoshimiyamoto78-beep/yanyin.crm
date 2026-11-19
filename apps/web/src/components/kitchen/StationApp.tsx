@@ -5,10 +5,7 @@ import {
   Ban,
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ClipboardCheck,
-  LogOut,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -52,6 +49,14 @@ import {
 } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { ArtScene, ArtTile } from "@/components/system/Art";
+import {
+  DishInfo,
+  Masonry,
+  Pass,
+  Picker,
+  Ticket,
+  ticketWeight,
+} from "./KdsParts";
 import { NorthSky } from "@/components/system/NorthSky";
 import { BrandQr, OfflineBar, PinPad } from "@/components/system/Kit";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
@@ -188,6 +193,7 @@ function Screen({ menu }: { menu: Menu }) {
   const [orders, setOrders] = useState<KdsOrder[]>(demo.orders);
   const [served, setServed] = useState<string[]>([]);
   const [fresh, setFresh] = useState<string | null>(null);
+  const [info2, setInfo2] = useState<string | null>(null);
   const [notice, setNotice] = useState<IslandNotice | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
@@ -360,10 +366,45 @@ function Screen({ menu }: { menu: Menu }) {
         }}
       />
     );
+  // Load per station for the picker: dishes waiting, the oldest ticket, what is at the pass.
+  const loadOf = (st: Station) => {
+    const qs = orders.filter(
+      (o) =>
+        !served.includes(o.id) &&
+        o.lines.some((l) => l.station === st && l.state !== "ready"),
+    );
+    const oldest = qs.map((o) => o.at).sort()[0];
+    return {
+      queue: qs.reduce(
+        (n, o) =>
+          n +
+          o.lines
+            .filter((l) => l.station === st && l.state !== "ready")
+            .reduce((q, l) => q + l.qty, 0),
+        0,
+      ),
+      oldest: oldest
+        ? Math.max(
+            0,
+            minute -
+              (Number(oldest.slice(0, 2)) * 60 + Number(oldest.slice(3))),
+          )
+        : 0,
+      ready: orders.filter(
+        (o) =>
+          !served.includes(o.id) &&
+          o.lines.some((l) => l.station === st) &&
+          o.lines
+            .filter((l) => l.station === st)
+            .every((l) => l.state === "ready"),
+      ).length,
+    };
+  };
   if (!station || picking)
     return (
-      <StationPicker
+      <Picker
         current={station}
+        load={loadOf}
         onClose={station ? () => history.back() : undefined}
         onUnpair={() => {
           write("yanyin:kds-paired", false);
@@ -383,11 +424,42 @@ function Screen({ menu }: { menu: Menu }) {
       />
     );
 
-  const counters: { label: string; n: number; dot: string }[] = [
-    { label: tr("New"), n: count("new"), dot: "bg-[#8fb2ff]" },
-    { label: tr("Making"), n: count("making"), dot: "bg-g-orange" },
-    { label: tr("Ready"), n: ready.length, dot: "bg-[#5ce0a0]" },
+  const oldest = queue.map((o) => o.at).sort()[0];
+  const oldestMin = oldest
+    ? Math.max(0, minute - Math.floor(secOf(oldest) / 60))
+    : 0;
+  const stats: { label: string; value: string; tone?: string }[] = [
+    { label: tr("New"), value: String(count("new")) },
+    {
+      label: tr("Making"),
+      value: String(count("making")),
+      tone: count("making") ? "text-[#ffd2a8]" : "",
+    },
+    {
+      label: tr("At the pass"),
+      value: String(ready.length),
+      tone: ready.length ? "text-[#8ff0bf]" : "",
+    },
+    {
+      label: tr("Longest"),
+      value: oldestMin ? tr("{n} min", { n: oldestMin }) : "—",
+      tone:
+        oldestMin >= 15
+          ? "text-[#ffb3b5]"
+          : oldestMin >= 8
+            ? "text-[#ffd2a8]"
+            : "",
+    },
+    {
+      label: tr("Checklist"),
+      value: `${progress.done}/${progress.total}`,
+      tone: progress.late.length ? "text-[#ffd2a8]" : "",
+    },
   ];
+  const itemOf = (id: string) => allItems(menu).find((i) => i.id === id);
+  const infoLine = info2
+    ? orders.flatMap((o) => o.lines).find((l) => l.id === info2)
+    : undefined;
 
   return (
     <div className="min-h-dvh bg-white text-g-ink">
@@ -397,32 +469,40 @@ function Screen({ menu }: { menu: Menu }) {
         )}
       />
       <Island notice={notice} />
-      {/* The same sky as the waiter's home: station, live counts, people on it, the clock and the tools. */}
-      <section className="relative isolate pt-[max(16px,env(safe-area-inset-top))] pb-6 text-white">
+      {/* Header in two calm rows: who and where with the clock and tools; then five figures in glass tiles. */}
+      <section className="relative isolate pt-[max(12px,env(safe-area-inset-top))] pb-5 text-white">
         <NorthSky />
-        {/* One quiet row: the station by name (tap to change) with who is on it, the tools on the right. */}
-        <div className="flex items-start gap-3 px-4 sm:px-6">
+        <div className="flex items-center gap-2 px-4 sm:px-6">
           <button
-            onClick={() => setPicking(true)}
-            className="press min-w-0 text-left"
+            type="button"
+            onClick={() => (haptic("light"), setPicking(true))}
+            className="press flex h-11 min-w-0 items-center gap-2 rounded-full bg-white/15 pr-3 pl-1.5"
           >
-            <span className="flex items-center gap-1">
-              <span className="truncate text-[22px] leading-tight font-bold tracking-[-0.02em]">
-                {tr(info?.label ?? "")}
-              </span>
-              <ChevronDown
-                size={20}
-                strokeWidth={2.4}
-                className="shrink-0 text-white/60"
-              />
+            <ArtTile name={info?.art ?? "kitchen"} size={32} bare />
+            <span className="truncate text-[17px] font-bold">
+              {tr(info?.label ?? "")}
             </span>
-            <span className="mt-0.5 block truncate text-[13px] text-white/65">
-              {onShift.length
-                ? onShift.map((p) => `@${p.handle}`).join(" · ")
-                : tr("Nobody on shift")}
-            </span>
+            <ChevronDown
+              size={17}
+              strokeWidth={2.4}
+              className="shrink-0 text-white/60"
+            />
           </button>
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <span className="hidden -space-x-2 sm:flex">
+            {onShift.map((p) => (
+              <span
+                key={p.id}
+                title={`@${p.handle}`}
+                className="relative grid size-8 place-items-center overflow-hidden rounded-full bg-white/20 text-[12px] font-bold ring-2 ring-white/20"
+              >
+                <PersonPic p={p} />
+              </span>
+            ))}
+          </span>
+          <span className="ml-auto hidden text-[22px] font-bold tracking-[-0.02em] tabular-nums sm:block">
+            {hhmm(now)}
+          </span>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-2">
             <ToolButton
               label={tr("Stop-list")}
               onClick={() => setSheet("stop")}
@@ -463,82 +543,67 @@ function Screen({ menu }: { menu: Menu }) {
             />
           </div>
         </div>
-
-        {/* Like the waiter's home: a status line, one big number, then plain facts. No tiles. */}
-        <div className="mt-8 px-4 sm:px-6">
-          <p className="flex items-center gap-1.5 text-[14px] text-white/70">
-            <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
-            <span className="font-semibold text-white">
-              {tr("Shift is on")}
-            </span>
-            <span className="text-white/45">·</span>
-            <span className="tabular-nums">{hhmm(now)}</span>
-            <span className="text-white/45">·</span>
-            <span
-              className={
-                progress.late.length ? "font-semibold text-[#ffd2a8]" : ""
-              }
+        <div className="mt-4 grid grid-cols-5 gap-1.5 px-4 sm:gap-2 sm:px-6">
+          {stats.map((st, i) => (
+            <button
+              key={st.label}
+              type="button"
+              onClick={i === 4 ? () => setSheet("checklist") : undefined}
+              className="min-w-0 rounded-[16px] bg-white/12 px-2.5 py-2 text-left backdrop-blur-[2px] sm:px-3.5"
             >
-              {progress.late.length
-                ? tr("{n} late|{n} late", { n: progress.late.length })
-                : tr("Checklist {a}/{b}", {
-                    a: progress.done,
-                    b: progress.total,
-                  })}
-            </span>
-          </p>
-          <p className="mt-2 flex items-baseline gap-2">
-            <span className="live text-[40px] leading-none font-bold tracking-[-0.03em] tabular-nums">
-              {count("new") + count("making")}
-            </span>
-            <span className="text-[17px] font-semibold text-white/75">
-              {tr("dish in work|dishes in work", {
-                n: count("new") + count("making"),
-              })}
-            </span>
-          </p>
-          <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[14px] text-white/70">
-            {counters.map((c) => (
-              <span key={c.label} className="flex items-baseline gap-1.5">
-                <span className="live text-[17px] font-semibold text-white tabular-nums">
-                  {c.n}
-                </span>
-                {c.label.toLowerCase()}
+              <span className="block truncate text-[11px] font-semibold text-white/65 sm:text-[12px]">
+                {st.label}
               </span>
-            ))}
-          </p>
+              <span
+                className={`live block truncate text-[19px] leading-tight font-bold tabular-nums sm:text-[24px] ${st.tone ?? ""}`}
+              >
+                {st.value}
+              </span>
+            </button>
+          ))}
         </div>
       </section>
 
       {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
-      <div className="relative z-10 flex flex-col gap-4 px-4 pb-10 sm:px-6 lg:flex-row lg:items-start">
-        {/* The queue, oldest first. */}
-        <Reveal
-          key={station}
-          as="main"
-          className="grid min-w-0 flex-1 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] items-start gap-4"
-        >
-          {queue.map((o) => (
-            <OrderCard
-              key={o.id}
-              order={o}
-              station={station}
-              minute={minute}
-              fresh={fresh === o.id}
-              leaving={leaving.includes(o.id)}
-              stop={stop}
-              onLine={(l) => tapLine(o, l)}
-              onAll={() => allReady(o)}
+      <div className="relative z-10 flex flex-col gap-3 px-3 pb-10 sm:px-5 lg:flex-row lg:items-start">
+        {/* The queue, oldest first, packed into columns with no holes. */}
+        <Reveal key={station} as="main" className="min-w-0 flex-1">
+          {queue.length ? (
+            <Masonry
+              items={queue}
+              keyOf={(o) => o.id}
+              weight={(o) => ticketWeight(o, station)}
+              min={290}
+              render={(o) => (
+                <Ticket
+                  order={o}
+                  station={station}
+                  minute={minute}
+                  elapsed={
+                    <Elapsed
+                      since={o.at}
+                      tone={ageTone(
+                        Math.max(0, minute - Math.floor(secOf(o.at) / 60)),
+                      )}
+                    />
+                  }
+                  fresh={fresh === o.id}
+                  leaving={leaving.includes(o.id)}
+                  stop={stop}
+                  onLine={(l) => tapLine(o, l)}
+                  onAll={() => allReady(o)}
+                  onInfo={(l) => setInfo2(l.id)}
+                />
+              )}
             />
-          ))}
-          {!queue.length && (
+          ) : (
             <ArtScene
               name={info?.art ?? "kitchen"}
               layout="row"
               focal={64}
-              className="col-span-full rounded-[28px] p-6"
+              className="rounded-[26px] p-6"
             >
-              <p className="text-[26px] leading-tight font-bold tracking-[-0.02em]">
+              <p className="text-[24px] leading-tight font-bold tracking-[-0.02em]">
                 {tr("All caught up")}
               </p>
               <p className="mt-1 text-[15px] text-g-muted">
@@ -548,61 +613,32 @@ function Screen({ menu }: { menu: Menu }) {
           )}
         </Reveal>
 
-        {/* Ready to serve: the waiter or runner takes it. */}
-        <aside className="order-first w-full shrink-0 lg:sticky lg:top-4 lg:order-none lg:w-[320px]">
-          <div className="rounded-[28px] bg-g-fill p-4">
-            <div className="flex items-center gap-3 px-1">
-              <ArtTile name="bell" size={30} bare />
-              <p className="min-w-0 flex-1 truncate text-[17px] font-semibold">
-                {tr("Ready to serve")}
-              </p>
-              <span
-                className={`live text-[17px] font-semibold tabular-nums ${ready.length ? "text-g-green" : "text-g-muted"}`}
-              >
-                {ready.length}
-              </span>
-            </div>
-            {ready.length > 0 ? (
-              <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2">
-                {ready.map((o) => (
-                  <div
-                    key={o.id}
-                    className="animate-pop flex min-h-[52px] min-w-0 items-center gap-3 rounded-full bg-g-card py-1.5 pr-1.5 pl-4"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-semibold">
-                        {tr("Table {n}", { n: o.table })}
-                      </span>
-                      <span className="block truncate text-[12.5px] text-g-muted">
-                        @{o.waiter} ·{" "}
-                        {tr("{n} item|{n} items", {
-                          n: o.lines
-                            .filter(mine)
-                            .reduce((n, l) => n + l.qty, 0),
-                        })}
-                      </span>
-                    </span>
-                    <button
-                      onClick={() => {
-                        haptic("success");
-                        setServed((s) => [...s, o.id]);
-                      }}
-                      className="press h-9 shrink-0 rounded-full bg-g-ink px-4 text-[13px] font-semibold text-white"
-                    >
-                      {tr("Served")}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-2 px-1 text-[14px] text-g-muted">
-                {tr("Nothing waiting at the pass")}
-              </p>
-            )}
-          </div>
+        {/* The pass: the waiter or runner takes it. */}
+        <aside className="order-first w-full shrink-0 lg:sticky lg:top-3 lg:order-none lg:w-[290px]">
+          <Pass
+            ready={ready}
+            station={station}
+            onServed={(id) => setServed((s) => [...s, id])}
+          />
         </aside>
       </div>
 
+      {infoLine && (
+        <DishInfo
+          line={infoLine}
+          item={itemOf(infoLine.itemId)}
+          station={station}
+          out={stop.includes(infoLine.itemId)}
+          onStop={() =>
+            saveStopList(
+              stop.includes(infoLine.itemId)
+                ? stop.filter((x) => x !== infoLine.itemId)
+                : [...stop, infoLine.itemId],
+            )
+          }
+          onClose={() => setInfo2(null)}
+        />
+      )}
       {sheet === "stop" && (
         <Sheet
           open
@@ -719,161 +755,6 @@ function ToolButton({
   );
 }
 
-/** One table's order for this station: round rows like the waiter's lists, live age, one big blue action. */
-function OrderCard({
-  order: o,
-  station,
-  minute,
-  fresh,
-  leaving,
-  stop,
-  onLine,
-  onAll,
-}: {
-  order: KdsOrder;
-  station: Station;
-  minute: number;
-  fresh: boolean;
-  leaving?: boolean;
-  stop: string[];
-  onLine: (l: KdsLine) => void;
-  onAll: () => void;
-}) {
-  const tr = useTr();
-  const lines = o.lines.filter((l) => l.station === station);
-  const other = o.lines.filter(
-    (l) => l.station !== station && l.state !== "ready",
-  );
-  const min = Math.max(0, minute - Math.floor(secOf(o.at) / 60));
-  const tone = ageTone(min);
-  const left = lines.filter((l) => l.state !== "ready").length;
-  const bar = { ok: "bg-g-blue", long: "bg-g-orange", late: "bg-[#e5484d]" }[
-    tone
-  ];
-  return (
-    <section
-      className={`flex min-w-0 flex-col rounded-[28px] bg-g-fill p-4 ${leaving ? "animate-leave" : fresh ? "animate-pop" : ""}`}
-    >
-      {/* The table big, its waiting time as plain figures on the same line; who and when under it. */}
-      <header className="px-1">
-        <span className="flex items-baseline justify-between gap-3">
-          <span className="truncate text-[26px] leading-none font-bold tracking-[-0.03em] tabular-nums">
-            {tr("Table {n}", { n: o.table })}
-          </span>
-          <Elapsed since={o.at} tone={tone} />
-        </span>
-        <span className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[13px] text-g-muted">
-          <span className="font-semibold text-g-ink-2">@{o.waiter}</span>
-          <span>·</span>
-          <span className="tabular-nums">{o.at}</span>
-          {o.guest && (
-            <>
-              <span>·</span>
-              <span className="font-medium text-g-blue">
-                {tr("from the QR menu")}
-              </span>
-            </>
-          )}
-        </span>
-      </header>
-      <div
-        className="mx-1 mt-3 h-[3px] overflow-hidden rounded-full bg-g-card"
-        aria-hidden
-      >
-        <div
-          className={`h-full rounded-full transition-[width] duration-700 ${bar}`}
-          style={{ width: `${Math.min(100, Math.max(6, (min / 15) * 100))}%` }}
-        />
-      </div>
-      <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2">
-        {lines.map((l) => {
-          const out = stop.includes(l.itemId);
-          const qtyInk = {
-            new: "text-g-blue",
-            making: "text-g-orange",
-            ready: "text-g-green",
-          }[l.state];
-          return (
-            <button
-              key={l.id}
-              onClick={() => onLine(l)}
-              disabled={l.state === "ready"}
-              className={`press flex min-h-[52px] min-w-0 items-center gap-2.5 rounded-full bg-g-card py-1.5 pr-1.5 pl-4 text-left ${l.state === "ready" ? "opacity-55" : ""}`}
-            >
-              <span
-                className={`w-7 shrink-0 text-[16px] font-bold tabular-nums ${qtyInk}`}
-              >
-                {l.qty}×
-              </span>
-              <span className="min-w-0 flex-1">
-                <DishName
-                  name={l.name}
-                  className={`line-clamp-2 text-[16px] leading-[1.25] font-semibold break-words ${l.state === "ready" ? "text-g-muted line-through decoration-1" : ""}`}
-                />
-                {l.note && (
-                  <span className="block truncate text-[13px] font-medium text-g-orange">
-                    {tr(l.note)}
-                  </span>
-                )}
-                {out && (
-                  <span className="block truncate text-[13px] font-semibold text-[#ef4444]">
-                    {tr("In the stop-list")}
-                  </span>
-                )}
-              </span>
-              <StatePill state={l.state} />
-            </button>
-          );
-        })}
-      </div>
-      {other.length > 0 && (
-        <p className="mt-2.5 px-2 text-[13px] text-g-muted">
-          {tr("Also on this order")}:{" "}
-          {[...new Set(other.map((l) => l.station))]
-            .map(
-              (s) =>
-                `${tr(VENUE_STATIONS.find((v) => v.id === s)?.label ?? "")} ${other.filter((l) => l.station === s).reduce((n, l) => n + l.qty, 0)}`,
-            )
-            .join(" · ")}
-        </p>
-      )}
-      {left > 1 && (
-        <button
-          onClick={() => {
-            haptic("success");
-            onAll();
-          }}
-          className="press mt-3 flex h-11 items-center justify-center gap-2 rounded-full bg-g-ink text-[14px] font-semibold text-white"
-        >
-          <Check size={16} strokeWidth={2.6} /> {tr("All ready")} · {left}
-        </button>
-      )}
-    </section>
-  );
-}
-
-/** The one action on a line, like the waiter's list buttons: start it, then mark it ready. */
-function StatePill({ state }: { state: KdsLine["state"] }) {
-  const tr = useTr();
-  if (state === "new")
-    return (
-      <span className="h-9 w-[78px] shrink-0 rounded-full bg-g-fill text-center text-[13px] leading-9 font-semibold text-g-ink">
-        {tr("Start")}
-      </span>
-    );
-  if (state === "making")
-    return (
-      <span className="blue-grad h-9 w-[78px] shrink-0 rounded-full text-center text-[13px] leading-9 font-semibold">
-        {tr("Ready")}
-      </span>
-    );
-  return (
-    <span className="chip-green flex h-9 w-[78px] shrink-0 items-center justify-center rounded-full">
-      <Check size={17} strokeWidth={2.8} aria-label={tr("Done")} />
-    </span>
-  );
-}
-
 /** Live minutes:seconds since the order came in, with colour and an icon by age. */
 function Elapsed({
   since,
@@ -896,119 +777,6 @@ function Elapsed({
       {tone === "late" && <AlertTriangle size={15} strokeWidth={2.4} />}
       {Math.floor(s / 60)}:{String(s % 60).padStart(2, "0")}
     </span>
-  );
-}
-
-/** First run on a tablet: which station is this screen. The sky on top, the stations as scene cards. */
-function StationPicker({
-  current,
-  onPick,
-  onClose,
-  onUnpair,
-}: {
-  current: Station | null;
-  onPick: (s: Station) => void;
-  onClose?: () => void;
-  onUnpair: () => void;
-}) {
-  const tr = useTr();
-  return (
-    <div className="min-h-dvh bg-white text-g-ink">
-      <section className="relative isolate px-5 pt-[max(28px,env(safe-area-inset-top))] pb-10 text-white sm:px-8">
-        <NorthSky />
-        <div className="mx-auto max-w-[960px]">
-          <div className="mb-6 flex items-center gap-2">
-            {onClose && (
-              <button
-                type="button"
-                aria-label={tr("Back")}
-                onClick={onClose}
-                className="press grid size-10 place-items-center rounded-full bg-white/15"
-              >
-                <ChevronLeft size={22} strokeWidth={2} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onUnpair}
-              className="press ml-auto flex h-10 items-center gap-1.5 rounded-full bg-white/15 px-3.5 text-[13px] font-semibold"
-            >
-              <LogOut size={15} strokeWidth={2.2} /> {tr("Unpair this tablet")}
-            </button>
-          </div>
-          <p className="flex items-center gap-1.5 text-[14px] text-white/70">
-            <span className="size-1.5 shrink-0 rounded-full bg-[#5ce0a0]" />
-            <span className="font-semibold text-white">Samarkand</span>
-            <span className="text-white/45">·</span>
-            {tr("Station screen")}
-          </p>
-          <h1 className="mt-3 text-[32px] leading-tight font-bold tracking-[-0.025em]">
-            {tr("Which station is this screen?")}
-          </h1>
-          <p className="mt-1 text-[15px] text-white/75">
-            {tr(
-              "The screen remembers it. Change it any time from the top bar.",
-            )}
-          </p>
-        </div>
-      </section>
-      <div className="relative z-10 px-5 pb-10 sm:px-8">
-        <div className="mx-auto grid max-w-[960px] gap-3 sm:grid-cols-3">
-          {VENUE_STATIONS.map((s) => {
-            const people = TEAM.filter(
-              (p) =>
-                p.onShift &&
-                (p.stations.includes(s.id) ||
-                  s.absorbs.some((a) => p.stations.includes(a))),
-            );
-            return (
-              <button
-                key={s.id}
-                onClick={() => onPick(s.id)}
-                className={`press relative block text-left ${current === s.id ? "rounded-[28px] ring-2 ring-g-blue" : ""}`}
-              >
-                <ArtScene
-                  name={s.art}
-                  layout="row"
-                  focal={64}
-                  className="h-full rounded-[28px] p-5"
-                  footer={
-                    <span className="mt-4 flex items-center gap-2">
-                      <span className="flex -space-x-2">
-                        {people.map((p) => (
-                          <span
-                            key={p.id}
-                            className="blue-grad relative grid size-8 place-items-center rounded-full text-[13px] font-bold ring-2 ring-[var(--g-bg)]"
-                          >
-                            <PersonPic p={p} />
-                          </span>
-                        ))}
-                      </span>
-                      <span className="min-w-0 truncate text-[13px] text-g-muted">
-                        {people.length
-                          ? people.map((p) => `@${p.handle}`).join(" · ")
-                          : tr("Nobody on shift")}
-                      </span>
-                    </span>
-                  }
-                >
-                  <p className="text-[24px] leading-tight font-bold tracking-[-0.02em]">
-                    {tr(s.label)}
-                  </p>
-                  <p className="mt-0.5 text-[14px] text-g-muted">
-                    {tr("{n} on shift", { n: people.length })}
-                  </p>
-                </ArtScene>
-                <ChevronRight
-                  size={18}
-                  className="absolute right-4 bottom-5 text-g-faint"
-                />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
   );
 }
 
