@@ -34,7 +34,10 @@ export type ArtName =
   | "checklist"
   | "drink"
   | "salad"
-  | "cards";
+  | "cards"
+  | "pin"
+  | "sign"
+  | "router";
 
 const TONES: Record<
   ArtTone,
@@ -107,6 +110,9 @@ const ART: Record<ArtName, ArtTone> = {
   drink: "coral",
   salad: "green",
   cards: "blue",
+  pin: "coral",
+  sign: "green",
+  router: "teal",
 };
 
 export function ArtTile({
@@ -472,6 +478,9 @@ const DECO: Record<ArtName, DecoKind> = {
   salad: "petals",
   seats: "dots",
   cards: "sparkle",
+  pin: "dots",
+  sign: "sparkle",
+  router: "waves",
 };
 
 /** A quiet ornament centred on the subject: rays, sparkles, petals, a dot halo, ripples or clock ticks. */
@@ -992,6 +1001,164 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
       <circle cx="62" cy="67" r="3.4" fill={url(g, "tone")} />
       <circle cx="47" cy="33" r="2.5" fill={url(g, "gold")} />
       <circle cx="73" cy="81" r="2.5" fill={url(g, "gold")} />
+    </g>
+  ),
+  // Where: a folded paper map in three-quarter view with a round pin standing on it.
+  pin: (g) => (
+    <g>
+      <path
+        d="M22 70l22-10 22 10 22-10 12 6v26l-22 10-22-10-22 10-12-6z"
+        fill="#c7d2ea"
+        transform="translate(0 4)"
+      />
+      <path
+        d="M22 70l22-10 22 10 22-10 12 6v26l-22 10-22-10-22 10-12-6z"
+        fill={url(g, "paper")}
+      />
+      <path
+        d="M44 60v26M66 70v26M88 60v26"
+        stroke="#c8d0e2"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M30 80c10-6 18 4 28-2s16-8 26-2"
+        fill="none"
+        stroke={url(g, "tone")}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeDasharray="4 5"
+        opacity="0.7"
+      />
+      <ellipse cx="62" cy="80" rx="8" ry="3" fill="#0b0b0f" opacity="0.15" />
+      <path
+        d="M62 80c-12-14-17-22-17-30a17 17 0 0 1 34 0c0 8-5 16-17 30z"
+        fill={url(g, "deep")}
+      />
+      <path
+        d="M62 80c-12-14-17-22-17-30a17 17 0 0 1 34 0c0 8-5 16-17 30z"
+        fill="#fff"
+        opacity="0.1"
+      />
+      <circle cx="62" cy="49" r="7" fill={url(g, "paper")} />
+      <path
+        d="M50 42a14 14 0 0 1 8-8"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="3"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+    </g>
+  ),
+  // When: an "open" door sign hanging on a cord, a small clock on it.
+  sign: (g) => (
+    <g>
+      <path
+        d="M44 44L60 26l16 18"
+        fill="none"
+        stroke={url(g, "deep")}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="60" cy="26" r="4" fill={url(g, "gold")} />
+      <rect
+        x="28"
+        y="46"
+        width="64"
+        height="40"
+        rx="12"
+        fill="#c7d2ea"
+        transform="translate(2 3)"
+      />
+      <rect
+        x="28"
+        y="46"
+        width="64"
+        height="40"
+        rx="12"
+        fill={url(g, "paper")}
+      />
+      <circle cx="47" cy="66" r="11" fill={url(g, "tone")} />
+      <circle cx="47" cy="66" r="8" fill="#fff" />
+      <path
+        d="M47 61v5l3.5 2.5"
+        fill="none"
+        stroke={url(g, "deep")}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="63"
+        y="58"
+        width="21"
+        height="5"
+        rx="2.5"
+        fill={url(g, "tone")}
+      />
+      <rect x="63" y="68" width="15" height="4" rx="2" fill="#c8d0e2" />
+      <circle cx="84" cy="54" r="3" fill="#3fbf6a" />
+    </g>
+  ),
+  // Wi-Fi: a small router with two antennas and waves rising from it.
+  router: (g) => (
+    <g>
+      {[26, 17].map((r, k) => (
+        <path
+          key={r}
+          d={`M${60 - r} ${46 - k * 2}a${r} ${r * 0.8} 0 0 1 ${r * 2} 0`}
+          fill="none"
+          stroke={k ? url(g, "tone") : url(g, "paper")}
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+      ))}
+      <circle cx="60" cy="47" r="4.5" fill={url(g, "deep")} />
+      <rect
+        x="36"
+        y="52"
+        width="4"
+        height="20"
+        rx="2"
+        fill={url(g, "deep")}
+        transform="rotate(-12 38 72)"
+      />
+      <rect
+        x="80"
+        y="52"
+        width="4"
+        height="20"
+        rx="2"
+        fill={url(g, "deep")}
+        transform="rotate(12 82 72)"
+      />
+      <path
+        d="M26 76a6 6 0 0 1 6-6h56a6 6 0 0 1 6 6v8H26z"
+        fill={url(g, "paper")}
+      />
+      <rect x="26" y="82" width="68" height="12" rx="6" fill={url(g, "deep")} />
+      <rect
+        x="26"
+        y="82"
+        width="68"
+        height="12"
+        rx="6"
+        fill="#fff"
+        opacity="0.1"
+      />
+      {[38, 46, 54].map((x) => (
+        <circle key={x} cx={x} cy="88" r="2" fill="#5ce0a0" />
+      ))}
+      <rect
+        x="66"
+        y="86.5"
+        width="20"
+        height="3"
+        rx="1.5"
+        fill="#fff"
+        opacity="0.5"
+      />
     </g>
   ),
   // A cooking pot on a flame, steam rising.

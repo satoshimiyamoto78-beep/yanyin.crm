@@ -2104,7 +2104,7 @@ export function AboutSheet({
             rel="noreferrer"
             className="flex items-center gap-3 py-3"
           >
-            <ArtTile name="floor" size={34} bare />
+            <ArtTile name="pin" size={34} bare />
             <span className="min-w-0 flex-1">
               <span className="block text-[12.5px] text-g-muted">
                 {ui(lang, "address")}
@@ -2116,7 +2116,7 @@ export function AboutSheet({
             <ChevronRight size={17} className="text-g-faint" />
           </a>
           <div className="flex items-center gap-3 py-3">
-            <ArtTile name="shifts" size={34} bare />
+            <ArtTile name="sign" size={34} bare />
             <span className="min-w-0 flex-1">
               <span className="block text-[12.5px] text-g-muted">
                 {ui(lang, "hours")}
@@ -2127,7 +2127,7 @@ export function AboutSheet({
             </span>
           </div>
           <div className="flex items-center gap-3 py-3">
-            <ArtTile name="wifi" size={34} bare />
+            <ArtTile name="router" size={34} bare />
             <span className="min-w-0 flex-1">
               <span className="block text-[12.5px] text-g-muted">
                 {ui(lang, "aboutWifi")} · {a.wifi.name}
