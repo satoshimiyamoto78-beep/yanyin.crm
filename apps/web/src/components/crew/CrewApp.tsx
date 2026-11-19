@@ -76,7 +76,7 @@ type HallSeg = "tables" | "orders" | "bookings";
 const PAST_TAKINGS = [3_900_000, 5_200_000, 4_300_000, 4_200_000];
 function lastDays(today: number, locale: string) {
   return [...PAST_TAKINGS, today].map((value, i) => {
-    const d = new Date();
+    const d = new Date(2026, 10, 14); // the demo's today (a fixed date keeps prerendering stable)
     d.setDate(d.getDate() - (4 - i));
     const wd = d.toLocaleDateString(locale, { weekday: "short" }).replace(".", "");
     return { short: `${wd.charAt(0).toUpperCase()}${wd.slice(1)}`, date: String(d.getDate()), value };
