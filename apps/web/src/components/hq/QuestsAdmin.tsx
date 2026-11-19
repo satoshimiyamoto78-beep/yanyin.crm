@@ -23,6 +23,7 @@ import {
   DONE_SEED,
   ICONS,
   liveStore,
+  recount,
   TIERS,
   type BadgeRule,
   type GameBadge,
@@ -67,6 +68,8 @@ const MODE: Record<
     hint: "Race: the first one there takes it",
   },
 };
+let seq = 0;
+const uid = () => `${Date.now().toString(36)}${seq++}`;
 const GOALS = [
   { id: "dishes", label: "Sell dishes", unit: "dishes", icon: Target },
   { id: "orders", label: "Serve orders", unit: "orders", icon: Check },
@@ -647,6 +650,7 @@ export function QuestsAdmin({
 
       {newQuest && (
         <QuestEditor
+          team={team}
           dishes={dishes}
           onClose={() => setNewQuest(false)}
           onSave={(x) => {
@@ -801,10 +805,12 @@ function Step({
 }
 
 function QuestEditor({
+  team,
   dishes,
   onClose,
   onSave,
 }: {
+  team: Person[];
   dishes: string[];
   onClose: () => void;
   onSave: (q: LiveQuest) => void;
@@ -828,6 +834,13 @@ function QuestEditor({
           ? "users"
           : "target";
   const text = `${tr(g.label)}${dish ? `: ${dish}` : ""} · ${target} ${tr(g.unit)}`;
+  // A quest is a rule over events: it counts the shift so far the moment it is published.
+  const now = recount(
+    goal,
+    goal === "dishes" && dish ? dishes.indexOf(dish) : null,
+    (i) => dishes[i] ?? "",
+  );
+  const lead = now.players[0];
   const ok = title.trim().length > 2;
   return (
     <Sheet
@@ -841,7 +854,7 @@ function QuestEditor({
           disabled={!ok}
           onClick={() =>
             onSave({
-              id: `vq-${Date.now()}`,
+              id: `vq-${uid()}`,
               title: title.trim(),
               text,
               icon,
@@ -857,8 +870,8 @@ function QuestEditor({
                     : "16 days",
               xp,
               bonus: bonus || undefined,
-              players: [],
-              feed: [],
+              players: now.players,
+              feed: now.feed,
             })
           }
           className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40"
@@ -998,6 +1011,25 @@ function QuestEditor({
               </p>
             </div>
           </div>
+          <div className="mt-3 rounded-[20px] bg-g-fill p-3.5">
+            <p className="text-[13px] font-semibold text-g-blue">
+              {tr("Counts from the start of the shift")}
+            </p>
+            <p className="mt-0.5 text-[14px] font-semibold">
+              {now.total
+                ? tr("Already {n} today · {who} leads with {v}", {
+                    n: now.total,
+                    who: team.find((p) => p.id === lead?.id)?.name ?? "",
+                    v: lead?.value ?? 0,
+                  })
+                : tr("Nothing yet today: it starts from the next order")}
+            </p>
+            <p className="mt-1 text-[12px] text-g-muted">
+              {tr(
+                "Progress is counted from orders, reviews and tickets, nobody enters it by hand.",
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </Sheet>
@@ -1035,7 +1067,7 @@ function BadgeEditor({
           disabled={!ok}
           onClick={() =>
             onSave({
-              id: `b-${Date.now()}`,
+              id: `b-${uid()}`,
               name: name.trim(),
               text: manual
                 ? tr("Handed out by the admin")

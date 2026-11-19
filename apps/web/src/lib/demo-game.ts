@@ -336,3 +336,88 @@ export const DONE_SEED: DoneQuest[] = [
     done: true,
   },
 ];
+
+/*
+ * Today's shift as events (docs/07 §93). A quest is a rule over events, so a
+ * quest published at 15:00 counts everything since the shift opened: the
+ * progress is there the moment it appears on the board, in the admin and on
+ * everyone's phone. The backend runs the same rule over `domain_events`
+ * (packages/domain questProgress); here a seeded log stands in for them.
+ */
+export type ShiftEvent = {
+  at: string;
+  who: string;
+  kind: "dish" | "order" | "review" | "ticket";
+  /** Index into the quest editor's dish list. */
+  dish?: number;
+  qty: number;
+  table: number;
+};
+const seed = (s: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return ((h >>> 0) % 10_000) / 10_000;
+};
+const HALL = ["staff-linh", "staff-minh", "staff-an"];
+const KITCHEN = ["staff-dima", "staff-lan"];
+export const SHIFT_LOG: ShiftEvent[] = (() => {
+  const out: ShiftEvent[] = [];
+  for (let m = 10 * 60 + 5; m < 15 * 60 + 10; m += 7) {
+    const k = String(m);
+    const who = HALL[Math.floor(seed(k + "w") * HALL.length)]!;
+    const at = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    const table = 1 + Math.floor(seed(k + "t") * 14);
+    out.push({
+      at,
+      who,
+      kind: "dish",
+      dish: Math.floor(seed(k + "d") * 12),
+      qty: 1 + Math.floor(seed(k + "q") * 2),
+      table,
+    });
+    if (seed(k + "o") > 0.55) out.push({ at, who, kind: "order", qty: 1, table });
+    if (seed(k + "r") > 0.86) out.push({ at, who, kind: "review", qty: 1, table });
+    if (seed(k + "f") > 0.4)
+      out.push({
+        at,
+        who: KITCHEN[Math.floor(seed(k + "c") * KITCHEN.length)]!,
+        kind: "ticket",
+        qty: 1,
+        table,
+      });
+  }
+  return out.reverse();
+})();
+
+/** Progress of a new quest from today's events: per person, and the latest matching events for its feed. */
+export function recount(
+  goal: "dishes" | "orders" | "reviews" | "speed",
+  dish: number | null,
+  dishName: (i: number) => string,
+) {
+  const kind =
+    goal === "dishes"
+      ? "dish"
+      : goal === "orders"
+        ? "order"
+        : goal === "reviews"
+          ? "review"
+          : "ticket";
+  const hits = SHIFT_LOG.filter(
+    (e) => e.kind === kind && (dish === null || e.dish === dish),
+  );
+  const by = new Map<string, number>();
+  for (const e of hits) by.set(e.who, (by.get(e.who) ?? 0) + e.qty);
+  const players = [...by.entries()]
+    .map(([id, value]) => ({ id, value }))
+    .sort((a, b) => b.value - a.value);
+  const feed = hits.slice(0, 4).map((e) => ({
+    at: e.at,
+    who: e.who,
+    text:
+      kind === "dish"
+        ? `${dishName(e.dish!)}${e.qty > 1 ? ` ×${e.qty}` : ""} · #${e.table}`
+        : `#${e.table}`,
+  }));
+  return { players, feed, total: hits.reduce((n, e) => n + e.qty, 0) };
+}

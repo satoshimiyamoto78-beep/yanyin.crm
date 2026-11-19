@@ -37,6 +37,11 @@ export const PERMS: Perm[] = [
     group: "Money",
     money: true,
   },
+  {
+    id: "station.screen",
+    label: "Work on the station screen",
+    group: "Kitchen",
+  },
   { id: "stop.edit", label: "Mark dishes ran out", group: "Kitchen" },
   { id: "menu.edit", label: "Edit the menu and prices", group: "Admin" },
   { id: "stock.edit", label: "Stock, write-offs and orders", group: "Admin" },
@@ -206,17 +211,29 @@ export type LedgerRow = {
   amount: number;
   note: string;
 };
+export type DocFile = { name: string; url: string; type: string; at: string };
 export type Doc = {
   kind: string;
   number?: string;
   expires?: string;
   daysLeft?: number;
+  file?: DocFile;
 };
+/** Pay on top of the base: share of own sales, per-shift bonus, night, weekend and overtime rates, a monthly minimum. */
+export type PayExtraKind =
+  | "sales"
+  | "perShift"
+  | "night"
+  | "weekend"
+  | "overtime"
+  | "minimum";
+export type PayExtra = { kind: PayExtraKind; value: number };
 export type HR = {
   joined: string;
   pay: PayType;
   rate: number;
   rates: { from: string; rate: number }[];
+  extras?: PayExtra[];
   ledger: LedgerRow[];
   docs: Doc[];
   vacation: { total: number; used: number };
@@ -226,14 +243,39 @@ export type HR = {
   left?: string;
 };
 
+/** A drawn page standing in for a scan in the demo (a real venue uploads photos and PDFs). */
+export function demoScan(title: string, lines = 7): DocFile {
+  const rows = Array.from(
+    { length: lines },
+    (_, i) =>
+      `<rect x="48" y="${170 + i * 34}" width="${300 - ((i * 53) % 120)}" height="12" rx="6" fill="#d9dce3"/>`,
+  ).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="560" viewBox="0 0 420 560"><rect width="420" height="560" fill="#fbfaf7"/><rect x="24" y="24" width="372" height="512" rx="10" fill="none" stroke="#e4e1da" stroke-width="2"/><rect x="48" y="56" width="64" height="64" rx="12" fill="#2f5bff" opacity=".14"/><text x="128" y="84" font-family="Arial" font-size="20" font-weight="700" fill="#14151a">${title}</text><text x="128" y="110" font-family="Arial" font-size="13" fill="#8a8d96">Da Nang · 2026</text>${rows}<circle cx="320" cy="470" r="36" fill="none" stroke="#e5484d" stroke-width="3" opacity=".6"/><rect x="48" y="462" width="140" height="2" fill="#14151a" opacity=".5"/></svg>`;
+  return {
+    name: `${title.toLowerCase().replace(/\W+/g, "-")}.jpg`,
+    url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    type: "image/svg+xml",
+    at: "Oct 2026",
+  };
+}
 const docs = (health: number, contract = 210): Doc[] => [
-  { kind: "Passport or ID", number: "•••• 4821" },
+  {
+    kind: "Passport or ID",
+    number: "•••• 4821",
+    file: demoScan("Citizen ID", 5),
+  },
   {
     kind: "Health certificate",
     expires: health < 0 ? "2 Nov" : health < 30 ? "8 Dec" : "Mar 2027",
     daysLeft: health,
+    file: health >= 0 ? demoScan("Health certificate") : undefined,
   },
-  { kind: "Work contract", expires: "Jun 2027", daysLeft: contract },
+  {
+    kind: "Work contract",
+    expires: "Jun 2027",
+    daysLeft: contract,
+    file: demoScan("Labour contract", 9),
+  },
 ];
 export const SEED_HR: Record<string, HR> = {
   "staff-huong": {
@@ -262,6 +304,10 @@ export const SEED_HR: Record<string, HR> = {
     rates: [
       { from: "Aug 2024", rate: 45_000 },
       { from: "Feb 2026", rate: 55_000 },
+    ],
+    extras: [
+      { kind: "sales", value: 2 },
+      { kind: "night", value: 30 },
     ],
     ledger: [
       {
@@ -350,6 +396,10 @@ export const SEED_HR: Record<string, HR> = {
       { from: "Feb 2025", rate: 400_000 },
       { from: "Apr 2026", rate: 450_000 },
     ],
+    extras: [
+      { kind: "perShift", value: 50_000 },
+      { kind: "weekend", value: 20 },
+    ],
     ledger: [],
     docs: docs(65),
     vacation: { total: 12, used: 5 },
@@ -393,3 +443,59 @@ export const SEED_HR: Record<string, HR> = {
   },
 };
 export const hrStore = createStore<Record<string, HR>>("yanyin:hr", SEED_HR);
+
+/** Per-person exceptions to their roles' rights (true: allowed, false: taken away). */
+export const overridesStore = createStore<
+  Record<string, Record<string, boolean>>
+>("yanyin:perm-overrides", {});
+
+/*
+ * Joining (docs/07 §93): the venue has one team link. A person installs the
+ * staff app, signs in with their phone, opens the link and asks to join; an
+ * admin approves and picks the roles. Access lasts until they are let go or
+ * removed. A personal invite is the same link sent to one phone with the
+ * roles chosen in advance, so it joins without a request.
+ */
+export type TeamLink = {
+  code: string;
+  open: boolean;
+  approve: boolean;
+  role: string;
+  joined: number;
+};
+export const teamLinkStore = createStore<TeamLink>("yanyin:team-link", {
+  code: "8F2K",
+  open: true,
+  approve: true,
+  role: "waiter",
+  joined: 9,
+});
+export type JoinRequest = {
+  id: string;
+  name: string;
+  handle: string;
+  phone: string;
+  wants: string;
+  at: string;
+  status: "new" | "ok" | "no";
+};
+export const joinStore = createStore<JoinRequest[]>("yanyin:join-requests", [
+  {
+    id: "j1",
+    name: "Phúc",
+    handle: "phuc_hall",
+    phone: "+84 905 663 120",
+    wants: "waiter",
+    at: "today 12:40",
+    status: "new",
+  },
+  {
+    id: "j2",
+    name: "Vy",
+    handle: "vy.kitchen",
+    phone: "+84 934 557 018",
+    wants: "cook",
+    at: "yesterday",
+    status: "new",
+  },
+]);

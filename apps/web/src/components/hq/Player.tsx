@@ -1,7 +1,14 @@
 "use client";
 
 import {
+  AlarmClock,
   Award,
+  BriefcaseBusiness,
+  CalendarDays,
+  Clock,
+  Coins,
+  Pencil,
+  Receipt,
   Cake,
   ChevronRight,
   Crown,
@@ -310,19 +317,50 @@ function player(
     value: week[i] ? `${week[i]} ${tr("h")}` : "",
     tone: i === 2 && st.late ? "text-g-orange" : undefined,
   }));
+  // The week's shifts in full: plan against fact, lateness, the shift's rating, what it brought.
+  const shiftDays = day.slice(0, 5).map((d, i) => ({
+    day: tr(d),
+    date: 9 + i,
+    plan: [
+      "10:00–18:00",
+      "10:00–18:00",
+      "10:00–22:00",
+      "10:00–18:00",
+      "10:30–22:00",
+    ][i]!,
+    fact: `${["09:52", "10:00", "10:12", "09:58", "10:30"][i]}–${["18:10", "18:00", "22:05", "18:02", "…"][i]}`,
+    late: i === 2 && st.late ? 12 : 0,
+    hours: week[i] ?? 0,
+    rating: [4.9, 4.7, 4.6, 5, 4.8][(s + i) % 5]!,
+    bills: hall ? 9 + ((s + i) % 7) : 0,
+    tips: hall ? 180_000 + ((s * (i + 1)) % 5) * 60_000 : 0,
+    live: i === 4,
+  }));
   const xp: Row[] = [
     { at: "12:40", title: `${tr("Plov master")} · 3/5`, value: "+30 XP" },
     { at: "11:06", title: tr("Checklist: opening done"), value: "+60 XP" },
     { at: tr("Yesterday"), title: tr("Five-star review"), value: "+50 XP" },
     { at: tr("Yesterday"), title: tr("Sweet finale done"), value: "+120 XP" },
   ];
-  return { skills, quests, badges, week, day, orders, tips, shifts, xp };
+  return {
+    skills,
+    quests,
+    badges,
+    week,
+    day,
+    orders,
+    tips,
+    shifts,
+    shiftDays,
+    xp,
+  };
 }
 
 /* ---------------------------------------------------------------- Page */
 
 type Open =
   | { kind: "list"; title: string; sub: string; rows: Row[] }
+  | { kind: "shifts" }
   | { kind: "skill"; skill: Skill }
   | { kind: "quest"; quest: Quest }
   | { kind: "badge"; badge: Badge }
@@ -373,7 +411,7 @@ export function PersonPage({
     ),
   ];
   const [open, setOpen] = useState<Open | null>(null);
-  const [tab, setTab] = useState<"orders" | "tips" | "shifts" | "xp">(
+  const [tab, setTab] = useState<"all" | "orders" | "tips" | "shifts" | "xp">(
     groupOf(p) === "hall" ? "orders" : "shifts",
   );
   const g = groupOf(p);
@@ -384,7 +422,7 @@ export function PersonPage({
     ...p.stations.map((s) => tr(STATION_NAMES[s])),
   ].join(" · ");
   const trRow = (r: Row): Row => r;
-  const history: Record<typeof tab, Row[]> = {
+  const history: Record<"orders" | "tips" | "shifts" | "xp", Row[]> = {
     orders: data.orders,
     tips: data.tips,
     shifts: data.shifts,
@@ -410,30 +448,21 @@ export function PersonPage({
       label={p.name}
       title={false}
       footer={
-        <div className="mx-auto flex max-w-[560px] gap-2">
+        <div className="mx-auto flex max-w-[560px] justify-center gap-2">
           {!self && (
-            <button
-              type="button"
+            <ActionChip
+              icon={Send}
+              label={tr("Write")}
               onClick={onWrite}
-              className="blue-grad press flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[15px] font-semibold"
-            >
-              <Send size={16} strokeWidth={2.2} /> {tr("Write")}
-            </button>
+              primary
+            />
           )}
-          <button
-            type="button"
+          <ActionChip
+            icon={BriefcaseBusiness}
+            label={tr("Employment")}
             onClick={onHR}
-            className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold"
-          >
-            {tr("Employment")}
-          </button>
-          <button
-            type="button"
-            onClick={onEdit}
-            className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold"
-          >
-            {tr("Edit")}
-          </button>
+          />
+          <ActionChip icon={Pencil} label={tr("Edit")} onClick={onEdit} />
         </div>
       }
     >
@@ -512,37 +541,46 @@ export function PersonPage({
           now={4}
           initial={4}
         />
-        <button
-          type="button"
-          onClick={list(tr("Shifts"), tr("This week"), data.shifts.map(trRow))}
-          className="press mt-2.5 flex w-full items-center gap-4 rounded-full bg-g-fill py-3 pr-4 pl-5 text-left text-[13.5px]"
-        >
-          <span>
-            <b className="font-bold tabular-nums">{base.hoursWeek}</b>{" "}
-            <span className="text-g-muted">{tr("h")}</span>
-          </span>
-          <span>
-            <b className="font-bold tabular-nums">{base.shiftsWeek}</b>{" "}
-            <span className="text-g-muted">{tr("Shifts").toLowerCase()}</span>
-          </span>
-          <span>
-            <b
-              className={`font-bold tabular-nums ${base.late ? "text-g-orange" : ""}`}
+        {/* The week in four tiles; any of them opens the shifts in full. */}
+        <div className="mt-2.5 grid grid-cols-4 gap-2">
+          {(
+            [
+              [Clock, `${base.hoursWeek}`, tr("hours"), ""],
+              [CalendarDays, `${base.shiftsWeek}`, tr("shifts"), ""],
+              [
+                AlarmClock,
+                `${base.late}`,
+                tr("late"),
+                base.late ? "text-g-orange" : "",
+              ],
+              [Star, base.rating.toFixed(1), tr("rating"), ""],
+            ] as const
+          ).map(([I, v, l, c], i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => (haptic("light"), setOpen({ kind: "shifts" }))}
+              className="press flex flex-col items-center gap-1 rounded-[20px] bg-g-fill px-1 py-3"
             >
-              {base.late}
-            </b>{" "}
-            <span className="text-g-muted">{tr("Late").toLowerCase()}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <b className="font-bold tabular-nums">{base.rating.toFixed(1)}</b>
-            <Star
-              size={12}
-              className="fill-current text-[#f5a524]"
-              strokeWidth={0}
-            />
-          </span>
-          <ChevronRight size={16} className="ml-auto text-g-faint" />
-        </button>
+              <I
+                size={16}
+                className={
+                  i === 3
+                    ? "fill-[#f5a524] text-[#f5a524]"
+                    : i === 2 && base.late
+                      ? "text-g-orange"
+                      : "text-g-blue"
+                }
+              />
+              <span
+                className={`live text-[19px] leading-none font-bold tabular-nums ${c}`}
+              >
+                {v}
+              </span>
+              <span className="text-[11.5px] text-g-muted">{l}</span>
+            </button>
+          ))}
+        </div>
 
         <Caption>{tr("Skills")}</Caption>
         <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
@@ -654,9 +692,10 @@ export function PersonPage({
         </div>
 
         <Caption>{tr("History")}</Caption>
-        <div className="grid grid-cols-4 rounded-full bg-g-fill p-1">
+        <div className="no-scrollbar -mx-5 flex gap-1.5 overflow-x-auto px-5">
           {(
             [
+              ["all", tr("All")],
               ["orders", g === "hall" ? tr("Orders") : tr("Tickets")],
               ["tips", tr("Tips")],
               ["shifts", tr("Shifts")],
@@ -668,16 +707,17 @@ export function PersonPage({
               type="button"
               aria-pressed={tab === id}
               onClick={() => (haptic("tick"), setTab(id))}
-              className={`h-9 rounded-full text-[13px] font-semibold transition-colors ${tab === id ? "bg-g-card text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.1)]" : "text-g-muted"}`}
+              className={`press h-9 shrink-0 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${tab === id ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill text-g-ink-2"}`}
             >
               {label}
             </button>
           ))}
         </div>
-        <Rows
+        <Journal
           key={tab}
-          rows={history[tab].map(trRow)}
-          className="animate-rise mt-2.5"
+          kinds={tab === "all" ? ["orders", "tips", "shifts", "xp"] : [tab]}
+          history={history}
+          hall={g === "hall"}
         />
       </div>
 
@@ -696,6 +736,97 @@ export function PersonPage({
               {p.name} · {open.sub}
             </p>
             <Rows rows={open.rows} className="mt-5" />
+          </div>
+        </Sheet>
+      )}
+      {open?.kind === "shifts" && (
+        <Sheet
+          open
+          onClose={() => setOpen(null)}
+          label={tr("Shifts")}
+          title={false}
+        >
+          <div className="px-5 pt-1 pb-10">
+            <h2 className="text-[26px] leading-tight font-bold tracking-[-0.02em]">
+              {tr("Shifts")}
+            </h2>
+            <p className="mt-0.5 text-[14px] text-g-muted">
+              {p.name} · {tr("9–15 November")}
+            </p>
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {[
+                [tr("hours"), String(base.hoursWeek)],
+                [tr("shifts"), String(base.shiftsWeek)],
+                [tr("late"), base.late ? tr("{n} min", { n: 12 }) : "0"],
+                [tr("rating"), base.rating.toFixed(1)],
+              ].map(([k, v]) => (
+                <div
+                  key={k}
+                  className="rounded-[18px] bg-g-fill p-2.5 text-center"
+                >
+                  <p className="text-[17px] font-bold tabular-nums">{v}</p>
+                  <p className="text-[11.5px] text-g-muted">{k}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-2">
+              {data.shiftDays.map((d) => (
+                <div key={d.date} className="rounded-[20px] bg-g-fill p-3.5">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-g-card leading-none">
+                      <span className="text-center">
+                        <span className="block text-[15px] font-bold tabular-nums">
+                          {d.date}
+                        </span>
+                        <span className="text-[10.5px] text-g-muted capitalize">
+                          {d.day}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14.5px] font-semibold tabular-nums">
+                        {d.fact}
+                      </span>
+                      <span className="block text-[12.5px] text-g-muted tabular-nums">
+                        {tr("planned {t}", { t: d.plan })}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block text-[14.5px] font-bold tabular-nums">
+                        {d.live ? tr("now") : `${d.hours} ${tr("h")}`}
+                      </span>
+                      <span className="flex items-center justify-end gap-0.5 text-[12.5px] text-g-muted">
+                        <Star
+                          size={11}
+                          className="fill-[#f5a524] text-[#f5a524]"
+                          strokeWidth={0}
+                        />{" "}
+                        {d.rating.toFixed(1)}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${d.late ? "chip-orange" : "chip-green"}`}
+                    >
+                      {d.late
+                        ? tr("Late {n} min", { n: d.late })
+                        : tr("on time")}
+                    </span>
+                    {d.bills > 0 && (
+                      <span className="rounded-full bg-g-card px-2.5 py-1 text-[12px] font-semibold">
+                        {tr("{n} bills", { n: d.bills })}
+                      </span>
+                    )}
+                    {d.tips > 0 && (
+                      <span className="rounded-full bg-g-card px-2.5 py-1 text-[12px] font-semibold">
+                        {tr("tips {sum}", { sum: compactMoney(d.tips) })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </Sheet>
       )}
@@ -1119,5 +1250,116 @@ function Pick({
         )}
       </div>
     </Sheet>
+  );
+}
+
+/** A compact action, the size of the XP / Quest / Badge chips: used under every person card. */
+export function ActionChip({
+  icon: Icon,
+  label,
+  onClick,
+  primary,
+}: {
+  icon: typeof Send;
+  label: string;
+  onClick: () => void;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => (haptic("light"), onClick())}
+      className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[13.5px] font-semibold ${primary ? "blue-grad" : "bg-g-fill"}`}
+    >
+      <Icon
+        size={15}
+        strokeWidth={2.2}
+        className={primary ? "" : "text-g-blue"}
+      />{" "}
+      {label}
+    </button>
+  );
+}
+
+const KIND_ICON = {
+  orders: Receipt,
+  tips: Coins,
+  shifts: Clock,
+  xp: Sparkles,
+} as const;
+const KIND_CHIP = {
+  orders: "chip-blue",
+  tips: "chip-green",
+  shifts: "chip-gray",
+  xp: "chip-orange",
+} as const;
+
+/** History as a journal: one stream by day, each row with a type icon; filters pick the types. */
+function Journal({
+  kinds,
+  history,
+  hall,
+}: {
+  kinds: ("orders" | "tips" | "shifts" | "xp")[];
+  history: Record<"orders" | "tips" | "shifts" | "xp", Row[]>;
+  hall: boolean;
+}) {
+  const tr = useTr();
+  const rows = kinds.flatMap((k) => history[k].map((r) => ({ ...r, k })));
+  // Times of today first, then the days ("Yesterday", weekdays).
+  const today = rows
+    .filter((r) => /^\d{1,2}:\d{2}$/.test(r.at))
+    .sort((a, b) => b.at.localeCompare(a.at));
+  const earlier = rows.filter((r) => !/^\d{1,2}:\d{2}$/.test(r.at));
+  const group = (title: string, list: typeof rows) =>
+    list.length > 0 && (
+      <div key={title}>
+        <p className="mt-4 mb-1.5 px-1 text-[12px] font-semibold tracking-[0.05em] text-g-muted uppercase">
+          {title}
+        </p>
+        <div className="divide-y divide-g-line rounded-[22px] bg-g-fill px-3">
+          {list.map((r, i) => {
+            const I = KIND_ICON[r.k];
+            return (
+              <div key={i} className="flex items-center gap-3 py-2.5">
+                <span
+                  className={`grid size-9 shrink-0 place-items-center rounded-full ${KIND_CHIP[r.k]}`}
+                >
+                  <I size={16} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14.5px] font-semibold">
+                    {r.title}
+                  </span>
+                  <span
+                    className={`block truncate text-[12.5px] ${r.tone ?? "text-g-muted"}`}
+                  >
+                    {r.at}
+                    {r.sub ? ` · ${r.sub}` : ""}
+                  </span>
+                </span>
+                {r.value && (
+                  <span
+                    className={`shrink-0 text-[14px] font-semibold tabular-nums ${r.k === "xp" ? "text-g-blue" : r.k === "tips" ? "text-g-green" : ""}`}
+                  >
+                    {r.value}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  return (
+    <div className="animate-rise">
+      {group(tr("Today"), today)}
+      {group(tr("Earlier"), earlier)}
+      {!rows.length && (
+        <p className="mt-3 rounded-[20px] bg-g-fill p-4 text-[14px] text-g-muted">
+          {tr(hall ? "Nothing yet today" : "Nothing yet today")}
+        </p>
+      )}
+    </div>
   );
 }

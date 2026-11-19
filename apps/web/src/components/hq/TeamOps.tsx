@@ -24,12 +24,13 @@ import { haptic } from "@/lib/haptics";
 import {
   hrStore,
   invitesStore,
+  joinStore,
+  overridesStore,
   PERMS,
   requestsStore,
   rolesStore,
   type HR,
   type LedgerRow,
-  type PayType,
   type Request,
   type RoleDef,
 } from "@/lib/demo-hr";
@@ -38,6 +39,14 @@ import { PersonPic } from "@/components/system/PersonPic";
 import { Switch } from "@/components/system/Kit";
 import { compactMoney } from "@/components/crew/CrewApp";
 import { useTr } from "@/components/crew/prefs";
+import { JoinRequests, useRoleNames } from "./TeamInvite";
+import {
+  DocSheet,
+  ExtrasChips,
+  monthOf,
+  PAY,
+  PayEdit,
+} from "./TeamDocsPay";
 
 /*
  * Team in depth (docs/11, docs/07 §91). The Team section gets four tabs:
@@ -96,7 +105,10 @@ export function TeamTabs({
   const [tab, setTab] = useState<Tab>("groups");
   const reqs = requestsStore.use();
   const hr = hrStore.use();
-  const newReqs = reqs.filter((r) => r.status === "new").length;
+  const joins = joinStore.use();
+  const newReqs =
+    reqs.filter((r) => r.status === "new").length +
+    joins.filter((j) => j.status === "new").length;
   const docIssues = Object.values(hr)
     .flatMap((h) => h.docs)
     .filter(
@@ -143,7 +155,7 @@ export function TeamTabs({
             onPerson={onPerson}
           />
         )}
-        {tab === "access" && <Access notify={notify} />}
+        {tab === "access" && <Access team={team} notify={notify} />}
         {tab === "docs" && (
           <Docs team={team} notify={notify} onPerson={onPerson} />
         )}
@@ -196,6 +208,7 @@ function Requests({
           }),
     );
   };
+  const roleNames = useRoleNames();
   const open = reqs.filter((r) => r.status === "new");
   const done = reqs.filter((r) => r.status !== "new");
   const row = (r: Request) => {
@@ -274,6 +287,7 @@ function Requests({
   };
   return (
     <>
+      <JoinRequests notify={notify} />
       {open.length ? (
         <div className="stagger grid gap-2 md:grid-cols-2">{open.map(row)}</div>
       ) : (
@@ -313,14 +327,7 @@ function Requests({
                 {i.name}
               </span>
               <span className="block truncate text-[12.5px] text-g-muted">
-                {tr(
-                  i.role === "cook"
-                    ? "Cook"
-                    : i.role === "waiter"
-                      ? "Waiter"
-                      : "Bartender",
-                )}{" "}
-                · {i.phone} · {dt(tr, i.sent)}
+                {roleNames(i.role)} · {i.phone} · {dt(tr, i.sent)}
               </span>
             </span>
             <span
@@ -359,9 +366,22 @@ function Requests({
 
 /* ------------------------------------------------------------ Access */
 
-function Access({ notify }: { notify: (t: string) => void }) {
+function Access({
+  team,
+  notify,
+}: {
+  team: Person[];
+  notify: (t: string) => void;
+}) {
   const tr = useTr();
   const roles = rolesStore.use();
+  const overrides = overridesStore.use();
+  const holders = (id: string) =>
+    team.filter((p) => (p.roles as string[]).includes(id));
+  const exceptions = Object.values(overrides).reduce(
+    (n, o) => n + Object.keys(o).length,
+    0,
+  );
   const [edit, setEdit] = useState<RoleDef | null>(null);
   const groups = [...new Set(PERMS.map((p) => p.group))];
   return (
@@ -434,42 +454,104 @@ function Access({ notify }: { notify: (t: string) => void }) {
           </tbody>
         </table>
       </div>
-      {/* Phones: a card per role. */}
-      <div className="stagger grid gap-2 lg:hidden">
-        {roles.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            onClick={() => (haptic("light"), setEdit(r))}
-            className="press flex items-center gap-3 rounded-[20px] bg-g-fill p-3.5 text-left"
-          >
-            <span
-              className={`grid size-10 shrink-0 place-items-center rounded-full ${r.id === "owner" ? "chip-orange" : "chip-blue"}`}
+      {exceptions > 0 && (
+        <p className="chip-blue flex items-center gap-2 rounded-[18px] px-3.5 py-2.5 text-[13px] font-semibold">
+          <ShieldCheck size={15} className="shrink-0" />
+          {tr("{n} personal exceptions: see the person's page", {
+            n: exceptions,
+          })}
+        </p>
+      )}
+      {/* Phones: a card per role, what it may do group by group and who holds it. */}
+      <div className="stagger grid gap-2 md:grid-cols-2 lg:hidden">
+        {roles.map((r) => {
+          const people = holders(r.id);
+          const money = PERMS.filter(
+            (p) => p.money && r.perms.includes(p.id),
+          ).length;
+          return (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => (haptic("light"), setEdit(r))}
+              className="press rounded-[22px] bg-g-fill p-3.5 text-left"
             >
-              {r.id === "owner" ? (
-                <Lock size={17} />
-              ) : (
-                <ShieldCheck size={17} />
-              )}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-semibold">
-                {tr(r.name)}{" "}
-                {r.custom && (
-                  <span className="text-[12px] font-medium text-g-blue">
-                    · {tr("own role")}
+              <span className="flex items-center gap-3">
+                <span
+                  className={`grid size-10 shrink-0 place-items-center rounded-full ${r.id === "owner" ? "chip-orange" : "chip-blue"}`}
+                >
+                  {r.id === "owner" ? (
+                    <Lock size={17} />
+                  ) : (
+                    <ShieldCheck size={17} />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-semibold">
+                    {tr(r.name)}{" "}
+                    {r.custom && (
+                      <span className="text-[12px] font-medium text-g-blue">
+                        · {tr("own role")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="block truncate text-[12.5px] text-g-muted">
+                    {tr("{n} of {m} actions", {
+                      n: r.perms.length,
+                      m: PERMS.length,
+                    })}
+                    {money > 0 && (
+                      <span className="text-g-orange">
+                        {" "}
+                        · {tr("{n} with money", { n: money })}
+                      </span>
+                    )}
+                  </span>
+                </span>
+                {people.length > 0 && (
+                  <span className="flex shrink-0 -space-x-2">
+                    {people.slice(0, 3).map((p) => (
+                      <span
+                        key={p.id}
+                        className="relative grid size-7 place-items-center overflow-hidden rounded-full bg-g-card text-[11px] font-bold ring-2 ring-[var(--g-fill)]"
+                      >
+                        <PersonPic p={p} />
+                      </span>
+                    ))}
+                    {people.length > 3 && (
+                      <span className="relative grid size-7 place-items-center rounded-full bg-g-card text-[11px] font-bold ring-2 ring-[var(--g-fill)]">
+                        +{people.length - 3}
+                      </span>
+                    )}
                   </span>
                 )}
               </span>
-              <span className="block truncate text-[12.5px] text-g-muted">
-                {tr("{n} of {m} actions", {
-                  n: r.perms.length,
-                  m: PERMS.length,
+              <span className="mt-3 grid grid-cols-5 gap-1.5">
+                {groups.map((g) => {
+                  const all = PERMS.filter((p) => p.group === g);
+                  const n = all.filter((p) => r.perms.includes(p.id)).length;
+                  return (
+                    <span key={g} className="min-w-0">
+                      <span className="flex h-1.5 gap-0.5">
+                        {all.map((p) => (
+                          <span
+                            key={p.id}
+                            className={`flex-1 rounded-full ${r.perms.includes(p.id) ? "bg-g-blue" : "bg-g-line"}`}
+                          />
+                        ))}
+                      </span>
+                      <span
+                        className={`mt-1 block truncate text-[10.5px] font-semibold ${n ? "text-g-ink-2" : "text-g-faint"}`}
+                      >
+                        {tr(g)}
+                      </span>
+                    </span>
+                  );
                 })}
               </span>
-            </span>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
       <button
         type="button"
@@ -604,6 +686,7 @@ function Docs({
 }) {
   const tr = useTr();
   const hr = hrStore.use();
+  const [open, setOpen] = useState<{ id: string; kind: string } | null>(null);
   const rows = Object.entries(hr)
     .flatMap(([id, h]) =>
       h.docs.filter((d) => d.kind !== "Passport or ID").map((d) => ({ id, d })),
@@ -642,14 +725,19 @@ function Docs({
               >
                 <Face p={p} />
               </button>
-              <span className="min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => (haptic("light"), setOpen({ id, kind: d.kind }))}
+                className="press min-w-0 flex-1 text-left"
+              >
                 <span className="block truncate text-[14.5px] font-semibold">
                   {p?.name}
                 </span>
-                <span className="block truncate text-[12.5px] text-g-muted">
+                <span className="flex items-center gap-1 truncate text-[12.5px] text-g-muted">
+                  {d.file && <FileText size={12} className="shrink-0" />}
                   {tr(d.kind)}
                 </span>
-              </span>
+              </button>
               <span
                 className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold ${st[0]}`}
               >
@@ -672,17 +760,39 @@ function Docs({
           );
         })}
       </div>
+      {open &&
+        (() => {
+          const h = hr[open.id]!;
+          const k = h.docs.findIndex((x) => x.kind === open.kind);
+          const name = team.find((x) => x.id === open.id)?.name ?? "";
+          return (
+            <DocSheet
+              doc={h.docs[k]}
+              name={name}
+              taken={h.docs.map((x) => x.kind)}
+              notify={notify}
+              onClose={() => setOpen(null)}
+              onSave={(d) => (
+                hrStore.set({
+                  ...hr,
+                  [open.id]: {
+                    ...h,
+                    docs: h.docs.map((x, j) => (j === k ? d : x)),
+                  },
+                }),
+                haptic("success"),
+                notify(tr("Saved")),
+                setOpen(null)
+              )}
+            />
+          );
+        })()}
     </>
   );
 }
 
 /* ------------------------------------------------------------ HR page */
 
-const PAY: Record<PayType, string> = {
-  hourly: "Per hour",
-  salary: "Monthly salary",
-  shift: "Per shift",
-};
 
 export function HRPage({
   p,
@@ -712,6 +822,7 @@ export function HRPage({
   const [entry, setEntry] = useState<LedgerRow["kind"] | null>(null);
   const [note, setNote] = useState("");
   const [leaving, setLeaving] = useState(false);
+  const [doc, setDoc] = useState<number | null>(null);
   const left = h.vacation.total - h.vacation.used;
   return (
     <Sheet open wide onClose={onClose} label={tr("Employment")}>
@@ -752,6 +863,13 @@ export function HRPage({
                 {tr("Change")}
               </button>
             </div>
+            <ExtrasChips extras={h.extras} />
+            <p className="mt-2 text-[12.5px] text-g-muted">
+              {tr("A usual month comes to")}{" "}
+              <span className="font-semibold text-g-ink tabular-nums">
+                ≈ {compactMoney(monthOf(h.pay, h.rate, h.extras))}
+              </span>
+            </p>
             {h.rates.length > 1 && (
               <div className="mt-3 flex items-end gap-1.5">
                 {h.rates.map((r) => (
@@ -912,15 +1030,35 @@ export function HRPage({
 
           <section className="rounded-[22px] bg-g-fill p-4">
             <p className="text-[15px] font-bold">{tr("Documents")}</p>
-            <div className="mt-2 grid gap-1.5">
-              {h.docs.map((d) => (
-                <div
+            <div className="mt-2 grid gap-1">
+              {h.docs.map((d, i) => (
+                <button
                   key={d.kind}
-                  className="flex items-center gap-2.5 text-[14px]"
+                  type="button"
+                  onClick={() => (haptic("light"), setDoc(i))}
+                  className="press flex items-center gap-2.5 rounded-[14px] py-1.5 text-left text-[14px]"
                 >
-                  <FileText size={15} className="shrink-0 text-g-muted" />
-                  <span className="min-w-0 flex-1 truncate font-semibold">
-                    {tr(d.kind)}
+                  {d.file && !d.file.type.includes("pdf") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={d.file.url}
+                      alt=""
+                      className="h-10 w-8 shrink-0 rounded-[6px] bg-white object-cover ring-1 ring-g-line"
+                    />
+                  ) : (
+                    <span
+                      className={`grid h-10 w-8 shrink-0 place-items-center rounded-[6px] ${d.file ? "bg-g-card" : "border border-dashed border-g-line"}`}
+                    >
+                      <FileText size={14} className="text-g-muted" />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">
+                      {tr(d.kind)}
+                    </span>
+                    <span className="block truncate text-[12px] text-g-muted">
+                      {d.file ? d.file.name : tr("no file yet")}
+                    </span>
                   </span>
                   <span
                     className={`shrink-0 text-[12.5px] font-semibold ${d.daysLeft === undefined ? (d.number ? "text-g-muted" : "text-g-orange") : d.daysLeft < 0 ? "text-[#e5484d]" : d.daysLeft < 30 ? "text-g-orange" : "text-g-green"}`}
@@ -932,21 +1070,15 @@ export function HRPage({
                           ? tr("expired")
                           : dt(tr, d.expires ?? ""))}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
             <button
               type="button"
-              onClick={() => (
-                haptic("light"),
-                notify(
-                  tr("Ask {name} to upload it from the app", { name: p.name }),
-                )
-              )}
+              onClick={() => (haptic("light"), setDoc(-1))}
               className="press mt-3 flex h-9 items-center gap-1.5 rounded-full bg-g-card px-3.5 text-[13px] font-semibold"
             >
-              <Plus size={14} className="text-g-blue" />{" "}
-              {tr("Request a document")}
+              <Plus size={14} className="text-g-blue" /> {tr("Add a document")}
             </button>
           </section>
 
@@ -1007,11 +1139,47 @@ export function HRPage({
         <PayEdit
           h={h}
           onClose={() => setPayEdit(false)}
-          onSave={(pay, rate) => (
-            put({ pay, rate, rates: [...h.rates, { from: "Dec 2026", rate }] }),
+          onSave={(pay, rate, extras) => (
+            put({
+              pay,
+              rate,
+              extras,
+              rates:
+                rate === h.rate
+                  ? h.rates
+                  : [...h.rates, { from: "Dec 2026", rate }],
+            }),
             haptic("success"),
             notify(tr("New rate from 1 December")),
             setPayEdit(false)
+          )}
+        />
+      )}
+      {doc !== null && (
+        <DocSheet
+          doc={doc >= 0 ? h.docs[doc] : undefined}
+          name={p.name}
+          taken={h.docs.map((d) => d.kind)}
+          notify={notify}
+          onClose={() => setDoc(null)}
+          onRemove={
+            doc >= 0
+              ? () => (
+                  put({ docs: h.docs.filter((_, k) => k !== doc) }),
+                  setDoc(null)
+                )
+              : undefined
+          }
+          onSave={(d) => (
+            put({
+              docs:
+                doc >= 0
+                  ? h.docs.map((x, k) => (k === doc ? d : x))
+                  : [...h.docs, d],
+            }),
+            haptic("success"),
+            notify(tr("Saved")),
+            setDoc(null)
           )}
         />
       )}
@@ -1094,71 +1262,6 @@ export function HRPage({
           </div>
         </Sheet>
       )}
-    </Sheet>
-  );
-}
-
-function PayEdit({
-  h,
-  onClose,
-  onSave,
-}: {
-  h: HR;
-  onClose: () => void;
-  onSave: (pay: PayType, rate: number) => void;
-}) {
-  const tr = useTr();
-  const [pay, setPay] = useState(h.pay);
-  const [rate, setRate] = useState(String(h.rate));
-  return (
-    <Sheet
-      open
-      onClose={onClose}
-      label={tr("Pay")}
-      footer={
-        <button
-          type="button"
-          disabled={!Number(rate)}
-          onClick={() => onSave(pay, Number(rate))}
-          className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold"
-        >
-          {tr("Save")}
-        </button>
-      }
-    >
-      <div className="grid gap-4 px-5 pt-2 pb-10">
-        <h2 className="text-[26px] font-bold tracking-[-0.025em]">
-          {tr("Pay")}
-        </h2>
-        <div className="grid grid-cols-3 gap-1.5">
-          {(Object.keys(PAY) as PayType[]).map((k) => (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={pay === k}
-              onClick={() => (haptic("tick"), setPay(k))}
-              className={`press h-11 rounded-full text-[13px] font-semibold ${pay === k ? "chip-blue" : "bg-g-fill"}`}
-            >
-              {tr(PAY[k])}
-            </button>
-          ))}
-        </div>
-        <span className="flex h-14 items-center gap-2 rounded-[20px] bg-g-fill px-4">
-          <input
-            autoFocus
-            inputMode="numeric"
-            value={Number(rate) ? Number(rate).toLocaleString("en-US") : ""}
-            onChange={(e) => setRate(e.target.value.replace(/\D/g, ""))}
-            className="min-w-0 flex-1 bg-transparent text-[22px] font-bold outline-none tabular-nums"
-          />
-          <span className="text-g-muted">₫</span>
-        </span>
-        <p className="px-1 text-[12.5px] text-g-muted">
-          {tr(
-            "The new rate starts on the 1st of next month; the history keeps every change.",
-          )}
-        </p>
-      </div>
     </Sheet>
   );
 }

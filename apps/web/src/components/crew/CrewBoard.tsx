@@ -16,6 +16,7 @@ import { BadgesPage, QuestsPage } from "./Collections";
 import { ChecklistCard, ChecklistPage } from "./Checklist";
 import { ChatPage, ClockCard, MyTasks } from "./ShiftTools";
 import { chatStore } from "@/lib/team-stores";
+import { liveStore } from "@/lib/demo-game";
 import { useHandles, withHandles } from "@/lib/handles";
 import { CHECKLIST_OWNER, TEAM, WAITER_CHECKLIST, WAITER_RUN } from "@/lib/demo-team";
 import { NorthSky } from "@/components/system/NorthSky";
@@ -141,7 +142,29 @@ export function CrewBoard({
   const [hidden, setHidden] = useState(false);
   const [peek, setPeek] = useState<{ kind: "badge" | "quest"; id: string } | null>(null);
   const [xp, setXp] = useState(data.staff.xp);
-  const [quests, setQuests] = useState(data.quests);
+  const [own, setQuests] = useState(data.quests);
+  // Quests the admin publishes in HQ land here at once, already counted from today's events.
+  const hq = liveStore.use();
+  const [gone, setGone] = useState<string[]>([]);
+  const fromHq: CrewQuest[] = hq
+    .filter((q) => q.id.startsWith("vq-") && !gone.includes(q.id))
+    .map((q) => {
+      const progress = q.mode === "team" ? q.players.reduce((n, p) => n + p.value, 0) : (q.players.find((p) => p.id === data.staff.id)?.value ?? 0);
+      return {
+        id: q.id,
+        title: q.title,
+        description: q.text,
+        metric: "items_sold",
+        target: q.target,
+        mode: q.mode,
+        reward: { xp: q.xp, bonus: q.bonus },
+        endsAt: q.ends,
+        icon: q.icon,
+        progress,
+        state: progress >= q.target ? "done" : "active",
+      };
+    });
+  const quests = [...fromHq, ...own];
   const [done, setDone] = useState<CrewQuest | null>(null);
   const level = levelFromXp(xp);
   const pct = Math.round((level.xpIntoLevel / level.xpForNext) * 100);
@@ -154,7 +177,8 @@ export function CrewBoard({
   };
   const claim = (q: CrewQuest) => {
     setXp((v) => v + q.reward.xp);
-    setQuests((qs) => qs.filter((x) => x.id !== q.id));
+    if (q.id.startsWith("vq-")) setGone((g) => [...g, q.id]);
+    else setQuests((qs) => qs.filter((x) => x.id !== q.id));
     setDone(q);
     setTimeout(() => setDone(null), 2400);
     onNotify?.(`+${q.reward.xp} XP claimed`, q.reward.perk ? `Bonus unlocked: ${q.reward.perk}` : q.title);

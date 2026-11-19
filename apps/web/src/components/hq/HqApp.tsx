@@ -80,13 +80,10 @@ import { Sheet } from "@/components/guest/ui";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { ArtTile, type ArtName } from "@/components/system/Art";
 import {
-  BrandQr,
-  Choice,
   OfflineBar,
   SectionTile,
   Sidebar,
   TabCapsule,
-  TextField,
 } from "@/components/system/Kit";
 import { RoleSwitch } from "@/components/auth/RoleSwitch";
 import { MenuAdmin } from "./MenuAdmin";
@@ -99,11 +96,12 @@ import { ShiftsAdmin } from "./ShiftsAdmin";
 import { ChecklistsAdmin } from "./ChecklistsAdmin";
 import { QuestsAdmin } from "./QuestsAdmin";
 import { HRPage, TeamTabs } from "./TeamOps";
+import { InviteSheet } from "./TeamInvite";
+import { PersonEdit } from "./PersonSettings";
 import { StockAdmin } from "./StockAdmin";
 import { PersonPage } from "./Player";
 import {
   OnShiftGrid,
-  PersonEdit,
   TeamGroupPage,
   TeamGroups,
   ROLE_NAMES,
@@ -199,6 +197,8 @@ function Console({ menu }: { menu: Menu }) {
   const [offIds, setOffIds] = useState<string[]>([]);
   const [teamGroup, setTeamGroup] = useState<Group | null>(null);
   const [arranging, setArranging] = useState(false);
+  // Holding any overview block opens the arrange mode, like the waiter's home.
+  const holdToArrange = useHold(() => setArranging(true));
   const [overview, setOverview, overviewDefault] = useBlockLayout<
     "attention" | "people" | "news" | "money"
   >("yanyin:hq-overview", ["attention", "people", "news", "money"]);
@@ -867,13 +867,16 @@ function Console({ menu }: { menu: Menu }) {
               {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
               <div className="relative z-10 px-5 pb-10">
                 {/* The overview is blocks the admin arranges (hold "Arrange" below): order and visibility saved on this device. */}
-                <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
+                <div
+                  className="lg:grid lg:grid-cols-2 lg:gap-x-8"
+                  {...holdToArrange}
+                >
                   {overview
                     .filter((b) => b.on)
                     .map((b) => (
                       <Reveal
                         key={b.id}
-                        className={`min-w-0 ${b.id === "attention" || b.id === "money" ? "lg:col-span-2" : ""}`}
+                        className={`hold-block min-w-0 ${b.id === "attention" || b.id === "money" ? "lg:col-span-2" : ""}`}
                       >
                         {b.id === "attention" && (
                           <div ref={attentionRef} className="mt-2 scroll-mt-4">
@@ -1118,7 +1121,7 @@ function Console({ menu }: { menu: Menu }) {
           onClose={() => setInviting(false)}
           onSent={(n) => (
             setInviting(false),
-            say(tr("Invite sent to {name}", { name: n }))
+            say(n ? tr("Invite sent to {name}", { name: n }) : tr("Link copied"))
           )}
         />
       )}
@@ -1581,78 +1584,44 @@ function QuickSheet({
 }
 
 /** Invite: the team link and QR, or a phone number and a role. The person joins via join.html. */
-function InviteSheet({
-  onClose,
-  onSent,
-}: {
-  onClose: () => void;
-  onSent: (name: string) => void;
-}) {
-  const tr = useTr();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState(["Waiter"]);
-  const link = "https://yanyin.app/join/samarkand-8F2K";
-  const ok = name.trim().length > 1 && phone.replace(/\D/g, "").length >= 9;
-  return (
-    <Sheet
-      open
-      onClose={onClose}
-      label={tr("Invite to the team")}
-      title={false}
-      footer={
-        <button
-          type="button"
-          disabled={!ok}
-          onClick={() => (haptic("success"), onSent(name.trim()))}
-          className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40"
-        >
-          {tr("Send the invite")}
-        </button>
-      }
-    >
-      <div className="grid gap-5 px-5 pt-1 pb-10">
-        <h2 className="text-[30px] leading-tight font-bold tracking-[-0.025em]">
-          {tr("Invite to the team")}
-        </h2>
-        <a
-          href="join.html"
-          className="card press flex items-center gap-4 rounded-[26px] p-4"
-        >
-          <BrandQr value={link} size={104} label={tr("Invite QR code")} />
-          <span className="min-w-0">
-            <span className="block text-[16px] font-bold">
-              {tr("One link for the whole team")}
-            </span>
-            <span className="mt-0.5 block text-[13px] leading-snug text-g-muted">
-              {tr(
-                "They scan it, sign in and pick their @ID. Tap to see what they see.",
-              )}
-            </span>
-          </span>
-        </a>
-        <p className="px-1 text-[14px] font-semibold text-g-ink-2">
-          {tr("Or invite by phone")}
-        </p>
-        <div className="-mt-3 grid gap-2">
-          <TextField value={name} onChange={setName} placeholder={tr("Name")} />
-          <TextField
-            value={phone}
-            onChange={(v) => setPhone(v.replace(/[^\d ]/g, ""))}
-            prefix="+84"
-            placeholder="905 000 000"
-            type="tel"
-            inputMode="tel"
-          />
-          <Choice
-            value={role}
-            onChange={setRole}
-            options={["Waiter", "Bartender", "Cook", "Host", "Manager"].map(
-              (r) => ({ id: r, label: tr(r) }),
-            )}
-          />
-        </div>
-      </div>
-    </Sheet>
-  );
+
+/**
+ * Press and hold anywhere on a block: it sinks a little while held, then the
+ * arrange mode opens (the waiter's home works the same way). A move cancels,
+ * so scrolling never triggers it.
+ */
+function useHold(onHold: () => void, ms = 900) {
+  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const at = useRef<[number, number]>([0, 0]);
+  const el = useRef<HTMLElement | null>(null);
+  const stop = () => {
+    if (t.current) clearTimeout(t.current);
+    t.current = null;
+    if (el.current) {
+      el.current.style.transition = "transform 0.25s cubic-bezier(0.22,1,0.36,1)";
+      el.current.style.transform = "";
+      el.current = null;
+    }
+  };
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      stop();
+      at.current = [e.clientX, e.clientY];
+      el.current = (e.target as HTMLElement).closest<HTMLElement>(".hold-block");
+      if (!el.current) return;
+      el.current.style.transition = `transform ${ms}ms cubic-bezier(0.3,0,0.2,1)`;
+      el.current.style.transform = "scale(0.97)";
+      t.current = setTimeout(() => {
+        stop();
+        haptic("success");
+        onHold();
+      }, ms);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (Math.hypot(e.clientX - at.current[0], e.clientY - at.current[1]) > 8) stop();
+    },
+    onPointerUp: stop,
+    onPointerLeave: stop,
+    onPointerCancel: stop,
+  };
 }

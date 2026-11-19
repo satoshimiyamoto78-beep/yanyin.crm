@@ -3,6 +3,9 @@
 import {
   Check,
   ChefHat,
+  ConciergeBell,
+  Flame,
+  Inbox,
   Circle,
   Clock,
   Loader,
@@ -105,26 +108,72 @@ export function Board({
   empty: ReactNode;
 }) {
   const tr = useTr();
-  const [col, setCol] = useState<Col>("new");
+  const [col, setCol] = useState<Col | "all">("all");
   const by = (c: Col) =>
     orders
       .filter((o) => columnOf(o, station) === c)
       .sort((a, b) => a.at.localeCompare(b.at));
-  const cols: { id: Col; label: string; short: string; dot: string }[] = [
-    { id: "new", label: tr("New"), short: tr("New"), dot: "bg-g-blue" },
+  const cols: {
+    id: Col;
+    label: string;
+    short: string;
+    dot: string;
+    solid: string;
+    soft: string;
+    icon: typeof Circle;
+  }[] = [
+    {
+      id: "new",
+      label: tr("New"),
+      short: tr("New"),
+      dot: "bg-g-blue",
+      solid: "bg-g-blue",
+      soft: "bg-g-tint-blue text-g-blue",
+      icon: Inbox,
+    },
     {
       id: "making",
       label: tr("Cooking"),
       short: tr("Cooking"),
       dot: "bg-g-orange",
+      solid: "bg-g-orange",
+      soft: "bg-g-tint-orange text-[#d9600f] [[data-scheme=dark]_&]:text-[#ff9a55]",
+      icon: Flame,
     },
     {
       id: "ready",
       label: tr("Ready to serve"),
       short: tr("Ready"),
       dot: "bg-g-green",
+      solid: "bg-g-green",
+      soft: "bg-g-tint-green text-g-green",
+      icon: ConciergeBell,
     },
   ];
+  const cardOf = (o: KdsOrder) =>
+    columnOf(o, station) === "ready" ? (
+      <ReadyRow
+        key={o.id}
+        o={o}
+        station={station}
+        onServed={() => onServed(o.id)}
+      />
+    ) : (
+      <Card
+        key={o.id}
+        o={o}
+        station={station}
+        minute={minute}
+        fresh={fresh === o.id}
+        leaving={leaving.includes(o.id)}
+        stop={stop}
+        elapsed={elapsed(o)}
+        onLine={(l) => onLine(o, l)}
+        onAll={() => onAll(o)}
+        onInfo={onInfo}
+        notify={notify}
+      />
+    );
   const column = (c: (typeof cols)[number]) => {
     const list = by(c.id);
     return (
@@ -186,25 +235,61 @@ export function Board({
     return <>{empty}</>;
   return (
     <>
-      {/* Phones and small tablets: one column at a time. */}
-      <div className="mb-3 flex rounded-full bg-g-fill p-1 md:hidden">
-        {cols.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            aria-pressed={col === c.id}
-            onClick={() => (haptic("tick"), setCol(c.id))}
-            className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[13.5px] font-semibold transition-colors ${col === c.id ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
-          >
-            <span className={`size-1.5 rounded-full ${c.dot}`} /> {c.short}{" "}
-            <span className="tabular-nums opacity-60">{by(c.id).length}</span>
-          </button>
-        ))}
+      {/* All, then one capsule per state with its icon and count: pick one to see only it. */}
+      <div className="no-scrollbar -mx-3 mb-3 flex gap-2 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+        <button
+          type="button"
+          aria-pressed={col === "all"}
+          onClick={() => (haptic("tick"), setCol("all"))}
+          className={`press flex h-11 shrink-0 items-center gap-2 rounded-full px-4 text-[14px] font-semibold transition-colors ${col === "all" ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill"}`}
+        >
+          {tr("All")}
+          <span className="tabular-nums opacity-60">{orders.length}</span>
+        </button>
+        {cols.map((c) => {
+          const on = col === c.id;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => (haptic("tick"), setCol(on ? "all" : c.id))}
+              className={`press flex h-11 shrink-0 items-center gap-2 rounded-full pr-4 pl-1.5 text-[14px] font-semibold transition-all ${on ? `${c.solid} text-white` : c.soft}`}
+            >
+              <span
+                className={`grid size-8 place-items-center rounded-full ${on ? "bg-white/20" : c.solid + " text-white"}`}
+              >
+                <c.icon size={16} strokeWidth={2.4} />
+              </span>
+              {c.short}
+              <span className="tabular-nums opacity-70">{by(c.id).length}</span>
+            </button>
+          );
+        })}
       </div>
-      <div className="md:hidden">{column(cols.find((c) => c.id === col)!)}</div>
-      <div className="hidden items-start gap-3 md:grid md:grid-cols-3">
-        {cols.map(column)}
-      </div>
+      {col === "all" ? (
+        <>
+          {/* Computers and tablets: the three columns. Phones: everything in one list, oldest first. */}
+          <div className="hidden items-start gap-3 md:grid md:grid-cols-3">
+            {cols.map(column)}
+          </div>
+          <div className="grid gap-2.5 md:hidden">
+            {[...by("making"), ...by("new"), ...by("ready")].map((o) =>
+              cardOf(o),
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {by(col).length ? (
+            by(col).map((o) => cardOf(o))
+          ) : (
+            <p className="rounded-[20px] border-2 border-dashed border-g-line px-3 py-6 text-center text-[13.5px] text-g-muted sm:col-span-2 lg:col-span-3">
+              {tr("Nothing here right now")}
+            </p>
+          )}
+        </div>
+      )}
     </>
   );
 }
@@ -249,24 +334,44 @@ function Card({
     <article
       className={`relative rounded-[22px] p-3.5 ${t.card} ${leaving ? "animate-leave" : fresh ? "animate-pop" : ""}`}
     >
-      {/* Tags and the menu, like the reference's #tags and ⋮. */}
-      <div className="flex items-center gap-1.5">
+      {/* The table first, the menu beside it; the tags under it. */}
+      <div className="flex items-start gap-2">
+        <h3
+          className={`min-w-0 flex-1 text-[22px] leading-tight font-bold tracking-[-0.02em] tabular-nums ${t.ink}`}
+        >
+          {tr("Table {n}", { n: o.table })}
+        </h3>
+        <span
+          className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-[10px] px-2 ${glass}`}
+        >
+          <Clock size={12} className="text-g-muted" /> {elapsed}
+        </span>
+        <button
+          type="button"
+          aria-label={tr("More")}
+          onClick={() => (haptic("light"), setMenu(true))}
+          className={`press grid size-8 shrink-0 place-items-center rounded-[10px] ${glass}`}
+        >
+          <MoreHorizontal size={16} />
+        </button>
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         {o.guest ? (
           <span
-            className={`inline-flex h-7 items-center gap-1 rounded-[10px] px-2 text-[12px] font-semibold ${glass} ${t.ink}`}
+            className={`inline-flex h-6 items-center gap-1 rounded-[9px] px-2 text-[11.5px] font-semibold ${glass} ${t.ink}`}
           >
             <QrCode size={12} strokeWidth={2.4} /> {tr("QR guest")}
           </span>
         ) : (
           <span
-            className={`inline-flex h-7 items-center rounded-[10px] px-2 text-[12px] font-semibold ${glass} ${t.ink}`}
+            className={`inline-flex h-6 items-center rounded-[9px] px-2 text-[11.5px] font-semibold ${glass} ${t.ink}`}
           >
             #{tr("Hall").toLowerCase()}
           </span>
         )}
         {other.length > 0 && (
           <span
-            className={`inline-flex h-7 items-center rounded-[10px] px-2 text-[12px] font-semibold text-g-ink-2 ${glass}`}
+            className={`inline-flex h-6 items-center rounded-[9px] px-2 text-[11.5px] font-semibold text-g-ink-2 ${glass}`}
           >
             +
             {[...new Set(other.map((l) => l.station))]
@@ -276,42 +381,18 @@ function Card({
               .join(", ")}
           </span>
         )}
-        <button
-          type="button"
-          aria-label={tr("More")}
-          onClick={() => (haptic("light"), setMenu(true))}
-          className={`press ml-auto grid size-8 place-items-center rounded-[10px] ${glass}`}
-        >
-          <MoreHorizontal size={16} />
-        </button>
       </div>
 
-      <h3
-        className={`mt-2.5 text-[21px] leading-tight font-bold tracking-[-0.02em] tabular-nums ${t.ink}`}
-      >
-        {tr("Table {n}", { n: o.table })}
-      </h3>
-
-      {/* Progress pill: how many of this station's dishes are done. */}
-      <div
-        className={`mt-2 inline-flex h-8 items-center gap-2 rounded-full pr-3 pl-2 ${glass}`}
-      >
-        <span
-          className={`grid size-5 place-items-center rounded-full ${done === lines.length ? "bg-g-green text-white" : "border-2 border-g-line"}`}
-        >
-          {done === lines.length && <Check size={11} strokeWidth={3} />}
-        </span>
-        <span className="text-[12.5px] font-semibold tabular-nums">
-          {tr("{a} of {b}", { a: done, b: lines.length })}
-        </span>
-        <span className="h-1.5 w-16 overflow-hidden rounded-full bg-g-line">
+      {/* Progress across the whole card: how many of this station's dishes are done. */}
+      <div className="mt-3 flex items-center gap-2.5">
+        <span className="h-2 flex-1 overflow-hidden rounded-full bg-white/70 [[data-scheme=dark]_&]:bg-white/10">
           <span
             className="block h-full rounded-full bg-g-green transition-[width] duration-500"
-            style={{ width: `${pct}%` }}
+            style={{ width: `${Math.max(pct, 3)}%` }}
           />
         </span>
-        <span className="text-[12.5px] font-semibold text-g-muted tabular-nums">
-          {pct}%
+        <span className="shrink-0 text-[12.5px] font-semibold tabular-nums">
+          {tr("{a} of {b}", { a: done, b: lines.length })} · {pct}%
         </span>
       </div>
 
@@ -340,11 +421,6 @@ function Card({
         </span>
         <span className="min-w-0 flex-1 truncate text-[12.5px] text-g-muted">
           @{o.waiter} · {o.at}
-        </span>
-        <span
-          className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-[10px] px-2 ${glass}`}
-        >
-          <Clock size={12} className="text-g-muted" /> {elapsed}
         </span>
       </div>
       {left > 1 && (

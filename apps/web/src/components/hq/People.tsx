@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -10,7 +10,6 @@ import {
   type CSSProperties,
 } from "react";
 import {
-  ROLE_PERMISSIONS,
   type Permission,
   type Person,
   type StaffRole,
@@ -22,7 +21,6 @@ import { PeekActions } from "@/components/system/PeekParts";
 import { PersonPic } from "@/components/system/PersonPic";
 import { ArtScene, type ArtName } from "@/components/system/Art";
 import { Sheet } from "@/components/guest/ui";
-import { Switch } from "@/components/system/Kit";
 import { useTr } from "@/components/crew/prefs";
 import { compactMoney } from "@/components/crew/CrewApp";
 
@@ -483,186 +481,6 @@ export function Caption({
   );
 }
 
-/* ------------------------------------------------------------- Edit page */
-
-const ALL_STATIONS: Station[] = [
-  "hall",
-  "bar",
-  "hot",
-  "cold",
-  "grill",
-  "pastry",
-  "hookah",
-];
-
-/** Name, roles, stations, rights and access, grouped like iOS settings; removing asks once more and keeps their history. */
-export function PersonEdit({
-  p,
-  disabled,
-  onClose,
-  onChange,
-  onDisabled,
-  onRemove,
-}: {
-  p: Person;
-  disabled: boolean;
-  onClose: () => void;
-  onChange: (p: Person) => void;
-  onDisabled: (off: boolean) => void;
-  onRemove: () => void;
-}) {
-  const tr = useTr();
-  const [confirm, setConfirm] = useState(false);
-  const perms = [...new Set(p.roles.flatMap((r) => ROLE_PERMISSIONS[r]))];
-  const toggle = <T,>(list: T[], v: T) =>
-    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-  const chip = (on: boolean) =>
-    `press h-9 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-card text-g-ink-2"}`;
-  return (
-    <Sheet open wide onClose={onClose} label={tr("Edit")} title={false}>
-      <div className="mx-auto max-w-[520px] px-5 pt-1 pb-10">
-        <div className="flex items-center gap-3.5">
-          <Face p={p} size={56} off={disabled} dot={false} />
-          <div className="min-w-0">
-            <h2 className="truncate text-[22px] leading-tight font-bold tracking-[-0.02em]">
-              {p.name}
-            </h2>
-            <p className="truncate text-[13px] text-g-muted">
-              @{p.handle} · {tr("the @ID is chosen by the person")}
-            </p>
-          </div>
-        </div>
-
-        <Caption>{tr("Profile")}</Caption>
-        <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-5">
-          <span className="w-16 shrink-0 text-[14px] text-g-muted">
-            {tr("Name")}
-          </span>
-          <input
-            value={p.name}
-            maxLength={40}
-            onChange={(e) => onChange({ ...p, name: e.target.value })}
-            className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none"
-          />
-        </label>
-
-        <Caption>{tr("Roles")}</Caption>
-        <div className="flex flex-wrap gap-1.5 rounded-[22px] bg-g-fill p-2.5">
-          {(Object.keys(ROLE_NAMES) as StaffRole[]).map((r) => (
-            <button
-              key={r}
-              type="button"
-              aria-pressed={p.roles.includes(r)}
-              onClick={() => {
-                haptic("tick");
-                const roles = toggle(p.roles, r);
-                if (roles.length) onChange({ ...p, roles });
-              }}
-              className={chip(p.roles.includes(r))}
-            >
-              {tr(ROLE_NAMES[r])}
-            </button>
-          ))}
-        </div>
-
-        <Caption>{tr("Stations")}</Caption>
-        <div className="flex flex-wrap gap-1.5 rounded-[22px] bg-g-fill p-2.5">
-          {ALL_STATIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={p.stations.includes(s)}
-              onClick={() => (
-                haptic("tick"),
-                onChange({ ...p, stations: toggle(p.stations, s) })
-              )}
-              className={chip(p.stations.includes(s))}
-            >
-              {tr(STATION_NAMES[s])}
-            </button>
-          ))}
-        </div>
-
-        <Caption>{tr("Can")}</Caption>
-        <div className="divide-y divide-g-line rounded-[22px] bg-g-fill px-4">
-          {perms.map((pm) => (
-            <p
-              key={pm}
-              className="flex items-center gap-2.5 py-2.5 text-[14px]"
-            >
-              <Check
-                size={15}
-                strokeWidth={2.6}
-                className="shrink-0 text-g-green"
-              />
-              {tr(PERM_NAMES[pm as Permission])}
-            </p>
-          ))}
-        </div>
-        <p className="mt-1.5 px-1 text-[12px] text-g-muted">
-          {tr("Rights add up across roles and are checked on the server.")}
-        </p>
-
-        <Caption>{tr("Access")}</Caption>
-        <div className="flex items-center gap-3 rounded-full bg-g-fill py-2 pr-2 pl-5">
-          <span className="min-w-0 flex-1">
-            <span className="block text-[14.5px] font-semibold">
-              {tr("Can sign in")}
-            </span>
-            <span className="block truncate text-[12px] text-g-muted">
-              {disabled
-                ? tr("Off: the app is closed for them, history stays")
-                : tr("On: works in the app by role")}
-            </span>
-          </span>
-          <Switch
-            on={!disabled}
-            onChange={(v) => onDisabled(!v)}
-            label={tr("Can sign in")}
-          />
-        </div>
-
-        {confirm ? (
-          <div className="animate-rise mt-5 rounded-[22px] bg-[#e5484d]/10 p-4">
-            <p className="text-[15px] font-semibold">
-              {tr("Remove {n} from the team?", { n: p.name })}
-            </p>
-            <p className="mt-1 text-[12.5px] text-g-muted">
-              {tr(
-                "Orders, tips and payroll history stay in reports. The @ID is freed in 30 days.",
-              )}
-            </p>
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirm(false)}
-                className="press h-10 flex-1 rounded-full bg-g-card text-[14px] font-semibold"
-              >
-                {tr("Cancel")}
-              </button>
-              <button
-                type="button"
-                onClick={() => (haptic("success"), onRemove())}
-                className="press h-10 flex-1 rounded-full bg-[#e5484d] text-[14px] font-semibold text-white"
-              >
-                {tr("Remove")}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => (haptic("light"), setConfirm(true))}
-            className="press mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-semibold text-[#e5484d]"
-          >
-            <Trash2 size={16} strokeWidth={2.2} /> {tr("Remove from the team")}
-          </button>
-        )}
-      </div>
-    </Sheet>
-  );
-}
-
 /** One row in the team list: face, name and @ID, roles, and where they are now. */
 export function PersonRow({
   p,
@@ -862,7 +680,7 @@ export function TeamGroupPage({
             b: people.length,
           })}
         </p>
-        <div className="mt-5 flex gap-1.5">
+        <div className="no-scrollbar -mx-5 mt-5 flex gap-1.5 overflow-x-auto px-5">
           {(
             [
               ["all", tr("Everyone"), people.length],
@@ -879,7 +697,7 @@ export function TeamGroupPage({
               type="button"
               aria-pressed={view === id}
               onClick={() => (haptic("tick"), setView(id))}
-              className={`press flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors ${view === id ? "bg-g-ink text-white" : "bg-g-fill text-g-ink-2"}`}
+              className={`press flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold whitespace-nowrap transition-colors ${view === id ? "bg-g-ink text-white [[data-scheme=dark]_&]:bg-[#fff] [[data-scheme=dark]_&]:text-[#0b0b0f]" : "bg-g-fill text-g-ink-2"}`}
             >
               {label}
               <span
