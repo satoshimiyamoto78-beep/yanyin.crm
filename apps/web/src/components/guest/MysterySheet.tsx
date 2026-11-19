@@ -1,7 +1,14 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- small local dish photos in a static export */
-import { Check, RefreshCw, Shuffle } from "lucide-react";
+import {
+  Check,
+  GlassWater,
+  RefreshCw,
+  Shuffle,
+  Sparkles,
+  UtensilsCrossed,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   allItems,
@@ -223,36 +230,83 @@ export function MysterySheet({
           </div>
         </div>
 
-        {/* The rules: how many cards, what, and the price per card. Changing one lays the cards face down again. */}
-        <div className="mt-5 grid gap-2">
-          <Seg
-            label={ui(lang, "mysteryCards")}
-            value={String(count)}
-            options={["1", "2", "3"].map((n) => ({ id: n, label: n }))}
-            onPick={(v) => (setCount(Number(v) as 1 | 2 | 3), reset())}
-          />
-          <Seg
-            label={ui(lang, "mysteryWhat")}
-            value={kind}
-            options={[
-              { id: "any", label: ui(lang, "mysteryAll") },
-              { id: "food", label: ui(lang, "mysteryFood") },
-              { id: "drink", label: ui(lang, "mysteryDrink") },
-            ]}
-            onPick={(v) => (setKind(v as Kind), reset())}
-          />
-          <Seg
-            label={ui(lang, "mysteryBudget")}
-            value={budget}
-            options={BUDGETS.map((b) => ({
-              id: b.id,
-              label:
-                b.id === "any"
-                  ? ui(lang, "mysteryAny")
-                  : `≤ ${Math.round(b.max / 1000)}k`,
-            }))}
-            onPick={(v) => (setBudget(v as typeof budget), reset())}
-          />
+        {/* The rules in one quick card: tap how many cards (they light up), what, and the price per card. */}
+        <div className="mt-5 divide-y divide-g-line rounded-[22px] bg-g-fill px-3.5">
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-[13px] font-semibold text-g-muted">
+              {ui(lang, "mysteryCards")}
+            </span>
+            <div className="flex items-end gap-1.5">
+              {[1, 2, 3].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={String(n)}
+                  aria-pressed={count === n}
+                  onClick={() => {
+                    haptic("tick");
+                    setCount(n as 1 | 2 | 3);
+                    reset();
+                  }}
+                  className="press flex h-10 items-end gap-0.5 rounded-[12px] px-1.5"
+                >
+                  {Array.from({ length: n }, (_, k) => (
+                    <span
+                      key={k}
+                      className={`h-7 w-[18px] rounded-[5px] transition-colors duration-300 ${count === n ? "blue-grad shadow-[0_4px_10px_-4px_rgba(47,91,255,0.6)]" : "bg-g-faint/30"}`}
+                      style={{
+                        transform: `rotate(${(k - (n - 1) / 2) * 8}deg)`,
+                      }}
+                    />
+                  ))}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-[13px] font-semibold text-g-muted">
+              {ui(lang, "mysteryWhat")}
+            </span>
+            <div className="flex gap-1">
+              {(
+                [
+                  ["any", Sparkles, ui(lang, "mysteryAll")],
+                  ["food", UtensilsCrossed, ui(lang, "mysteryFood")],
+                  ["drink", GlassWater, ui(lang, "mysteryDrink")],
+                ] as const
+              ).map(([k, Icon, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={kind === k}
+                  onClick={() => (haptic("tick"), setKind(k), reset())}
+                  className={`press flex h-8 items-center gap-1 rounded-full px-2.5 text-[12.5px] font-semibold transition-colors ${kind === k ? "bg-g-ink text-white" : "text-g-ink-2"}`}
+                >
+                  <Icon size={13} strokeWidth={2.4} /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-[13px] font-semibold text-g-muted">
+              {ui(lang, "mysteryBudget")}
+            </span>
+            <div className="flex gap-1">
+              {BUDGETS.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  aria-pressed={budget === b.id}
+                  onClick={() => (haptic("tick"), setBudget(b.id), reset())}
+                  className={`press h-8 rounded-full px-2.5 text-[12.5px] font-semibold tabular-nums transition-colors ${budget === b.id ? "bg-g-ink text-white" : "text-g-ink-2"}`}
+                >
+                  {b.id === "any"
+                    ? ui(lang, "mysteryAny")
+                    : `≤ ${Math.round(b.max / 1000)}k`}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         <p className="mt-2 px-1 text-[12.5px] text-g-muted">
           {enough
@@ -372,39 +426,5 @@ export function MysterySheet({
         )}
       </div>
     </Sheet>
-  );
-}
-
-/** A labelled segmented control: one row, the label on the left. */
-function Seg({
-  label,
-  value,
-  options,
-  onPick,
-}: {
-  label: string;
-  value: string;
-  options: { id: string; label: string }[];
-  onPick: (id: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-[72px] shrink-0 text-[13px] font-semibold text-g-muted">
-        {label}
-      </span>
-      <div className="flex flex-1 rounded-full bg-g-fill p-1">
-        {options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            aria-pressed={value === o.id}
-            onClick={() => (haptic("tick"), onPick(o.id))}
-            className={`h-9 flex-1 rounded-full text-[13.5px] font-semibold tabular-nums transition-colors ${value === o.id ? "bg-g-card text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }

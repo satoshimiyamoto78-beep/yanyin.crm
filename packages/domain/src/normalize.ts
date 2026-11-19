@@ -29,7 +29,7 @@ export type RawMenu = {
 };
 
 type RawVariant = { name: I18nText; price: number };
-type RawOption = { name: I18nText; price: number; note?: I18nText; logo?: string; color?: string; glyph?: string; photo?: string; level?: 1 | 2 | 3 };
+type RawOption = { name: I18nText; price: number; note?: I18nText; logo?: string; color?: string; glyph?: string; photo?: string; level?: 1 | 2 | 3; stock?: string[] };
 
 type RawCategory = {
   name: I18nText;
@@ -131,6 +131,7 @@ export function normalizeMenu(raw: RawMenu): Menu {
         ...(o.glyph ? { glyph: o.glyph } : {}),
         ...(o.photo ? { photo: o.photo } : {}),
         ...(o.level ? { level: o.level } : {}),
+        ...(o.stock?.length ? { stock: o.stock } : {}),
       }));
       return {
         id: g.id,

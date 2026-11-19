@@ -16,7 +16,40 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { Banknote, Building2, CreditCard, Heart, QrCode, Star, BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, Leaf, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, X } from "lucide-react";
+import {
+  Shuffle,
+  Banknote,
+  Building2,
+  CreditCard,
+  Heart,
+  QrCode,
+  Star,
+  BellRing,
+  MessageSquarePlus,
+  MessageSquareText,
+  Pencil,
+  ShoppingBag,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  CookingPot,
+  Plus,
+  ReceiptText,
+  StickyNote,
+  type LucideIcon,
+  Copy,
+  FlameKindling,
+  ImageIcon,
+  Leaf,
+  Navigation,
+  Phone,
+  Search,
+  SearchX,
+  Share2,
+  SlidersHorizontal,
+  Wallet,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -26,7 +59,14 @@ import { haptic } from "@/lib/haptics";
 import { SlideToConfirm } from "@/components/system/SlideToConfirm";
 import { BrandQr, useStepHistory } from "@/components/system/Kit";
 import { ArtTile } from "@/components/system/Art";
-import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview, drinkColor, drinkName } from "./builders";
+import {
+  DrinkPreview,
+  HalvesPicker,
+  OptionTiles,
+  PizzaPreview,
+  drinkColor,
+  drinkName,
+} from "./builders";
 
 const tint = (c: string, a: number) => {
   const m = /^#([0-9a-f]{6})$/i.exec(c);
@@ -34,7 +74,17 @@ const tint = (c: string, a: number) => {
   const n = parseInt(m[1]!, 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
-import { DishTile, HalalIcon, ItemCard, ItemChips, RoleIcon, Sheet, Stepper, TrackSlider, altName } from "./ui";
+import {
+  DishTile,
+  HalalIcon,
+  ItemCard,
+  ItemChips,
+  RoleIcon,
+  Sheet,
+  Stepper,
+  TrackSlider,
+  altName,
+} from "./ui";
 
 /* ---------------------------------------------------------------- Item */
 
@@ -51,11 +101,37 @@ export function ItemSheet({
   lang: Lang;
   currency: Currency;
   onClose: () => void;
-  onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number, note?: string) => void;
+  onAdd: (
+    item: MenuItem,
+    variantId: string | undefined,
+    optionIds: string[],
+    qty: number,
+    note?: string,
+  ) => void;
 }) {
   if (!item || !category) return null;
-  if (item.builder === "halves") return <HalvesPicker key={item.id} item={item} lang={lang} currency={currency} onClose={onClose} onAdd={onAdd} />;
-  return <ItemSheetBody key={item.id} item={item} category={category} lang={lang} currency={currency} onClose={onClose} onAdd={onAdd} />;
+  if (item.builder === "halves")
+    return (
+      <HalvesPicker
+        key={item.id}
+        item={item}
+        lang={lang}
+        currency={currency}
+        onClose={onClose}
+        onAdd={onAdd}
+      />
+    );
+  return (
+    <ItemSheetBody
+      key={item.id}
+      item={item}
+      category={category}
+      lang={lang}
+      currency={currency}
+      onClose={onClose}
+      onAdd={onAdd}
+    />
+  );
 }
 
 function ItemSheetBody({
@@ -71,19 +147,33 @@ function ItemSheetBody({
   lang: Lang;
   currency: Currency;
   onClose: () => void;
-  onAdd: (item: MenuItem, variantId: string | undefined, optionIds: string[], qty: number, note?: string) => void;
+  onAdd: (
+    item: MenuItem,
+    variantId: string | undefined,
+    optionIds: string[],
+    qty: number,
+    note?: string,
+  ) => void;
 }) {
   const [note, setNote] = useState("");
-  const [variantId, setVariantId] = useState<string | undefined>(item.variants[0]?.id);
-  const [optionIds, setOptionIds] = useState<string[]>(() => defaultOptionIds(item));
+  const [variantId, setVariantId] = useState<string | undefined>(
+    item.variants[0]?.id,
+  );
+  const [optionIds, setOptionIds] = useState<string[]>(() =>
+    defaultOptionIds(item),
+  );
   const [qty, setQty] = useState(1);
   const missing = missingRequired(item, optionIds);
   const price = unitPrice(item, variantId, optionIds);
   const alt = altName(item, lang);
 
   // Hookah: strength is light / medium / strong and every tobacco has its own level.
-  const strengthGroup = item.modifierGroups.find((g) => g.display === "scale" && g.options.every((o) => o.level));
-  const level = strengthGroup?.options.find((o) => optionIds.includes(o.id))?.level;
+  const strengthGroup = item.modifierGroups.find(
+    (g) => g.display === "scale" && g.options.every((o) => o.level),
+  );
+  const level = strengthGroup?.options.find((o) =>
+    optionIds.includes(o.id),
+  )?.level;
   const setLevel = (lv: number) => {
     if (!strengthGroup) return;
     const ids = strengthGroup.options.map((o) => o.id);
@@ -91,12 +181,61 @@ function ItemSheetBody({
     if (!next) return;
     setOptionIds((prev) => {
       // A tobacco of another strength no longer fits: the guest picks again from the matching ones, now on top.
-      const brands = item.modifierGroups.filter((g) => g.display === "brands").flatMap((g) => g.options);
-      const keep = prev.filter((id) => !ids.includes(id) && !brands.some((b) => b.id === id && b.level && b.level !== lv));
+      const brands = item.modifierGroups
+        .filter((g) => g.display === "brands")
+        .flatMap((g) => g.options);
+      const keep = prev.filter(
+        (id) =>
+          !ids.includes(id) &&
+          !brands.some((b) => b.id === id && b.level && b.level !== lv),
+      );
       return [...keep, next.id];
     });
   };
-  const isHookah = Boolean(strengthGroup && item.modifierGroups.some((g) => g.display === "brands"));
+  const isHookah = Boolean(
+    strengthGroup && item.modifierGroups.some((g) => g.display === "brands"),
+  );
+  // Hookah steps: strength, then the tobaccos of that strength, then the flavours that tobacco has in stock.
+  const brandGroup = item.modifierGroups.find((g) => g.display === "brands");
+  const tobacco = brandGroup?.options.find((o) => optionIds.includes(o.id));
+  const flavorGroup = isHookah
+    ? item.modifierGroups.find(
+        (g) => g.display !== "brands" && g.options.some((o) => o.color),
+      )
+    : undefined;
+  const inStock = (o: { name: { en?: string } }) =>
+    !tobacco?.stock || tobacco.stock.includes(o.name.en ?? "");
+  // A short blurred "loading" while the next step fills in, like the rest of the app.
+  const [loading, setLoading] = useState<"tobacco" | "flavor" | null>(null);
+  const load = (what: "tobacco" | "flavor") => {
+    setLoading(what);
+    setTimeout(() => setLoading((x) => (x === what ? null : x)), 480);
+  };
+  const randomFlavours = () => {
+    if (!flavorGroup) return;
+    const auto = flavorGroup.defaultOptionId;
+    const bag = flavorGroup.options.filter((o) => o.id !== auto && inStock(o));
+    const n = Math.min(
+      bag.length,
+      Math.max(1, flavorGroup.max),
+      2 + (crypto.getRandomValues(new Uint8Array(1))[0]! % 2),
+    );
+    const picked: string[] = [];
+    while (picked.length < n && bag.length)
+      picked.push(
+        bag.splice(
+          crypto.getRandomValues(new Uint32Array(1))[0]! % bag.length,
+          1,
+        )[0]!.id,
+      );
+    const ids = flavorGroup.options.map((o) => o.id);
+    haptic("success");
+    load("flavor");
+    setOptionIds((prev) => [
+      ...prev.filter((id) => !ids.includes(id)),
+      ...picked,
+    ]);
+  };
 
   const toggle = (groupId: string, optionId: string) => {
     const group = item.modifierGroups.find((g) => g.id === groupId)!;
@@ -104,11 +243,14 @@ function ItemSheetBody({
       const ids = group.options.map((o) => o.id);
       if (prev.includes(optionId)) return prev.filter((id) => id !== optionId);
       const mine = prev.filter((id) => ids.includes(id));
-      if (group.max === 1) return [...prev.filter((id) => !ids.includes(id)), optionId];
+      if (group.max === 1)
+        return [...prev.filter((id) => !ids.includes(id)), optionId];
       // In a multi-pick group the preselected option ("master's choice") excludes the rest.
       const auto = group.defaultOptionId;
-      if (auto && optionId === auto) return [...prev.filter((id) => !ids.includes(id)), optionId];
-      if (auto && mine.includes(auto)) return [...prev.filter((id) => id !== auto), optionId];
+      if (auto && optionId === auto)
+        return [...prev.filter((id) => !ids.includes(id)), optionId];
+      if (auto && mine.includes(auto))
+        return [...prev.filter((id) => id !== auto), optionId];
       return mine.length >= group.max ? prev : [...prev, optionId];
     });
   };
@@ -122,11 +264,21 @@ function ItemSheetBody({
       footer={
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-[124px] items-center justify-between rounded-full bg-g-fill px-1.5">
-            <button aria-label="Remove one" onClick={() => setQty((q) => Math.max(1, q - 1))} className="press grid size-9 place-items-center rounded-full text-xl">
+            <button
+              aria-label="Remove one"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              className="press grid size-9 place-items-center rounded-full text-xl"
+            >
               −
             </button>
-            <span className="text-[16px] font-semibold tabular-nums">{qty}</span>
-            <button aria-label="Add one" onClick={() => setQty((q) => q + 1)} className="press grid size-9 place-items-center rounded-full text-xl">
+            <span className="text-[16px] font-semibold tabular-nums">
+              {qty}
+            </span>
+            <button
+              aria-label="Add one"
+              onClick={() => setQty((q) => q + 1)}
+              className="press grid size-9 place-items-center rounded-full text-xl"
+            >
               +
             </button>
           </div>
@@ -154,13 +306,22 @@ function ItemSheetBody({
             // The stage takes the drink's colour; its live name sits on top.
             <div
               className="relative aspect-[1.1] w-full overflow-hidden rounded-[28px] transition-[background] duration-500"
-              style={{ background: `radial-gradient(120% 90% at 50% 100%, ${tint(drinkColor(item, optionIds), 0.35)} 0%, ${tint(drinkColor(item, optionIds), 0.08)} 55%, #f7f8fb 100%)` }}
+              style={{
+                background: `radial-gradient(120% 90% at 50% 100%, ${tint(drinkColor(item, optionIds), 0.35)} 0%, ${tint(drinkColor(item, optionIds), 0.08)} 55%, #f7f8fb 100%)`,
+              }}
             >
-              <p key={drinkName(item, optionIds, lang)} className="animate-pop absolute inset-x-0 top-4 px-5 text-center text-[15px] font-semibold text-g-ink-2">
+              <p
+                key={drinkName(item, optionIds, lang)}
+                className="animate-pop absolute inset-x-0 top-4 px-5 text-center text-[15px] font-semibold text-g-ink-2"
+              >
                 {drinkName(item, optionIds, lang) || "\u00a0"}
               </p>
               <div className="absolute inset-x-6 top-10 bottom-2">
-                <DrinkPreview item={item} ids={optionIds} variantId={variantId} />
+                <DrinkPreview
+                  item={item}
+                  ids={optionIds}
+                  variantId={variantId}
+                />
               </div>
             </div>
           )}
@@ -169,7 +330,13 @@ function ItemSheetBody({
         <div className="px-3 pt-3">
           {/* The hookah builder: a wide crop of the photo with the live mix on top, so the steps start on the first screen. */}
           <div className="relative aspect-[1.45] w-full overflow-hidden rounded-[28px] bg-[#0b0b0f]">
-            <Image src={item.cover} alt="" fill sizes="480px" className="object-cover object-[50%_40%]" />
+            <Image
+              src={item.cover}
+              alt=""
+              fill
+              sizes="480px"
+              className="object-cover object-[50%_40%]"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <HookahSummary item={item} ids={optionIds} lang={lang} />
           </div>
@@ -178,23 +345,49 @@ function ItemSheetBody({
         <div className="px-3 pt-3">
           {/* On the dish's own page the photo is shown whole, in its own proportions; lists crop it to the venue's format. */}
           <div className="w-full overflow-hidden rounded-[28px] bg-g-fill">
-            <Image src={item.cover} alt="" width={960} height={960} sizes="480px" className="block h-auto w-full" />
+            <Image
+              src={item.cover}
+              alt=""
+              width={960}
+              height={960}
+              sizes="480px"
+              className="block h-auto w-full"
+            />
           </div>
         </div>
       ) : item.photo ? (
         <div className="px-3 pt-3">
-          <DishTile item={item} role={category.role} photoScale={0.8} glyph={0.3} className="aspect-[1.25] w-full rounded-[28px]" />
+          <DishTile
+            item={item}
+            role={category.role}
+            photoScale={0.8}
+            glyph={0.3}
+            className="aspect-[1.25] w-full rounded-[28px]"
+          />
         </div>
       ) : (
         <div className="px-3 pt-3">
-          <DishTile item={item} role={category.role} glyph={0.3} className="aspect-[2] w-full rounded-[28px]" />
+          <DishTile
+            item={item}
+            role={category.role}
+            glyph={0.3}
+            className="aspect-[2] w-full rounded-[28px]"
+          />
         </div>
       )}
       <div className="px-5 pt-5 pb-6">
-        <p className="text-[13px] font-medium text-g-muted">{t(category.name, lang)}</p>
-        <h2 className="mt-1 text-[26px] leading-[1.15] font-bold tracking-[-0.02em] text-balance">{t(item.name, lang)}</h2>
+        <p className="text-[13px] font-medium text-g-muted">
+          {t(category.name, lang)}
+        </p>
+        <h2 className="mt-1 text-[26px] leading-[1.15] font-bold tracking-[-0.02em] text-balance">
+          {t(item.name, lang)}
+        </h2>
         {alt && <p className="mt-1 text-[14px] text-g-faint">{alt}</p>}
-        {item.description && <p className="mt-3 text-[16px] leading-[1.5] text-g-ink-2">{t(item.description, lang)}</p>}
+        {item.description && (
+          <p className="mt-3 text-[16px] leading-[1.5] text-g-ink-2">
+            {t(item.description, lang)}
+          </p>
+        )}
         <div className="mt-3 empty:hidden">
           <ItemChips item={item} lang={lang} />
         </div>
@@ -210,8 +403,12 @@ function ItemSheetBody({
                   aria-pressed={on}
                   className={`flex h-11 flex-1 flex-col items-center justify-center rounded-full transition-all ${on ? "bg-white" : "text-g-muted"}`}
                 >
-                  <span className="text-[14px] font-semibold">{t(v.name, lang)}</span>
-                  <span className="text-[11px] tabular-nums">{formatMoney(v.price, currency, lang)}</span>
+                  <span className="text-[14px] font-semibold">
+                    {t(v.name, lang)}
+                  </span>
+                  <span className="text-[11px] tabular-nums">
+                    {formatMoney(v.price, currency, lang)}
+                  </span>
                 </button>
               );
             })}
@@ -220,17 +417,50 @@ function ItemSheetBody({
 
         {item.modifierGroups.map((g, gi) => {
           const steps = item.modifierGroups.length > 1;
+          const waitTobacco = isHookah && g === flavorGroup && !tobacco;
+          const shown =
+            g === flavorGroup
+              ? { ...g, options: g.options.filter(inStock) }
+              : g;
           return (
-            <section key={g.id} className="mt-9">
+            <section key={g.id} className="mt-8">
               <div className="mb-4 flex items-baseline gap-2.5">
-                {steps && <span className="grid size-7 shrink-0 place-items-center self-center rounded-full bg-g-blue-soft text-[13px] font-bold text-g-blue tabular-nums">{gi + 1}</span>}
+                {steps && (
+                  <span className="grid size-7 shrink-0 place-items-center self-center rounded-full bg-g-blue-soft text-[13px] font-bold text-g-blue tabular-nums">
+                    {gi + 1}
+                  </span>
+                )}
                 <h3 className="text-[17px] font-semibold">{t(g.name, lang)}</h3>
-                <span className={`ml-auto text-[13px] font-medium ${g.required && missing.includes(g.id) ? "text-g-blue" : "text-g-faint"}`}>
-                  {(g.display === "chips" || g.display === "tiles") && g.max > 1 && g.max < g.options.length ? `${ui(lang, "pickUpTo")} ${g.max} · ` : ""}
-                  {g.display === "remove" ? ui(lang, "tapToRemove") : ui(lang, g.required ? "required" : "optional")}
+                {g === flavorGroup && tobacco && (
+                  <button
+                    type="button"
+                    onClick={randomFlavours}
+                    className="press ml-auto flex h-8 items-center gap-1.5 rounded-full bg-g-blue-soft px-3 text-[13px] font-semibold text-g-blue"
+                  >
+                    <Shuffle size={14} strokeWidth={2.4} />{" "}
+                    {ui(lang, "randomize")}
+                  </button>
+                )}
+                <span
+                  className={`${g === flavorGroup && tobacco ? "" : "ml-auto"} text-[13px] font-medium ${g.required && missing.includes(g.id) ? "text-g-blue" : "text-g-faint"}`}
+                >
+                  {(g.display === "chips" || g.display === "tiles") &&
+                  g.max > 1 &&
+                  g.max < g.options.length
+                    ? `${ui(lang, "pickUpTo")} ${g.max}${g === flavorGroup && tobacco ? "" : " · "}`
+                    : ""}
+                  {g === flavorGroup && tobacco
+                    ? ""
+                    : g.display === "remove"
+                      ? ui(lang, "tapToRemove")
+                      : ui(lang, g.required ? "required" : "optional")}
                 </span>
               </div>
-              {g.display === "remove" ? (
+              {waitTobacco ? (
+                <p className="rounded-full bg-g-fill px-5 py-3.5 text-[14px] text-g-muted">
+                  {ui(lang, "pickTobaccoFirst")}
+                </p>
+              ) : g.display === "remove" ? (
                 // Ingredients the dish comes with: tap to take one out (it strikes through).
                 <div className="flex flex-wrap gap-2">
                   {g.options.map((o) => {
@@ -246,7 +476,15 @@ function ItemSheetBody({
                         aria-label={`${out ? "Return" : "Remove"} ${t(o.name, lang)}`}
                         className={`press flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium transition-all ${out ? "bg-g-fill text-g-faint line-through" : "bg-g-blue-soft text-g-ink"}`}
                       >
-                        {out ? <X size={15} strokeWidth={2.25} /> : <Check size={15} strokeWidth={2.5} className="text-g-blue" />}
+                        {out ? (
+                          <X size={15} strokeWidth={2.25} />
+                        ) : (
+                          <Check
+                            size={15}
+                            strokeWidth={2.5}
+                            className="text-g-blue"
+                          />
+                        )}
                         {t(o.name, lang)}
                       </button>
                     );
@@ -273,7 +511,14 @@ function ItemSheetBody({
                       );
                     })}
                   </div>
-                  <p className="mt-2 text-[13px] text-g-muted">{t(g.options.find((o) => optionIds.includes(o.id))?.name ?? { en: "" }, lang)}</p>
+                  <p className="mt-2 text-[13px] text-g-muted">
+                    {t(
+                      g.options.find((o) => optionIds.includes(o.id))?.name ?? {
+                        en: "",
+                      },
+                      lang,
+                    )}
+                  </p>
                 </div>
               ) : g.display === "tiles" ? (
                 <OptionTiles
@@ -294,26 +539,37 @@ function ItemSheetBody({
                   basePrice={item.price}
                   value={optionIds}
                   level={level}
+                  loading={loading === "tobacco"}
                   onPick={(id) => {
                     haptic("light");
                     toggle(g.id, id);
-                    // Picking a tobacco sets the strength to match it.
-                    const lv = g.options.find((o) => o.id === id)?.level;
-                    if (lv && lv !== level && strengthGroup) {
-                      const sid = strengthGroup.options.find((o) => o.level === lv)?.id;
-                      const sids = strengthGroup.options.map((o) => o.id);
-                      if (sid) setOptionIds((prev) => [...prev.filter((x) => !sids.includes(x)), sid]);
+                    // Flavours this tobacco does not have drop out; the master's choice stays.
+                    const next = g.options.find((o) => o.id === id);
+                    if (flavorGroup && next?.stock) {
+                      const out = flavorGroup.options
+                        .filter(
+                          (o) =>
+                            o.id !== flavorGroup.defaultOptionId &&
+                            !next.stock!.includes(o.name.en ?? ""),
+                        )
+                        .map((o) => o.id);
+                      setOptionIds((prev) =>
+                        prev.filter((x) => !out.includes(x)),
+                      );
                     }
+                    load("flavor");
                   }}
                 />
               ) : g.display === "scale" && g === strengthGroup ? (
-                <StrengthLevels
+                <StrengthSwitch
                   group={g}
                   lang={lang}
                   value={level}
                   onPick={(lv) => {
+                    if (lv === level) return;
                     haptic("tick");
                     setLevel(lv);
+                    load("tobacco");
                   }}
                 />
               ) : g.display === "scale" ? (
@@ -323,7 +579,10 @@ function ItemSheetBody({
                   value={g.options.findIndex((o) => optionIds.includes(o.id))}
                   onChange={(i) => {
                     const ids = g.options.map((o) => o.id);
-                    setOptionIds((prev) => [...prev.filter((id) => !ids.includes(id)), g.options[i]!.id]);
+                    setOptionIds((prev) => [
+                      ...prev.filter((id) => !ids.includes(id)),
+                      g.options[i]!.id,
+                    ]);
                   }}
                 />
               ) : g.options.every((o) => o.price > 0) ? (
@@ -339,18 +598,41 @@ function ItemSheetBody({
                           toggle(g.id, o.id);
                         }}
                         aria-pressed={on}
-                        className={`press flex min-h-14 items-center gap-3 rounded-[22px] py-2 pr-2 pl-4 text-left transition-colors ${on ? "bg-g-blue-soft" : "bg-g-fill"}`}
+                        className={`press flex min-h-12 items-center gap-3 rounded-full py-1.5 pr-1.5 pl-4 text-left transition-colors ${on ? "bg-g-blue-soft" : "bg-g-fill"}`}
                       >
-                        <span className="min-w-0 flex-1 text-[15px] leading-snug font-medium">{t(o.name, lang)}</span>
-                        <span className={`shrink-0 text-[14px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-muted"}`}>+{formatMoney(o.price, currency, lang)}</span>
-                        <span className={`grid size-9 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-card text-g-faint"}`}>{on ? <Check size={16} strokeWidth={3} /> : <Plus size={16} strokeWidth={2.4} />}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[14px] leading-tight font-medium">
+                            {t(o.name, lang)}
+                          </span>
+                          <span
+                            className={`block text-[12.5px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-muted"}`}
+                          >
+                            +{formatMoney(o.price, currency, lang)}
+                          </span>
+                        </span>
+                        <span
+                          className={`grid size-8 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-card text-g-faint"}`}
+                        >
+                          {on ? (
+                            <Check size={15} strokeWidth={3} />
+                          ) : (
+                            <Plus size={15} strokeWidth={2.4} />
+                          )}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {g.options.map((o) => {
+                <div
+                  data-loading={
+                    g === flavorGroup && loading === "flavor"
+                      ? "true"
+                      : undefined
+                  }
+                  className="flex flex-wrap gap-2"
+                >
+                  {shown.options.map((o) => {
                     const on = optionIds.includes(o.id);
                     return (
                       <button
@@ -360,11 +642,26 @@ function ItemSheetBody({
                           toggle(g.id, o.id);
                         }}
                         aria-pressed={on}
-                        className={`press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"} ${o.color ? "pl-2.5" : ""}`}
+                        className={`live press flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-colors ${on ? "bg-g-ink text-white" : "bg-g-fill"} ${o.color ? "pl-2.5" : ""}`}
                       >
-                        {on ? <Check size={15} strokeWidth={2.5} /> : o.color && <span className="size-4 shrink-0 rounded-full ring-2 ring-white/70" style={{ background: o.color }} />}
+                        {on ? (
+                          <Check size={15} strokeWidth={2.5} />
+                        ) : (
+                          o.color && (
+                            <span
+                              className="size-4 shrink-0 rounded-full ring-2 ring-white/70"
+                              style={{ background: o.color }}
+                            />
+                          )
+                        )}
                         {t(o.name, lang)}
-                        {o.price > 0 && <span className={on ? "text-white/60" : "text-g-muted"}>+{formatMoney(o.price, currency, lang)}</span>}
+                        {o.price > 0 && (
+                          <span
+                            className={on ? "text-white/60" : "text-g-muted"}
+                          >
+                            +{formatMoney(o.price, currency, lang)}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -376,8 +673,15 @@ function ItemSheetBody({
         {/* A word to the kitchen about this dish only; it travels with the dish to the cart and the kitchen. */}
         <section className="mt-9">
           <h3 className="mb-3 flex items-center gap-2 text-[17px] font-semibold">
-            <MessageSquareText size={18} strokeWidth={2} className="text-g-blue" /> {ui(lang, "dishNote")}
-            <span className="ml-auto text-[13px] font-medium text-g-faint">{ui(lang, "optional")}</span>
+            <MessageSquareText
+              size={18}
+              strokeWidth={2}
+              className="text-g-blue"
+            />{" "}
+            {ui(lang, "dishNote")}
+            <span className="ml-auto text-[13px] font-medium text-g-faint">
+              {ui(lang, "optional")}
+            </span>
           </h3>
           <textarea
             value={note}
@@ -396,53 +700,105 @@ function ItemSheetBody({
 
 /* ---------------------------------------------------------------- Hookah */
 
-const LEVEL_KEYS = ["strength1", "strength2", "strength3"] as const;
-const levelWord = (lang: Lang, lv: number) => ui(lang, LEVEL_KEYS[Math.min(3, Math.max(1, lv)) - 1]!);
-
-/** Strength as three rising bars: one for light, two for medium, three for strong. */
-function LevelBars({ level, on, size = 18, light = false }: { level: number; on?: boolean; size?: number; light?: boolean }) {
-  const fill = light ? "#fff" : on ? "var(--g-blue)" : "var(--g-ink)";
-  const rest = light ? "rgba(255,255,255,0.3)" : "color-mix(in srgb, var(--g-faint) 35%, transparent)";
+/** Strength as three dots: one filled for light, two for medium, three for strong. */
+export function LevelDots({
+  level,
+  on,
+  light = false,
+  size = 6,
+}: {
+  level: number;
+  on?: boolean;
+  light?: boolean;
+  size?: number;
+}) {
   return (
-    <svg viewBox="0 0 18 18" width={size} height={size} aria-hidden className="shrink-0">
+    <span
+      aria-hidden
+      className="flex shrink-0 items-center"
+      style={{ gap: size * 0.55 }}
+    >
       {[0, 1, 2].map((i) => (
-        <rect key={i} x={1 + i * 6} y={12 - i * 5} width={4} height={5 + i * 5} rx={2} fill={i < level ? fill : rest} className="transition-[fill] duration-300" />
+        <span
+          key={i}
+          className={`rounded-full transition-colors duration-300 ${i < level ? (light ? "bg-white" : on ? "bg-g-blue" : "bg-g-ink") : light ? "bg-white/30" : "bg-g-faint/35"}`}
+          style={{ width: size, height: size }}
+        />
       ))}
-    </svg>
+    </span>
   );
 }
 
-/** Light, medium or strong: three big cards, the bars, the word and what it means. */
-function StrengthLevels({ group, lang, value, onPick }: { group: ModifierGroup; lang: Lang; value?: number; onPick: (level: number) => void }) {
+/** Light, medium or strong as one smooth switch: a white thumb glides under the dots and the word; what it means below. */
+function StrengthSwitch({
+  group,
+  lang,
+  value,
+  onPick,
+}: {
+  group: ModifierGroup;
+  lang: Lang;
+  value?: number;
+  onPick: (level: number) => void;
+}) {
+  const at = Math.max(
+    0,
+    group.options.findIndex((o) => o.level === value),
+  );
+  const note = group.options[at]?.note;
   return (
-    <div role="radiogroup" aria-label={t(group.name, lang)} className="grid grid-cols-3 gap-2">
-      {group.options.map((o) => {
-        const lv = o.level ?? 1;
-        const on = value === lv;
-        return (
-          <button
-            key={o.id}
-            role="radio"
-            aria-checked={on}
-            onClick={() => onPick(lv)}
-            className={`press flex min-h-[128px] flex-col items-start rounded-[22px] p-3.5 text-left transition-colors ${on ? "spin-ring bg-g-blue-soft" : "bg-g-fill"}`}
-          >
-            <LevelBars level={lv} on={on} size={26} />
-            <span className="mt-4">
-              <span className={`block text-[16px] leading-tight font-bold tracking-[-0.01em] ${on ? "text-g-blue" : ""}`}>{t(o.name, lang)}</span>
-              {o.note && <span className="mt-1 block text-[12px] leading-[1.3] text-g-muted">{t(o.note, lang)}</span>}
-            </span>
-          </button>
-        );
-      })}
+    <div>
+      <div
+        role="radiogroup"
+        aria-label={t(group.name, lang)}
+        className="relative grid h-14 grid-cols-3 rounded-full bg-g-fill p-1"
+      >
+        <span
+          aria-hidden
+          className="absolute top-1 bottom-1 left-1 rounded-full bg-g-card shadow-[0_2px_8px_-2px_rgba(11,11,15,0.18)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{
+            width: "calc((100% - 8px) / 3)",
+            transform: `translateX(${at * 100}%)`,
+          }}
+        />
+        {group.options.map((o) => {
+          const lv = o.level ?? 1;
+          const on = value === lv;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onPick(lv)}
+              className="relative z-10 flex flex-col items-center justify-center gap-1 rounded-full"
+            >
+              <LevelDots level={lv} on={on} />
+              <span
+                className={`text-[14px] leading-none font-semibold transition-colors ${on ? "text-g-ink" : "text-g-muted"}`}
+              >
+                {t(o.name, lang)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {note && (
+        <p
+          key={at}
+          className="animate-rise mt-2 px-2 text-center text-[13px] text-g-muted"
+        >
+          {t(note, lang)}
+        </p>
+      )}
     </div>
   );
 }
 
 /**
- * Hookah tobacco as brand tiles, two per row, each with its own strength.
- * The ones that match the chosen strength come first; the rest stay pickable,
- * a little quieter, under "Other strength" (picking one moves the strength).
+ * Hookah tobacco: only the brands of the chosen strength, two per row, small
+ * tiles: the name and a tick, then the strength dots, the character and the
+ * price on one line. They blur in while the strength changes.
  */
 function TobaccoTiles({
   group,
@@ -451,6 +807,7 @@ function TobaccoTiles({
   basePrice,
   value,
   level,
+  loading,
   onPick,
 }: {
   group: ModifierGroup;
@@ -459,72 +816,105 @@ function TobaccoTiles({
   basePrice: number;
   value: string[];
   level?: number;
+  loading?: boolean;
   onPick: (optionId: string) => void;
 }) {
-  const fits = (lv?: number) => !level || !lv || lv === level;
-  const match = group.options.filter((o) => fits(o.level));
-  const rest = group.options.filter((o) => !fits(o.level));
-  const tile = (o: ModifierGroup["options"][number], quiet: boolean) => {
-    const on = value.includes(o.id);
-    return (
-      <button
-        key={o.id}
-        onClick={() => onPick(o.id)}
-        aria-pressed={on}
-        className={`press flex min-h-[104px] flex-col items-start justify-between rounded-[22px] p-3.5 text-left transition-[background-color,opacity] ${on ? "spin-ring bg-g-blue-soft" : "bg-g-fill"} ${quiet && !on ? "opacity-60" : ""}`}
-      >
-        <span className="flex w-full items-start justify-between gap-2">
-          {o.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={o.logo} alt={t(o.name, lang)} className="h-7 w-auto max-w-[80%] object-contain object-left" />
-          ) : (
-            <span className="text-[18px] leading-[1.1] font-bold tracking-[-0.02em]">{t(o.name, lang)}</span>
-          )}
-          <span className={`grid size-6 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "border-[1.5px] border-g-faint/50"}`}>{on && <Check size={13} strokeWidth={3} />}</span>
-        </span>
-        <span className="mt-2 flex w-full flex-col gap-1">
-          {o.level && (
-            <span className={`flex items-center gap-1.5 text-[12px] font-semibold ${on ? "text-g-blue" : "text-g-ink-2"}`}>
-              <LevelBars level={o.level} on={on} size={14} /> {levelWord(lang, o.level)}
-            </span>
-          )}
-          {o.note && <span className="line-clamp-1 text-[12px] leading-[1.3] text-g-muted">{t(o.note, lang).split(" · ").slice(1).join(" · ") || t(o.note, lang)}</span>}
-          <span className={`text-[14px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-ink"}`}>{formatMoney(basePrice + o.price, currency, lang)}</span>
-        </span>
-      </button>
-    );
-  };
+  const list = group.options.filter(
+    (o) => !level || !o.level || o.level === level,
+  );
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-2">{match.map((o) => tile(o, false))}</div>
-      {rest.length > 0 && (
-        <>
-          <p className="mt-5 mb-2 text-[13px] font-semibold text-g-muted">{ui(lang, "otherStrength")}</p>
-          <div className="grid grid-cols-2 gap-2">{rest.map((o) => tile(o, true))}</div>
-        </>
-      )}
+    <div
+      data-loading={loading ? "true" : undefined}
+      className="grid grid-cols-2 gap-2"
+    >
+      {list.map((o) => {
+        const on = value.includes(o.id);
+        const note = o.note
+          ? t(o.note, lang).split(" · ").slice(1).join(" · ") || t(o.note, lang)
+          : "";
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onPick(o.id)}
+            aria-pressed={on}
+            className={`live press flex min-w-0 flex-col rounded-[20px] px-3.5 py-3 text-left transition-colors ${on ? "bg-g-blue-soft ring-[1.5px] ring-g-blue" : "bg-g-fill"}`}
+          >
+            <span className="flex w-full items-center justify-between gap-2">
+              <span
+                className={`truncate text-[15.5px] leading-tight font-bold tracking-[-0.01em] ${on ? "text-g-blue" : ""}`}
+              >
+                {t(o.name, lang)}
+              </span>
+              <span
+                className={`grid size-5 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "border-[1.5px] border-g-faint/50"}`}
+              >
+                {on && <Check size={11} strokeWidth={3.2} />}
+              </span>
+            </span>
+            <span className="mt-1 truncate text-[12px] text-g-muted">
+              {note}
+            </span>
+            <span className="mt-1.5 flex items-center justify-between gap-2">
+              {o.level ? (
+                <LevelDots level={o.level} on={on} size={5} />
+              ) : (
+                <span />
+              )}
+              <span
+                className={`text-[13px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-ink-2"}`}
+              >
+                {formatMoney(basePrice + o.price, currency, lang)}
+              </span>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 /** The live mix over the photo: strength bars and word, the tobacco, the flavours as colour dots. */
-function HookahSummary({ item, ids, lang }: { item: MenuItem; ids: string[]; lang: Lang }) {
-  const pick = (display: ModifierGroup["display"]) => item.modifierGroups.filter((g) => g.display === display).flatMap((g) => g.options.filter((o) => ids.includes(o.id)));
-  const strength = item.modifierGroups.find((g) => g.display === "scale")?.options.find((o) => ids.includes(o.id));
+function HookahSummary({
+  item,
+  ids,
+  lang,
+}: {
+  item: MenuItem;
+  ids: string[];
+  lang: Lang;
+}) {
+  const pick = (display: ModifierGroup["display"]) =>
+    item.modifierGroups
+      .filter((g) => g.display === display)
+      .flatMap((g) => g.options.filter((o) => ids.includes(o.id)));
+  const strength = item.modifierGroups
+    .find((g) => g.display === "scale")
+    ?.options.find((o) => ids.includes(o.id));
   const tobacco = pick("brands")[0];
-  const flavors = item.modifierGroups.filter((g) => g.options.some((o) => o.color) && g.display === "chips").flatMap((g) => g.options.filter((o) => ids.includes(o.id)));
+  const flavors = item.modifierGroups
+    .filter((g) => g.options.some((o) => o.color) && g.display === "chips")
+    .flatMap((g) => g.options.filter((o) => ids.includes(o.id)));
   return (
     <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-      <p key={`${strength?.id}-${tobacco?.id}`} className="animate-pop flex items-center gap-2 text-[22px] leading-tight font-bold tracking-[-0.02em]">
-        {strength?.level && <LevelBars level={strength.level} light size={22} />}
+      <p
+        key={`${strength?.id}-${tobacco?.id}`}
+        className="animate-pop flex items-center gap-2 text-[22px] leading-tight font-bold tracking-[-0.02em]"
+      >
+        {strength?.level && <LevelDots level={strength.level} light size={7} />}
         {strength ? t(strength.name, lang) : ""}
         <span className="text-white/45">·</span>
-        <span className={tobacco ? "" : "text-white/60"}>{tobacco ? t(tobacco.name, lang) : ui(lang, "pickTobacco")}</span>
+        <span className={tobacco ? "" : "text-white/60"}>
+          {tobacco ? t(tobacco.name, lang) : ui(lang, "pickTobacco")}
+        </span>
       </p>
       <p className="mt-1.5 flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-white/80">
         {flavors.map((f) => (
           <span key={f.id} className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full ring-1 ring-white/50" style={{ background: f.color }} />
+            <span
+              className="size-2.5 rounded-full ring-1 ring-white/50"
+              style={{ background: f.color }}
+            />
             {t(f.name, lang)}
           </span>
         ))}
@@ -535,33 +925,73 @@ function HookahSummary({ item, ids, lang }: { item: MenuItem; ids: string[]; lan
 
 /* ---------------------------------------------------------------- Strength scale */
 
-const STRENGTH_KEYS = ["strength1", "strength2", "strength3", "strength4"] as const;
+const STRENGTH_KEYS = [
+  "strength1",
+  "strength2",
+  "strength3",
+  "strength4",
+] as const;
 
 /** Hookah strength 1–10: a big number, a word for it and a flat slider with ten notches. */
-function StrengthScale({ group, lang, value, onChange }: { group: ModifierGroup; lang: Lang; value: number; onChange: (i: number) => void }) {
+function StrengthScale({
+  group,
+  lang,
+  value,
+  onChange,
+}: {
+  group: ModifierGroup;
+  lang: Lang;
+  value: number;
+  onChange: (i: number) => void;
+}) {
   const n = group.options.length;
   const v = Math.max(0, value);
   const strength = group.id === "strength";
   // Hookah strength reads as a number and a word; other scales (sweetness, ice) read as the step's own name.
-  const word = strength ? ui(lang, STRENGTH_KEYS[Math.min(3, Math.floor((v / n) * 4))]!) : t(group.options[v]!.name, lang);
+  const word = strength
+    ? ui(lang, STRENGTH_KEYS[Math.min(3, Math.floor((v / n) * 4))]!)
+    : t(group.options[v]!.name, lang);
   return (
     <div>
       {strength ? (
         <div className="flex items-end gap-3">
-          <span className="text-[56px] leading-[0.9] font-semibold tracking-[-0.04em] tabular-nums">{v + 1}</span>
+          <span className="text-[56px] leading-[0.9] font-semibold tracking-[-0.04em] tabular-nums">
+            {v + 1}
+          </span>
           <span className="pb-1 text-[15px] text-g-muted">
             / {n} · <span className="font-medium text-g-ink">{word}</span>
           </span>
         </div>
       ) : (
-        <p key={v} className="animate-pop text-[28px] leading-tight font-semibold tracking-[-0.02em]">{word}</p>
+        <p
+          key={v}
+          className="animate-pop text-[28px] leading-tight font-semibold tracking-[-0.02em]"
+        >
+          {word}
+        </p>
       )}
       <div className={strength ? "mt-6" : "mt-4"}>
-        <TrackSlider value={v} min={0} max={n - 1} onChange={onChange} label={t(group.name, lang)} valueText={`${v + 1} / ${n}, ${word}`} notches={n} />
+        <TrackSlider
+          value={v}
+          min={0}
+          max={n - 1}
+          onChange={onChange}
+          label={t(group.name, lang)}
+          valueText={`${v + 1} / ${n}, ${word}`}
+          notches={n}
+        />
       </div>
       <div className="mt-1 flex justify-between text-[12px] font-medium text-g-faint tabular-nums">
-        <span>{strength ? `1 · ${ui(lang, "strength1")}` : t(group.options[0]!.name, lang)}</span>
-        <span>{strength ? `${n} · ${ui(lang, "strength4")}` : t(group.options[n - 1]!.name, lang)}</span>
+        <span>
+          {strength
+            ? `1 · ${ui(lang, "strength1")}`
+            : t(group.options[0]!.name, lang)}
+        </span>
+        <span>
+          {strength
+            ? `${n} · ${ui(lang, "strength4")}`
+            : t(group.options[n - 1]!.name, lang)}
+        </span>
       </div>
     </div>
   );
@@ -604,7 +1034,9 @@ export function CartSheet({
   const dishes = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
   const { service, total } = withService(dishes, serviceRate);
   const count = lines.reduce((s, l) => s + l.qty, 0);
-  const note = [...notes.map((k) => ui(lang, k)), text.trim()].filter(Boolean).join(", ");
+  const note = [...notes.map((k) => ui(lang, k)), text.trim()]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Sheet
@@ -628,8 +1060,14 @@ export function CartSheet({
     >
       <div className="px-5 pt-2 pb-6">
         <div className="flex items-end justify-between gap-3">
-          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "yourOrder")}</h2>
-          {count > 0 && <span className="mb-1 rounded-full bg-g-fill px-3 py-1 text-[13px] font-semibold tabular-nums">{ui(lang, "itemsCount").replace("{n}", String(count))}</span>}
+          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
+            {ui(lang, "yourOrder")}
+          </h2>
+          {count > 0 && (
+            <span className="mb-1 rounded-full bg-g-fill px-3 py-1 text-[13px] font-semibold tabular-nums">
+              {ui(lang, "itemsCount").replace("{n}", String(count))}
+            </span>
+          )}
         </div>
 
         {!lines.length && (
@@ -637,8 +1075,12 @@ export function CartSheet({
             <span className="chip-blue grid size-16 place-items-center rounded-full">
               <ShoppingBag size={28} strokeWidth={1.8} />
             </span>
-            <p className="mt-4 text-[18px] font-semibold">{ui(lang, "cartEmptyTitle")}</p>
-            <p className="mt-1 text-[14px] leading-snug text-g-muted">{ui(lang, "emptyBody")}</p>
+            <p className="mt-4 text-[18px] font-semibold">
+              {ui(lang, "cartEmptyTitle")}
+            </p>
+            <p className="mt-1 text-[14px] leading-snug text-g-muted">
+              {ui(lang, "emptyBody")}
+            </p>
           </div>
         )}
 
@@ -649,23 +1091,60 @@ export function CartSheet({
               {lines.map((line) => {
                 const item = itemById.get(line.itemId)!;
                 const role = categoryOf.get(item.id)?.role ?? "main";
-                const variant = item.variants.find((v) => v.id === line.variantId);
-                const opts = item.modifierGroups.flatMap((g) => g.options).filter((o) => line.optionIds.includes(o.id));
-                const extra = [variant && t(variant.name, lang), ...opts.map((o) => t(o.name, lang))].filter(Boolean).join(" · ");
+                const variant = item.variants.find(
+                  (v) => v.id === line.variantId,
+                );
+                const opts = item.modifierGroups
+                  .flatMap((g) => g.options)
+                  .filter((o) => line.optionIds.includes(o.id));
+                const extra = [
+                  variant && t(variant.name, lang),
+                  ...opts.map((o) => t(o.name, lang)),
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
                 const open = editing === line.key;
                 return (
                   <li key={line.key} className="py-3">
                     <div className="flex items-center gap-3">
-                      <DishTile item={item} role={role} photoScale={0.96} glyph={0.62} soft className="size-[60px] shrink-0 rounded-[16px] !bg-g-card" />
+                      <DishTile
+                        item={item}
+                        role={role}
+                        photoScale={0.96}
+                        glyph={0.62}
+                        soft
+                        className="size-[60px] shrink-0 rounded-[16px] !bg-g-card"
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[15px] font-semibold">{t(item.name, lang)}</p>
-                        {extra && <p className="truncate text-[12.5px] text-g-muted">{extra}</p>}
+                        <p className="truncate text-[15px] font-semibold">
+                          {t(item.name, lang)}
+                        </p>
+                        {extra && (
+                          <p className="truncate text-[12.5px] text-g-muted">
+                            {extra}
+                          </p>
+                        )}
                         <p className="mt-0.5 text-[15px] tabular-nums">
-                          <span className="font-semibold">{formatMoney(line.unitPrice * line.qty, currency, lang)}</span>
-                          {line.qty > 1 && <span className="ml-1.5 text-[12.5px] text-g-muted">{line.qty} × {formatMoney(line.unitPrice, currency, lang)}</span>}
+                          <span className="font-semibold">
+                            {formatMoney(
+                              line.unitPrice * line.qty,
+                              currency,
+                              lang,
+                            )}
+                          </span>
+                          {line.qty > 1 && (
+                            <span className="ml-1.5 text-[12.5px] text-g-muted">
+                              {line.qty} ×{" "}
+                              {formatMoney(line.unitPrice, currency, lang)}
+                            </span>
+                          )}
                         </p>
                       </div>
-                      <Stepper qty={line.qty} onChange={(q) => onQty(line.key, q)} className="h-9 w-[96px] shrink-0" />
+                      <Stepper
+                        qty={line.qty}
+                        onChange={(q) => onQty(line.key, q)}
+                        className="h-9 w-[96px] shrink-0"
+                      />
                     </div>
                     {/* The dish's own note: a quiet link when empty, a note card when set, a small editor when open. */}
                     {open ? (
@@ -677,7 +1156,10 @@ export function CartSheet({
                           rows={2}
                           maxLength={140}
                           placeholder={ui(lang, "dishNotePh")}
-                          aria-label={ui(lang, "dishNoteFor").replace("{dish}", t(item.name, lang))}
+                          aria-label={ui(lang, "dishNoteFor").replace(
+                            "{dish}",
+                            t(item.name, lang),
+                          )}
                           className="w-full resize-none bg-transparent px-1.5 py-1 text-[15px] outline-none placeholder:text-g-faint"
                         />
                         <div className="mt-1 flex items-center justify-end gap-2">
@@ -712,9 +1194,17 @@ export function CartSheet({
                         }}
                         className="press mt-2 flex w-full items-start gap-2 rounded-[14px] bg-g-tint-note px-3 py-2 text-left text-[13px] leading-snug"
                       >
-                        <MessageSquareText size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-g-orange" />
+                        <MessageSquareText
+                          size={14}
+                          strokeWidth={2.2}
+                          className="mt-0.5 shrink-0 text-g-orange"
+                        />
                         <span className="min-w-0 flex-1">{line.note}</span>
-                        <Pencil size={13} strokeWidth={2.2} className="mt-0.5 shrink-0 text-g-muted" />
+                        <Pencil
+                          size={13}
+                          strokeWidth={2.2}
+                          className="mt-0.5 shrink-0 text-g-muted"
+                        />
                       </button>
                     ) : (
                       <button
@@ -724,7 +1214,8 @@ export function CartSheet({
                         }}
                         className="press mt-1.5 ml-[72px] flex items-center gap-1.5 text-[13px] font-semibold text-g-blue"
                       >
-                        <MessageSquarePlus size={14} strokeWidth={2.2} /> {ui(lang, "addNote")}
+                        <MessageSquarePlus size={14} strokeWidth={2.2} />{" "}
+                        {ui(lang, "addNote")}
                       </button>
                     )}
                   </li>
@@ -735,8 +1226,15 @@ export function CartSheet({
             {/* A word to the kitchen: quick tags, or your own. */}
             <section className="mt-3 rounded-[26px] bg-g-fill p-4">
               <h3 className="flex items-center gap-2 text-[15px] font-semibold">
-                <StickyNote size={16} strokeWidth={2.2} className="text-g-blue" /> {ui(lang, "wholeOrderNote")}
-                <span className="ml-auto text-[13px] font-medium text-g-faint">{ui(lang, "optional")}</span>
+                <StickyNote
+                  size={16}
+                  strokeWidth={2.2}
+                  className="text-g-blue"
+                />{" "}
+                {ui(lang, "wholeOrderNote")}
+                <span className="ml-auto text-[13px] font-medium text-g-faint">
+                  {ui(lang, "optional")}
+                </span>
               </h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {NOTES.map((k) => {
@@ -746,7 +1244,9 @@ export function CartSheet({
                       key={k}
                       onClick={() => {
                         haptic("tick");
-                        setNotes((n) => (on ? n.filter((x) => x !== k) : [...n, k]));
+                        setNotes((n) =>
+                          on ? n.filter((x) => x !== k) : [...n, k],
+                        );
                       }}
                       aria-pressed={on}
                       className={`press flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium ${on ? "bg-g-ink text-white" : "bg-g-card"}`}
@@ -776,17 +1276,32 @@ export function CartSheet({
                 <span>
                   {ui(lang, "dishesLabel")} · {count}
                 </span>
-                <span className="tabular-nums">{formatMoney(dishes, currency, lang)}</span>
+                <span className="tabular-nums">
+                  {formatMoney(dishes, currency, lang)}
+                </span>
               </div>
               <div className="mt-1.5 flex items-baseline justify-between text-[14px] text-g-muted">
-                <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
-                <span className="tabular-nums">{formatMoney(service, currency, lang)}</span>
+                <span>
+                  {ui(lang, "servicePct").replace(
+                    "{p}",
+                    String(Math.round(serviceRate * 100)),
+                  )}
+                </span>
+                <span className="tabular-nums">
+                  {formatMoney(service, currency, lang)}
+                </span>
               </div>
               <div className="mt-2.5 flex items-baseline justify-between border-t border-g-line pt-3">
-                <span className="text-[16px] font-semibold">{ui(lang, "total")}</span>
-                <span className="text-[26px] leading-none font-semibold tracking-[-0.02em] tabular-nums">{formatMoney(total, currency, lang)}</span>
+                <span className="text-[16px] font-semibold">
+                  {ui(lang, "total")}
+                </span>
+                <span className="text-[26px] leading-none font-semibold tracking-[-0.02em] tabular-nums">
+                  {formatMoney(total, currency, lang)}
+                </span>
               </div>
-              <p className="mt-2 text-[12px] leading-snug text-g-faint">{ui(lang, "serviceNote")}</p>
+              <p className="mt-2 text-[12px] leading-snug text-g-faint">
+                {ui(lang, "serviceNote")}
+              </p>
             </section>
             <p className="mt-4 flex items-center justify-center gap-1.5 text-[13px] text-g-muted">
               <CookingPot size={14} strokeWidth={2} /> {ui(lang, "sendHint")}
@@ -800,9 +1315,20 @@ export function CartSheet({
 
 /* ---------------------------------------------------------------- Orders */
 
-export type PlacedOrder = { id: number; lines: CartLine[]; total: number; note: string; placedAt: number };
+export type PlacedOrder = {
+  id: number;
+  lines: CartLine[];
+  total: number;
+  note: string;
+  placedAt: number;
+};
 
-const STAGES: UiKey[] = ["orderSent", "orderAccepted", "orderCooking", "orderReady"];
+const STAGES: UiKey[] = [
+  "orderSent",
+  "orderAccepted",
+  "orderCooking",
+  "orderReady",
+];
 
 /** Demo timeline in seconds; the KDS drives real status in Phase 1. */
 export function orderStage(order: PlacedOrder, now: number): number {
@@ -825,28 +1351,71 @@ const clock = (at: number) => new Date(at).toTimeString().slice(0, 5);
  * all centred on the same axis; the track runs from the first icon's centre
  * to the last one's, behind them.
  */
-function OrderTrack({ stage, ready, lang, at }: { stage: number; ready: boolean; lang: Lang; at: (k: number) => string }) {
+function OrderTrack({
+  stage,
+  ready,
+  lang,
+  at,
+}: {
+  stage: number;
+  ready: boolean;
+  lang: Lang;
+  at: (k: number) => string;
+}) {
   const share = ready ? 1 : stage / 3;
   return (
     <div className="relative mt-4 grid grid-cols-4">
       {/* The track: from the centre of column one (12.5%) to the centre of column four (87.5%). */}
-      <span aria-hidden className="absolute top-[14px] right-[12.5%] left-[12.5%] h-[3px] -translate-y-1/2 rounded-full bg-g-card" />
-      <span aria-hidden className={`absolute top-[14px] left-[12.5%] h-[3px] -translate-y-1/2 rounded-full transition-[width] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${ready ? "bg-g-green" : "bar-grad"}`} style={{ width: `${share * 75}%` }} />
-      {!ready && stage < 3 && <span aria-hidden className="track-flow absolute top-[14px] h-[3px] -translate-y-1/2 overflow-hidden rounded-full" style={{ left: `${12.5 + share * 75}%`, width: "25%" }} />}
+      <span
+        aria-hidden
+        className="absolute top-[14px] right-[12.5%] left-[12.5%] h-[3px] -translate-y-1/2 rounded-full bg-g-card"
+      />
+      <span
+        aria-hidden
+        className={`absolute top-[14px] left-[12.5%] h-[3px] -translate-y-1/2 rounded-full transition-[width] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${ready ? "bg-g-green" : "bar-grad"}`}
+        style={{ width: `${share * 75}%` }}
+      />
+      {!ready && stage < 3 && (
+        <span
+          aria-hidden
+          className="track-flow absolute top-[14px] h-[3px] -translate-y-1/2 overflow-hidden rounded-full"
+          style={{ left: `${12.5 + share * 75}%`, width: "25%" }}
+        />
+      )}
       {STEPS.map((st, k) => {
         const done = k < stage || ready;
         const cur = k === stage && !ready;
         const reached = k <= stage || ready;
         return (
-          <span key={st.key} className="relative flex min-w-0 flex-col items-center text-center">
+          <span
+            key={st.key}
+            className="relative flex min-w-0 flex-col items-center text-center"
+          >
             <span className="relative grid size-7 place-items-center">
-              {cur && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-g-blue/30" />}
-              <span className={`relative grid size-7 place-items-center rounded-full transition-colors duration-500 ${done ? (ready ? "bg-g-green text-white" : "blue-grad") : cur ? "blue-grad ring-4 ring-g-blue/15" : "bg-g-card text-g-faint"}`}>
-                {done ? <Check size={14} strokeWidth={2.8} /> : <st.icon size={13} strokeWidth={2.4} />}
+              {cur && (
+                <span
+                  aria-hidden
+                  className="absolute inset-0 animate-ping rounded-full bg-g-blue/30"
+                />
+              )}
+              <span
+                className={`relative grid size-7 place-items-center rounded-full transition-colors duration-500 ${done ? (ready ? "bg-g-green text-white" : "blue-grad") : cur ? "blue-grad ring-4 ring-g-blue/15" : "bg-g-card text-g-faint"}`}
+              >
+                {done ? (
+                  <Check size={14} strokeWidth={2.8} />
+                ) : (
+                  <st.icon size={13} strokeWidth={2.4} />
+                )}
               </span>
             </span>
-            <span className={`mt-1.5 block w-full truncate px-0.5 text-[11.5px] leading-tight font-semibold ${reached ? "text-g-ink" : "text-g-faint"}`}>{ui(lang, st.key)}</span>
-            <span className="block h-[14px] text-[10.5px] leading-[14px] text-g-muted tabular-nums">{reached ? (cur ? ui(lang, "stepNow") : at(k)) : ""}</span>
+            <span
+              className={`mt-1.5 block w-full truncate px-0.5 text-[11.5px] leading-tight font-semibold ${reached ? "text-g-ink" : "text-g-faint"}`}
+            >
+              {ui(lang, st.key)}
+            </span>
+            <span className="block h-[14px] text-[10.5px] leading-[14px] text-g-muted tabular-nums">
+              {reached ? (cur ? ui(lang, "stepNow") : at(k)) : ""}
+            </span>
           </span>
         );
       })}
@@ -887,7 +1456,15 @@ export function OrdersSheet({
 }) {
   const serviceRate = menu.venue.serviceRate ?? DEFAULT_SERVICE_RATE;
   const list = [...orders].reverse();
-  const roleOf = useMemo(() => new Map(menu.categories.flatMap((c) => c.items.map((i) => [i.id, c.role] as const))), [menu]);
+  const roleOf = useMemo(
+    () =>
+      new Map(
+        menu.categories.flatMap((c) =>
+          c.items.map((i) => [i.id, c.role] as const),
+        ),
+      ),
+    [menu],
+  );
   const [openId, setOpenId] = useState<number | null>(null);
   const sum = orders.reduce((n, o) => n + o.total, 0);
   const money = (n: number) => formatMoney(n, currency, lang);
@@ -897,19 +1474,34 @@ export function OrdersSheet({
         const it = itemById.get(l.itemId)!;
         return (
           <li key={l.key} className="flex items-center gap-3">
-            <DishTile item={it} role={roleOf.get(it.id) ?? "main"} photoScale={0.9} glyph={0.5} className={`${big ? "size-12 rounded-[14px]" : "size-10 rounded-[12px]"} shrink-0`} />
+            <DishTile
+              item={it}
+              role={roleOf.get(it.id) ?? "main"}
+              photoScale={0.9}
+              glyph={0.5}
+              className={`${big ? "size-12 rounded-[14px]" : "size-10 rounded-[12px]"} shrink-0`}
+            />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-medium">{t(it.name, lang)}</span>
+              <span className="block truncate text-[15px] font-medium">
+                {t(it.name, lang)}
+              </span>
               <span className="block text-[13px] text-g-muted tabular-nums">
                 {l.qty} × {money(l.unitPrice)}
               </span>
               {l.note && (
                 <span className="mt-1 flex items-start gap-1.5 text-[12.5px] leading-snug text-g-ink-2">
-                  <MessageSquareText size={13} strokeWidth={2.2} className="mt-0.5 shrink-0 text-g-orange" /> {l.note}
+                  <MessageSquareText
+                    size={13}
+                    strokeWidth={2.2}
+                    className="mt-0.5 shrink-0 text-g-orange"
+                  />{" "}
+                  {l.note}
                 </span>
               )}
             </span>
-            <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(l.unitPrice * l.qty)}</span>
+            <span className="shrink-0 text-[15px] font-semibold tabular-nums">
+              {money(l.unitPrice * l.qty)}
+            </span>
           </li>
         );
       })}
@@ -924,11 +1516,18 @@ export function OrdersSheet({
       footer={
         <div className="flex gap-2.5">
           {onBill && list.length > 0 && (
-            <button onClick={onBill} className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold">
-              <ReceiptText size={18} strokeWidth={2} /> {ui(lang, "billRequest")}
+            <button
+              onClick={onBill}
+              className="press flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-g-fill text-[16px] font-semibold"
+            >
+              <ReceiptText size={18} strokeWidth={2} />{" "}
+              {ui(lang, "billRequest")}
             </button>
           )}
-          <button onClick={onOrderMore} className="blue-grad press flex h-14 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-semibold">
+          <button
+            onClick={onOrderMore}
+            className="blue-grad press flex h-14 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-semibold"
+          >
             <Plus size={18} strokeWidth={2.4} /> {ui(lang, "orderMore")}
           </button>
         </div>
@@ -936,7 +1535,9 @@ export function OrdersSheet({
     >
       <div className="px-5 pt-2 pb-6">
         <div className="flex items-end justify-between gap-3">
-          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "orders")}</h2>
+          <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
+            {ui(lang, "orders")}
+          </h2>
           {table !== undefined && (
             <span className="mb-1 rounded-full bg-g-fill px-3 py-1 text-[13px] font-semibold">
               {ui(lang, "table")} {table}
@@ -949,21 +1550,32 @@ export function OrdersSheet({
             <span className="chip-blue grid size-16 place-items-center rounded-full">
               <ReceiptText size={28} strokeWidth={1.8} />
             </span>
-            <p className="mt-4 text-[18px] font-semibold">{ui(lang, "noOrders")}</p>
-            <p className="mt-1 text-[14px] leading-snug text-g-muted">{ui(lang, "noOrdersBody")}</p>
+            <p className="mt-4 text-[18px] font-semibold">
+              {ui(lang, "noOrders")}
+            </p>
+            <p className="mt-1 text-[14px] leading-snug text-g-muted">
+              {ui(lang, "noOrdersBody")}
+            </p>
           </div>
         )}
 
         {list.map((o, i) => {
           const stage = orderStage(o, now);
           const ready = stage === 3;
-          const minsLeft = Math.max(1, Math.ceil(15 - ((now - o.placedAt) / 1000 / 45) * 15));
+          const minsLeft = Math.max(
+            1,
+            Math.ceil(15 - ((now - o.placedAt) / 1000 / 45) * 15),
+          );
           if (i > 0) {
             // Earlier orders: one compact row each; tap to see the dishes.
             const on = openId === o.id;
             return (
               <div key={o.id}>
-                {i === 1 && <p className="mt-7 text-[12px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "earlierOrders")}</p>}
+                {i === 1 && (
+                  <p className="mt-7 text-[12px] font-semibold tracking-[0.06em] text-g-muted uppercase">
+                    {ui(lang, "earlierOrders")}
+                  </p>
+                )}
                 <article className="mt-2.5 rounded-[22px] bg-g-fill p-4">
                   <button
                     onClick={() => {
@@ -973,18 +1585,58 @@ export function OrdersSheet({
                     aria-expanded={on}
                     className="flex w-full items-center gap-3 text-left"
                   >
-                    <span className={`grid size-10 shrink-0 place-items-center rounded-full ${ready ? "chip-green" : "chip-blue"}`}>{ready ? <Check size={18} strokeWidth={2.4} /> : <CookingPot size={18} strokeWidth={2} />}</span>
+                    <span
+                      className={`grid size-10 shrink-0 place-items-center rounded-full ${ready ? "chip-green" : "chip-blue"}`}
+                    >
+                      {ready ? (
+                        <Check size={18} strokeWidth={2.4} />
+                      ) : (
+                        <CookingPot size={18} strokeWidth={2} />
+                      )}
+                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[15px] font-semibold">
-                        №{String(o.id).padStart(3, "0")} · {ui(lang, ready ? "served" : STEPS[stage]!.key)}
+                        №{String(o.id).padStart(3, "0")} ·{" "}
+                        {ui(lang, ready ? "served" : STEPS[stage]!.key)}
                       </span>
                       <span className="block truncate text-[13px] text-g-muted">
-                        {clock(o.placedAt)} · {o.lines.map((l) => `${l.qty}× ${t(itemById.get(l.itemId)!.name, lang)}`).join(", ")}
+                        {clock(o.placedAt)} ·{" "}
+                        {o.lines
+                          .map(
+                            (l) =>
+                              `${l.qty}× ${t(itemById.get(l.itemId)!.name, lang)}`,
+                          )
+                          .join(", ")}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[15px] font-semibold tabular-nums">{money(withService(o.total, serviceRate).total)}</span>
-                    <ChevronDown size={17} className={`shrink-0 text-g-faint transition-transform ${on ? "rotate-180" : ""}`} />
+                    <span className="shrink-0 text-[15px] font-semibold tabular-nums">
+                      {money(withService(o.total, serviceRate).total)}
+                    </span>
+                    <ChevronDown
+                      size={17}
+                      className={`shrink-0 text-g-faint transition-transform ${on ? "rotate-180" : ""}`}
+                    />
                   </button>
+                  {/* Every order keeps its progress: a thin four-step line when folded, the full track when open. */}
+                  {on ? (
+                    <div className="animate-rise">
+                      <OrderTrack
+                        stage={stage}
+                        ready={ready}
+                        lang={lang}
+                        at={(k) => clock(o.placedAt + STEP_AT[k]! * 1000)}
+                      />
+                    </div>
+                  ) : (
+                    <div aria-hidden className="mt-3 grid grid-cols-4 gap-1">
+                      {STEPS.map((st, k) => (
+                        <span
+                          key={st.key}
+                          className={`h-1 rounded-full transition-colors duration-500 ${ready ? "bg-g-green" : k < stage ? "bg-g-blue" : k === stage ? "animate-pulse bg-g-blue" : "bg-g-card"}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                   {on && dishes(o, false)}
                 </article>
               </div>
@@ -994,25 +1646,43 @@ export function OrdersSheet({
             <article key={o.id} className="mesh-blue mt-5 rounded-[28px] p-5">
               <div className="flex items-center justify-between text-[13px] font-medium text-g-muted">
                 <span>
-                  {ui(lang, "order")} №{String(o.id).padStart(3, "0")} · {clock(o.placedAt)}
+                  {ui(lang, "order")} №{String(o.id).padStart(3, "0")} ·{" "}
+                  {clock(o.placedAt)}
                 </span>
-                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold ${ready ? "chip-green" : "bg-g-card text-g-blue"}`}>
-                  {!ready && <span className="size-1.5 animate-pulse rounded-full bg-g-blue" />}
-                  {ready ? ui(lang, "stepReady") : ui(lang, "eta").replace("{n}", String(minsLeft))}
+                <span
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold ${ready ? "chip-green" : "bg-g-card text-g-blue"}`}
+                >
+                  {!ready && (
+                    <span className="size-1.5 animate-pulse rounded-full bg-g-blue" />
+                  )}
+                  {ready
+                    ? ui(lang, "stepReady")
+                    : ui(lang, "eta").replace("{n}", String(minsLeft))}
                 </span>
               </div>
-              <h3 className="mt-2.5 text-[24px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, STAGES[stage]!)}</h3>
+              <h3 className="mt-2.5 text-[24px] leading-tight font-bold tracking-[-0.025em]">
+                {ui(lang, STAGES[stage]!)}
+              </h3>
 
               {/* One compact horizontal line: four stations joined by a track. Done
                   stations are filled, the current one pulses, and light flows along
                   the stretch the kitchen is working on now. */}
-              <OrderTrack stage={stage} ready={ready} lang={lang} at={(k) => clock(o.placedAt + STEP_AT[k]! * 1000)} />
+              <OrderTrack
+                stage={stage}
+                ready={ready}
+                lang={lang}
+                at={(k) => clock(o.placedAt + STEP_AT[k]! * 1000)}
+              />
 
               <div className="mt-3 rounded-[20px] bg-g-card p-3.5">
                 {dishes(o, true)}
                 {o.note && (
                   <p className="mt-3 flex items-start gap-2 rounded-[14px] bg-g-tint-note px-3 py-2 text-[13px] leading-snug">
-                    <StickyNote size={14} className="mt-0.5 shrink-0 text-g-orange" /> {o.note}
+                    <StickyNote
+                      size={14}
+                      className="mt-0.5 shrink-0 text-g-orange"
+                    />{" "}
+                    {o.note}
                   </p>
                 )}
                 <div className="mt-3 border-t border-g-line pt-3 text-[13px] text-g-muted">
@@ -1021,13 +1691,24 @@ export function OrdersSheet({
                     <span>{money(o.total)}</span>
                   </p>
                   <p className="mt-1 flex justify-between tabular-nums">
-                    <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
-                    <span>{money(withService(o.total, serviceRate).service)}</span>
+                    <span>
+                      {ui(lang, "servicePct").replace(
+                        "{p}",
+                        String(Math.round(serviceRate * 100)),
+                      )}
+                    </span>
+                    <span>
+                      {money(withService(o.total, serviceRate).service)}
+                    </span>
                   </p>
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-[14px] font-semibold">{ui(lang, "total")}</span>
-                  <span className="text-[20px] font-semibold tracking-[-0.02em] tabular-nums">{money(withService(o.total, serviceRate).total)}</span>
+                  <span className="text-[14px] font-semibold">
+                    {ui(lang, "total")}
+                  </span>
+                  <span className="text-[20px] font-semibold tracking-[-0.02em] tabular-nums">
+                    {money(withService(o.total, serviceRate).total)}
+                  </span>
                 </div>
               </div>
             </article>
@@ -1038,16 +1719,32 @@ export function OrdersSheet({
         {orders.length > 1 && (
           <div className="mt-6 flex items-center justify-between rounded-[22px] bg-g-fill px-4 py-3.5">
             <span>
-              <span className="block text-[15px] font-semibold">{ui(lang, "tableTotal")}</span>
-              <span className="block text-[13px] text-g-muted">{ui(lang, "ordersCount").replace("{n}", String(orders.length))}</span>
+              <span className="block text-[15px] font-semibold">
+                {ui(lang, "tableTotal")}
+              </span>
+              <span className="block text-[13px] text-g-muted">
+                {ui(lang, "ordersCount").replace("{n}", String(orders.length))}
+              </span>
             </span>
             <span className="text-right">
-              <span className="block text-[22px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">{money(withService(sum, serviceRate).total)}</span>
-              <span className="block text-[12px] text-g-muted tabular-nums">{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))} · {money(withService(sum, serviceRate).service)}</span>
+              <span className="block text-[22px] leading-tight font-semibold tracking-[-0.02em] tabular-nums">
+                {money(withService(sum, serviceRate).total)}
+              </span>
+              <span className="block text-[12px] text-g-muted tabular-nums">
+                {ui(lang, "servicePct").replace(
+                  "{p}",
+                  String(Math.round(serviceRate * 100)),
+                )}{" "}
+                · {money(withService(sum, serviceRate).service)}
+              </span>
             </span>
           </div>
         )}
-        {list.length > 0 && <p className="mt-2 text-[12px] text-g-faint">{ui(lang, "serviceNote")}</p>}
+        {list.length > 0 && (
+          <p className="mt-2 text-[12px] text-g-faint">
+            {ui(lang, "serviceNote")}
+          </p>
+        )}
       </div>
     </Sheet>
   );
@@ -1081,7 +1778,8 @@ export function SearchSheet({
   const { currency } = menu.venue;
   const cap = currency === "VND" ? 150_000 : 10;
   const has = (f: SearchFilter) => filters.includes(f);
-  const toggle = (f: SearchFilter) => setFilters((v) => (v.includes(f) ? v.filter((x) => x !== f) : [...v, f]));
+  const toggle = (f: SearchFilter) =>
+    setFilters((v) => (v.includes(f) ? v.filter((x) => x !== f) : [...v, f]));
   const active = Boolean(query || filters.length || cat);
   const results = useMemo(
     () =>
@@ -1090,11 +1788,24 @@ export function SearchSheet({
         .flatMap((c) =>
           c.items
             .filter((i) => {
-              if (query && !Object.values(i.name).some((n) => n?.toLowerCase().includes(query)) && !Object.values(i.description ?? {}).some((d) => d?.toLowerCase().includes(query))) return false;
-              const veg = i.tags.includes("vegetarian") || i.tags.includes("vegan");
-              const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(i.name.en ?? "");
+              if (
+                query &&
+                !Object.values(i.name).some((n) =>
+                  n?.toLowerCase().includes(query),
+                ) &&
+                !Object.values(i.description ?? {}).some((d) =>
+                  d?.toLowerCase().includes(query),
+                )
+              )
+                return false;
+              const veg =
+                i.tags.includes("vegetarian") || i.tags.includes("vegan");
+              const spicy = /tom yum|spicy|chili|smashed cucumber/i.test(
+                i.name.en ?? "",
+              );
               if (filters.includes("veg") && !veg) return false;
-              if (filters.includes("halal") && !i.tags.includes("halal")) return false;
+              if (filters.includes("halal") && !i.tags.includes("halal"))
+                return false;
               if (filters.includes("mild") && spicy) return false;
               if (filters.includes("photo") && !i.photo) return false;
               if (filters.includes("cheap") && i.price > cap) return false;
@@ -1104,15 +1815,41 @@ export function SearchSheet({
         ),
     [menu, query, filters, cat, cap],
   );
-  const FILTERS: { id: SearchFilter; label: string; icon: React.ReactNode }[] = [
-    { id: "veg", label: ui(lang, "filterVeggie"), icon: <Leaf size={15} strokeWidth={2} /> },
-    { id: "halal", label: ui(lang, "filterHalal"), icon: <HalalIcon size={15} /> },
-    { id: "mild", label: ui(lang, "filterNotSpicy"), icon: <FlameKindling size={15} strokeWidth={2} /> },
-    { id: "photo", label: ui(lang, "filterPhoto"), icon: <ImageIcon size={15} strokeWidth={2} /> },
-    { id: "cheap", label: `${ui(lang, "filterUnder")} ${formatMoney(cap, currency, lang)}`, icon: <Wallet size={15} strokeWidth={2} /> },
-  ];
+  const FILTERS: { id: SearchFilter; label: string; icon: React.ReactNode }[] =
+    [
+      {
+        id: "veg",
+        label: ui(lang, "filterVeggie"),
+        icon: <Leaf size={15} strokeWidth={2} />,
+      },
+      {
+        id: "halal",
+        label: ui(lang, "filterHalal"),
+        icon: <HalalIcon size={15} />,
+      },
+      {
+        id: "mild",
+        label: ui(lang, "filterNotSpicy"),
+        icon: <FlameKindling size={15} strokeWidth={2} />,
+      },
+      {
+        id: "photo",
+        label: ui(lang, "filterPhoto"),
+        icon: <ImageIcon size={15} strokeWidth={2} />,
+      },
+      {
+        id: "cheap",
+        label: `${ui(lang, "filterUnder")} ${formatMoney(cap, currency, lang)}`,
+        icon: <Wallet size={15} strokeWidth={2} />,
+      },
+    ];
   return (
-    <Sheet open={open} onClose={onClose} label={ui(lang, "search")} title={false}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      label={ui(lang, "search")}
+      title={false}
+    >
       <div className="px-5 pt-1 pb-6">
         <label className="flex h-12 items-center gap-3 rounded-full bg-g-fill px-4 text-g-muted focus-within:ring-2 focus-within:ring-g-blue/30">
           <Search size={20} strokeWidth={2} />
@@ -1125,7 +1862,11 @@ export function SearchSheet({
             className="min-w-0 flex-1 bg-transparent text-[16px] text-g-ink outline-none placeholder:text-g-faint"
           />
           {q && (
-            <button aria-label={ui(lang, "clearAll")} onClick={() => setQ("")} className="grid size-7 place-items-center rounded-full bg-g-fill-2 text-g-ink">
+            <button
+              aria-label={ui(lang, "clearAll")}
+              onClick={() => setQ("")}
+              className="grid size-7 place-items-center rounded-full bg-g-fill-2 text-g-ink"
+            >
               <X size={14} strokeWidth={2.5} />
             </button>
           )}
@@ -1133,7 +1874,8 @@ export function SearchSheet({
 
         <div className="mt-5 flex items-center justify-between">
           <p className="flex items-center gap-1.5 text-[13px] font-semibold text-g-muted">
-            <SlidersHorizontal size={15} strokeWidth={2} /> {ui(lang, "filters")}
+            <SlidersHorizontal size={15} strokeWidth={2} />{" "}
+            {ui(lang, "filters")}
           </p>
           {active && (
             <button
@@ -1206,7 +1948,9 @@ export function SearchSheet({
             <span className="chip-blue grid size-14 place-items-center rounded-full">
               <SearchX size={24} strokeWidth={1.75} />
             </span>
-            <p className="mt-3 text-[15px] text-g-muted">{ui(lang, "noResults")}</p>
+            <p className="mt-3 text-[15px] text-g-muted">
+              {ui(lang, "noResults")}
+            </p>
           </div>
         )}
         {!active && (
@@ -1214,7 +1958,9 @@ export function SearchSheet({
             <span className="chip-blue grid size-14 place-items-center rounded-full">
               <Search size={24} strokeWidth={1.75} />
             </span>
-            <p className="mt-3 max-w-[240px] text-[15px] text-g-muted">{ui(lang, "search")}</p>
+            <p className="mt-3 max-w-[240px] text-[15px] text-g-muted">
+              {ui(lang, "search")}
+            </p>
           </div>
         )}
       </div>
@@ -1243,30 +1989,71 @@ export function AboutSheet({
 }) {
   const a = brand.about;
   const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.mapsQuery)}`;
-  const actions: { label: string; icon: React.ReactNode; href?: string; onClick?: () => void }[] = [
-    { label: ui(lang, "aboutRoute"), icon: <Navigation size={16} strokeWidth={2.2} />, href: maps },
-    { label: ui(lang, "aboutCall"), icon: <Phone size={16} strokeWidth={2.2} />, href: `tel:${a.phone.replace(/\s/g, "")}` },
+  const actions: {
+    label: string;
+    icon: React.ReactNode;
+    href?: string;
+    onClick?: () => void;
+  }[] = [
+    {
+      label: ui(lang, "aboutRoute"),
+      icon: <Navigation size={16} strokeWidth={2.2} />,
+      href: maps,
+    },
+    {
+      label: ui(lang, "aboutCall"),
+      icon: <Phone size={16} strokeWidth={2.2} />,
+      href: `tel:${a.phone.replace(/\s/g, "")}`,
+    },
     {
       label: ui(lang, "aboutShare"),
       icon: <Share2 size={16} strokeWidth={2.2} />,
       onClick: () => {
         const url = window.location.href.split("?")[0]!;
-        if (navigator.share) navigator.share({ title: menu.venue.name, url }).catch(() => {});
-        else navigator.clipboard?.writeText(url).then(() => onNotice(ui(lang, "copied")));
+        if (navigator.share)
+          navigator.share({ title: menu.venue.name, url }).catch(() => {});
+        else
+          navigator.clipboard
+            ?.writeText(url)
+            .then(() => onNotice(ui(lang, "copied")));
       },
     },
   ];
-  const photo = brand.hero.find((h) => h.kind === "dish") as { image: string } | undefined;
+  const photo = brand.hero.find((h) => h.kind === "dish") as
+    | { image: string }
+    | undefined;
   return (
-    <Sheet open={open} onClose={onClose} label={ui(lang, "about")} title={false}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      label={ui(lang, "about")}
+      title={false}
+    >
       <div className="px-5 pt-1 pb-10">
         {/* The venue on its own photo: mark, name, what it is, open now. */}
         <div className="relative isolate overflow-hidden rounded-[28px] bg-[#0b0b0f] px-5 pt-24 pb-5 text-white">
-          {photo && <Image src={photo.image} alt="" fill sizes="480px" className="-z-10 object-cover opacity-80" />}
-          <span aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(11,11,15,0)_20%,rgba(11,11,15,0.82)_100%)]" />
-          <span className="grid size-12 place-items-center rounded-full bg-[#fff] text-[20px] font-bold text-[#0b0b0f]">{brand.mark}</span>
-          <h2 className="mt-3 text-[28px] leading-tight font-bold tracking-[-0.025em]">{menu.venue.name}</h2>
-          <p className="mt-0.5 text-[14.5px] text-white/75">{brand.cuisine[lang as "en"] ?? brand.cuisine.en}</p>
+          {photo && (
+            <Image
+              src={photo.image}
+              alt=""
+              fill
+              sizes="480px"
+              className="-z-10 object-cover opacity-80"
+            />
+          )}
+          <span
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(11,11,15,0)_20%,rgba(11,11,15,0.82)_100%)]"
+          />
+          <span className="grid size-12 place-items-center rounded-full bg-[#fff] text-[20px] font-bold text-[#0b0b0f]">
+            {brand.mark}
+          </span>
+          <h2 className="mt-3 text-[28px] leading-tight font-bold tracking-[-0.025em]">
+            {menu.venue.name}
+          </h2>
+          <p className="mt-0.5 text-[14.5px] text-white/75">
+            {brand.cuisine[lang as "en"] ?? brand.cuisine.en}
+          </p>
           <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-white/90">
             <span className="size-1.5 rounded-full bg-[#5ce0a0]" />
             {ui(lang, "openNow")} · {ui(lang, "openUntil")} {a.closes}
@@ -1284,11 +2071,23 @@ export function AboutSheet({
               </>
             );
             return x.href ? (
-              <a key={x.label} href={x.href} target={x.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => haptic("light")} className={cls}>
+              <a
+                key={x.label}
+                href={x.href}
+                target={x.href.startsWith("http") ? "_blank" : undefined}
+                rel="noreferrer"
+                onClick={() => haptic("light")}
+                className={cls}
+              >
                 {inner}
               </a>
             ) : (
-              <button key={x.label} type="button" onClick={() => (haptic("light"), x.onClick?.())} className={cls}>
+              <button
+                key={x.label}
+                type="button"
+                onClick={() => (haptic("light"), x.onClick?.())}
+                className={cls}
+              >
                 {inner}
               </button>
             );
@@ -1297,21 +2096,36 @@ export function AboutSheet({
 
         <p className="mt-6 text-[15.5px] leading-[1.6] text-g-ink-2">{a.bio}</p>
 
-        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutGood")}</h3>
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">
+          {ui(lang, "aboutGood")}
+        </h3>
         <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
-          <a href={maps} target="_blank" rel="noreferrer" className="flex items-center gap-3 py-3">
+          <a
+            href={maps}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 py-3"
+          >
             <ArtTile name="floor" size={34} bare />
             <span className="min-w-0 flex-1">
-              <span className="block text-[12.5px] text-g-muted">{ui(lang, "address")}</span>
-              <span className="block truncate text-[14.5px] font-semibold">{a.address}</span>
+              <span className="block text-[12.5px] text-g-muted">
+                {ui(lang, "address")}
+              </span>
+              <span className="block truncate text-[14.5px] font-semibold">
+                {a.address}
+              </span>
             </span>
             <ChevronRight size={17} className="text-g-faint" />
           </a>
           <div className="flex items-center gap-3 py-3">
             <ArtTile name="shifts" size={34} bare />
             <span className="min-w-0 flex-1">
-              <span className="block text-[12.5px] text-g-muted">{ui(lang, "hours")}</span>
-              <span className="block text-[14.5px] font-semibold">{a.hours}</span>
+              <span className="block text-[12.5px] text-g-muted">
+                {ui(lang, "hours")}
+              </span>
+              <span className="block text-[14.5px] font-semibold">
+                {a.hours}
+              </span>
             </span>
           </div>
           <div className="flex items-center gap-3 py-3">
@@ -1320,7 +2134,9 @@ export function AboutSheet({
               <span className="block text-[12.5px] text-g-muted">
                 {ui(lang, "aboutWifi")} · {a.wifi.name}
               </span>
-              <span className="block text-[14.5px] font-semibold tracking-[0.02em]">{a.wifi.pass}</span>
+              <span className="block text-[14.5px] font-semibold tracking-[0.02em]">
+                {a.wifi.pass}
+              </span>
             </span>
             <button
               type="button"
@@ -1337,44 +2153,79 @@ export function AboutSheet({
           </div>
         </div>
 
-        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutPay")}</h3>
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">
+          {ui(lang, "aboutPay")}
+        </h3>
         <div className="flex flex-wrap gap-1.5">
           {a.payments.map((p) => (
-            <span key={p} className="inline-flex h-8 items-center rounded-full bg-g-fill px-3.5 text-[13.5px] font-medium">
+            <span
+              key={p}
+              className="inline-flex h-8 items-center rounded-full bg-g-fill px-3.5 text-[13.5px] font-medium"
+            >
               {p}
             </span>
           ))}
         </div>
 
-        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutFeatures")}</h3>
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">
+          {ui(lang, "aboutFeatures")}
+        </h3>
         <div className="flex flex-wrap gap-1.5">
           {a.features.map((f) => (
-            <span key={f.en} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-g-fill pr-3.5 pl-3 text-[13.5px] font-medium">
+            <span
+              key={f.en}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-g-fill pr-3.5 pl-3 text-[13.5px] font-medium"
+            >
               <Check size={13} strokeWidth={2.8} className="text-g-blue" />
               {f[lang as "en"] ?? f.en}
             </span>
           ))}
         </div>
 
-        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutLangs")}</h3>
-        <p className="px-1 text-[14.5px] text-g-ink-2">{UI_LANGS.map((l) => LANG_LABEL[l]).join(" · ")}</p>
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">
+          {ui(lang, "aboutLangs")}
+        </h3>
+        <p className="px-1 text-[14.5px] text-g-ink-2">
+          {UI_LANGS.map((l) => LANG_LABEL[l]).join(" · ")}
+        </p>
 
-        <p className="mt-10 text-center text-[12.5px] text-g-faint">{ui(lang, "poweredBy")}</p>
+        <p className="mt-10 text-center text-[12.5px] text-g-faint">
+          {ui(lang, "poweredBy")}
+        </p>
       </div>
     </Sheet>
   );
 }
 
-
-export function LangSheet({ open, onClose, lang, onPick }: { open: boolean; onClose: () => void; lang: Lang; onPick: (l: Lang) => void }) {
+export function LangSheet({
+  open,
+  onClose,
+  lang,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lang: Lang;
+  onPick: (l: Lang) => void;
+}) {
   return (
     <Sheet open={open} onClose={onClose} label={ui(lang, "language")}>
       <div className="px-5 pt-8 pb-6">
-        <h2 className="mb-4 text-[26px] font-bold tracking-[-0.02em]">{ui(lang, "language")}</h2>
+        <h2 className="mb-4 text-[26px] font-bold tracking-[-0.02em]">
+          {ui(lang, "language")}
+        </h2>
         {UI_LANGS.map((l) => (
-          <button key={l} onClick={() => onPick(l)} className="press flex w-full items-center gap-4 border-b border-g-line py-4 text-left last:border-b-0">
-            <span className="w-8 text-[13px] font-semibold text-g-muted uppercase">{l}</span>
-            <span className="flex-1 text-[16px] font-medium">{LANG_LABEL[l]}</span>
+          <button
+            key={l}
+            onClick={() => onPick(l)}
+            className="press flex w-full items-center gap-4 border-b border-g-line py-4 text-left last:border-b-0"
+          >
+            <span className="w-8 text-[13px] font-semibold text-g-muted uppercase">
+              {l}
+            </span>
+            <span className="flex-1 text-[16px] font-medium">
+              {LANG_LABEL[l]}
+            </span>
             {l === lang && (
               <span className="blue-grad grid size-6 place-items-center rounded-full">
                 <Check size={14} strokeWidth={3} />
@@ -1415,7 +2266,19 @@ export function BillSheet({
   serviceRate?: number;
 }) {
   if (!open) return null;
-  return <BillFlow onClose={onClose} lang={lang} currency={currency} orders={orders} itemById={itemById} table={table} onRequest={onRequest} onPaid={onPaid} serviceRate={serviceRate} />;
+  return (
+    <BillFlow
+      onClose={onClose}
+      lang={lang}
+      currency={currency}
+      orders={orders}
+      itemById={itemById}
+      table={table}
+      onRequest={onRequest}
+      onPaid={onPaid}
+      serviceRate={serviceRate}
+    />
+  );
 }
 
 function StepHeadline({ children }: { children: React.ReactNode }) {
@@ -1430,10 +2293,32 @@ type Split = "all" | "equal" | "items";
  * company; then VietQR right in the app (or the waiter brings card or cash),
  * the payment confirmed, and a quick review of the visit.
  */
-function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest, onPaid, serviceRate }: { onClose: () => void; lang: Lang; currency: Currency; orders: PlacedOrder[]; itemById: Map<string, MenuItem>; table: string | null; onRequest: (total: number, method: string) => void; onPaid?: (total: number) => void; serviceRate: number }) {
+function BillFlow({
+  onClose,
+  lang,
+  currency,
+  orders,
+  itemById,
+  table,
+  onRequest,
+  onPaid,
+  serviceRate,
+}: {
+  onClose: () => void;
+  lang: Lang;
+  currency: Currency;
+  orders: PlacedOrder[];
+  itemById: Map<string, MenuItem>;
+  table: string | null;
+  onRequest: (total: number, method: string) => void;
+  onPaid?: (total: number) => void;
+  serviceRate: number;
+}) {
   const { step, go, back } = useStepHistory();
   const [tip, setTip] = useState(0);
-  const [method, setMethod] = useState<"billQr" | "billCard" | "billCash">("billQr");
+  const [method, setMethod] = useState<"billQr" | "billCard" | "billCash">(
+    "billQr",
+  );
   const [split, setSplit] = useState<Split>("all");
   const [people, setPeople] = useState(2);
   const [mine, setMine] = useState<string[]>([]);
@@ -1445,13 +2330,24 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
   const [comment, setComment] = useState("");
   const lines = orders.flatMap((o) => o.lines);
   const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
-  const picked = lines.filter((l) => mine.includes(l.key)).reduce((s, l) => s + l.unitPrice * l.qty, 0);
-  const base = split === "all" ? subtotal : split === "equal" ? Math.round(subtotal / people / 1000) * 1000 : picked;
+  const picked = lines
+    .filter((l) => mine.includes(l.key))
+    .reduce((s, l) => s + l.unitPrice * l.qty, 0);
+  const base =
+    split === "all"
+      ? subtotal
+      : split === "equal"
+        ? Math.round(subtotal / people / 1000) * 1000
+        : picked;
   const service = withService(base, serviceRate).service;
   const tipAmount = Math.round((base * tip) / 100 / 1000) * 1000;
   const total = base + service + tipAmount;
   const money = (n: number) => formatMoney(n, currency, lang);
-  const invoiceOk = !invoice || (company.name.trim().length > 1 && company.tax.replace(/\D/g, "").length >= 10 && /@/.test(company.email));
+  const invoiceOk =
+    !invoice ||
+    (company.name.trim().length > 1 &&
+      company.tax.replace(/\D/g, "").length >= 10 &&
+      /@/.test(company.email));
   const ready = total > 0 && invoiceOk;
 
   const footer =
@@ -1465,7 +2361,9 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
         }}
         className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold tabular-nums transition-opacity disabled:opacity-40"
       >
-        {method === "billQr" ? `${ui(lang, "payNow")} · ${money(total)}` : `${ui(lang, "billRequest")} · ${money(total)}`}
+        {method === "billQr"
+          ? `${ui(lang, "payNow")} · ${money(total)}`
+          : `${ui(lang, "billRequest")} · ${money(total)}`}
       </button>
     ) : step === 1 ? (
       <button
@@ -1485,28 +2383,47 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
         {checking ? ui(lang, "payChecking") : ui(lang, "payDone")}
       </button>
     ) : step === 2 ? (
-      <button onClick={() => go(3)} className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold">
+      <button
+        onClick={() => go(3)}
+        className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold"
+      >
         {ui(lang, "rateVisit")}
       </button>
     ) : step === 3 ? (
-      <button disabled={!stars} onClick={() => (haptic("success"), go(4))} className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40">
+      <button
+        disabled={!stars}
+        onClick={() => (haptic("success"), go(4))}
+        className="blue-grad press h-14 w-full rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40"
+      >
         {ui(lang, "sendReview")}
       </button>
     ) : (
-      <button onClick={onClose} className="press h-14 w-full rounded-full bg-g-fill text-[16px] font-semibold">
+      <button
+        onClick={onClose}
+        className="press h-14 w-full rounded-full bg-g-fill text-[16px] font-semibold"
+      >
         {ui(lang, "close")}
       </button>
     );
 
   return (
-    <Sheet open onClose={step > 0 && step < 2 ? back : onClose} label={ui(lang, "billTitle")} title={false} footer={footer}>
+    <Sheet
+      open
+      onClose={step > 0 && step < 2 ? back : onClose}
+      label={ui(lang, "billTitle")}
+      title={false}
+      footer={footer}
+    >
       <div key={step} className="animate-tab px-5 pt-1 pb-8">
         {step === 0 && (
           <>
-            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "billTitle")}</h2>
+            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
+              {ui(lang, "billTitle")}
+            </h2>
             {table && (
               <p className="mt-1 text-[14px] text-g-muted">
-                {ui(lang, "table")} {table.padStart(2, "0")} · {orders.length} × {ui(lang, "order").toLowerCase()}
+                {ui(lang, "table")} {table.padStart(2, "0")} · {orders.length} ×{" "}
+                {ui(lang, "order").toLowerCase()}
               </p>
             )}
 
@@ -1522,19 +2439,44 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
                   aria-pressed={split === k}
                   className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${split === k ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
                 >
-                  {ui(lang, k === "all" ? "splitAll" : k === "equal" ? "splitEqual" : "splitItems")}
+                  {ui(
+                    lang,
+                    k === "all"
+                      ? "splitAll"
+                      : k === "equal"
+                        ? "splitEqual"
+                        : "splitItems",
+                  )}
                 </button>
               ))}
             </div>
             {split === "equal" && (
               <div className="animate-rise mt-3 flex items-center justify-between rounded-full bg-g-fill p-1.5 pl-4">
-                <span className="text-[15px] font-semibold">{ui(lang, "splitPeople")}</span>
+                <span className="text-[15px] font-semibold">
+                  {ui(lang, "splitPeople")}
+                </span>
                 <span className="flex items-center gap-1 rounded-full bg-g-card p-1">
-                  <button aria-label="−" onClick={() => (haptic("tick"), setPeople((n) => Math.max(2, n - 1)))} className="press grid size-9 place-items-center rounded-full text-xl">
+                  <button
+                    aria-label="−"
+                    onClick={() => (
+                      haptic("tick"),
+                      setPeople((n) => Math.max(2, n - 1))
+                    )}
+                    className="press grid size-9 place-items-center rounded-full text-xl"
+                  >
                     −
                   </button>
-                  <span className="w-7 text-center text-[17px] font-bold tabular-nums">{people}</span>
-                  <button aria-label="+" onClick={() => (haptic("tick"), setPeople((n) => Math.min(20, n + 1)))} className="press grid size-9 place-items-center rounded-full text-xl">
+                  <span className="w-7 text-center text-[17px] font-bold tabular-nums">
+                    {people}
+                  </span>
+                  <button
+                    aria-label="+"
+                    onClick={() => (
+                      haptic("tick"),
+                      setPeople((n) => Math.min(20, n + 1))
+                    )}
+                    className="press grid size-9 place-items-center rounded-full text-xl"
+                  >
                     +
                   </button>
                 </span>
@@ -1542,7 +2484,11 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
             )}
 
             <div className="mt-3 rounded-[24px] bg-g-fill px-5 py-4">
-              {split === "items" && <p className="mb-2.5 text-[13px] font-semibold text-g-blue">{ui(lang, "splitPick")}</p>}
+              {split === "items" && (
+                <p className="mb-2.5 text-[13px] font-semibold text-g-blue">
+                  {ui(lang, "splitPick")}
+                </p>
+              )}
               <div className="grid gap-2.5">
                 {lines.map((l) => {
                   const it = itemById.get(l.itemId);
@@ -1550,23 +2496,47 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
                   const row = (
                     <>
                       {split === "items" ? (
-                        <span className={`grid size-6 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-fill-2"}`}>{on && <Check size={14} strokeWidth={3} />}</span>
+                        <span
+                          className={`grid size-6 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-fill-2"}`}
+                        >
+                          {on && <Check size={14} strokeWidth={3} />}
+                        </span>
                       ) : (
-                        <span className="w-6 shrink-0 text-g-muted tabular-nums">{l.qty}×</span>
+                        <span className="w-6 shrink-0 text-g-muted tabular-nums">
+                          {l.qty}×
+                        </span>
                       )}
                       <span className="min-w-0 flex-1 truncate text-left">
-                        {split === "items" && <span className="text-g-muted tabular-nums">{l.qty}× </span>}
+                        {split === "items" && (
+                          <span className="text-g-muted tabular-nums">
+                            {l.qty}×{" "}
+                          </span>
+                        )}
                         {it ? t(it.name, lang) : l.itemId}
                       </span>
-                      <span className="shrink-0 tabular-nums">{money(l.unitPrice * l.qty)}</span>
+                      <span className="shrink-0 tabular-nums">
+                        {money(l.unitPrice * l.qty)}
+                      </span>
                     </>
                   );
                   return split === "items" ? (
-                    <button key={l.key + l.qty} onClick={() => (haptic("tick"), setMine((m) => (on ? m.filter((x) => x !== l.key) : [...m, l.key])))} className="flex items-center gap-2 text-[15px]">
+                    <button
+                      key={l.key + l.qty}
+                      onClick={() => (
+                        haptic("tick"),
+                        setMine((m) =>
+                          on ? m.filter((x) => x !== l.key) : [...m, l.key],
+                        )
+                      )}
+                      className="flex items-center gap-2 text-[15px]"
+                    >
                       {row}
                     </button>
                   ) : (
-                    <div key={l.key + l.qty} className="flex items-baseline gap-2 text-[15px]">
+                    <div
+                      key={l.key + l.qty}
+                      className="flex items-baseline gap-2 text-[15px]"
+                    >
                       {row}
                     </div>
                   );
@@ -1575,11 +2545,22 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
               <div className="my-3.5 border-t border-dashed border-g-faint/60" />
               <div className="grid gap-1.5 text-[14px] text-g-muted tabular-nums">
                 <p className="flex justify-between">
-                  <span>{split === "all" ? ui(lang, "billSubtotal") : split === "equal" ? `${ui(lang, "splitShare")} · 1/${people}` : ui(lang, "splitYours")}</span>
+                  <span>
+                    {split === "all"
+                      ? ui(lang, "billSubtotal")
+                      : split === "equal"
+                        ? `${ui(lang, "splitShare")} · 1/${people}`
+                        : ui(lang, "splitYours")}
+                  </span>
                   <span className="text-g-ink">{money(base)}</span>
                 </p>
                 <p className="flex justify-between">
-                  <span>{ui(lang, "servicePct").replace("{p}", String(Math.round(serviceRate * 100)))}</span>
+                  <span>
+                    {ui(lang, "servicePct").replace(
+                      "{p}",
+                      String(Math.round(serviceRate * 100)),
+                    )}
+                  </span>
                   <span className="text-g-ink">{money(service)}</span>
                 </p>
                 {tipAmount > 0 && (
@@ -1590,8 +2571,12 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
                 )}
               </div>
               <p className="mt-3 flex items-baseline justify-between">
-                <span className="text-[15px] font-semibold">{split === "all" ? ui(lang, "total") : ui(lang, "splitToPay")}</span>
-                <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{money(total)}</span>
+                <span className="text-[15px] font-semibold">
+                  {split === "all" ? ui(lang, "total") : ui(lang, "splitToPay")}
+                </span>
+                <span className="text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums">
+                  {money(total)}
+                </span>
               </p>
             </div>
 
@@ -1635,12 +2620,32 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
                       aria-pressed={on}
                       className={`press flex items-center gap-3 rounded-[22px] p-3 pr-4 text-left transition-colors ${on ? "bg-g-blue-soft" : "bg-g-fill"}`}
                     >
-                      <span className={`grid size-11 shrink-0 place-items-center rounded-full ${on ? "blue-grad" : "bg-g-card text-g-ink-2"}`}>{m === "billQr" ? <QrCode size={20} /> : m === "billCard" ? <CreditCard size={20} /> : <Banknote size={20} />}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className={`block text-[15.5px] font-semibold ${on ? "text-g-blue" : ""}`}>{m === "billQr" ? "VietQR" : ui(lang, m)}</span>
-                        <span className="block truncate text-[12.5px] text-g-muted">{ui(lang, sub)}</span>
+                      <span
+                        className={`grid size-11 shrink-0 place-items-center rounded-full ${on ? "blue-grad" : "bg-g-card text-g-ink-2"}`}
+                      >
+                        {m === "billQr" ? (
+                          <QrCode size={20} />
+                        ) : m === "billCard" ? (
+                          <CreditCard size={20} />
+                        ) : (
+                          <Banknote size={20} />
+                        )}
                       </span>
-                      <span className={`grid size-6 shrink-0 place-items-center rounded-full ${on ? "blue-grad" : "bg-g-fill-2"}`}>{on && <Check size={14} strokeWidth={3} />}</span>
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={`block text-[15.5px] font-semibold ${on ? "text-g-blue" : ""}`}
+                        >
+                          {m === "billQr" ? "VietQR" : ui(lang, m)}
+                        </span>
+                        <span className="block truncate text-[12.5px] text-g-muted">
+                          {ui(lang, sub)}
+                        </span>
+                      </span>
+                      <span
+                        className={`grid size-6 shrink-0 place-items-center rounded-full ${on ? "blue-grad" : "bg-g-fill-2"}`}
+                      >
+                        {on && <Check size={14} strokeWidth={3} />}
+                      </span>
                     </button>
                   );
                 })}
@@ -1649,16 +2654,29 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
 
             {/* A VAT invoice for a company (Vietnam): name, tax code, email; it is issued with the e-invoice. */}
             <section className="mt-8">
-              <button onClick={() => (haptic("tick"), setInvoice((v) => !v))} aria-pressed={invoice} className="flex w-full items-center gap-3 rounded-[22px] bg-g-fill p-3 pr-4 text-left">
+              <button
+                onClick={() => (haptic("tick"), setInvoice((v) => !v))}
+                aria-pressed={invoice}
+                className="flex w-full items-center gap-3 rounded-[22px] bg-g-fill p-3 pr-4 text-left"
+              >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-g-card text-g-blue">
                   <Building2 size={20} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15.5px] font-semibold">{ui(lang, "vatInvoice")}</span>
-                  <span className="block truncate text-[12.5px] text-g-muted">{ui(lang, "vatInvoiceSub")}</span>
+                  <span className="block text-[15.5px] font-semibold">
+                    {ui(lang, "vatInvoice")}
+                  </span>
+                  <span className="block truncate text-[12.5px] text-g-muted">
+                    {ui(lang, "vatInvoiceSub")}
+                  </span>
                 </span>
-                <span className={`relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors ${invoice ? "bg-g-blue" : "bg-g-fill-2"}`}>
-                  <span className="absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition-transform duration-300" style={{ transform: `translateX(${invoice ? 20 : 0}px)` }} />
+                <span
+                  className={`relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors ${invoice ? "bg-g-blue" : "bg-g-fill-2"}`}
+                >
+                  <span
+                    className="absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition-transform duration-300"
+                    style={{ transform: `translateX(${invoice ? 20 : 0}px)` }}
+                  />
                 </span>
               </button>
               {invoice && (
@@ -1673,7 +2691,9 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
                     <input
                       key={k}
                       value={company[k]}
-                      onChange={(e) => setCompany({ ...company, [k]: e.target.value })}
+                      onChange={(e) =>
+                        setCompany({ ...company, [k]: e.target.value })
+                      }
                       placeholder={ui(lang, ph)}
                       inputMode={mode}
                       className="h-14 w-full rounded-[18px] bg-g-fill px-4 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40"
@@ -1687,20 +2707,39 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
 
         {step === 1 && (
           <div className="text-center">
-            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "payQrTitle")}</h2>
-            <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "payQrHint")}</p>
+            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
+              {ui(lang, "payQrTitle")}
+            </h2>
+            <p className="mt-1 text-[14px] text-g-muted">
+              {ui(lang, "payQrHint")}
+            </p>
             <div className="mx-auto mt-6 w-fit rounded-[28px] bg-white p-4 shadow-[0_1px_3px_rgba(11,11,15,0.1),0_18px_40px_-20px_rgba(11,11,15,0.35)]">
-              <BrandQr value={`https://vietqr.net/pay?bank=VCB&acc=0071000123456&amount=${total}&note=T${table ?? "0"}`} size={220} label="VietQR" />
+              <BrandQr
+                value={`https://vietqr.net/pay?bank=VCB&acc=0071000123456&amount=${total}&note=T${table ?? "0"}`}
+                size={220}
+                label="VietQR"
+              />
             </div>
-            <p className="mt-5 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">{money(total)}</p>
-            <p className="mt-2 text-[13.5px] text-g-muted">Vietcombank · SAMARKAND CO., LTD · 0071 000 123 456</p>
+            <p className="mt-5 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+              {money(total)}
+            </p>
+            <p className="mt-2 text-[13.5px] text-g-muted">
+              Vietcombank · SAMARKAND CO., LTD · 0071 000 123 456
+            </p>
             <div className="mt-6 grid gap-2 text-left">
-              {(["payQrStep1", "payQrStep2", "payQrStep3"] as UiKey[]).map((k, i) => (
-                <p key={k} className="flex items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-[14.5px]">
-                  <span className="chip-blue grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-bold">{i + 1}</span>
-                  {ui(lang, k)}
-                </p>
-              ))}
+              {(["payQrStep1", "payQrStep2", "payQrStep3"] as UiKey[]).map(
+                (k, i) => (
+                  <p
+                    key={k}
+                    className="flex items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-[14.5px]"
+                  >
+                    <span className="chip-blue grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-bold">
+                      {i + 1}
+                    </span>
+                    {ui(lang, k)}
+                  </p>
+                ),
+              )}
             </div>
           </div>
         )}
@@ -1710,14 +2749,20 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
             <span className="animate-pop blue-grad mx-auto grid size-20 place-items-center rounded-full">
               <Check size={38} strokeWidth={2.8} />
             </span>
-            <h2 className="mt-6 text-[30px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, "paidTitle")}</h2>
-            <p className="mt-1 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">{money(total)}</p>
+            <h2 className="mt-6 text-[30px] leading-tight font-bold tracking-[-0.025em]">
+              {ui(lang, "paidTitle")}
+            </h2>
+            <p className="mt-1 text-[34px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+              {money(total)}
+            </p>
             <div className="mt-6 grid gap-2 text-left">
               <p className="flex items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-[14px]">
                 <span className="chip-green grid size-9 shrink-0 place-items-center rounded-full">
                   <ReceiptText size={17} />
                 </span>
-                {invoice ? ui(lang, "paidInvoice").replace("{email}", company.email) : ui(lang, "paidReceipt")}
+                {invoice
+                  ? ui(lang, "paidInvoice").replace("{email}", company.email)
+                  : ui(lang, "paidReceipt")}
               </p>
               <p className="flex items-center gap-3 rounded-full bg-g-fill p-1.5 pr-4 text-[14px]">
                 <span className="chip-blue grid size-9 shrink-0 place-items-center rounded-full">
@@ -1731,29 +2776,68 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
 
         {step === 3 && (
           <div>
-            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "rateTitle")}</h2>
-            <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "rateHint")}</p>
+            <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
+              {ui(lang, "rateTitle")}
+            </h2>
+            <p className="mt-1 text-[14px] text-g-muted">
+              {ui(lang, "rateHint")}
+            </p>
             <div className="mt-6 flex justify-between gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} aria-label={`${n}`} onClick={() => (haptic("tick"), setStars(n))} className={`press grid h-16 flex-1 place-items-center rounded-[20px] transition-colors ${n <= stars ? "bg-g-blue-soft" : "bg-g-fill"}`}>
-                  <Star size={28} strokeWidth={1.8} className={`transition-transform duration-300 ${n <= stars ? "scale-110 fill-g-blue text-g-blue" : "text-g-faint"}`} />
+                <button
+                  key={n}
+                  aria-label={`${n}`}
+                  onClick={() => (haptic("tick"), setStars(n))}
+                  className={`press grid h-16 flex-1 place-items-center rounded-[20px] transition-colors ${n <= stars ? "bg-g-blue-soft" : "bg-g-fill"}`}
+                >
+                  <Star
+                    size={28}
+                    strokeWidth={1.8}
+                    className={`transition-transform duration-300 ${n <= stars ? "scale-110 fill-g-blue text-g-blue" : "text-g-faint"}`}
+                  />
                 </button>
               ))}
             </div>
             {stars > 0 && (
               <div className="animate-rise mt-6">
-                <StepHeadline>{ui(lang, stars >= 4 ? "rateLiked" : "rateBetter")}</StepHeadline>
+                <StepHeadline>
+                  {ui(lang, stars >= 4 ? "rateLiked" : "rateBetter")}
+                </StepHeadline>
                 <div className="flex flex-wrap gap-2">
-                  {(["rateFood", "rateService", "rateAtmosphere", "rateSpeed", "ratePrice"] as UiKey[]).map((k) => {
+                  {(
+                    [
+                      "rateFood",
+                      "rateService",
+                      "rateAtmosphere",
+                      "rateSpeed",
+                      "ratePrice",
+                    ] as UiKey[]
+                  ).map((k) => {
                     const on = liked.includes(k);
                     return (
-                      <button key={k} onClick={() => (haptic("tick"), setLiked((l) => (on ? l.filter((x) => x !== k) : [...l, k])))} aria-pressed={on} className={`press h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-fill text-g-ink-2"}`}>
+                      <button
+                        key={k}
+                        onClick={() => (
+                          haptic("tick"),
+                          setLiked((l) =>
+                            on ? l.filter((x) => x !== k) : [...l, k],
+                          )
+                        )}
+                        aria-pressed={on}
+                        className={`press h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${on ? "blue-grad" : "bg-g-fill text-g-ink-2"}`}
+                      >
                         {ui(lang, k)}
                       </button>
                     );
                   })}
                 </div>
-                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder={ui(lang, "rateComment")} className="mt-4 w-full resize-none rounded-[20px] bg-g-fill px-4 py-3.5 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40" />
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={3}
+                  placeholder={ui(lang, "rateComment")}
+                  className="mt-4 w-full resize-none rounded-[20px] bg-g-fill px-4 py-3.5 text-[16px] outline-none placeholder:text-g-faint focus:ring-2 focus:ring-g-blue/40"
+                />
               </div>
             )}
           </div>
@@ -1764,8 +2848,12 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
             <span className="animate-pop blue-grad mx-auto grid size-20 place-items-center rounded-full">
               <Heart size={34} strokeWidth={2.4} />
             </span>
-            <h2 className="mt-6 text-[30px] leading-tight font-bold tracking-[-0.025em]">{ui(lang, "thanksTitle")}</h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-g-muted">{ui(lang, stars >= 4 ? "thanksGood" : "thanksBad")}</p>
+            <h2 className="mt-6 text-[30px] leading-tight font-bold tracking-[-0.025em]">
+              {ui(lang, "thanksTitle")}
+            </h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-g-muted">
+              {ui(lang, stars >= 4 ? "thanksGood" : "thanksBad")}
+            </p>
           </div>
         )}
       </div>
@@ -1773,34 +2861,89 @@ function BillFlow({ onClose, lang, currency, orders, itemById, table, onRequest,
   );
 }
 
-export function CategoriesSheet({ open, onClose, menu, lang, onPick }: { open: boolean; onClose: () => void; menu: Menu; lang: Lang; onPick: (id: string) => void }) {
+export function CategoriesSheet({
+  open,
+  onClose,
+  menu,
+  lang,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  menu: Menu;
+  lang: Lang;
+  onPick: (id: string) => void;
+}) {
   return (
-    <Sheet open={open} onClose={onClose} label={ui(lang, "categories")} title={false}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      label={ui(lang, "categories")}
+      title={false}
+    >
       <div className="px-5 pt-1 pb-8">
-        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "categories")}</h2>
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
+          {ui(lang, "categories")}
+        </h2>
         <p className="mt-1 text-[14px] text-g-muted">
-          {menu.categories.length} {ui(lang, "sections")} · {menu.categories.reduce((n, c) => n + c.items.length, 0)} {ui(lang, "items")}
+          {menu.categories.length} {ui(lang, "sections")} ·{" "}
+          {menu.categories.reduce((n, c) => n + c.items.length, 0)}{" "}
+          {ui(lang, "items")}
         </p>
-        <div className="mt-5 grid grid-cols-2 gap-2.5">
-          {menu.categories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                haptic("light");
-                onPick(c.id);
-              }}
-              className="press flex h-[84px] flex-col justify-between rounded-[20px] bg-g-fill p-3.5 text-left"
-            >
-              <span className="flex items-center justify-between">
-                <span className="text-g-blue">
-                  <RoleIcon role={c.role} name={c.items[0]?.name.en} size={20} />
-                </span>
-                <span className="text-[12px] font-medium text-g-muted tabular-nums">{c.items.length}</span>
-              </span>
-              <span className="truncate text-[15px] font-semibold">{t(c.name, lang)}</span>
-            </button>
-          ))}
-        </div>
+        {/* Two short lists, food then drinks: one row per section with its icon, name and count. */}
+        {(
+          [
+            [
+              "food",
+              menu.categories.filter(
+                (c) =>
+                  !["drink", "hot_drink", "alcohol", "hookah"].includes(c.role),
+              ),
+            ],
+            [
+              "drinks",
+              menu.categories.filter((c) =>
+                ["drink", "hot_drink", "alcohol", "hookah"].includes(c.role),
+              ),
+            ],
+          ] as const
+        ).map(([k, list]) =>
+          list.length ? (
+            <div key={k}>
+              <p className="mt-6 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">
+                {ui(lang, k === "food" ? "catFood" : "catDrinks")}
+              </p>
+              <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
+                {list.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      haptic("light");
+                      onPick(c.id);
+                    }}
+                    className="press flex h-12 w-full items-center gap-3 text-left"
+                  >
+                    <span className="shrink-0 text-g-blue">
+                      <RoleIcon
+                        role={c.role}
+                        name={c.items[0]?.name.en}
+                        size={17}
+                      />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
+                      {t(c.name, lang)}
+                    </span>
+                    <span className="text-[13px] text-g-muted tabular-nums">
+                      {c.items.length}
+                    </span>
+                    <ChevronRight size={16} className="shrink-0 text-g-faint" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null,
+        )}
       </div>
     </Sheet>
   );
@@ -1819,27 +2962,73 @@ function WifiQr({ value, size = 232 }: { value: string; size?: number }) {
     qr.addData(value);
     qr.make();
     const n = qr.getModuleCount();
-    const inFinder = (r: number, c: number) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+    const inFinder = (r: number, c: number) =>
+      (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
     const mid = n / 2;
-    const inBadge = (r: number, c: number) => Math.abs(r + 0.5 - mid) < n * 0.13 && Math.abs(c + 0.5 - mid) < n * 0.13;
+    const inBadge = (r: number, c: number) =>
+      Math.abs(r + 0.5 - mid) < n * 0.13 && Math.abs(c + 0.5 - mid) < n * 0.13;
     const dots: [number, number][] = [];
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c) && !inFinder(r, c) && !inBadge(r, c)) dots.push([r, c]);
+    for (let r = 0; r < n; r++)
+      for (let c = 0; c < n; c++)
+        if (qr.isDark(r, c) && !inFinder(r, c) && !inBadge(r, c))
+          dots.push([r, c]);
     return { n, dots };
   }, [value]);
-  const finders: [number, number][] = [[0, 0], [0, n - 7], [n - 7, 0]];
+  const finders: [number, number][] = [
+    [0, 0],
+    [0, n - 7],
+    [n - 7, 0],
+  ];
   const badge = n * 0.22;
   return (
-    <svg viewBox={`-2 -2 ${n + 4} ${n + 4}`} width={size} height={size} role="img" aria-label="Wi-Fi QR code">
+    <svg
+      viewBox={`-2 -2 ${n + 4} ${n + 4}`}
+      width={size}
+      height={size}
+      role="img"
+      aria-label="Wi-Fi QR code"
+    >
       {dots.map(([r, c]) => (
-        <rect key={`${r}-${c}`} x={c + 0.08} y={r + 0.08} width={0.84} height={0.84} rx={0.36} fill="#0b0b0f" />
+        <rect
+          key={`${r}-${c}`}
+          x={c + 0.08}
+          y={r + 0.08}
+          width={0.84}
+          height={0.84}
+          rx={0.36}
+          fill="#0b0b0f"
+        />
       ))}
       {finders.map(([r, c]) => (
         <g key={`f${r}-${c}`}>
-          <rect x={c + 0.5} y={r + 0.5} width={6} height={6} rx={2} fill="none" stroke="#0b0b0f" strokeWidth={1} />
-          <rect x={c + 2} y={r + 2} width={3} height={3} rx={1} fill="#2f5bff" />
+          <rect
+            x={c + 0.5}
+            y={r + 0.5}
+            width={6}
+            height={6}
+            rx={2}
+            fill="none"
+            stroke="#0b0b0f"
+            strokeWidth={1}
+          />
+          <rect
+            x={c + 2}
+            y={r + 2}
+            width={3}
+            height={3}
+            rx={1}
+            fill="#2f5bff"
+          />
         </g>
       ))}
-      <rect x={n / 2 - badge / 2} y={n / 2 - badge / 2} width={badge} height={badge} rx={badge * 0.3} fill="url(#wifi-badge)" />
+      <rect
+        x={n / 2 - badge / 2}
+        y={n / 2 - badge / 2}
+        width={badge}
+        height={badge}
+        rx={badge * 0.3}
+        fill="url(#wifi-badge)"
+      />
       <defs>
         <linearGradient id="wifi-badge" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#6c96ff" />
@@ -1847,7 +3036,13 @@ function WifiQr({ value, size = 232 }: { value: string; size?: number }) {
           <stop offset="1" stopColor="#2530b0" />
         </linearGradient>
       </defs>
-      <g transform={`translate(${n / 2 - badge * 0.3} ${n / 2 - badge * 0.3}) scale(${(badge * 0.6) / 24})`} fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round">
+      <g
+        transform={`translate(${n / 2 - badge * 0.3} ${n / 2 - badge * 0.3}) scale(${(badge * 0.6) / 24})`}
+        fill="none"
+        stroke="#fff"
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      >
         <path d="M5 12.5a10 10 0 0 1 14 0" />
         <path d="M8.5 16a5 5 0 0 1 7 0" />
         <path d="M12 19.5h.01" strokeWidth={3.2} />
@@ -1857,7 +3052,19 @@ function WifiQr({ value, size = 232 }: { value: string; size?: number }) {
 }
 
 /** Wi-Fi page: scannable code, network and password with copy, and a short how-to. */
-export function WifiSheet({ open, onClose, brand, lang, onNotice }: { open: boolean; onClose: () => void; brand: VenueBrand; lang: Lang; onNotice: (title: string) => void }) {
+export function WifiSheet({
+  open,
+  onClose,
+  brand,
+  lang,
+  onNotice,
+}: {
+  open: boolean;
+  onClose: () => void;
+  brand: VenueBrand;
+  lang: Lang;
+  onNotice: (title: string) => void;
+}) {
   const { name, pass } = brand.about.wifi;
   const [shown, setShown] = useState(true);
   const copy = (text: string, done: string) => {
@@ -1872,31 +3079,56 @@ export function WifiSheet({ open, onClose, brand, lang, onNotice }: { open: bool
       label="Wi-Fi"
       title={false}
       footer={
-        <button onClick={() => copy(pass, ui(lang, "wifiCopied"))} className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold">
+        <button
+          onClick={() => copy(pass, ui(lang, "wifiCopied"))}
+          className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold"
+        >
           <Copy size={18} strokeWidth={2} /> {ui(lang, "wifiCopy")}
         </button>
       }
     >
       <div className="px-5 pt-1 pb-6">
-        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">Wi-Fi</h2>
-        <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "wifiSecurity")}</p>
+        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
+          Wi-Fi
+        </h2>
+        <p className="mt-1 text-[14px] text-g-muted">
+          {ui(lang, "wifiSecurity")}
+        </p>
 
         {/* The code always on white, so any camera reads it in either theme. */}
         <div className="mt-5 flex items-center gap-4 rounded-[24px] bg-g-fill p-3">
-          <span className="shrink-0 rounded-[18px] p-2.5" style={{ background: "#fff" }}>
-            <WifiQr value={`WIFI:T:WPA;S:${wifiEscape(name)};P:${wifiEscape(pass)};;`} size={128} />
+          <span
+            className="shrink-0 rounded-[18px] p-2.5"
+            style={{ background: "#fff" }}
+          >
+            <WifiQr
+              value={`WIFI:T:WPA;S:${wifiEscape(name)};P:${wifiEscape(pass)};;`}
+              size={128}
+            />
           </span>
-          <p className="min-w-0 pr-1 text-[14px] leading-snug text-g-ink-2">{ui(lang, "wifiScan")}</p>
+          <p className="min-w-0 pr-1 text-[14px] leading-snug text-g-ink-2">
+            {ui(lang, "wifiScan")}
+          </p>
         </div>
 
-        <p className="mt-6 mb-2 text-[13px] font-semibold text-g-muted">{ui(lang, "wifiManual")}</p>
+        <p className="mt-6 mb-2 text-[13px] font-semibold text-g-muted">
+          {ui(lang, "wifiManual")}
+        </p>
         <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
           <div className="flex items-center gap-3 py-3">
             <span className="min-w-0 flex-1">
-              <span className="block text-[12px] text-g-muted">{ui(lang, "wifiNetwork")}</span>
-              <span className="block truncate text-[17px] font-semibold">{name}</span>
+              <span className="block text-[12px] text-g-muted">
+                {ui(lang, "wifiNetwork")}
+              </span>
+              <span className="block truncate text-[17px] font-semibold">
+                {name}
+              </span>
             </span>
-            <button onClick={() => copy(name, ui(lang, "copied"))} aria-label={`${ui(lang, "copied")}: ${name}`} className="press grid size-10 shrink-0 place-items-center rounded-full text-g-blue">
+            <button
+              onClick={() => copy(name, ui(lang, "copied"))}
+              aria-label={`${ui(lang, "copied")}: ${name}`}
+              className="press grid size-10 shrink-0 place-items-center rounded-full text-g-blue"
+            >
               <Copy size={19} strokeWidth={2} />
             </button>
           </div>
@@ -1909,11 +3141,20 @@ export function WifiSheet({ open, onClose, brand, lang, onNotice }: { open: bool
               className="min-w-0 flex-1 text-left"
             >
               <span className="block text-[12px] text-g-muted">
-                {ui(lang, "wifiPassword")} · <span className="text-g-blue">{shown ? ui(lang, "wifiHide") : ui(lang, "wifiShow")}</span>
+                {ui(lang, "wifiPassword")} ·{" "}
+                <span className="text-g-blue">
+                  {shown ? ui(lang, "wifiHide") : ui(lang, "wifiShow")}
+                </span>
               </span>
-              <span className="block truncate text-[17px] font-semibold tracking-[0.02em] tabular-nums">{shown ? pass : "•".repeat(pass.length)}</span>
+              <span className="block truncate text-[17px] font-semibold tracking-[0.02em] tabular-nums">
+                {shown ? pass : "•".repeat(pass.length)}
+              </span>
             </button>
-            <button onClick={() => copy(pass, ui(lang, "wifiCopied"))} aria-label={ui(lang, "wifiCopy")} className="press grid size-10 shrink-0 place-items-center rounded-full text-g-blue">
+            <button
+              onClick={() => copy(pass, ui(lang, "wifiCopied"))}
+              aria-label={ui(lang, "wifiCopy")}
+              className="press grid size-10 shrink-0 place-items-center rounded-full text-g-blue"
+            >
               <Copy size={19} strokeWidth={2} />
             </button>
           </div>

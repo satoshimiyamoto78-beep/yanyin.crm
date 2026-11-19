@@ -106,7 +106,16 @@
                 "ru": "Мягкий · арабская классика",
                 "vi": "Nhẹ · cổ điển Ả Rập"
               },
-              "level": 1
+              "level": 1,
+              "stock": [
+                "Hookah master's choice",
+                "Double apple",
+                "Grape–Mint",
+                "Mint–Lime",
+                "Watermelon–Mint",
+                "Blueberry",
+                "Peach ice"
+              ]
             },
             {
               "name": {
@@ -120,7 +129,16 @@
                 "ru": "Лёгкий · турецкий, много вкусов",
                 "vi": "Nhẹ · Thổ Nhĩ Kỳ"
               },
-              "level": 1
+              "level": 1,
+              "stock": [
+                "Hookah master's choice",
+                "Berry mix",
+                "Watermelon–Mint",
+                "Mango–Passion fruit",
+                "Lychee",
+                "Pineapple",
+                "Peach ice"
+              ]
             },
             {
               "name": {
@@ -134,7 +152,15 @@
                 "ru": "Лёгкий–средний · чистый вкус",
                 "vi": "Nhẹ–vừa · vị trong"
               },
-              "level": 1
+              "level": 1,
+              "stock": [
+                "Hookah master's choice",
+                "Mint–Lime",
+                "Pineapple",
+                "Lychee",
+                "Blueberry",
+                "Cola–Lime"
+              ]
             },
             {
               "name": {
@@ -148,7 +174,16 @@
                 "ru": "Средний · сочный",
                 "vi": "Vừa · mọng nước"
               },
-              "level": 2
+              "level": 2,
+              "stock": [
+                "Hookah master's choice",
+                "Berry mix",
+                "Mango–Passion fruit",
+                "Pineapple",
+                "Peach ice",
+                "Lychee",
+                "Cola–Lime"
+              ]
             },
             {
               "name": {
@@ -162,7 +197,15 @@
                 "ru": "Средний · густой дым",
                 "vi": "Vừa · khói dày"
               },
-              "level": 2
+              "level": 2,
+              "stock": [
+                "Hookah master's choice",
+                "Double apple",
+                "Blueberry",
+                "Grape–Mint",
+                "Watermelon–Mint",
+                "Mint–Lime"
+              ]
             },
             {
               "name": {
@@ -176,7 +219,14 @@
                 "ru": "Средний · свежие миксы",
                 "vi": "Vừa · tươi mát"
               },
-              "level": 2
+              "level": 2,
+              "stock": [
+                "Hookah master's choice",
+                "Mango–Passion fruit",
+                "Lychee",
+                "Berry mix",
+                "Mint–Lime"
+              ]
             },
             {
               "name": {
@@ -190,7 +240,15 @@
                 "ru": "Средний · светлый лист",
                 "vi": "Vừa · lá vàng"
               },
-              "level": 2
+              "level": 2,
+              "stock": [
+                "Hookah master's choice",
+                "Double apple",
+                "Peach ice",
+                "Pineapple",
+                "Cola–Lime",
+                "Blueberry"
+              ]
             },
             {
               "name": {
@@ -204,7 +262,16 @@
                 "ru": "Крепкий · тёмный лист",
                 "vi": "Mạnh · lá sẫm"
               },
-              "level": 3
+              "level": 3,
+              "stock": [
+                "Hookah master's choice",
+                "Berry mix",
+                "Mint–Lime",
+                "Pineapple",
+                "Cola–Lime",
+                "Grape–Mint",
+                "Lychee"
+              ]
             },
             {
               "name": {
@@ -218,7 +285,15 @@
                 "ru": "Крепкий · яркий",
                 "vi": "Mạnh · đậm"
               },
-              "level": 3
+              "level": 3,
+              "stock": [
+                "Hookah master's choice",
+                "Watermelon–Mint",
+                "Mango–Passion fruit",
+                "Peach ice",
+                "Berry mix",
+                "Double apple"
+              ]
             },
             {
               "name": {
@@ -232,7 +307,14 @@
                 "ru": "Очень крепкий · культовый",
                 "vi": "Rất mạnh · huyền thoại"
               },
-              "level": 3
+              "level": 3,
+              "stock": [
+                "Hookah master's choice",
+                "Blueberry",
+                "Double apple",
+                "Mint–Lime",
+                "Cola–Lime"
+              ]
             }
           ]
         },

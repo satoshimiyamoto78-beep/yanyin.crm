@@ -45,6 +45,8 @@ export type ModifierOption = {
   photo?: string;
   /** Strength level 1–3 (light, medium, strong): hookah strength steps and the tobaccos that match them. */
   level?: 1 | 2 | 3;
+  /** Hookah tobacco: the flavours (by English name) this brand has in stock. */
+  stock?: string[];
 };
 
 export type ModifierGroup = {

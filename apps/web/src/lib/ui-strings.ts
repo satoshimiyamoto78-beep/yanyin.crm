@@ -321,6 +321,10 @@ const EN = {
   mysteryPick: "Tap the cards you take",
   mysteryPickHint: "Tap the cards you take · ↻ swaps one card",
   mysteryReplace: "Swap this card",
+  randomize: "Randomize",
+  pickTobaccoFirst: "Pick a tobacco first: its flavours appear here",
+  catFood: "Food",
+  catDrinks: "Drinks",
 };
 
 export type UiKey = keyof typeof EN;
@@ -645,6 +649,10 @@ const RU: Record<UiKey, string> = {
   mysteryPick: "Выберите карты",
   mysteryPickHint: "Нажмите на карты, которые берёте · ↻ меняет одну карту",
   mysteryReplace: "Заменить карту",
+  randomize: "Случайно",
+  pickTobaccoFirst: "Сначала выберите табак — здесь появятся его вкусы",
+  catFood: "Еда",
+  catDrinks: "Напитки",
 };
 
 const VI: Record<UiKey, string> = {
@@ -967,6 +975,10 @@ const VI: Record<UiKey, string> = {
   mysteryPick: "Chọn lá bài",
   mysteryPickHint: "Chạm vào lá bạn chọn · ↻ đổi một lá",
   mysteryReplace: "Đổi lá này",
+  randomize: "Ngẫu nhiên",
+  pickTobaccoFirst: "Chọn thuốc trước: các vị của nó sẽ hiện ở đây",
+  catFood: "Đồ ăn",
+  catDrinks: "Đồ uống",
 };
 
 const STRINGS: Partial<Record<Lang, Record<UiKey, string>>> = { en: EN, ru: RU, vi: VI };

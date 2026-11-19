@@ -1013,7 +1013,7 @@ function Hero({
                   title={ui(lang, "rouletteTitle")}
                   text={ui(lang, "rouletteHint")}
                 >
-                  <span className="press flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-[14px] font-semibold text-[#1d3fd6]">
+                  <span className="press flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-[14px] font-semibold text-[#1d3fd6] [[data-scheme=dark]_&]:text-white">
                     <Dices size={18} strokeWidth={2} />{" "}
                     {ui(lang, "rouletteCta")}
                   </span>
@@ -1084,7 +1084,7 @@ function Hero({
                             if (builder) onOpen(it);
                             else onAdd(it);
                           }}
-                          className="press flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-semibold text-[#1d3fd6]"
+                          className="press flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-semibold text-[#1d3fd6] [[data-scheme=dark]_&]:text-white"
                         >
                           {!builder && <Plus size={18} strokeWidth={2.25} />}
                           {s.cta
@@ -1178,7 +1178,8 @@ function CategoryTabs({
       clearTimeout(idle);
       idle = setTimeout(() => {
         const w = setWidth();
-        if (!bar || !w) return;
+        // Never jump while a glide is running (it turns snapping off).
+        if (!bar || !w || bar.style.scrollSnapType === "none") return;
         if (bar.scrollLeft < w * 0.5) bar.scrollLeft += w;
         else if (bar.scrollLeft > w * 1.5) bar.scrollLeft -= w;
       }, 140);
@@ -1198,11 +1199,13 @@ function CategoryTabs({
       bar.querySelectorAll<HTMLElement>(`[data-tab="${active}"]`),
     );
     if (!tabs.length) return;
-    const target = tabs
-      .map(centreOf)
-      .reduce((a, b) =>
-        Math.abs(b - bar.scrollLeft) < Math.abs(a - bar.scrollLeft) ? b : a,
-      );
+    // Only positions the bar can actually reach count (an unreachable one would make the glide chase forever).
+    const max = bar.scrollWidth - bar.clientWidth;
+    const reach = tabs.map(centreOf).filter((x) => x >= 0 && x <= max);
+    if (!reach.length) return;
+    const target = reach.reduce((a, b) =>
+      Math.abs(b - bar.scrollLeft) < Math.abs(a - bar.scrollLeft) ? b : a,
+    );
     let raf = 0;
     let stopped = false;
     const snap = bar.style.scrollSnapType;
@@ -1212,14 +1215,22 @@ function CategoryTabs({
       cancelAnimationFrame(raf);
       bar.style.scrollSnapType = snap;
     };
+    let frames = 0;
+    let last = -1;
     const step = () => {
       if (stopped) return;
       const d = target - bar.scrollLeft;
-      if (Math.abs(d) < 1) {
-        bar.scrollLeft = target;
+      // Done when close, when the bar stops moving (an edge) or after about half a second.
+      if (
+        Math.abs(d) < 1 ||
+        frames++ > 40 ||
+        Math.abs(bar.scrollLeft - last) < 0.1
+      ) {
+        if (Math.abs(d) < 40) bar.scrollLeft = target;
         stop();
         return;
       }
+      last = bar.scrollLeft;
       bar.scrollLeft += d * 0.22;
       raf = requestAnimationFrame(step);
     };
