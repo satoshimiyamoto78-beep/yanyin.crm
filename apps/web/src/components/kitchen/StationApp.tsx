@@ -44,7 +44,12 @@ import {
   type KdsLine,
   type KdsOrder,
 } from "@/lib/demo-kitchen";
-import { Island, type IslandNotice } from "@/components/guest/motion";
+import {
+  Island,
+  loadIfChanged,
+  Reveal,
+  type IslandNotice,
+} from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { ArtScene, ArtTile } from "@/components/system/Art";
 import { NorthSky } from "@/components/system/NorthSky";
@@ -299,6 +304,22 @@ function Screen({ menu }: { menu: Menu }) {
       });
     }
   };
+  // A ticket whose last line is done lifts and fades first, then moves to "Ready to serve".
+  const [leaving, setLeaving] = useState<string[]>([]);
+  const commit = (o: KdsOrder, next: KdsOrder) => {
+    const done = next.lines.filter(mine).every((x) => x.state === "ready");
+    if (!done) {
+      setOrders((os) => os.map((x) => (x.id === o.id ? next : x)));
+      finishIfReady(next);
+      return;
+    }
+    setLeaving((l) => [...l, o.id]);
+    setTimeout(() => {
+      setOrders((os) => os.map((x) => (x.id === o.id ? next : x)));
+      finishIfReady(next);
+      setLeaving((l) => l.filter((x) => x !== o.id));
+    }, 320);
+  };
   const tapLine = (o: KdsOrder, l: KdsLine) => {
     haptic("tick");
     const next = {
@@ -317,8 +338,7 @@ function Screen({ menu }: { menu: Menu }) {
           : x,
       ),
     };
-    setOrders((os) => os.map((x) => (x.id === o.id ? next : x)));
-    finishIfReady(next);
+    commit(o, next);
   };
   const allReady = (o: KdsOrder) => {
     const next = {
@@ -327,8 +347,7 @@ function Screen({ menu }: { menu: Menu }) {
         mine(x) ? { ...x, state: "ready" as const } : x,
       ),
     };
-    setOrders((os) => os.map((x) => (x.id === o.id ? next : x)));
-    finishIfReady(next);
+    commit(o, next);
   };
 
   if (paired === null) return <div className="min-h-dvh bg-g-bg" />;
@@ -355,6 +374,7 @@ function Screen({ menu }: { menu: Menu }) {
         }}
         onPick={(s) => {
           haptic("success");
+          loadIfChanged(`kds:${s}`, "1");
           setStation(s);
           write("yanyin:kds-station", s);
           if (picking) history.back();
@@ -493,7 +513,11 @@ function Screen({ menu }: { menu: Menu }) {
       {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
       <div className="relative z-10 flex flex-col gap-4 px-4 pb-10 sm:px-6 lg:flex-row lg:items-start">
         {/* The queue, oldest first. */}
-        <main className="grid min-w-0 flex-1 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] items-start gap-4">
+        <Reveal
+          key={station}
+          as="main"
+          className="grid min-w-0 flex-1 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] items-start gap-4"
+        >
           {queue.map((o) => (
             <OrderCard
               key={o.id}
@@ -501,6 +525,7 @@ function Screen({ menu }: { menu: Menu }) {
               station={station}
               minute={minute}
               fresh={fresh === o.id}
+              leaving={leaving.includes(o.id)}
               stop={stop}
               onLine={(l) => tapLine(o, l)}
               onAll={() => allReady(o)}
@@ -521,7 +546,7 @@ function Screen({ menu }: { menu: Menu }) {
               </p>
             </ArtScene>
           )}
-        </main>
+        </Reveal>
 
         {/* Ready to serve: the waiter or runner takes it. */}
         <aside className="order-first w-full shrink-0 lg:sticky lg:top-4 lg:order-none lg:w-[320px]">
@@ -700,6 +725,7 @@ function OrderCard({
   station,
   minute,
   fresh,
+  leaving,
   stop,
   onLine,
   onAll,
@@ -708,6 +734,7 @@ function OrderCard({
   station: Station;
   minute: number;
   fresh: boolean;
+  leaving?: boolean;
   stop: string[];
   onLine: (l: KdsLine) => void;
   onAll: () => void;
@@ -725,7 +752,7 @@ function OrderCard({
   ];
   return (
     <section
-      className={`flex min-w-0 flex-col rounded-[28px] bg-g-fill p-4 ${fresh ? "animate-pop" : ""}`}
+      className={`flex min-w-0 flex-col rounded-[28px] bg-g-fill p-4 ${leaving ? "animate-leave" : fresh ? "animate-pop" : ""}`}
     >
       {/* The table big, its waiting time as plain figures on the same line; who and when under it. */}
       <header className="px-1">

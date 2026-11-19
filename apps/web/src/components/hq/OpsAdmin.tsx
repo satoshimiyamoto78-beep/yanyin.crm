@@ -12,6 +12,9 @@ import {
   RotateCcw,
   TrendingUp,
   Wallet,
+  Users,
+  Receipt,
+  Lock,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatMoney, type Menu, type MenuItem } from "@yanyin/domain";
@@ -24,6 +27,8 @@ import {
   type PayMethod,
 } from "@/lib/demo-floor";
 import { Sheet } from "@/components/guest/ui";
+import { PeekCard, useLongPress } from "@/components/guest/motion";
+import { PeekActions, PeekHeader } from "@/components/system/PeekParts";
 import {
   BrandQr,
   DataTable,
@@ -61,6 +66,54 @@ const total5 = (o: ClosedOrder) =>
 
 /* ---------------------------------------------------------------- Floor */
 
+/** One table on the floor grid: tap opens it, hold peeks into it. */
+function TableTile({
+  t,
+  word,
+  tone,
+  zone,
+  onOpen,
+  onPeek,
+}: {
+  t: FloorTable;
+  word: (t: FloorTable) => string;
+  tone: string;
+  zone: string;
+  onOpen: () => void;
+  onPeek: () => void;
+}) {
+  const press = useLongPress(onPeek, onOpen);
+  const sum = Math.round(ticketTotal(t.lines) * 1.05);
+  return (
+    <button
+      type="button"
+      data-hold
+      {...press}
+      style={{ WebkitTouchCallout: "none" }}
+      className="press flex aspect-square flex-col justify-between rounded-[24px] bg-g-fill p-3 text-left select-none"
+    >
+      <span className="flex items-start justify-between">
+        <span className="text-[26px] leading-none font-bold tabular-nums">
+          {t.no}
+        </span>
+        <span
+          className={`grid size-7 place-items-center rounded-full text-[11px] font-bold ${tone}`}
+        >
+          {t.seats}
+        </span>
+      </span>
+      <span className="min-w-0">
+        <span className="live block truncate text-[12px] font-semibold text-g-ink-2">
+          {word(t)}
+        </span>
+        <span className="live block truncate text-[12px] text-g-muted tabular-nums">
+          {sum ? compactMoney(sum) : zone}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export function FloorAdmin({
   floor,
   menu,
@@ -80,6 +133,9 @@ export function FloorAdmin({
   const [zone, setZone] = useState<"all" | "Hall" | "Terrace">("all");
   const [open, setOpen] = useState<number | null>(null);
   const [print, setPrint] = useState(false);
+  const [peek, setPeek] = useState<number | null>(null);
+  const peeked =
+    peek !== null ? floor.tables.find((x) => x.no === peek) : undefined;
   const money = (n: number) => formatMoney(n, floor.venue.currency, "en");
   const tables = floor.tables.filter((t) => zone === "all" || t.zone === zone);
   const busy = floor.tables.filter(
@@ -157,38 +213,67 @@ export function FloorAdmin({
       </div>
       {/* The floor as a grid of round-cornered tables, coloured by state; tap one for its page. */}
       <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
-        {tables.map((t) => {
-          const sum = Math.round(ticketTotal(t.lines) * 1.05);
-          return (
-            <button
-              key={t.no}
-              type="button"
-              onClick={() => (haptic("light"), setOpen(t.no))}
-              className="press flex aspect-square flex-col justify-between rounded-[24px] bg-g-fill p-3 text-left"
-            >
-              <span className="flex items-start justify-between">
-                <span className="text-[26px] leading-none font-bold tabular-nums">
-                  {t.no}
-                </span>
-                <span
-                  className={`grid size-7 place-items-center rounded-full text-[11px] font-bold ${tone(t)}`}
-                >
-                  {t.seats}
-                </span>
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[12px] font-semibold text-g-ink-2">
-                  {word(t)}
-                </span>
-                <span className="block truncate text-[12px] text-g-muted tabular-nums">
-                  {sum ? compactMoney(sum) : tr(t.zone)}
-                </span>
-              </span>
-            </button>
-          );
-        })}
+        {tables.map((t) => (
+          <TableTile
+            key={t.no}
+            t={t}
+            word={word}
+            tone={tone(t)}
+            zone={tr(t.zone)}
+            onOpen={() => setOpen(t.no)}
+            onPeek={() => setPeek(t.no)}
+          />
+        ))}
       </div>
 
+      {/* Hold a table for a quick look: who sits there, the bill so far, two actions. */}
+      {peeked && (
+        <PeekCard
+          onClose={() => setPeek(null)}
+          label={tr("Table {n}", { n: peeked.no })}
+        >
+          <PeekHeader
+            kicker={`${tr(peeked.zone)} · ${tr("{n} seat|{n} seats", { n: peeked.seats })}`}
+            title={tr("Table {n}", { n: peeked.no })}
+            facts={[
+              {
+                icon: Users,
+                text: peeked.guests
+                  ? `${tr("{n} guest|{n} guests", { n: peeked.guests })}${peeked.since ? ` · ${peeked.since}` : ""}`
+                  : word(peeked),
+              },
+              {
+                icon: Wallet,
+                text: ticketTotal(peeked.lines)
+                  ? money(Math.round(ticketTotal(peeked.lines) * 1.05))
+                  : tr("Nothing ordered yet"),
+                tone: "blue",
+              },
+            ]}
+          />
+          <PeekActions
+            items={[
+              {
+                icon: Receipt,
+                label: tr("Open the table"),
+                onClick: () => (setPeek(null), setOpen(peeked.no)),
+              },
+              ...(peeked.lines.length
+                ? [
+                    {
+                      icon: Printer,
+                      label: tr("Print the pre-bill"),
+                      onClick: () => (
+                        setPeek(null),
+                        notify(tr("Pre-bill sent to the printer"))
+                      ),
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        </PeekCard>
+      )}
       {open !== null && (
         <TablePage
           t={floor.tables.find((x) => x.no === open)!}
@@ -428,10 +513,13 @@ export function OrdersAdmin({
   floor,
   menu,
   notify,
+  owner = true,
 }: {
   floor: FloorData;
   menu: Menu;
   notify: (t: string) => void;
+  /** Refunds move money back: only the owner makes them, the admin sees the bill. */
+  owner?: boolean;
 }) {
   const tr = useTr();
   const dish = useDish();
@@ -622,6 +710,7 @@ export function OrdersAdmin({
           name={(id) => dish(items.get(id)?.name)}
           money={money}
           refunded={refunds[bill.id]}
+          owner={owner}
           onClose={() => setOpen(null)}
           onRefund={(reason, amount) => {
             setRefunds((r) => ({ ...r, [bill.id]: { reason, amount } }));
@@ -642,6 +731,7 @@ function BillPage({
   name,
   money,
   refunded,
+  owner,
   onClose,
   onRefund,
 }: {
@@ -649,6 +739,7 @@ function BillPage({
   name: (id: string) => string;
   money: (n: number) => string;
   refunded?: { reason: string; amount: number };
+  owner: boolean;
   onClose: () => void;
   onRefund: (reason: string, amount: number) => void;
 }) {
@@ -672,7 +763,12 @@ function BillPage({
           : `#${bill.id}`
       }
       footer={
-        bill.state === "paid" && !refunded ? (
+        bill.state === "paid" && !refunded && !owner ? (
+          <p className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-g-fill text-[14.5px] font-semibold text-g-muted">
+            <Lock size={16} strokeWidth={2.2} />{" "}
+            {tr("Refunds are made by the owner")}
+          </p>
+        ) : bill.state === "paid" && !refunded ? (
           refunding ? (
             <button
               type="button"

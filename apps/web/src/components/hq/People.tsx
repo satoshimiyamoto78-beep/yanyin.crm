@@ -17,6 +17,8 @@ import {
   type Station,
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
+import { PeekCard, useLongPress } from "@/components/guest/motion";
+import { PeekActions } from "@/components/system/PeekParts";
 import { PersonPic } from "@/components/system/PersonPic";
 import { ArtScene, type ArtName } from "@/components/system/Art";
 import { Sheet } from "@/components/guest/ui";
@@ -673,41 +675,86 @@ export function PersonRow({
 }) {
   const tr = useTr();
   const st = staffStats(p);
+  const [peek, setPeek] = useState(false);
+  const press = useLongPress(() => setPeek(true), onOpen);
   const status = disabled
     ? tr("Access off")
     : st.since
       ? tr("since {t}", { t: st.since })
       : tr("Day off");
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="press flex w-full items-center gap-3 rounded-full py-2 pr-3 pl-2 text-left"
-    >
-      <Face p={p} size={44} off={disabled} />
-      <span className="min-w-0 flex-1">
-        <span className="flex items-baseline gap-1.5">
-          <span className="shrink-0 text-[15px] font-semibold">{p.name}</span>
-          <span className="truncate text-[13px] text-g-blue">@{p.handle}</span>
-        </span>
-        <span className="mt-0.5 block truncate text-[12.5px] text-g-muted">
-          <span
-            className={`font-medium ${disabled ? "text-[#e5484d]" : p.onShift ? "text-g-green" : ""}`}
-          >
-            {status}
+    <>
+      <button
+        type="button"
+        data-hold
+        {...press}
+        style={{ WebkitTouchCallout: "none" }}
+        className="press flex w-full items-center gap-3 rounded-full py-2 pr-3 pl-2 text-left select-none"
+      >
+        <Face p={p} size={44} off={disabled} />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline gap-1.5">
+            <span className="shrink-0 text-[15px] font-semibold">{p.name}</span>
+            <span className="truncate text-[13px] text-g-blue">
+              @{p.handle}
+            </span>
           </span>
-          {" · "}
-          {[
-            ...p.roles.map((r) => tr(ROLE_NAMES[r])),
-            ...p.stations.map((s) => tr(STATION_NAMES[s])),
-          ].join(" · ")}
+          <span className="live mt-0.5 block truncate text-[12.5px] text-g-muted">
+            <span
+              className={`font-medium ${disabled ? "text-[#e5484d]" : p.onShift ? "text-g-green" : ""}`}
+            >
+              {status}
+            </span>
+            {" · "}
+            {[
+              ...p.roles.map((r) => tr(ROLE_NAMES[r])),
+              ...p.stations.map((s) => tr(STATION_NAMES[s])),
+            ].join(" · ")}
+          </span>
         </span>
-      </span>
-      <span className="shrink-0 text-[12px] font-medium text-g-faint tabular-nums">
-        {tr("Lv {n}", { n: st.level })}
-      </span>
-      <ChevronRight size={17} className="shrink-0 text-g-faint" />
-    </button>
+        <span className="live shrink-0 text-[12px] font-medium text-g-faint tabular-nums">
+          {tr("Lv {n}", { n: st.level })}
+        </span>
+        <ChevronRight size={17} className="shrink-0 text-g-faint" />
+      </button>
+      {/* Hold for a quick look: level, today's numbers, open the card. */}
+      {peek && (
+        <PeekCard onClose={() => setPeek(false)} label={p.name}>
+          <div className="flex items-center gap-3">
+            <Face p={p} size={52} off={disabled} />
+            <div className="min-w-0">
+              <p className="truncate text-[20px] leading-tight font-bold">
+                {p.name}
+              </p>
+              <p className="truncate text-[13px] text-g-muted">
+                @{p.handle} · {tr("Level {n}", { n: st.level })} · {status}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[18px] bg-g-line">
+            {st.today.map((x) => (
+              <div key={x.label} className="bg-g-fill px-3 py-2.5">
+                <p className="text-[17px] leading-tight font-bold tabular-nums">
+                  {x.value}
+                </p>
+                <p className="truncate text-[11.5px] text-g-muted">
+                  {tr(x.label)}
+                </p>
+              </div>
+            ))}
+          </div>
+          <PeekActions
+            items={[
+              {
+                icon: ChevronRight,
+                label: tr("Open the card"),
+                onClick: () => (setPeek(false), onOpen()),
+              },
+            ]}
+          />
+        </PeekCard>
+      )}
+    </>
   );
 }
 

@@ -13,7 +13,8 @@ export const DEMO_CODE = "123456";
 
 export const SEATS: Seat[] = [
   { id: "core", venue: "yanyin", city: "Platform", role: "Platform owner", sub: "All venues, MRR, Yan, features", href: "core.html", art: "trophy" },
-  { id: "hq", venue: "Samarkand", city: "Da Nang", role: "Admin", sub: "Overview, menu, team, reports", href: "hq.html", art: "sales" },
+  { id: "owner", venue: "Samarkand", city: "Da Nang", role: "Owner", sub: "Finance, reports, payments + all the admin does", href: "hq.html?as=owner", art: "tips" },
+  { id: "hq", venue: "Samarkand", city: "Da Nang", role: "Admin", sub: "Menu, stock, team, shifts, floor · no finance", href: "hq.html", art: "sales" },
   { id: "crew", venue: "Samarkand", city: "Da Nang", role: "Waiter", sub: "Tables, orders, tips, quests", href: "crew.html", art: "tables" },
   { id: "kitchen", venue: "Samarkand", city: "Da Nang", role: "Station screen", sub: "Kitchen or bar tablet", href: "kitchen.html", art: "kitchen" },
   { id: "cook", venue: "Samarkand", city: "Da Nang", role: "Cook", sub: "The kitchen queue on your phone", href: "kitchen.html?me=chef_dima", art: "salad" },

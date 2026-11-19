@@ -297,23 +297,19 @@ function player(
           value: tr("{n} min", { n: 6 + ((s + i) % 8) }),
         };
   });
-  const tips: Row[] = orders
-    .slice(0, 5)
-    .map((o, i) => ({
-      at: o.at,
-      title: o.title,
-      sub: tr(["VietQR", "Card", "Cash"][i % 3]!),
-      value: compactMoney(40_000 + ((s * (i + 2)) % 6) * 20_000),
-    }));
-  const shifts: Row[] = day
-    .slice(0, 5)
-    .map((d, i) => ({
-      at: tr(d),
-      title: `${["09:52", "10:00", "10:05", "09:58", "10:30"][i]}–${["18:10", "18:00", "22:05", "18:02", "—"][i]}`,
-      sub: i === 2 && st.late ? tr("Late {n} min", { n: 12 }) : undefined,
-      value: week[i] ? `${week[i]} ${tr("h")}` : "",
-      tone: i === 2 && st.late ? "text-g-orange" : undefined,
-    }));
+  const tips: Row[] = orders.slice(0, 5).map((o, i) => ({
+    at: o.at,
+    title: o.title,
+    sub: tr(["VietQR", "Card", "Cash"][i % 3]!),
+    value: compactMoney(40_000 + ((s * (i + 2)) % 6) * 20_000),
+  }));
+  const shifts: Row[] = day.slice(0, 5).map((d, i) => ({
+    at: tr(d),
+    title: `${["09:52", "10:00", "10:05", "09:58", "10:30"][i]}–${["18:10", "18:00", "22:05", "18:02", "—"][i]}`,
+    sub: i === 2 && st.late ? tr("Late {n} min", { n: 12 }) : undefined,
+    value: week[i] ? `${week[i]} ${tr("h")}` : "",
+    tone: i === 2 && st.late ? "text-g-orange" : undefined,
+  }));
   const xp: Row[] = [
     { at: "12:40", title: `${tr("Plov master")} · 3/5`, value: "+30 XP" },
     { at: "11:06", title: tr("Checklist: opening done"), value: "+60 XP" },

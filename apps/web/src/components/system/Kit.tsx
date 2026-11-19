@@ -103,8 +103,8 @@ export function Row({ icon: Icon, title, sub, right, onClick, tone }: { icon?: L
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className={`block truncate text-[15.5px] font-semibold ${tone === "red" ? "text-[#e5484d]" : ""}`}>{title}</span>
-        {sub && <span className="block truncate text-[13px] text-g-muted">{sub}</span>}
+        <span className={`live block truncate text-[15.5px] font-semibold ${tone === "red" ? "text-[#e5484d]" : ""}`}>{title}</span>
+        {sub && <span className="live block truncate text-[13px] text-g-muted">{sub}</span>}
       </span>
       {right ?? (onClick && <ChevronRight size={18} className="shrink-0 text-g-faint" />)}
     </>
@@ -418,15 +418,16 @@ export function DataTable<T>({ rows, columns, rowKey, onRow, mobile, empty }: { 
             </tr>
           </thead>
           <tbody>
-            {list.map((r) => (
+            {list.map((r, n) => (
               <tr
                 key={rowKey(r)}
                 onClick={onRow ? () => onRow(r) : undefined}
-                className={`group text-[15px] ${onRow ? "cursor-pointer" : ""}`}
+                style={{ animationDelay: `${Math.min(n, 12) * 28}ms` }}
+                className={`animate-rise group text-[15px] ${onRow ? "cursor-pointer" : ""}`}
               >
                 {columns.map((c, i) => (
                   <td key={c.key} className={`bg-g-fill px-4 py-3.5 transition-colors group-hover:bg-g-fill-2 ${i === 0 ? "rounded-l-[18px]" : ""} ${i === columns.length - 1 ? "rounded-r-[18px]" : ""} ${c.align === "right" ? "text-right tabular-nums" : ""}`}>
-                    {c.render(r)}
+                    <span className="live block">{c.render(r)}</span>
                   </td>
                 ))}
               </tr>
@@ -434,7 +435,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRow, mobile, empty }: { 
           </tbody>
         </table>
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 md:hidden">
+      <div className="stagger grid grid-cols-[minmax(0,1fr)] gap-2 md:hidden">
         {list.map((r) => (
           <div key={rowKey(r)}>{mobile(r)}</div>
         ))}
@@ -447,10 +448,10 @@ export function DataTable<T>({ rows, columns, rowKey, onRow, mobile, empty }: { 
 export function ListRow({ badge, badgeTone = "chip-blue", title, sub, right, onClick }: { badge: ReactNode; badgeTone?: string; title: ReactNode; sub?: ReactNode; right?: ReactNode; onClick?: () => void }) {
   const inner = (
     <>
-      <span className={`grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-bold tabular-nums ${badgeTone}`}>{badge}</span>
+      <span className={`live grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-bold tabular-nums ${badgeTone}`}>{badge}</span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-semibold">{title}</span>
-        {sub && <span className="block truncate text-[12.5px] text-g-muted">{sub}</span>}
+        <span className="live block truncate text-[15px] font-semibold">{title}</span>
+        {sub && <span className="live block truncate text-[12.5px] text-g-muted">{sub}</span>}
       </span>
       {right}
     </>
@@ -568,13 +569,13 @@ export function SectionTile({ art, title, sub, onClick, wide }: { art: ArtName; 
       className={`press relative block text-left ${wide ? "col-span-2" : ""}`}
     >
       {wide ? (
-        <ArtScene name={art} layout="row" focal={56} className="h-full rounded-[24px] p-4" footer={<p className="mt-3 truncate pr-5 text-[12.5px] text-g-muted">{sub}</p>}>
+        <ArtScene name={art} layout="row" focal={56} className="h-full rounded-[24px] p-4" footer={<p className="live mt-3 truncate pr-5 text-[12.5px] text-g-muted">{sub}</p>}>
           <p className="truncate text-[17px] leading-tight font-bold tracking-[-0.01em]">{title}</p>
         </ArtScene>
       ) : (
         <ArtScene name={art} layout="stack" focal={40} className="h-full rounded-[24px] p-4">
           <p className="mt-3 text-[16px] leading-tight font-bold tracking-[-0.01em] text-balance">{title}</p>
-          <p className="mt-1 line-clamp-2 pr-4 text-[12.5px] leading-snug text-g-muted">{sub}</p>
+          <p className="live mt-1 line-clamp-2 pr-4 text-[12.5px] leading-snug text-g-muted">{sub}</p>
         </ArtScene>
       )}
       <ChevronRight size={17} className="absolute right-3.5 bottom-3.5 text-g-faint" />

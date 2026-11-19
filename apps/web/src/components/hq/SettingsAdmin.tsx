@@ -16,6 +16,7 @@ import {
   Receipt,
   Store,
   Tablet,
+  Lock,
   Wallet,
   Wifi,
 } from "lucide-react";
@@ -85,7 +86,14 @@ type Page =
   | "tablets"
   | "plan";
 
-export function SettingsAdmin({ notify }: { notify: (t: string) => void }) {
+export function SettingsAdmin({
+  notify,
+  owner = true,
+}: {
+  notify: (t: string) => void;
+  /** Payments, e-invoices and the plan are the owner's; the admin sees them locked. */
+  owner?: boolean;
+}) {
   const tr = useTr();
   const s = settingsStore.use();
   const [page, setPage] = useState<Page | null>(null);
@@ -120,30 +128,41 @@ export function SettingsAdmin({ notify }: { notify: (t: string) => void }) {
           onClick={() => setPage("wifi")}
         />
       </Group>
-      <Group title={tr("Money")}>
-        <Row
-          icon={Wallet}
-          title={tr("Payments")}
-          sub={tr("{n} ways to pay", { n: pays })}
-          onClick={() => setPage("pay")}
-        />
-        <Row
-          icon={FileCheck2}
-          title={tr("E-invoices")}
-          sub={
-            s.einvoice[0] === "none"
-              ? tr("Not connected")
-              : `${s.einvoice[0]!.toUpperCase()} · ${tr("connected")}`
-          }
-          onClick={() => setPage("einvoice")}
-        />
-        <Row
-          icon={Receipt}
-          title={tr("Plan and billing")}
-          sub={tr("Pro · next payment 1 Dec")}
-          onClick={() => setPage("plan")}
-        />
-      </Group>
+      {!owner && (
+        <Group title={tr("Money")}>
+          <Row
+            icon={Lock}
+            title={tr("Owner only")}
+            sub={tr("Payments, e-invoices and the plan")}
+          />
+        </Group>
+      )}
+      {owner && (
+        <Group title={tr("Money")}>
+          <Row
+            icon={Wallet}
+            title={tr("Payments")}
+            sub={tr("{n} ways to pay", { n: pays })}
+            onClick={() => setPage("pay")}
+          />
+          <Row
+            icon={FileCheck2}
+            title={tr("E-invoices")}
+            sub={
+              s.einvoice[0] === "none"
+                ? tr("Not connected")
+                : `${s.einvoice[0]!.toUpperCase()} · ${tr("connected")}`
+            }
+            onClick={() => setPage("einvoice")}
+          />
+          <Row
+            icon={Receipt}
+            title={tr("Plan and billing")}
+            sub={tr("Pro · next payment 1 Dec")}
+            onClick={() => setPage("plan")}
+          />
+        </Group>
+      )}
       <Group title={tr("Devices")}>
         <Row
           icon={Printer}

@@ -70,6 +70,9 @@ short, current rule set. When the founder changes a rule, update this file too.
 - Run `apps/web/scripts/stress-test.cjs` after big UI changes: zero page errors is the bar.
 - Performance first: animate only `transform` and `opacity` (never `clip-path`, `filter: blur` or size for entrances); no `backdrop-blur` on full-screen dims, no blend modes on grain, `contain: paint` on scene cards, transitions for non-urgent state (`startTransition`). Respect `prefers-reduced-motion`.
 
+- Every app, not only the guest menu and the waiter: a section's data blurs in on first open (`loadIfChanged` + `live`), blocks rise in order (`Reveal`, `.stagger` for lists and table rows), header money counts up (`CountMoney`), a "to the top" button on long pages, hold a row or tile for its peek card, finished items leave with `animate-leave`.
+- A home/overview made of blocks is arrangeable: show/hide and drag order in a sheet (`BlockLayoutPage`, `useBlockLayout`), saved per device.
+
 ## 7. Copy
 
 - Short and human. Waiter app in RU / EN / VI via `tr()` keys (`components/crew/strings.ts`), guest via `ui()`. Money compact on cards (4.53M ₫), full in checks.

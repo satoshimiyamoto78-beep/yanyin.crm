@@ -2,6 +2,8 @@
 
 import {
   BarChart3,
+  Boxes,
+  PiggyBank,
   CalendarDays,
   LayoutGrid,
   Plus,
@@ -23,8 +25,16 @@ import {
   Send,
   Store,
   Users,
+  SlidersHorizontal,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   allItems,
   checklistProgress,
@@ -54,7 +64,18 @@ import {
 import { postNews, useNews, type NewsPost } from "@/lib/news";
 import { useHandles, withHandles } from "@/lib/handles";
 import { saveStopList, useStopList } from "@/lib/stoplist";
-import { Island, Reveal, type IslandNotice } from "@/components/guest/motion";
+import {
+  CountMoney,
+  Island,
+  loadIfChanged,
+  Reveal,
+  ToTop,
+  type IslandNotice,
+} from "@/components/guest/motion";
+import {
+  BlockLayoutPage,
+  useBlockLayout,
+} from "@/components/system/BlockLayout";
 import { Sheet } from "@/components/guest/ui";
 import { YanOrb } from "@/components/guest/YanSheet";
 import { ArtTile, type ArtName } from "@/components/system/Art";
@@ -77,6 +98,8 @@ import {
   TasksAdmin,
 } from "./PeopleAdmin";
 import { SettingsAdmin } from "./SettingsAdmin";
+import { FinanceAdmin } from "./FinanceAdmin";
+import { StockAdmin } from "./StockAdmin";
 import { PersonPage } from "./Player";
 import {
   OnShiftGrid,
@@ -119,9 +142,15 @@ type Tab =
   | "news"
   | "checklists"
   | "quests"
+  | "stock"
+  | "finance"
   | "settings";
 type Section = Exclude<Tab, "overview" | "more">;
 const ME = "staff-huong";
+const OWNER = "staff-owner";
+const noop = () => () => {};
+/** Sections with the books: the owner opens them, the admin does not see them (ADR in docs/04). */
+const OWNER_ONLY: Section[] = ["finance", "reports"];
 const NOW = "12:45";
 /** The station screen is its own page (a wall tablet); the console links to it. */
 const openStation = () => window.open("kitchen.html", "_self");
@@ -142,6 +171,12 @@ function Console({ menu }: { menu: Menu }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [sub, setSub] = useState<Section | null>(null);
   const [roles, setRoles] = useState(false);
+  // Owner or admin: the same console, the owner also sees money (hq.html?as=owner).
+  const owner = useSyncExternalStore(
+    noop,
+    () => new URLSearchParams(window.location.search).get("as") === "owner",
+    () => false,
+  );
   const [quick, setQuick] = useState(false);
   const [inviting, setInviting] = useState(false);
   const desktop = useDesktop();
@@ -156,11 +191,15 @@ function Console({ menu }: { menu: Menu }) {
   // Everyone's chosen @ID (a waiter may have picked a new one in their app).
   const handles = useHandles();
   const team = useMemo(() => withHandles(rawTeam, handles), [rawTeam, handles]);
-  const me = team.find((p) => p.id === ME)!;
+  const me = team.find((p) => p.id === (owner ? OWNER : ME))!;
   const [person, setPerson] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [offIds, setOffIds] = useState<string[]>([]);
   const [teamGroup, setTeamGroup] = useState<Group | null>(null);
+  const [arranging, setArranging] = useState(false);
+  const [overview, setOverview, overviewDefault] = useBlockLayout<
+    "attention" | "people" | "news" | "money"
+  >("yanyin:hq-overview", ["attention", "people", "news", "money"]);
   const [draft, setDraft] = useState("");
   const [runs, setRuns] = useState<Record<string, ChecklistRun>>({
     waiter: {
@@ -197,6 +236,7 @@ function Console({ menu }: { menu: Menu }) {
   // Picking a section closes whatever page or sheet is on top, so the new section is what you see.
   const go = (t: Tab) => {
     haptic("light");
+    loadIfChanged(`hq:${t}`, "1"); // first visit to a section: its data blurs in
     setSub(null);
     setRoles(false);
     setQuick(false);
@@ -221,6 +261,7 @@ function Console({ menu }: { menu: Menu }) {
     if (desktop || id === "menu" || id === "team") go(id);
     else {
       haptic("light");
+      loadIfChanged(`hq:${id}`, "1");
       setSub(id);
     }
   };
@@ -429,7 +470,9 @@ function Console({ menu }: { menu: Menu }) {
       title: tr("Orders and bills"),
       sub: tr("Today's bills, refunds, e-invoices"),
       art: "orders",
-      body: <OrdersAdmin floor={floor} menu={menu} notify={say} />,
+      body: (
+        <OrdersAdmin floor={floor} menu={menu} notify={say} owner={owner} />
+      ),
     },
     reports: {
       title: tr("Reports"),
@@ -555,19 +598,36 @@ function Console({ menu }: { menu: Menu }) {
       title: tr("Settings"),
       sub: tr("Venue, payments, devices, plan"),
       art: "wifi",
-      body: <SettingsAdmin notify={say} />,
+      body: <SettingsAdmin notify={say} owner={owner} />,
+    },
+    stock: {
+      title: tr("Stock and purchasing"),
+      sub: tr("Products, what runs low, orders to suppliers"),
+      art: "orders",
+      body: <StockAdmin notify={say} />,
+    },
+    finance: {
+      title: tr("Finance"),
+      sub: tr("Profit, payroll, taxes, payouts"),
+      art: "tips",
+      body: <FinanceAdmin notify={say} />,
     },
   };
-  const MORE: Section[] = [
-    "floor",
-    "orders",
-    "reports",
-    "shifts",
-    "news",
-    "checklists",
-    "quests",
-    "settings",
-  ];
+  const can = (id: Section) => owner || !OWNER_ONLY.includes(id);
+  const MORE: Section[] = (
+    [
+      "floor",
+      "orders",
+      "stock",
+      "finance",
+      "reports",
+      "shifts",
+      "news",
+      "checklists",
+      "quests",
+      "settings",
+    ] as Section[]
+  ).filter(can);
   const sectionPage = (id: Section, inline: boolean) => (
     <div
       className={
@@ -581,7 +641,7 @@ function Console({ menu }: { menu: Menu }) {
         sub={views[id].sub}
         action={views[id].action}
       />
-      <div className="mt-6">{views[id].body}</div>
+      <Reveal className="mt-6">{views[id].body}</Reveal>
     </div>
   );
   const short = (n: number) => compactMoney(n).replace(/(\.\d)\d(M)/, "$1$2");
@@ -661,7 +721,11 @@ function Console({ menu }: { menu: Menu }) {
                       className="press mt-2 flex items-center gap-1 text-left"
                     >
                       <span className="live text-[30px] leading-tight font-bold tracking-[-0.03em] tabular-nums">
-                        {hidden ? "••• •••" : money(takings)}
+                        {hidden ? (
+                          "••• •••"
+                        ) : (
+                          <CountMoney to={takings} format={money} />
+                        )}
                       </span>
                       <ChevronRight size={22} className="text-white/55" />
                     </button>
@@ -750,40 +814,66 @@ function Console({ menu }: { menu: Menu }) {
 
               {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
               <div className="relative z-10 px-5 pb-10">
-                <div ref={attentionRef} className="scroll-mt-4">
-                  <ActionListWidget
-                    title={tr("Needs attention")}
-                    icon={<Bell size={13} strokeWidth={2.4} />}
-                    rows={attention}
-                    empty={tr("Nothing needs you right now")}
+                {/* The overview is blocks the admin arranges (hold "Arrange" below): order and visibility saved on this device. */}
+                <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
+                  {overview
+                    .filter((b) => b.on)
+                    .map((b) => (
+                      <Reveal
+                        key={b.id}
+                        className={`min-w-0 ${b.id === "attention" || b.id === "money" ? "lg:col-span-2" : ""}`}
+                      >
+                        {b.id === "attention" && (
+                          <div ref={attentionRef} className="mt-2 scroll-mt-4">
+                            <ActionListWidget
+                              title={tr("Needs attention")}
+                              icon={<Bell size={13} strokeWidth={2.4} />}
+                              rows={attention}
+                              empty={tr("Nothing needs you right now")}
+                            />
+                          </div>
+                        )}
+                        {b.id === "people" && (
+                          <>
+                            <SectionTitle
+                              title={tr("On shift")}
+                              count={onShift.length}
+                              onAll={() => go("team")}
+                            />
+                            <OnShiftGrid team={team} onOpen={setPerson} />
+                          </>
+                        )}
+                        {b.id === "news" && news[0] && (
+                          <>
+                            <SectionTitle
+                              title={tr("News")}
+                              count={news.length}
+                              onAll={() => open("news")}
+                            />
+                            <Post n={news[0]} team={team} known={known} />
+                          </>
+                        )}
+                        {b.id === "money" && (
+                          <div ref={moneyRef} className="scroll-mt-4">
+                            <SectionTitle title={tr("Shift money")} />
+                            <ShiftMoney history={floor.history} />
+                          </div>
+                        )}
+                      </Reveal>
+                    ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => (haptic("light"), setArranging(true))}
+                  className="press mx-auto mt-8 flex h-10 items-center gap-2 rounded-full bg-g-fill px-4 text-[14px] font-semibold"
+                >
+                  <SlidersHorizontal
+                    size={16}
+                    strokeWidth={2.2}
+                    className="text-g-blue"
                   />
-                </div>
-
-                <div className="lg:grid lg:grid-cols-2 lg:gap-8">
-                  <div className="min-w-0">
-                    <SectionTitle
-                      title={tr("On shift")}
-                      count={onShift.length}
-                      onAll={() => go("team")}
-                    />
-                    <OnShiftGrid team={team} onOpen={setPerson} />
-                  </div>
-                  {news[0] && (
-                    <div className="min-w-0">
-                      <SectionTitle
-                        title={tr("News")}
-                        count={news.length}
-                        onAll={() => open("news")}
-                      />
-                      <Post n={news[0]} team={team} known={known} />
-                    </div>
-                  )}
-                </div>
-
-                <div ref={moneyRef} className="scroll-mt-4">
-                  <SectionTitle title={tr("Shift money")} />
-                  <ShiftMoney history={floor.history} />
-                </div>
+                  {tr("Arrange the overview")}
+                </button>
               </div>
             </>
           )}
@@ -816,7 +906,10 @@ function Console({ menu }: { menu: Menu }) {
               </button>
             </div>
           )}
-          {tab !== "overview" && tab !== "more" && sectionPage(tab, true)}
+          {tab !== "overview" &&
+            tab !== "more" &&
+            can(tab) &&
+            sectionPage(tab, true)}
         </div>
       </div>
 
@@ -869,7 +962,7 @@ function Console({ menu }: { menu: Menu }) {
                 Samarkand
               </span>
               <span className="block truncate text-[12.5px] text-g-muted">
-                @{me.handle} · {tr("Admin")}
+                @{me.handle} · {tr(owner ? "Owner" : "Admin")}
               </span>
             </span>
           </button>
@@ -889,7 +982,10 @@ function Console({ menu }: { menu: Menu }) {
           },
           {
             title: tr("Menu"),
-            items: [{ id: "menu", label: tr("Menu"), icon: UtensilsCrossed }],
+            items: [
+              { id: "menu", label: tr("Menu"), icon: UtensilsCrossed },
+              { id: "stock", label: tr("Stock and purchasing"), icon: Boxes },
+            ],
           },
           {
             title: tr("People"),
@@ -909,7 +1005,12 @@ function Console({ menu }: { menu: Menu }) {
           {
             title: tr("Business"),
             items: [
-              { id: "reports", label: tr("Reports"), icon: BarChart3 },
+              ...(owner
+                ? [
+                    { id: "finance", label: tr("Finance"), icon: PiggyBank },
+                    { id: "reports", label: tr("Reports"), icon: BarChart3 },
+                  ]
+                : []),
               { id: "settings", label: tr("Settings"), icon: Settings2 },
             ],
           },
@@ -943,7 +1044,7 @@ function Console({ menu }: { menu: Menu }) {
           {sectionPage(sub, false)}
         </Sheet>
       )}
-      {roles && <RoleSwitch current="hq" onClose={() => setRoles(false)} />}
+      {roles && <RoleSwitch current={owner ? "owner" : "hq"} onClose={() => setRoles(false)} />}
       {quick && (
         <QuickSheet
           onClose={() => setQuick(false)}
@@ -983,6 +1084,46 @@ function Console({ menu }: { menu: Menu }) {
             saveStopList(stop.filter((x) => x !== id));
           }}
           onClose={() => setSheet(null)}
+        />
+      )}
+      {arranging && (
+        <BlockLayoutPage
+          title={tr("Arrange the overview")}
+          hint={tr(
+            "Show what you need on the overview and drag blocks into your order.",
+          )}
+          labels={{
+            attention: {
+              label: tr("Needs attention"),
+              hint: tr("What waits for you right now"),
+            },
+            people: {
+              label: tr("On shift"),
+              hint: tr("Who is working, tap for their card"),
+            },
+            news: {
+              label: tr("News"),
+              hint: tr("The latest post to the team"),
+            },
+            money: {
+              label: tr("Shift money"),
+              hint: tr("Takings, tips and the average check"),
+            },
+          }}
+          layout={overview}
+          fallback={overviewDefault}
+          onChange={setOverview}
+          onClose={() => setArranging(false)}
+          done={tr("Done")}
+          reset={tr("Reset to default")}
+          showLabel={tr("Show")}
+          hideLabel={tr("Hide")}
+        />
+      )}
+      {tab !== "more" && (
+        <ToTop
+          bottom="calc(env(safe-area-inset-bottom) + 92px)"
+          label={tr("To the top")}
         />
       )}
       {teamGroup && (
