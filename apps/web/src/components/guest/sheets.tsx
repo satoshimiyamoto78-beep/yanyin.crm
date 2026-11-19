@@ -16,7 +16,7 @@ import {
   type MenuItem,
   type ModifierGroup,
 } from "@yanyin/domain";
-import { Banknote, Building2, CreditCard, Heart, QrCode, Star, BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, Clock, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, Leaf, MapPin, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, Wifi, X } from "lucide-react";
+import { Banknote, Building2, CreditCard, Heart, QrCode, Star, BellRing, MessageSquarePlus, MessageSquareText, Pencil, ShoppingBag, Check, ChevronDown, ChevronRight, CookingPot, Plus, ReceiptText, StickyNote, type LucideIcon, Copy, FlameKindling, ImageIcon, Leaf, Navigation, Phone, Search, SearchX, Share2, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LANG_LABEL, UI_LANGS, ui, type UiKey } from "@/lib/ui-strings";
 import type { VenueBrand } from "@/lib/visual";
@@ -25,6 +25,7 @@ import qrcode from "qrcode-generator";
 import { haptic } from "@/lib/haptics";
 import { SlideToConfirm } from "@/components/system/SlideToConfirm";
 import { BrandQr, useStepHistory } from "@/components/system/Kit";
+import { ArtTile } from "@/components/system/Art";
 import { DrinkPreview, HalvesPicker, OptionTiles, PizzaPreview, drinkColor, drinkName } from "./builders";
 
 const tint = (c: string, a: number) => {
@@ -819,40 +820,36 @@ const STEPS: { key: UiKey; icon: LucideIcon }[] = [
 const STEP_AT = [0, 6, 15, 45];
 const clock = (at: number) => new Date(at).toTimeString().slice(0, 5);
 
-/** The order's progress on one line: four stations and the track between them. */
+/**
+ * The order's progress: four columns, each an icon over its label and time,
+ * all centred on the same axis; the track runs from the first icon's centre
+ * to the last one's, behind them.
+ */
 function OrderTrack({ stage, ready, lang, at }: { stage: number; ready: boolean; lang: Lang; at: (k: number) => string }) {
   const share = ready ? 1 : stage / 3;
   return (
-    <div className="mt-4">
-      <div className="relative mx-3 h-7">
-        {/* The track: a quiet line, the filled part in the brand gradient, light flowing on the live stretch. */}
-        <span aria-hidden className="absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full bg-g-card" />
-        <span aria-hidden className={`absolute top-1/2 left-0 h-[3px] -translate-y-1/2 rounded-full transition-[width] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${ready ? "bg-g-green" : "bar-grad"}`} style={{ width: `${share * 100}%` }} />
-        {!ready && <span aria-hidden className="track-flow absolute top-1/2 h-[3px] -translate-y-1/2 overflow-hidden rounded-full" style={{ left: `${share * 100}%`, width: `${100 / 3}%` }} />}
-        {STEPS.map((st, k) => {
-          const done = k < stage || ready;
-          const cur = k === stage && !ready;
-          return (
-            <span key={st.key} className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: `${(k / 3) * 100}%` }}>
+    <div className="relative mt-4 grid grid-cols-4">
+      {/* The track: from the centre of column one (12.5%) to the centre of column four (87.5%). */}
+      <span aria-hidden className="absolute top-[14px] right-[12.5%] left-[12.5%] h-[3px] -translate-y-1/2 rounded-full bg-g-card" />
+      <span aria-hidden className={`absolute top-[14px] left-[12.5%] h-[3px] -translate-y-1/2 rounded-full transition-[width] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${ready ? "bg-g-green" : "bar-grad"}`} style={{ width: `${share * 75}%` }} />
+      {!ready && stage < 3 && <span aria-hidden className="track-flow absolute top-[14px] h-[3px] -translate-y-1/2 overflow-hidden rounded-full" style={{ left: `${12.5 + share * 75}%`, width: "25%" }} />}
+      {STEPS.map((st, k) => {
+        const done = k < stage || ready;
+        const cur = k === stage && !ready;
+        const reached = k <= stage || ready;
+        return (
+          <span key={st.key} className="relative flex min-w-0 flex-col items-center text-center">
+            <span className="relative grid size-7 place-items-center">
               {cur && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-g-blue/30" />}
               <span className={`relative grid size-7 place-items-center rounded-full transition-colors duration-500 ${done ? (ready ? "bg-g-green text-white" : "blue-grad") : cur ? "blue-grad ring-4 ring-g-blue/15" : "bg-g-card text-g-faint"}`}>
                 {done ? <Check size={14} strokeWidth={2.8} /> : <st.icon size={13} strokeWidth={2.4} />}
               </span>
             </span>
-          );
-        })}
-      </div>
-      <div className="mt-1.5 grid grid-cols-4 text-center">
-        {STEPS.map((st, k) => {
-          const reached = k <= stage || ready;
-          return (
-            <span key={st.key} className="min-w-0">
-              <span className={`block truncate text-[11.5px] font-semibold ${reached ? "text-g-ink" : "text-g-faint"}`}>{ui(lang, st.key)}</span>
-              <span className="block text-[10.5px] text-g-muted tabular-nums">{reached ? (k === stage && !ready ? ui(lang, "stepNow") : at(k)) : "\u00a0"}</span>
-            </span>
-          );
-        })}
-      </div>
+            <span className={`mt-1.5 block w-full truncate px-0.5 text-[11.5px] leading-tight font-semibold ${reached ? "text-g-ink" : "text-g-faint"}`}>{ui(lang, st.key)}</span>
+            <span className="block h-[14px] text-[10.5px] leading-[14px] text-g-muted tabular-nums">{reached ? (cur ? ui(lang, "stepNow") : at(k)) : ""}</span>
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -1037,7 +1034,8 @@ export function OrdersSheet({
           );
         })}
 
-        {list.length > 0 && (
+        {/* The table's running total only when there is more than one order; with one it repeats the order's total. */}
+        {orders.length > 1 && (
           <div className="mt-6 flex items-center justify-between rounded-[22px] bg-g-fill px-4 py-3.5">
             <span>
               <span className="block text-[15px] font-semibold">{ui(lang, "tableTotal")}</span>
@@ -1246,11 +1244,11 @@ export function AboutSheet({
   const a = brand.about;
   const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.mapsQuery)}`;
   const actions: { label: string; icon: React.ReactNode; href?: string; onClick?: () => void }[] = [
-    { label: ui(lang, "aboutRoute"), icon: <Navigation size={20} strokeWidth={1.9} />, href: maps },
-    { label: ui(lang, "aboutCall"), icon: <Phone size={20} strokeWidth={1.9} />, href: `tel:${a.phone.replace(/\s/g, "")}` },
+    { label: ui(lang, "aboutRoute"), icon: <Navigation size={16} strokeWidth={2.2} />, href: maps },
+    { label: ui(lang, "aboutCall"), icon: <Phone size={16} strokeWidth={2.2} />, href: `tel:${a.phone.replace(/\s/g, "")}` },
     {
       label: ui(lang, "aboutShare"),
-      icon: <Share2 size={20} strokeWidth={1.9} />,
+      icon: <Share2 size={16} strokeWidth={2.2} />,
       onClick: () => {
         const url = window.location.href.split("?")[0]!;
         if (navigator.share) navigator.share({ title: menu.venue.name, url }).catch(() => {});
@@ -1258,100 +1256,115 @@ export function AboutSheet({
       },
     },
   ];
+  const photo = brand.hero.find((h) => h.kind === "dish") as { image: string } | undefined;
   return (
     <Sheet open={open} onClose={onClose} label={ui(lang, "about")} title={false}>
       <div className="px-5 pt-1 pb-10">
-        <div className="aurora rounded-[30px] px-5 pt-6 pb-5">
-          <span className="grid size-16 place-items-center rounded-[20px] bg-white text-[26px] font-bold text-g-ink">{brand.mark}</span>
-          <h2 className="mt-5 text-[30px] leading-tight font-bold tracking-[-0.025em]">{menu.venue.name}</h2>
-          <p className="mt-1 text-[15px] text-white/75">{brand.cuisine[lang as "en"] ?? brand.cuisine.en}</p>
-          <span className="mt-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-white/15 px-3 text-[13px] font-semibold backdrop-blur-md">
-            <span className="size-2 rounded-full bg-[#5ce0a0]" />
+        {/* The venue on its own photo: mark, name, what it is, open now. */}
+        <div className="relative isolate overflow-hidden rounded-[28px] bg-[#0b0b0f] px-5 pt-24 pb-5 text-white">
+          {photo && <Image src={photo.image} alt="" fill sizes="480px" className="-z-10 object-cover opacity-80" />}
+          <span aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(11,11,15,0)_20%,rgba(11,11,15,0.82)_100%)]" />
+          <span className="grid size-12 place-items-center rounded-full bg-[#fff] text-[20px] font-bold text-[#0b0b0f]">{brand.mark}</span>
+          <h2 className="mt-3 text-[28px] leading-tight font-bold tracking-[-0.025em]">{menu.venue.name}</h2>
+          <p className="mt-0.5 text-[14.5px] text-white/75">{brand.cuisine[lang as "en"] ?? brand.cuisine.en}</p>
+          <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-white/90">
+            <span className="size-1.5 rounded-full bg-[#5ce0a0]" />
             {ui(lang, "openNow")} · {ui(lang, "openUntil")} {a.closes}
           </span>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2.5">
-          {actions.map((x) =>
-            x.href ? (
-              <a key={x.label} href={x.href} target={x.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => haptic("light")} className="press flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-[22px] bg-g-fill text-[13px] font-semibold">
-                <span className="text-g-blue">{x.icon}</span>
+        {/* One row of round actions: the route is the main one. */}
+        <div className="mt-3 flex gap-2">
+          {actions.map((x, i) => {
+            const cls = `press flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold ${i === 0 ? "blue-grad" : "bg-g-fill"}`;
+            const inner = (
+              <>
+                <span className={i === 0 ? "" : "text-g-blue"}>{x.icon}</span>
                 {x.label}
+              </>
+            );
+            return x.href ? (
+              <a key={x.label} href={x.href} target={x.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => haptic("light")} className={cls}>
+                {inner}
               </a>
             ) : (
-              <button key={x.label} onClick={() => { haptic("light"); x.onClick?.(); }} className="press flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-[22px] bg-g-fill text-[13px] font-semibold">
-                <span className="text-g-blue">{x.icon}</span>
-                {x.label}
+              <button key={x.label} type="button" onClick={() => (haptic("light"), x.onClick?.())} className={cls}>
+                {inner}
               </button>
-            ),
-          )}
+            );
+          })}
         </div>
 
-        <p className="mt-7 text-[16px] leading-[1.6] text-g-ink-2">{a.bio}</p>
+        <p className="mt-6 text-[15.5px] leading-[1.6] text-g-ink-2">{a.bio}</p>
 
-        <h3 className="mt-9 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutGood")}</h3>
-        <div className="mt-2 divide-y divide-g-line">
-          <a href={maps} target="_blank" rel="noreferrer" className="flex items-center gap-3.5 py-4">
-            <InfoIcon><MapPin size={18} strokeWidth={1.9} /></InfoIcon>
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutGood")}</h3>
+        <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-4">
+          <a href={maps} target="_blank" rel="noreferrer" className="flex items-center gap-3 py-3">
+            <ArtTile name="floor" size={34} bare />
             <span className="min-w-0 flex-1">
-              <span className="block text-[13px] text-g-muted">{ui(lang, "address")}</span>
-              <span className="block truncate text-[15px] font-medium">{a.address}</span>
+              <span className="block text-[12.5px] text-g-muted">{ui(lang, "address")}</span>
+              <span className="block truncate text-[14.5px] font-semibold">{a.address}</span>
             </span>
-            <ChevronRight size={18} className="text-g-faint" />
+            <ChevronRight size={17} className="text-g-faint" />
           </a>
-          <div className="flex items-center gap-3.5 py-4">
-            <InfoIcon><Clock size={18} strokeWidth={1.9} /></InfoIcon>
+          <div className="flex items-center gap-3 py-3">
+            <ArtTile name="shifts" size={34} bare />
             <span className="min-w-0 flex-1">
-              <span className="block text-[13px] text-g-muted">{ui(lang, "hours")}</span>
-              <span className="block text-[15px] font-medium">{a.hours}</span>
+              <span className="block text-[12.5px] text-g-muted">{ui(lang, "hours")}</span>
+              <span className="block text-[14.5px] font-semibold">{a.hours}</span>
             </span>
           </div>
-          <div className="flex items-center gap-3.5 py-4">
-            <InfoIcon><Wifi size={18} strokeWidth={1.9} /></InfoIcon>
+          <div className="flex items-center gap-3 py-3">
+            <ArtTile name="wifi" size={34} bare />
             <span className="min-w-0 flex-1">
-              <span className="block text-[13px] text-g-muted">{ui(lang, "aboutWifi")} · {a.wifi.name}</span>
-              <span className="block font-mono text-[15px] font-medium">{a.wifi.pass}</span>
+              <span className="block text-[12.5px] text-g-muted">
+                {ui(lang, "aboutWifi")} · {a.wifi.name}
+              </span>
+              <span className="block text-[14.5px] font-semibold tracking-[0.02em]">{a.wifi.pass}</span>
             </span>
             <button
+              type="button"
               onClick={() => {
                 haptic("light");
                 navigator.clipboard?.writeText(a.wifi.pass).catch(() => {});
                 onNotice(ui(lang, "copied"), ui(lang, "copiedHint"));
               }}
               aria-label="Copy Wi-Fi password"
-              className="press grid size-10 place-items-center rounded-full bg-g-fill"
+              className="press grid size-9 place-items-center rounded-full bg-g-card"
             >
-              <Copy size={17} strokeWidth={1.9} />
+              <Copy size={15} strokeWidth={2} />
             </button>
           </div>
         </div>
 
-        <h3 className="mt-8 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutPay")}</h3>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutPay")}</h3>
+        <div className="flex flex-wrap gap-1.5">
           {a.payments.map((p) => (
-            <span key={p} className="inline-flex h-9 items-center rounded-full bg-g-fill px-3.5 text-[14px] font-medium">{p}</span>
+            <span key={p} className="inline-flex h-8 items-center rounded-full bg-g-fill px-3.5 text-[13.5px] font-medium">
+              {p}
+            </span>
           ))}
         </div>
 
-        <h3 className="mt-8 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutFeatures")}</h3>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutFeatures")}</h3>
+        <div className="flex flex-wrap gap-1.5">
           {a.features.map((f) => (
-            <span key={f.en} className="chip-blue inline-flex h-9 items-center rounded-full px-3.5 text-[14px] font-medium">{f[lang as "en"] ?? f.en}</span>
+            <span key={f.en} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-g-fill pr-3.5 pl-3 text-[13.5px] font-medium">
+              <Check size={13} strokeWidth={2.8} className="text-g-blue" />
+              {f[lang as "en"] ?? f.en}
+            </span>
           ))}
         </div>
 
-        <h3 className="mt-8 text-[13px] font-semibold tracking-[0.06em] text-g-muted uppercase">{ui(lang, "aboutLangs")}</h3>
-        <p className="mt-2 text-[15px] text-g-ink-2">{UI_LANGS.map((l) => LANG_LABEL[l]).join(" · ")}</p>
+        <h3 className="mt-7 mb-2 px-1 text-[12.5px] font-semibold tracking-[0.04em] text-g-muted uppercase">{ui(lang, "aboutLangs")}</h3>
+        <p className="px-1 text-[14.5px] text-g-ink-2">{UI_LANGS.map((l) => LANG_LABEL[l]).join(" · ")}</p>
 
-        <p className="mt-12 text-center text-[13px] text-g-faint">{ui(lang, "poweredBy")}</p>
+        <p className="mt-10 text-center text-[12.5px] text-g-faint">{ui(lang, "poweredBy")}</p>
       </div>
     </Sheet>
   );
 }
 
-function InfoIcon({ children }: { children: React.ReactNode }) {
-  return <span className="chip-blue grid size-10 shrink-0 place-items-center rounded-full">{children}</span>;
-}
 
 export function LangSheet({ open, onClose, lang, onPick }: { open: boolean; onClose: () => void; lang: Lang; onPick: (l: Lang) => void }) {
   return (

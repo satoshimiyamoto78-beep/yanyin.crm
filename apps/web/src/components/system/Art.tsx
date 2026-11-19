@@ -13,7 +13,7 @@ import { useId, type CSSProperties, type ReactNode } from "react";
  */
 
 export type ArtTone = "blue" | "sunset" | "teal" | "green" | "coral" | "night";
-export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "bell" | "wifi" | "pizza" | "menu" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats" | "checklist" | "drink" | "salad";
+export type ArtName = "tables" | "floor" | "sales" | "trophy" | "kitchen" | "bell" | "wifi" | "pizza" | "menu" | "orders" | "bookings" | "seated" | "guests" | "tips" | "check" | "shifts" | "seats" | "checklist" | "drink" | "salad" | "cards";
 
 const TONES: Record<ArtTone, { a: string; b: string; c: string; glow: string; shadow: string }> = {
   blue: { a: "#8fb6ff", b: "#3d6bff", c: "#1a2a9e", glow: "#bcd2ff", shadow: "rgba(47,91,255,0.5)" },
@@ -46,6 +46,7 @@ const ART: Record<ArtName, ArtTone> = {
   checklist: "teal",
   drink: "coral",
   salad: "green",
+  cards: "blue",
 };
 
 export function ArtTile({ name, tone = ART[name], size = 64, tilt = 0, bare = false, className = "" }: { name: ArtName; tone?: ArtTone; size?: number; tilt?: number; bare?: boolean; className?: string }) {
@@ -280,6 +281,7 @@ const DECO: Record<ArtName, DecoKind> = {
   drink: "dots",
   salad: "petals",
   seats: "dots",
+  cards: "sparkle",
 };
 
 /** A quiet ornament centred on the subject: rays, sparkles, petals, a dot halo, ripples or clock ticks. */
@@ -446,6 +448,25 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
           <rect x="76" y={y - 2} width="6" height="4" rx="2" fill={url(g, "tone")} opacity="0.7" />
         </g>
       ))}
+    </g>
+  ),
+  // Three cards fanned out, two face down in the tone, the front one with a question mark: the mystery dish.
+  cards: (g) => (
+    <g>
+      <g transform="rotate(-16 60 70)">
+        <rect x="36" y="28" width="42" height="60" rx="9" fill={url(g, "deep")} />
+        <rect x="41" y="33" width="32" height="50" rx="6" fill="none" stroke="#fff" strokeOpacity="0.35" strokeWidth="2" />
+      </g>
+      <g transform="rotate(14 60 70)">
+        <rect x="44" y="28" width="42" height="60" rx="9" fill={url(g, "tone")} />
+        <rect x="49" y="33" width="32" height="50" rx="6" fill="none" stroke="#fff" strokeOpacity="0.4" strokeWidth="2" />
+      </g>
+      <rect x="39" y="26" width="42" height="62" rx="9" fill="#c7d2ea" transform="translate(2 3)" />
+      <rect x="39" y="26" width="42" height="62" rx="9" fill={url(g, "paper")} />
+      <path d="M53 49c0-5 3.5-8 7.5-8s7.5 3 7.5 7c0 5-6 5.5-6 10.5" fill="none" stroke={url(g, "tone")} strokeWidth="5" strokeLinecap="round" />
+      <circle cx="62" cy="67" r="3.4" fill={url(g, "tone")} />
+      <circle cx="47" cy="33" r="2.5" fill={url(g, "gold")} />
+      <circle cx="73" cy="81" r="2.5" fill={url(g, "gold")} />
     </g>
   ),
   // A cooking pot on a flame, steam rising.

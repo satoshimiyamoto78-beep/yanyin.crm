@@ -1,17 +1,31 @@
 "use client";
 
-import { Shuffle, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
-import { allItems, formatMoney, t, type Currency, type Lang, type Menu, type MenuItem } from "@yanyin/domain";
+/* eslint-disable @next/next/no-img-element -- small local dish photos in a static export */
+import { Check, RefreshCw, Shuffle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  allItems,
+  formatMoney,
+  t,
+  type Currency,
+  type Lang,
+  type Menu,
+  type MenuItem,
+} from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import { ui } from "@/lib/ui-strings";
-import { DishTile, Sheet } from "./ui";
+import { ArtTile } from "@/components/system/Art";
+import { Sheet } from "./ui";
 
 /*
- * Mystery Dish (roadmap, MVP): the guest sets a budget and food or drink, the
- * card lies face down; one tap flips it to a dish picked for them. Take it, or
- * try once more; the second card is final ("it's fate"). Only dishes that can
- * be ordered in one tap and are not in the stop-list.
+ * Mystery dish (roadmap, MVP), as a small card game: the guest sets how many
+ * cards (1, 2 or 3), food, drink or anything, and a budget per card. The deck
+ * is shuffled with a real random source (crypto), the cards fly together,
+ * shuffle and flip one by one. Each revealed card can be swapped on its own,
+ * or the whole hand reshuffled; the guest taps the cards they take and adds
+ * them to the order. Only dishes that can be ordered in one tap and are not in
+ * the stop-list; a dish shown once does not come back in the same session
+ * while the deck has others.
  */
 
 const DRINK = ["drink", "hot_drink", "alcohol", "hookah"];
@@ -20,28 +34,139 @@ const BUDGETS = [
   { id: "mid", max: 300_000 },
   { id: "any", max: Infinity },
 ] as const;
+type Kind = "food" | "drink" | "any";
+type Phase = "setup" | "shuffle" | "open";
 
-export function MysterySheet({ open, onClose, lang, currency, menu, onTake }: { open: boolean; onClose: () => void; lang: Lang; currency: Currency; menu: Menu; onTake: (item: MenuItem) => void }) {
+/** A fair random index from the browser's crypto source. */
+function rnd(n: number) {
+  const a = new Uint32Array(1);
+  crypto.getRandomValues(a);
+  return a[0]! % n;
+}
+
+/** Draw `n` different dishes, preferring ones not shown yet. */
+function draw(
+  pool: MenuItem[],
+  n: number,
+  seen: Set<string>,
+  keep: MenuItem[] = [],
+) {
+  const taken = new Set(keep.map((k) => k.id));
+  const fresh = pool.filter((p) => !seen.has(p.id) && !taken.has(p.id));
+  const rest = pool.filter((p) => seen.has(p.id) && !taken.has(p.id));
+  const out: MenuItem[] = [];
+  for (const src of [fresh, rest]) {
+    const bag = [...src];
+    while (out.length < n && bag.length)
+      out.push(bag.splice(rnd(bag.length), 1)[0]!);
+  }
+  return out;
+}
+
+export function MysterySheet({
+  open,
+  onClose,
+  lang,
+  currency,
+  menu,
+  onTake,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lang: Lang;
+  currency: Currency;
+  menu: Menu;
+  onTake: (items: MenuItem[]) => void;
+}) {
+  const [count, setCount] = useState<1 | 2 | 3>(3);
+  const [kind, setKind] = useState<Kind>("any");
   const [budget, setBudget] = useState<(typeof BUDGETS)[number]["id"]>("mid");
-  const [kind, setKind] = useState<"food" | "drink">("food");
-  const [dish, setDish] = useState<MenuItem | null>(null);
-  const [tries, setTries] = useState(0);
-  const roleOf = useMemo(() => new Map(menu.categories.flatMap((c) => c.items.map((i) => [i.id, c.role] as const))), [menu]);
+  const [phase, setPhase] = useState<Phase>("setup");
+  const [hand, setHand] = useState<MenuItem[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [swapping, setSwapping] = useState<number | null>(null);
+  const seen = useRef(new Set<string>());
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => void (timer.current && clearTimeout(timer.current)),
+    [],
+  );
+
+  const roleOf = useMemo(
+    () =>
+      new Map(
+        menu.categories.flatMap((c) =>
+          c.items.map((i) => [i.id, c.role] as const),
+        ),
+      ),
+    [menu],
+  );
   const pool = useMemo(() => {
     const max = BUDGETS.find((b) => b.id === budget)!.max;
-    const fits = allItems(menu).filter((i) => i.price > 0 && i.price <= max && !i.variants.length && !i.modifierGroups.some((g) => g.required) && DRINK.includes(roleOf.get(i.id) ?? "") === (kind === "drink"));
-    // A reveal should look appetising: dishes with a photo first, the rest only if none has one.
-    const shot = fits.filter((i) => i.photo || i.cover);
-    return shot.length >= 3 ? shot : fits;
+    return allItems(menu).filter((i) => {
+      if (
+        !(i.price > 0 && i.price <= max) ||
+        i.variants.length ||
+        i.modifierGroups.some((g) => g.required)
+      )
+        return false;
+      const drink = DRINK.includes(roleOf.get(i.id) ?? "");
+      return kind === "any" || drink === (kind === "drink");
+    });
   }, [menu, budget, kind, roleOf]);
   const money = (n: number) => formatMoney(n, currency, lang);
-  const flip = () => {
-    if (!pool.length) return;
-    haptic("success");
-    const others = pool.filter((p) => p.id !== dish?.id);
-    setDish(others[Math.floor(Math.random() * others.length)] ?? pool[0]!);
-    setTries((n) => n + 1);
+  const enough = pool.length >= count;
+
+  // Any change to the rules lays the cards face down again.
+  const reset = () => {
+    setPhase("setup");
+    setHand([]);
+    setPicked([]);
   };
+
+  const deal = () => {
+    if (!enough) return;
+    haptic("light");
+    // A reveal should look appetising: when the deck has enough dishes with photos, deal from those.
+    const shots = pool.filter((p) => p.photo || p.cover);
+    const deck = shots.length >= count * 2 ? shots : pool;
+    const cards = draw(deck, count, seen.current);
+    cards.forEach((c) => seen.current.add(c.id));
+    setHand(cards);
+    setPicked(count === 1 ? [cards[0]!.id] : []);
+    setPhase("shuffle");
+    timer.current = setTimeout(() => {
+      haptic("success");
+      setPhase("open");
+    }, 900);
+  };
+
+  const swap = (i: number) => {
+    const next = draw(pool, 1, seen.current, hand)[0];
+    if (!next) return;
+    haptic("light");
+    seen.current.add(next.id);
+    setSwapping(i);
+    timer.current = setTimeout(() => {
+      setHand((h) => h.map((c, k) => (k === i ? next : c)));
+      setPicked((p) =>
+        p
+          .filter((id) => id !== hand[i]!.id)
+          .concat(count === 1 ? [next.id] : []),
+      );
+      setSwapping(null);
+      haptic("success");
+    }, 380);
+  };
+
+  const toggle = (id: string) => {
+    haptic("tick");
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  };
+
+  const chosen = hand.filter((c) => picked.includes(c.id));
+  const sum = chosen.reduce((n, c) => n + c.price, 0);
+
   if (!open) return null;
   return (
     <Sheet
@@ -50,67 +175,236 @@ export function MysterySheet({ open, onClose, lang, currency, menu, onTake }: { 
       label={ui(lang, "mysteryTitle")}
       title={false}
       footer={
-        dish ? (
-          <div className="flex gap-3">
-            <button disabled={tries >= 2} onClick={flip} className="press flex h-14 items-center gap-2 rounded-full bg-g-fill px-5 text-[15px] font-semibold text-g-ink-2 disabled:opacity-50">
-              <Shuffle size={17} strokeWidth={2.2} /> {tries >= 2 ? ui(lang, "mysteryFate") : ui(lang, "mysteryAgain")}
+        phase === "open" ? (
+          <div className="flex gap-2.5">
+            <button
+              type="button"
+              onClick={deal}
+              className="press flex h-13 items-center gap-2 rounded-full bg-g-fill px-5 text-[15px] font-semibold"
+            >
+              <Shuffle size={17} strokeWidth={2.2} /> {ui(lang, "mysteryAgain")}
             </button>
-            <button onClick={() => (haptic("success"), onTake(dish))} className="blue-grad press h-14 flex-1 rounded-full text-[16px] font-semibold tabular-nums">
-              {ui(lang, "mysteryTake")} · {money(dish.price)}
+            <button
+              type="button"
+              disabled={!chosen.length}
+              onClick={() => (haptic("success"), onTake(chosen))}
+              className="blue-grad press h-13 flex-1 rounded-full text-[15px] font-semibold tabular-nums disabled:opacity-40"
+            >
+              {chosen.length
+                ? `${ui(lang, "mysteryTake")} ${chosen.length} · ${money(sum)}`
+                : ui(lang, "mysteryPick")}
             </button>
           </div>
         ) : (
-          <button disabled={!pool.length} onClick={flip} className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold disabled:opacity-40">
-            <Sparkles size={18} strokeWidth={2.2} /> {ui(lang, "mysteryGo")}
+          <button
+            type="button"
+            disabled={!enough || phase === "shuffle"}
+            onClick={deal}
+            className="blue-grad press flex h-13 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold disabled:opacity-40"
+          >
+            <Shuffle size={17} strokeWidth={2.2} />{" "}
+            {phase === "shuffle"
+              ? ui(lang, "mysteryShuffling")
+              : ui(lang, "mysteryGo")}
           </button>
         )
       }
     >
       <div className="px-5 pt-1 pb-8">
-        <h2 className="text-[28px] leading-tight font-bold tracking-[-0.02em]">{ui(lang, "mysteryTitle")}</h2>
-        <p className="mt-1 text-[14px] text-g-muted">{ui(lang, "mysteryHint")}</p>
-
-        {!dish && (
-          <div className="mt-5 grid gap-3">
-            <div className="flex rounded-full bg-g-fill p-1">
-              {(["food", "drink"] as const).map((k) => (
-                <button key={k} onClick={() => (haptic("tick"), setKind(k))} aria-pressed={kind === k} className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${kind === k ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}>
-                  {ui(lang, k === "food" ? "mysteryFood" : "mysteryDrink")}
-                </button>
-              ))}
-            </div>
-            <div className="flex rounded-full bg-g-fill p-1">
-              {BUDGETS.map((b) => (
-                <button key={b.id} onClick={() => (haptic("tick"), setBudget(b.id))} aria-pressed={budget === b.id} className={`h-10 flex-1 rounded-full text-[14px] font-semibold tabular-nums transition-colors ${budget === b.id ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}>
-                  {b.id === "any" ? ui(lang, "mysteryAny") : `≤ ${Math.round(b.max / 1000)}k`}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* The card: face down with a question mark, flips over to the dish. Only transform animates. */}
-        <div className="mt-6 [perspective:1200px]">
-          <div className="relative aspect-[4/5] w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] [transform-style:preserve-3d]" style={{ transform: dish ? "rotateY(180deg)" : "none" }}>
-            <div className="blue-grad absolute inset-0 grid place-items-center rounded-[32px] [backface-visibility:hidden]">
-              <span className="text-[120px] leading-none font-bold text-white/90">?</span>
-              <span className="absolute bottom-6 text-[14px] font-semibold text-white/70">{pool.length ? ui(lang, "mysteryCount").replace("{n}", String(pool.length)) : ui(lang, "mysteryNone")}</span>
-            </div>
-            <div className="absolute inset-0 flex flex-col overflow-hidden rounded-[32px] bg-g-fill [backface-visibility:hidden] [transform:rotateY(180deg)]">
-              {dish && (
-                <>
-                  <DishTile key={dish.id} item={dish} role={roleOf.get(dish.id) ?? "main"} photoScale={0.86} glyph={0.36} className="min-h-0 flex-1" />
-                  <div key={`t-${dish.id}`} className="animate-rise p-5">
-                    <p className="text-[24px] leading-tight font-bold tracking-[-0.02em]">{t(dish.name, lang)}</p>
-                    {dish.description && <p className="mt-1 line-clamp-2 text-[14px] text-g-muted">{t(dish.description, lang)}</p>}
-                    <p className="mt-2 text-[18px] font-semibold tabular-nums">{money(dish.price)}</p>
-                  </div>
-                </>
-              )}
-            </div>
+        <div className="flex items-center gap-3">
+          <ArtTile name="cards" size={52} bare />
+          <div className="min-w-0">
+            <h2 className="text-[26px] leading-tight font-bold tracking-[-0.02em]">
+              {ui(lang, "mysteryTitle")}
+            </h2>
+            <p className="text-[13.5px] text-g-muted">
+              {ui(lang, "mysteryHint")}
+            </p>
           </div>
         </div>
+
+        {/* The rules: how many cards, what, and the price per card. Changing one lays the cards face down again. */}
+        <div className="mt-5 grid gap-2">
+          <Seg
+            label={ui(lang, "mysteryCards")}
+            value={String(count)}
+            options={["1", "2", "3"].map((n) => ({ id: n, label: n }))}
+            onPick={(v) => (setCount(Number(v) as 1 | 2 | 3), reset())}
+          />
+          <Seg
+            label={ui(lang, "mysteryWhat")}
+            value={kind}
+            options={[
+              { id: "any", label: ui(lang, "mysteryAll") },
+              { id: "food", label: ui(lang, "mysteryFood") },
+              { id: "drink", label: ui(lang, "mysteryDrink") },
+            ]}
+            onPick={(v) => (setKind(v as Kind), reset())}
+          />
+          <Seg
+            label={ui(lang, "mysteryBudget")}
+            value={budget}
+            options={BUDGETS.map((b) => ({
+              id: b.id,
+              label:
+                b.id === "any"
+                  ? ui(lang, "mysteryAny")
+                  : `≤ ${Math.round(b.max / 1000)}k`,
+            }))}
+            onPick={(v) => (setBudget(v as typeof budget), reset())}
+          />
+        </div>
+        <p className="mt-2 px-1 text-[12.5px] text-g-muted">
+          {enough
+            ? ui(lang, "mysteryCount").replace("{n}", String(pool.length))
+            : ui(lang, "mysteryNone")}
+        </p>
+
+        {/* The table: cards face down, shuffled, then flipped one by one. */}
+        <div
+          className={`mt-5 grid gap-2.5 [perspective:1200px] ${count === 1 ? "mx-auto max-w-[260px] grid-cols-1" : count === 2 ? "grid-cols-2" : "grid-cols-3"}`}
+        >
+          {Array.from({ length: count }, (_, i) => {
+            const dish = hand[i];
+            const up = phase === "open" && !!dish && swapping !== i;
+            const on = !!dish && picked.includes(dish.id);
+            return (
+              <div
+                key={i}
+                className={`relative aspect-[3/4] ${phase === "shuffle" ? "animate-[deck-shuffle_0.9s_cubic-bezier(0.22,1,0.36,1)]" : ""}`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div
+                  className="relative size-full transition-transform duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] [transform-style:preserve-3d]"
+                  style={{
+                    transform: up ? "rotateY(180deg)" : "none",
+                    transitionDelay: up ? `${i * 160}ms` : "0ms",
+                  }}
+                >
+                  {/* Back. */}
+                  <div className="blue-grad absolute inset-0 grid place-items-center overflow-hidden rounded-[22px] shadow-[0_14px_30px_-18px_rgba(47,91,255,0.7)] [backface-visibility:hidden]">
+                    <span className="absolute inset-2 rounded-[16px] border border-white/25" />
+                    <span className="absolute inset-0 opacity-[0.12] [background:repeating-linear-gradient(45deg,#fff_0_1px,transparent_1px_9px)]" />
+                    <span
+                      className={`relative leading-none font-bold text-white/90 ${count === 3 ? "text-[44px]" : "text-[64px]"}`}
+                    >
+                      ?
+                    </span>
+                  </div>
+                  {/* Face. */}
+                  <button
+                    type="button"
+                    disabled={!up}
+                    onClick={() => dish && toggle(dish.id)}
+                    aria-pressed={on}
+                    className={`absolute inset-0 flex flex-col overflow-hidden rounded-[22px] bg-g-fill text-left transition-shadow [backface-visibility:hidden] [transform:rotateY(180deg)] ${on ? "ring-2 ring-g-blue" : ""}`}
+                  >
+                    {dish && (
+                      <>
+                        <span className="relative grid min-h-0 flex-1 place-items-center overflow-hidden">
+                          {dish.photo || dish.cover ? (
+                            <img
+                              src={dish.cover ?? dish.photo}
+                              alt=""
+                              className={
+                                dish.cover
+                                  ? "size-full object-cover"
+                                  : "dish-shadow w-[86%] object-contain"
+                              }
+                            />
+                          ) : (
+                            <ArtTile
+                              name={
+                                DRINK.includes(roleOf.get(dish.id) ?? "")
+                                  ? "drink"
+                                  : "salad"
+                              }
+                              size={count === 3 ? 56 : 84}
+                              bare
+                            />
+                          )}
+                        </span>
+                        <span
+                          className={
+                            count === 3
+                              ? "px-2.5 pt-1 pb-2.5"
+                              : "px-3.5 pt-1.5 pb-3.5"
+                          }
+                        >
+                          <span
+                            className={`line-clamp-2 leading-tight font-semibold ${count === 3 ? "text-[12.5px]" : "text-[15px]"}`}
+                          >
+                            {t(dish.name, lang)}
+                          </span>
+                          <span
+                            className={`mt-0.5 block font-semibold text-g-muted tabular-nums ${count === 3 ? "text-[12px]" : "text-[13.5px]"}`}
+                          >
+                            {money(dish.price)}
+                          </span>
+                        </span>
+                        <span
+                          className={`absolute top-2 right-2 grid size-6 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-card/90 text-transparent"}`}
+                        >
+                          <Check size={14} strokeWidth={3} />
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {up && pool.length > count && (
+                  <button
+                    type="button"
+                    aria-label={ui(lang, "mysteryReplace")}
+                    onClick={() => swap(i)}
+                    className="press absolute top-2 left-2 z-10 grid size-7 place-items-center rounded-full bg-g-card/90 text-g-ink-2 shadow-[0_2px_6px_rgba(11,11,15,0.12)]"
+                  >
+                    <RefreshCw size={13} strokeWidth={2.4} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {phase === "open" && count > 1 && (
+          <p className="animate-rise mt-3 text-center text-[12.5px] text-g-muted">
+            {ui(lang, "mysteryPickHint")}
+          </p>
+        )}
       </div>
     </Sheet>
+  );
+}
+
+/** A labelled segmented control: one row, the label on the left. */
+function Seg({
+  label,
+  value,
+  options,
+  onPick,
+}: {
+  label: string;
+  value: string;
+  options: { id: string; label: string }[];
+  onPick: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-[72px] shrink-0 text-[13px] font-semibold text-g-muted">
+        {label}
+      </span>
+      <div className="flex flex-1 rounded-full bg-g-fill p-1">
+        {options.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            aria-pressed={value === o.id}
+            onClick={() => (haptic("tick"), onPick(o.id))}
+            className={`h-9 flex-1 rounded-full text-[13.5px] font-semibold tabular-nums transition-colors ${value === o.id ? "bg-g-card text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

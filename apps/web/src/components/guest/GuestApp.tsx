@@ -41,11 +41,7 @@ import { RouletteSheet } from "./RouletteSheet";
 import { ArtTile } from "@/components/system/Art";
 import { NorthSky } from "@/components/system/NorthSky";
 import { useScheme } from "@/components/system/scheme";
-import {
-  Strip,
-  StripBig,
-  StripWide,
-} from "@/components/system/Strip";
+import { Strip, StripBig, StripWide } from "@/components/system/Strip";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
 import {
   AboutSheet,
@@ -108,7 +104,10 @@ type Notice = IslandNotice;
 export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
   // The admin's published menu edits (prices, names, hidden and new dishes) apply at once.
   const edits = menuEdits(seedMenu.venue.slug).use();
-  const fullMenu = useMemo(() => applyEdits(seedMenu, edits), [seedMenu, edits]);
+  const fullMenu = useMemo(
+    () => applyEdits(seedMenu, edits),
+    [seedMenu, edits],
+  );
   // Dishes a station marked as run out disappear at once (the full menu still resolves cart lines).
   const stop = useStopList();
   const menu = useMemo(() => withoutStopped(fullMenu, stop), [fullMenu, stop]);
@@ -119,7 +118,9 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
   const categoryOf = useMemo(
     () =>
       new Map<string, Category>(
-        fullMenu.categories.flatMap((c) => c.items.map((i) => [i.id, c] as const)),
+        fullMenu.categories.flatMap((c) =>
+          c.items.map((i) => [i.id, c] as const),
+        ),
       ),
     [fullMenu],
   );
@@ -217,7 +218,10 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
   const serviceRate = menu.venue.serviceRate ?? DEFAULT_SERVICE_RATE;
   // The "pizza from halves" builder, if the venue has one: it gets its own quick button.
   const halves = useMemo(
-    () => menu.categories.flatMap((c) => c.items).find((i) => i.builder === "halves"),
+    () =>
+      menu.categories
+        .flatMap((c) => c.items)
+        .find((i) => i.builder === "halves"),
     [menu],
   );
   const hasCoals = menu.categories.some((c) =>
@@ -242,10 +246,21 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
         {/* Grid or list, one tap; the same choice for every category. */}
         <div className="flex items-center justify-between gap-3 pt-6">
           <p className="px-1 text-[14px] font-medium text-g-muted">
-            {ui(lang, "dishesCount").replace("{n}", String(menu.categories.reduce((n, c) => n + c.items.length, 0)))}
+            {ui(lang, "dishesCount").replace(
+              "{n}",
+              String(menu.categories.reduce((n, c) => n + c.items.length, 0)),
+            )}
           </p>
-          <div role="radiogroup" aria-label={ui(lang, "menuView")} className="relative grid h-10 w-[88px] grid-cols-2 rounded-full bg-g-fill p-1">
-            <span aria-hidden className="absolute top-1 bottom-1 left-1 w-[40px] rounded-full bg-white shadow-[0_1px_3px_rgba(11,11,15,0.12)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ transform: `translateX(${view === "list" ? 40 : 0}px)` }} />
+          <div
+            role="radiogroup"
+            aria-label={ui(lang, "menuView")}
+            className="relative grid h-10 w-[88px] grid-cols-2 rounded-full bg-g-fill p-1"
+          >
+            <span
+              aria-hidden
+              className="absolute top-1 bottom-1 left-1 w-[40px] rounded-full bg-white shadow-[0_1px_3px_rgba(11,11,15,0.12)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ transform: `translateX(${view === "list" ? 40 : 0}px)` }}
+            />
             {(
               [
                 ["grid", LayoutGrid, ui(lang, "viewGrid")],
@@ -281,10 +296,7 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
               </span>
             </h2>
             {(() => {
-              // Dishes with a photo are cards in two columns (an odd one out leads,
-              // laid across both); dishes without one are rows of a single card.
-              const shots = c.items.filter((i) => i.photo || i.cover);
-              const plain = c.items.filter((i) => !i.photo && !i.cover);
+              // Grid or list, never mixed: the guest's choice applies to every dish.
               const props = (it: MenuItem) => ({
                 item: it,
                 lang,
@@ -300,32 +312,38 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
                   <div className="divide-y divide-g-line rounded-[24px] bg-g-fill px-3">
                     {c.items.map((it, n) => (
                       <Reveal key={`${it.id}-${lang}-l`} delay={(n % 4) * 40}>
-                        <DishRow {...props(it)} role={c.role} thumb={Boolean(it.photo || it.cover)} />
+                        <DishRow
+                          {...props(it)}
+                          role={c.role}
+                          thumb={Boolean(it.photo || it.cover)}
+                        />
                       </Reveal>
                     ))}
                   </div>
                 );
+              // Grid: every dish a card; a dish without a photo shows its own icon on the soft tile.
+              const wideFirst =
+                c.items.length % 2 === 1 &&
+                Boolean(c.items[0]?.photo || c.items[0]?.cover);
               return (
-                <>
-                  {shots.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {shots.map((it, n) => (
-                        <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 50} className={shots.length % 2 === 1 && n === 0 ? "col-span-2 grid" : "grid"}>
-                          <DishCard {...props(it)} role={c.role} format={menu.venue.imageFormat} wide={shots.length % 2 === 1 && n === 0} />
-                        </Reveal>
-                      ))}
-                    </div>
-                  )}
-                  {plain.length > 0 && (
-                    <div className={`divide-y divide-g-line rounded-[24px] bg-g-fill px-3 ${shots.length ? "mt-2.5" : ""}`}>
-                      {plain.map((it, n) => (
-                        <Reveal key={`${it.id}-${lang}`} delay={(n % 4) * 50}>
-                          <DishRow {...props(it)} role={c.role} />
-                        </Reveal>
-                      ))}
-                    </div>
-                  )}
-                </>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {c.items.map((it, n) => (
+                    <Reveal
+                      key={`${it.id}-${lang}`}
+                      delay={(n % 4) * 50}
+                      className={
+                        wideFirst && n === 0 ? "col-span-2 grid" : "grid"
+                      }
+                    >
+                      <DishCard
+                        {...props(it)}
+                        role={c.role}
+                        format={menu.venue.imageFormat}
+                        wide={wideFirst && n === 0}
+                      />
+                    </Reveal>
+                  ))}
+                </div>
               );
             })()}
           </section>
@@ -451,7 +469,11 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
               }
               sub={
                 count > 0
-                  ? formatMoney(withService(total, serviceRate).total, currency, lang)
+                  ? formatMoney(
+                      withService(total, serviceRate).total,
+                      currency,
+                      lang,
+                    )
                   : ui(lang, "startOrderSub")
               }
             />
@@ -488,7 +510,7 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
             />
             <StripWide
               onClick={() => setSheet("mystery")}
-              art={<span className="blue-grad grid size-9 place-items-center rounded-full text-[19px] font-bold">?</span>}
+              art={<ArtTile name="cards" size={38} bare />}
               title={ui(lang, "qaMystery")}
               sub={ui(lang, "qaMysterySub")}
             />
@@ -525,7 +547,11 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
                     say("coalsCalled", <Flame size={16} strokeWidth={2.25} />)
                   }
                   art={
-                    <Flame size={24} strokeWidth={2} className="text-g-orange" />
+                    <Flame
+                      size={24}
+                      strokeWidth={2}
+                      className="text-g-orange"
+                    />
                   }
                   title={ui(lang, "qaCoalsDo")}
                   sub={ui(lang, "qaCoalsSub")}
@@ -589,7 +615,11 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
               {ui(lang, "yourOrder")}
             </span>
             <span className="text-[16px] font-semibold tabular-nums">
-              {formatMoney(withService(total, serviceRate).total, currency, lang)}
+              {formatMoney(
+                withService(total, serviceRate).total,
+                currency,
+                lang,
+              )}
             </span>
           </button>
         </div>
@@ -645,7 +675,10 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
             })()}
             openLabel={ui(lang, "liveOpen")}
             callLabel={ui(lang, "callWaiterShort")}
-            kicker={ui(lang, "liveTitle").replace("{n}", String(last.id).padStart(3, "0"))}
+            kicker={ui(lang, "liveTitle").replace(
+              "{n}",
+              String(last.id).padStart(3, "0"),
+            )}
             foldLabel={ui(lang, "liveFold")}
             stage={stage}
             onOpen={() => setSheet("orders")}
@@ -683,9 +716,9 @@ export function GuestApp({ menu: seedMenu }: { menu: Menu }) {
         lang={lang}
         currency={currency}
         menu={menu}
-        onTake={(it) => {
+        onTake={(items) => {
           setSheet(null);
-          addToCart(it, undefined, [], 1);
+          items.forEach((it) => addToCart(it, undefined, [], 1));
         }}
       />
       <BillSheet
@@ -1116,15 +1149,60 @@ function CategoryTabs({
     });
     return () => io.disconnect();
   }, [menu]);
-  // The ring follows the page at once: the moment a new section takes the top,
-  // its label glides to the centre. The glide is our own short ease on
-  // scrollLeft (cheap, one property per frame), so it never waits for the page
-  // to come to rest and never fights the page scroll. A finger on the ring wins.
+  // The tabs are a ring: three copies side by side, so the active label always
+  // sits in the middle with the others grey on both sides, and the ring never
+  // ends. When scrolling settles in an outer copy, scrollLeft jumps by one copy
+  // (invisible: the copies are identical). The ring follows the page at once:
+  // the moment a new section takes the top, its label glides to the centre with
+  // our own short ease on scrollLeft. A finger on the ring wins.
+  const setWidth = () => {
+    const bar = tabsRef.current;
+    const n = menu.categories.length;
+    const kids = bar?.children;
+    if (!bar || !kids || kids.length < n * 2) return 0;
+    return (
+      (kids[n] as HTMLElement).offsetLeft - (kids[0] as HTMLElement).offsetLeft
+    );
+  };
+  const centreOf = (tab: HTMLElement) =>
+    tab.offsetLeft - (tabsRef.current!.clientWidth - tab.offsetWidth) / 2;
+  useEffect(() => {
+    // Start on the middle copy.
+    const bar = tabsRef.current;
+    const tab = bar?.querySelector<HTMLElement>(
+      `[data-copy="1"][data-tab="${menu.categories[0]!.id}"]`,
+    );
+    if (bar && tab) bar.scrollLeft = centreOf(tab);
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const recentre = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => {
+        const w = setWidth();
+        if (!bar || !w) return;
+        if (bar.scrollLeft < w * 0.5) bar.scrollLeft += w;
+        else if (bar.scrollLeft > w * 1.5) bar.scrollLeft -= w;
+      }, 140);
+    };
+    bar?.addEventListener("scroll", recentre, { passive: true });
+    return () => {
+      clearTimeout(idle);
+      bar?.removeEventListener("scroll", recentre);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- measured from the DOM
+  }, [menu, lang]);
   useEffect(() => {
     const bar = tabsRef.current;
-    const tab = bar?.querySelector<HTMLElement>(`[data-tab="${active}"]`);
-    if (!bar || !tab) return;
-    const target = Math.max(0, Math.min(bar.scrollWidth - bar.clientWidth, tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2));
+    if (!bar) return;
+    // Of the three copies of the active label, glide to the nearest one.
+    const tabs = Array.from(
+      bar.querySelectorAll<HTMLElement>(`[data-tab="${active}"]`),
+    );
+    if (!tabs.length) return;
+    const target = tabs
+      .map(centreOf)
+      .reduce((a, b) =>
+        Math.abs(b - bar.scrollLeft) < Math.abs(a - bar.scrollLeft) ? b : a,
+      );
     let raf = 0;
     let stopped = false;
     const snap = bar.style.scrollSnapType;
@@ -1162,22 +1240,27 @@ function CategoryTabs({
     >
       <div
         ref={tabsRef}
-        className="no-scrollbar flex snap-x snap-proximity gap-1 overflow-x-auto px-[calc(50%-64px)] py-2.5"
+        className="no-scrollbar flex snap-x snap-proximity gap-1 overflow-x-auto py-2.5"
       >
-        {menu.categories.map((c) => {
-          const on = c.id === active;
-          return (
-            <button
-              key={c.id}
-              data-tab={c.id}
-              onClick={() => onPick(c.id)}
-              aria-current={on ? "true" : undefined}
-              className={`h-9 shrink-0 snap-center rounded-full px-4 text-[14px] font-medium whitespace-nowrap ${on ? "bg-g-ink text-white" : "text-g-muted"}`}
-            >
-              {t(c.name, lang)}
-            </button>
-          );
-        })}
+        {[0, 1, 2].flatMap((copy) =>
+          menu.categories.map((c) => {
+            const on = c.id === active;
+            return (
+              <button
+                key={`${copy}-${c.id}`}
+                data-tab={c.id}
+                data-copy={copy}
+                aria-hidden={copy !== 1 || undefined}
+                tabIndex={copy === 1 ? undefined : -1}
+                onClick={() => onPick(c.id)}
+                aria-current={on && copy === 1 ? "true" : undefined}
+                className={`h-9 shrink-0 snap-center rounded-full px-4 text-[14px] font-medium whitespace-nowrap ${on ? "bg-g-ink text-white" : "text-g-muted"}`}
+              >
+                {t(c.name, lang)}
+              </button>
+            );
+          }),
+        )}
       </div>
     </nav>
   );
