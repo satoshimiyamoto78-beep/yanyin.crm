@@ -598,17 +598,15 @@ function ItemSheetBody({
                           toggle(g.id, o.id);
                         }}
                         aria-pressed={on}
-                        className={`press flex min-h-12 items-center gap-3 rounded-full py-1.5 pr-1.5 pl-4 text-left transition-colors ${on ? "bg-g-blue-soft" : "bg-g-fill"}`}
+                        className={`press flex min-h-12 items-center gap-2.5 rounded-full py-1.5 pr-1.5 pl-4 text-left transition-colors ${on ? "bg-g-blue-soft" : "bg-g-fill"}`}
                       >
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[14px] leading-tight font-medium">
-                            {t(o.name, lang)}
-                          </span>
-                          <span
-                            className={`block text-[12.5px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-muted"}`}
-                          >
-                            +{formatMoney(o.price, currency, lang)}
-                          </span>
+                        <span className="min-w-0 flex-1 text-[14px] leading-snug font-medium">
+                          {t(o.name, lang)}
+                        </span>
+                        <span
+                          className={`shrink-0 text-[13px] font-semibold tabular-nums ${on ? "text-g-blue" : "text-g-muted"}`}
+                        >
+                          +{formatMoney(o.price, currency, lang)}
                         </span>
                         <span
                           className={`grid size-8 shrink-0 place-items-center rounded-full transition-colors ${on ? "blue-grad" : "bg-g-card text-g-faint"}`}
