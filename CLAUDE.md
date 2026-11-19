@@ -53,6 +53,7 @@ something like `yanyin.app` (not decided yet, see `docs/04-decisions.md`).
 - `docs/10-platform-architecture.md`: platform architecture (ADR-019): core and ports, country packs, integrations in three tiers, events with outbox and queue, region cells, offline, reliability and security
 - `docs/05-pilot-vietnam.md`: first launch country (Vietnam, Da Nang), pilot venues Samarkand and Zabey, e-invoice and payments
 - Interactive architecture scheme: https://claude.ai/artifact/SG8DvbBNPCJQNdibfwJ7WQ
+- Interactive platform map (ADR-019): https://claude.ai/artifact/JHtzfu3FzYajVA31HJywU2
 
 ## Where the project lives outside the repo
 
