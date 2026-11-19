@@ -566,6 +566,8 @@ export function ReportsAdmin({
               rowKey={(r) => r.it.id}
               onRow={setOpen}
               initialSort={{ key: "revenue", dir: -1 }}
+              primary="revenue"
+              mobileHide={["share"]}
               cols={[
                 {
                   key: "name",
@@ -610,6 +612,7 @@ export function ReportsAdmin({
                   key: "cost",
                   label: tr("Cost"),
                   value: (r) => r.cost,
+                  mobile: (r) => compactMoney(r.cost),
                   render: (r) => (
                     <span className="text-g-muted">{full(r.cost)}</span>
                   ),
@@ -706,6 +709,7 @@ export function ReportsAdmin({
             rows={staff}
             rowKey={(r) => r.p.id}
             initialSort={{ key: "rev", dir: -1 }}
+            primary="rev"
             cols={[
               {
                 key: "name",

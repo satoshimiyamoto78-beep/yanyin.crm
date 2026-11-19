@@ -761,8 +761,8 @@ export function PersonRow({
 /* ------------------------------------------------------------ Team groups */
 
 const GROUP_ART: Record<Group, ArtName> = {
-  lead: "trophy",
-  hall: "tables",
+  lead: "badge",
+  hall: "tray",
   bar: "drink",
   kitchen: "kitchen",
 };

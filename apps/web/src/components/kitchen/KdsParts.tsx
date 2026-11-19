@@ -22,6 +22,7 @@ import type { MenuItem, Station } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import { rnd } from "@/lib/demo-money";
 import { RECIPES, STOCK } from "@/lib/demo-stock";
+import { stockOf, techCardFor, techStore } from "@/lib/techcards";
 import { TEAM } from "@/lib/demo-team";
 import {
   VENUE_STATIONS,
@@ -393,7 +394,12 @@ export function DishInfo({
   const tr = useTr();
   const dish = useDish();
   const name = dish(line.name);
-  const card = techCard(item, line.name.en ?? name, station);
+  const saved = techStore.use();
+  // The admin's tech card when it is filled in (Menu → dish → Tech card), else the demo one.
+  const own = techCardFor(line.itemId, line.name.en, saved);
+  const card = own.lines.length
+    ? own.lines.map((l) => ({ s: stockOf(l.item), q: l.qty }))
+    : techCard(item, line.name.en ?? name, station);
   const grams = Math.round(
     card.reduce((n, c) => n + (c.s.unit === "pcs" ? 330 : c.q * 1000), 0),
   );

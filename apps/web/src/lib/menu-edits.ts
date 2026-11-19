@@ -9,8 +9,8 @@ import { createStore } from "./store";
  * the guest menu and the waiter's picker at once (same store, any tab).
  */
 
-export type ItemEdit = { name?: I18nText; description?: I18nText; price?: number; photo?: string; hidden?: boolean };
-export type NewItem = { id: string; categoryId: string; name: I18nText; description?: I18nText; price: number; photo?: string };
+export type ItemEdit = { name?: I18nText; description?: I18nText; price?: number; photo?: string; /** Up to five photos, the first is the cover. */ photos?: string[]; hidden?: boolean };
+export type NewItem = { id: string; categoryId: string; name: I18nText; description?: I18nText; price: number; photo?: string; photos?: string[] };
 export type MenuEdits = { items: Record<string, ItemEdit>; added: NewItem[]; order: Record<string, string[]> };
 
 const EMPTY: MenuEdits = { items: {}, added: [], order: {} };
@@ -32,10 +32,10 @@ export function applyEdits(menu: Menu, e: MenuEdits): Menu {
       .filter((i) => !e.items[i.id]?.hidden)
       .map((i) => {
         const x = e.items[i.id];
-        return x ? { ...i, ...(x.name ? { name: { ...i.name, ...x.name } } : {}), ...(x.description ? { description: { ...i.description, ...x.description } } : {}), ...(x.price !== undefined ? { price: x.price } : {}), ...(x.photo ? { photo: x.photo } : {}) } : i;
+        return x ? { ...i, ...(x.name ? { name: { ...i.name, ...x.name } } : {}), ...(x.description ? { description: { ...i.description, ...x.description } } : {}), ...(x.price !== undefined ? { price: x.price } : {}), ...(x.photos?.length ? { photo: x.photos[0] } : x.photo ? { photo: x.photo } : {}) } : i;
       });
     for (const n of e.added.filter((a) => a.categoryId === c.id && !e.items[a.id]?.hidden))
-      items.push({ id: n.id, categoryId: c.id, name: n.name, description: n.description, price: e.items[n.id]?.price ?? n.price, photo: n.photo, variants: [], modifierGroups: [], tags: [], status: "confirmed" });
+      items.push({ id: n.id, categoryId: c.id, name: n.name, description: n.description, price: e.items[n.id]?.price ?? n.price, photo: e.items[n.id]?.photos?.[0] ?? n.photos?.[0] ?? n.photo, variants: [], modifierGroups: [], tags: [], status: "confirmed" });
     const order = e.order[c.id];
     if (order) items.sort((a, b) => (order.indexOf(a.id) + 1 || 999) - (order.indexOf(b.id) + 1 || 999));
     return { ...c, items };

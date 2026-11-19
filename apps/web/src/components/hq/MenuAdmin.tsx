@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Check, Eye, EyeOff, Plus, Sparkles, Wand2 } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   allItems,
@@ -11,7 +11,7 @@ import {
   type MenuItem,
 } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
-import { applyEdits, menuEdits, type ItemEdit } from "@/lib/menu-edits";
+import { applyEdits, menuEdits } from "@/lib/menu-edits";
 import { saveStopList, useStopList } from "@/lib/stoplist";
 import { DishTile } from "@/components/guest/ui";
 import { Sheet } from "@/components/guest/ui";
@@ -20,15 +20,14 @@ import {
   DataTable,
   EmptyState,
   Field,
-  Group,
   PhotoPick,
-  Row,
   Switch,
   TextArea,
   TextField,
   Toolbar,
 } from "@/components/system/Kit";
 import { useDish, useTr } from "@/components/crew/prefs";
+import { DishEditor, type DishDraft } from "./DishEditor";
 
 /*
  * The menu editor (docs/09 §7–8): every category and dish, search and filters,
@@ -38,7 +37,6 @@ import { useDish, useTr } from "@/components/crew/prefs";
  */
 
 type Filter = "all" | "hidden" | "stop" | "draft";
-const LANGS = ["en", "ru", "vi"] as const;
 
 export function MenuAdmin({
   menu,
@@ -88,6 +86,23 @@ export function MenuAdmin({
   const [filter, setFilter] = useState<Filter>("all");
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const saveDraft = (id: string, d: DishDraft) =>
+    store.set((cur) => ({
+      ...cur,
+      items: {
+        ...cur.items,
+        [id]: {
+          ...cur.items[id],
+          name: d.name,
+          description: d.description,
+          price: d.price,
+          photos: d.photos,
+          photo: d.photos[0],
+          hidden: d.hidden,
+        },
+      },
+    }));
   const money = (n: number) => formatMoney(n, menu.venue.currency, "en");
   const hidden = (id: string) => !!edits.items[id]?.hidden;
   const query = q.trim().toLowerCase();
@@ -130,25 +145,25 @@ export function MenuAdmin({
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           [
-            "menu",
+            "dish",
             tr("Dishes"),
             String(allItems(published).length),
             tr("guests see them"),
           ] as const,
           [
-            "orders",
+            "draft",
             tr("Drafts"),
             String(all.filter((i) => i.status === "suggested").length),
             tr("check and confirm"),
           ] as const,
           [
-            "check",
+            "stop",
             tr("Stop-list"),
             String(stop.length),
             tr("ran out today"),
           ] as const,
           [
-            "pizza",
+            "hidden",
             tr("Hidden"),
             String(all.filter((i) => hidden(i.id)).length),
             tr("not on the menu"),
@@ -174,32 +189,24 @@ export function MenuAdmin({
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          haptic("light");
-          setAdding(true);
-        }}
-        className="press relative mt-3 block w-full text-left"
-      >
-        <ArtScene
-          name="menu"
-          tone="blue"
-          layout="row"
-          focal={48}
-          className="rounded-[24px] p-4"
+      {/* Two clear ways to add: by hand, or a photo and a few words for Yan. */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => (haptic("light"), setCreating(true))}
+          className="blue-grad press flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold"
         >
-          <p className="flex items-center gap-1.5 text-[17px] leading-tight font-bold">
-            <Sparkles size={17} strokeWidth={2.2} className="text-g-blue" />{" "}
-            {tr("Add a dish with Yan")}
-          </p>
-          <p className="mt-0.5 text-[13px] text-g-muted">
-            {tr(
-              "A photo and a few words: Yan writes the card, the translations and the allergens.",
-            )}
-          </p>
-        </ArtScene>
-      </button>
+          <Plus size={18} strokeWidth={2.6} /> {tr("Dish")}
+        </button>
+        <button
+          type="button"
+          onClick={() => (haptic("light"), setAdding(true))}
+          className="press flex h-12 items-center justify-center gap-2 rounded-full bg-g-fill text-[15px] font-semibold"
+        >
+          <Sparkles size={17} strokeWidth={2.2} className="text-g-blue" />{" "}
+          {tr("With Yan")}
+        </button>
+      </div>
 
       <div className="no-scrollbar -mx-5 mt-6 flex gap-2 overflow-x-auto px-5">
         {[
@@ -372,7 +379,8 @@ export function MenuAdmin({
       {open && (
         <DishEditor
           item={all.find((i) => i.id === open)!}
-          category={catOf.get(open)}
+          categories={menu.categories}
+          categoryId={catOf.get(open)?.id ?? menu.categories[0]!.id}
           edit={edits.items[open] ?? {}}
           stopped={stop.includes(open)}
           money={money}
@@ -380,16 +388,49 @@ export function MenuAdmin({
             saveStopList(on ? [...stop, open] : stop.filter((x) => x !== open));
             notify(on ? tr("Marked as ran out") : tr("Back in stock"));
           }}
-          onSave={(e) => {
-            store.set((cur) => ({
-              ...cur,
-              items: { ...cur.items, [open]: { ...cur.items[open], ...e } },
-            }));
+          onSave={(d) => {
+            saveDraft(open, d);
             haptic("success");
             notify(tr("Saved · guests see it now"));
             setOpen(null);
           }}
           onClose={() => setOpen(null)}
+        />
+      )}
+      {creating && (
+        <DishEditor
+          item={null}
+          categories={menu.categories}
+          categoryId={cat !== "all" ? cat : menu.categories[0]!.id}
+          edit={{}}
+          stopped={false}
+          money={money}
+          onStop={() => {}}
+          onSave={(d) => {
+            const id = `new-${Date.now()}`;
+            store.set((cur) => ({
+              ...cur,
+              added: [
+                ...cur.added,
+                {
+                  id,
+                  categoryId: d.categoryId,
+                  name: d.name,
+                  description: d.description,
+                  price: d.price,
+                  photos: d.photos,
+                  photo: d.photos[0],
+                },
+              ],
+              items: d.hidden
+                ? { ...cur.items, [id]: { hidden: true } }
+                : cur.items,
+            }));
+            haptic("success");
+            notify(tr("{name} is on the menu", { name: dish(d.name) }));
+            setCreating(false);
+          }}
+          onClose={() => setCreating(false)}
         />
       )}
       {adding && (
@@ -405,180 +446,6 @@ export function MenuAdmin({
         />
       )}
     </div>
-  );
-}
-
-/** One dish: photo, names in every language, description, price, visibility and the stop-list. */
-function DishEditor({
-  item,
-  category,
-  edit,
-  stopped,
-  money,
-  onSave,
-  onStop,
-  onClose,
-}: {
-  item: MenuItem;
-  category?: Category;
-  edit: ItemEdit;
-  stopped: boolean;
-  money: (n: number) => string;
-  onSave: (e: ItemEdit) => void;
-  onStop: (on: boolean) => void;
-  onClose: () => void;
-}) {
-  const tr = useTr();
-  const dish = useDish();
-  const [lang, setLang] = useState<(typeof LANGS)[number]>("en");
-  const [name, setName] = useState<I18nText>({ ...item.name });
-  const [desc, setDesc] = useState<I18nText>({ ...(item.description ?? {}) });
-  const [price, setPrice] = useState(String(item.price));
-  const [photo, setPhoto] = useState(edit.photo ?? item.photo);
-  const [hidden, setHidden] = useState(!!edit.hidden);
-  const p = Number(price.replace(/\D/g, ""));
-  const changed =
-    JSON.stringify([name, desc, p, photo, hidden]) !==
-    JSON.stringify([
-      item.name,
-      item.description ?? {},
-      item.price,
-      edit.photo ?? item.photo,
-      !!edit.hidden,
-    ]);
-  return (
-    <Sheet
-      open
-      wide
-      onClose={onClose}
-      label={dish(item.name)}
-      footer={
-        <button
-          type="button"
-          disabled={!changed || !p}
-          onClick={() =>
-            onSave({ name, description: desc, price: p, photo, hidden })
-          }
-          className="blue-grad press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold transition-opacity disabled:opacity-40"
-        >
-          <Check size={18} strokeWidth={2.6} />{" "}
-          {changed ? tr("Save and publish") : tr("No changes")}
-        </button>
-      }
-    >
-      <div className="grid gap-6 px-5 pt-2 pb-10 md:grid-cols-[300px_1fr] md:items-start">
-        <div className="grid gap-3">
-          {photo ? (
-            <div className="relative overflow-hidden rounded-[24px] bg-g-fill">
-              <DishTile
-                item={{ ...item, photo }}
-                role={category?.role ?? "main"}
-                photoScale={0.9}
-                className="aspect-[4/3] w-full rounded-[24px]"
-              />
-            </div>
-          ) : null}
-          <PhotoPick
-            value={undefined}
-            onChange={setPhoto}
-            label={photo ? tr("Replace the photo") : tr("Add a photo")}
-            className="aspect-[3/1]"
-          />
-          {item.status === "suggested" && (
-            <p className="rounded-[24px] bg-g-tint-orange px-4 py-3 text-[13px] leading-snug text-g-ink-2">
-              {tr(
-                "Draft from Yan: check the text and the price, then save to confirm.",
-              )}
-            </p>
-          )}
-        </div>
-        <div className="grid gap-5">
-          <div className="flex rounded-full bg-g-fill p-1">
-            {LANGS.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => (haptic("tick"), setLang(l))}
-                aria-pressed={lang === l}
-                className={`h-10 flex-1 rounded-full text-[14px] font-semibold transition-colors ${lang === l ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
-              >
-                {l.toUpperCase()}
-                {!name[l] && <span className="ml-1 text-g-orange">·</span>}
-              </button>
-            ))}
-          </div>
-          <Field
-            label={tr("Dish name")}
-            aside={
-              !name[lang] ? (
-                <button
-                  type="button"
-                  onClick={() => setName({ ...name, [lang]: name.en ?? "" })}
-                  className="flex items-center gap-1 text-[13px] font-semibold text-g-blue"
-                >
-                  <Wand2 size={14} /> {tr("Translate")}
-                </button>
-              ) : undefined
-            }
-          >
-            <TextField
-              value={name[lang] ?? ""}
-              onChange={(v) => setName({ ...name, [lang]: v })}
-              placeholder={item.name.en}
-            />
-          </Field>
-          <Field label={tr("Description")}>
-            <TextArea
-              value={desc[lang] ?? ""}
-              onChange={(v) => setDesc({ ...desc, [lang]: v })}
-              placeholder={tr("What it is, how it's made, what it goes with")}
-            />
-          </Field>
-          <Field label={tr("Price")} hint={p ? money(p) : undefined}>
-            <TextField
-              value={price}
-              onChange={(v) => setPrice(v.replace(/\D/g, ""))}
-              inputMode="numeric"
-              suffix="₫"
-            />
-          </Field>
-          <Group>
-            <Row
-              icon={hidden ? EyeOff : Eye}
-              title={tr("Guests see it")}
-              sub={
-                hidden
-                  ? tr("Hidden from the menu and the waiter's picker")
-                  : tr("On the menu")
-              }
-              right={
-                <Switch
-                  on={!hidden}
-                  onChange={(v) => setHidden(!v)}
-                  label={tr("Guests see it")}
-                />
-              }
-            />
-            <Row
-              icon={Ban}
-              title={tr("Ran out today")}
-              sub={
-                stopped
-                  ? tr("In the stop-list until a station brings it back")
-                  : tr("Kitchen and bar can mark it too")
-              }
-              right={
-                <Switch
-                  on={stopped}
-                  onChange={onStop}
-                  label={tr("Ran out today")}
-                />
-              }
-            />
-          </Group>
-        </div>
-      </div>
-    </Sheet>
   );
 }
 

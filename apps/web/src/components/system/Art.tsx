@@ -37,7 +37,13 @@ export type ArtName =
   | "cards"
   | "pin"
   | "sign"
-  | "router";
+  | "router"
+  | "dish"
+  | "draft"
+  | "stop"
+  | "hidden"
+  | "badge"
+  | "tray";
 
 const TONES: Record<
   ArtTone,
@@ -113,6 +119,12 @@ const ART: Record<ArtName, ArtTone> = {
   pin: "coral",
   sign: "green",
   router: "teal",
+  dish: "blue",
+  draft: "sunset",
+  stop: "coral",
+  hidden: "night",
+  badge: "sunset",
+  tray: "blue",
 };
 
 export function ArtTile({
@@ -481,6 +493,12 @@ const DECO: Record<ArtName, DecoKind> = {
   pin: "dots",
   sign: "sparkle",
   router: "waves",
+  dish: "sparkle",
+  draft: "dots",
+  stop: "petals",
+  hidden: "dots",
+  badge: "sparkle",
+  tray: "sparkle",
 };
 
 /** A quiet ornament centred on the subject: rays, sparkles, petals, a dot halo, ripples or clock ticks. */
@@ -1158,6 +1176,212 @@ const SUBJECT: Record<ArtName, (g: G) => ReactNode> = {
         rx="1.5"
         fill="#fff"
         opacity="0.5"
+      />
+    </g>
+  ),
+  // Dishes: a plate under a cloche, the knob catching the light.
+  dish: (g) => (
+    <g>
+      <ellipse cx="60" cy="86" rx="40" ry="9" fill="#c7d2ea" />
+      <ellipse cx="60" cy="83" rx="40" ry="9" fill={url(g, "paper")} />
+      <path d="M26 80a34 34 0 0 1 68 0z" fill={url(g, "tone")} />
+      <path d="M26 80a34 34 0 0 1 68 0z" fill="#fff" opacity="0.08" />
+      <path
+        d="M36 66a24 24 0 0 1 16-16"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="4"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <rect x="22" y="78" width="76" height="6" rx="3" fill={url(g, "deep")} />
+      <circle cx="60" cy="42" r="6" fill={url(g, "gold")} />
+      <rect x="57" y="44" width="6" height="4" fill={url(g, "deep")} />
+    </g>
+  ),
+  // Drafts: a card with lines and a pencil writing on it.
+  draft: (g) => (
+    <g>
+      <rect
+        x="28"
+        y="28"
+        width="52"
+        height="66"
+        rx="10"
+        fill="#c7d2ea"
+        transform="translate(2 3)"
+      />
+      <rect
+        x="28"
+        y="28"
+        width="52"
+        height="66"
+        rx="10"
+        fill={url(g, "paper")}
+      />
+      <rect x="36" y="38" width="28" height="6" rx="3" fill={url(g, "tone")} />
+      {[52, 62, 72].map((y, k) => (
+        <rect
+          key={y}
+          x="36"
+          y={y}
+          width={k === 2 ? 20 : 34}
+          height="4"
+          rx="2"
+          fill="#c8d0e2"
+        />
+      ))}
+      <g transform="rotate(38 82 68)">
+        <rect
+          x="76"
+          y="34"
+          width="12"
+          height="46"
+          rx="4"
+          fill={url(g, "gold")}
+        />
+        <rect
+          x="76"
+          y="34"
+          width="12"
+          height="8"
+          rx="3"
+          fill={url(g, "deep")}
+        />
+        <path d="M76 80h12l-6 12z" fill="#f4e3c8" />
+        <path d="M80.5 88h3l-1.5 4z" fill="#3a3f4b" />
+      </g>
+    </g>
+  ),
+  // Stop-list: a bowl with a round "no" sign in front of it.
+  stop: (g) => (
+    <g>
+      <path d="M24 58h52a26 22 0 0 1-52 0z" fill={url(g, "paper")} />
+      <ellipse cx="50" cy="58" rx="26" ry="5" fill="#c8d0e2" />
+      <path
+        d="M38 50c2-8 10-10 12-4M52 48c3-8 11-8 12-2"
+        fill="none"
+        stroke="#c8d0e2"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <circle cx="78" cy="74" r="20" fill={url(g, "deep")} />
+      <circle cx="78" cy="74" r="20" fill="#fff" opacity="0.08" />
+      <circle
+        cx="78"
+        cy="74"
+        r="13"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="5"
+      />
+      <path
+        d="M69 83l18-18"
+        stroke="#fff"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+    </g>
+  ),
+  // Hidden: an eye, closed, lashes down, with a soft slash.
+  hidden: (g) => (
+    <g>
+      <path
+        d="M20 60c12-18 26-26 40-26s28 8 40 26c-12 18-26 26-40 26S32 78 20 60z"
+        fill={url(g, "paper")}
+      />
+      <path
+        d="M28 62c10 10 20 14 32 14s22-4 32-14"
+        fill="none"
+        stroke={url(g, "deep")}
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      {[38, 50, 62, 74, 84].map((x, k) => (
+        <path
+          key={x}
+          d={`M${x} ${70 + (k === 0 || k === 4 ? -2 : 2)}l${k < 2 ? -3 : k > 2 ? 3 : 0} 8`}
+          stroke={url(g, "deep")}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+      ))}
+      <path
+        d="M30 36l60 52"
+        stroke={url(g, "tone")}
+        strokeWidth="7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M30 36l60 52"
+        stroke="#fff"
+        strokeWidth="2"
+        strokeLinecap="round"
+        opacity="0.4"
+      />
+    </g>
+  ),
+  // Management: a staff badge on a lanyard, a face and a star on it.
+  badge: (g) => (
+    <g>
+      <path
+        d="M44 12c2 16 9 24 16 26c7-2 14-10 16-26"
+        fill="none"
+        stroke={url(g, "tone")}
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="54" y="36" width="12" height="10" rx="3" fill={url(g, "gold")} />
+      <rect
+        x="32"
+        y="44"
+        width="56"
+        height="54"
+        rx="12"
+        fill="#c7d2ea"
+        transform="translate(2 3)"
+      />
+      <rect
+        x="32"
+        y="44"
+        width="56"
+        height="54"
+        rx="12"
+        fill={url(g, "paper")}
+      />
+      <circle cx="60" cy="62" r="9" fill={url(g, "tone")} />
+      <path d="M46 84a14 10 0 0 1 28 0z" fill={url(g, "tone")} />
+      <circle cx="80" cy="54" r="8" fill={url(g, "gold")} />
+      <path
+        d="M80 49.5l1.4 2.9 3.1.4-2.3 2.1.6 3.1-2.8-1.5-2.8 1.5.6-3.1-2.3-2.1 3.1-.4z"
+        fill="#fff"
+      />
+      <rect x="44" y="89" width="32" height="4" rx="2" fill="#c8d0e2" />
+    </g>
+  ),
+  // The hall: a waiter's round tray with a glass and a covered plate.
+  tray: (g) => (
+    <g>
+      <ellipse cx="60" cy="80" rx="42" ry="10" fill={url(g, "deep")} />
+      <ellipse cx="60" cy="77" rx="42" ry="10" fill={url(g, "paper")} />
+      <path d="M36 74a18 18 0 0 1 36 0z" fill={url(g, "tone")} />
+      <path
+        d="M42 66a12 12 0 0 1 8-8"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="3"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+      <circle cx="54" cy="54" r="3.5" fill={url(g, "gold")} />
+      <path d="M78 42h16l-3 32h-10z" fill="#e8f1ff" opacity="0.9" />
+      <path d="M80 54h12l-1.5 18h-9z" fill={url(g, "gold")} opacity="0.85" />
+      <path
+        d="M78 42h16"
+        stroke="#c8d0e2"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
     </g>
   ),

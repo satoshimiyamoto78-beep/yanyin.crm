@@ -107,7 +107,11 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
         prev: m
           ? r1000(
               amount(l, m - 1) *
-                (m === 5 && l.fixed === undefined ? 14 / 31 : m === 5 ? 14 / 30 : 1),
+                (m === 5 && l.fixed === undefined
+                  ? 14 / 31
+                  : m === 5
+                    ? 14 / 30
+                    : 1),
             )
           : 0,
         line: l,
@@ -313,6 +317,7 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
                 {
                   key: "now",
                   label: tr(MONTHS[m]!),
+                  mobile: (r) => `${r.costs ? "−" : ""}${money(r.now)}`,
                   render: (r) => (
                     <span className={r.group ? "font-bold" : ""}>
                       {r.costs ? "−" : ""}
@@ -323,6 +328,7 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
                 {
                   key: "prev",
                   label: m ? tr(MONTHS[m - 1]!) : "—",
+                  mobile: (r) => (m ? money(r.prev) : "—"),
                   render: (r) => (
                     <span className="text-g-muted">
                       {m ? full(r.prev) : "—"}
@@ -351,7 +357,7 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
               ]}
             />
             <div className="flex flex-wrap items-center gap-2">
-              <p className="flex-1 px-1 text-[12.5px] text-g-muted">
+              <p className="basis-full px-1 text-[12.5px] text-g-muted sm:basis-0 sm:flex-1">
                 {tr(
                   "Tap a line to see what it is made of. Kitchen and bar products come from received deliveries; wages from the payroll.",
                 )}
@@ -440,6 +446,8 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
               rows={PAYROLL}
               rowKey={(r) => r.id}
               initialSort={{ key: "total", dir: -1 }}
+              primary="total"
+              mobileHide={["role", "rate", "base"]}
               cols={[
                 {
                   key: "who",
@@ -537,7 +545,7 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
               ]}
             />
             <div className="flex flex-wrap items-center gap-2">
-              <p className="flex-1 px-1 text-[12.5px] text-g-muted">
+              <p className="basis-full px-1 text-[12.5px] text-g-muted sm:basis-0 sm:flex-1">
                 {tr(
                   "Hours come from clock-ins; tips from the waiters' bills; quest bonuses from finished quests. 1–15 November.",
                 )}
