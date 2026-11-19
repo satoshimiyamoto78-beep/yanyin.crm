@@ -336,12 +336,15 @@ export function PersonPage({
   onClose,
   onEdit,
   onWrite,
+  onHR,
   self,
 }: {
   p: Person;
   disabled: boolean;
   onClose: () => void;
   onEdit: () => void;
+  /** Pay, documents, time off, notes, letting go (owner and admin). */
+  onHR: () => void;
   onWrite: () => void;
   self: boolean;
 }) {
@@ -417,6 +420,13 @@ export function PersonPage({
               <Send size={16} strokeWidth={2.2} /> {tr("Write")}
             </button>
           )}
+          <button
+            type="button"
+            onClick={onHR}
+            className="press h-12 flex-1 rounded-full bg-g-fill text-[15px] font-semibold"
+          >
+            {tr("Employment")}
+          </button>
           <button
             type="button"
             onClick={onEdit}

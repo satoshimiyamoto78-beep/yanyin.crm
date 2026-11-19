@@ -98,6 +98,7 @@ import { FinanceAdmin } from "./FinanceAdmin";
 import { ShiftsAdmin } from "./ShiftsAdmin";
 import { ChecklistsAdmin } from "./ChecklistsAdmin";
 import { QuestsAdmin } from "./QuestsAdmin";
+import { HRPage, TeamTabs } from "./TeamOps";
 import { StockAdmin } from "./StockAdmin";
 import { PersonPage } from "./Player";
 import {
@@ -194,6 +195,7 @@ function Console({ menu }: { menu: Menu }) {
   const me = team.find((p) => p.id === (owner ? OWNER : ME))!;
   const [person, setPerson] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [hrFor, setHrFor] = useState<string | null>(null);
   const [offIds, setOffIds] = useState<string[]>([]);
   const [teamGroup, setTeamGroup] = useState<Group | null>(null);
   const [arranging, setArranging] = useState(false);
@@ -480,10 +482,18 @@ function Console({ menu }: { menu: Menu }) {
         </button>
       ),
       body: (
-        <TeamGroups
+        <TeamTabs
           team={team}
-          offIds={offIds}
-          onGroup={(g) => (haptic("light"), setTeamGroup(g))}
+          notify={say}
+          onInvite={() => setInviting(true)}
+          onPerson={(id) => (haptic("light"), setPerson(id))}
+          groups={
+            <TeamGroups
+              team={team}
+              offIds={offIds}
+              onGroup={(g) => (haptic("light"), setTeamGroup(g))}
+            />
+          }
         />
       ),
     },
@@ -1189,12 +1199,20 @@ function Console({ menu }: { menu: Menu }) {
           disabled={offIds.includes(person)}
           onClose={() => setPerson(null)}
           onEdit={() => setEditing(person)}
+          onHR={() => setHrFor(person)}
           onWrite={() => {
             const h = team.find((x) => x.id === person)!.handle;
             setPerson(null);
             setDraft(`@${h} `);
             compose();
           }}
+        />
+      )}
+      {hrFor && team.some((x) => x.id === hrFor) && (
+        <HRPage
+          p={team.find((x) => x.id === hrFor)!}
+          onClose={() => setHrFor(null)}
+          notify={say}
         />
       )}
       {editing && team.some((x) => x.id === editing) && (
