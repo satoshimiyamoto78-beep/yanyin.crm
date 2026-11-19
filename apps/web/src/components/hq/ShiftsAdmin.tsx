@@ -56,7 +56,7 @@ import { useLocale, useTr } from "@/components/crew/prefs";
  *    phone), the gaps under it, each person's hours for the week; publish
  *    sends it to the team.
  *  - History: every closed shift with its Z-report (money, cash, people,
- *    checklists, what happened). Kept per the retention rules (ADR-019).
+ *    checklists, what happened). Kept per the retention rules (ADR-020).
  */
 
 type Tab = "today" | "plan" | "history";
