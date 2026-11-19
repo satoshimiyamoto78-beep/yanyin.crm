@@ -676,6 +676,8 @@ export const RU_OPS: Record<string, string> = {
   "Start tickets as soon as they come in; prep before the rush.": "Берите заказы сразу; готовьте заготовки до наплыва.",
   "Taste before sending; keep portions to the photo.": "Пробуйте перед выдачей; порция — как на фото.",
   "Quest": "Квест",
+  "Make it smaller": "Свернуть",
+  "Full screen": "На весь экран",
 };
 export const VI_OPS: Record<string, string> = {
   "You are invited to {venue}": "Bạn được mời vào {venue}",
@@ -895,4 +897,6 @@ export const VI_OPS: Record<string, string> = {
   "Start tickets as soon as they come in; prep before the rush.": "Bắt đầu phiếu ngay khi đến; sơ chế trước giờ cao điểm.",
   "Taste before sending; keep portions to the photo.": "Nếm trước khi ra món; giữ phần như ảnh.",
   "Quest": "Nhiệm vụ",
+  "Make it smaller": "Thu nhỏ",
+  "Full screen": "Toàn màn hình",
 };
