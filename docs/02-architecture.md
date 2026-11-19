@@ -113,7 +113,7 @@ yanyin.crm — SaaS-платформа для HoReCa
 | AI | Claude API, pgvector | Yan, поиск по меню и рецептам |
 | Платежи | Адаптеры: Payme, Click, Uzum, Alif, Корти Милли / нац. QR, Stripe | Локальные рынки |
 | Фискализация | Адаптеры виртуальных касс / ОФД (UZ, TJ) | Обязательно по закону |
-| Хостинг | Vercel + Supabase | Минимум DevOps на старте |
+| Хостинг | Vercel + Supabase, по проекту на регион-ячейку (ADR-019) | Минимум DevOps на старте; всё переносимо: Postgres и Next.js в контейнере |
 | Мониторинг | Sentry, логи Vercel | Ошибки и производительность |
 | CI/CD | GitHub Actions | Тесты, линт, миграции |
 
