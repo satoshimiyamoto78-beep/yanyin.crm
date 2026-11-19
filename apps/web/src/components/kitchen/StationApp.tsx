@@ -49,19 +49,18 @@ import {
 } from "@/components/guest/motion";
 import { Sheet } from "@/components/guest/ui";
 import { ArtScene, ArtTile } from "@/components/system/Art";
-import {
-  DishInfo,
-  Masonry,
-  Pass,
-  Picker,
-  Ticket,
-  ticketWeight,
-} from "./KdsParts";
+import { DishInfo, Picker } from "./KdsParts";
+import { Board } from "./Board";
 import { NorthSky } from "@/components/system/NorthSky";
 import { BrandQr, OfflineBar, PinPad } from "@/components/system/Kit";
 import { ThemeToggle } from "@/components/system/ThemeToggle";
 import { ChecklistPage } from "@/components/crew/Checklist";
-import { CrewPrefsProvider, useDish, useTr } from "@/components/crew/prefs";
+import {
+  CrewPrefsProvider,
+  useDish,
+  useLocale,
+  useTr,
+} from "@/components/crew/prefs";
 
 /*
  * yanyin.kitchen: one screen per station on a wall tablet (bar, hot kitchen,
@@ -177,6 +176,7 @@ export function StationApp({ menu }: { menu: Menu }) {
 
 function Screen({ menu }: { menu: Menu }) {
   const tr = useTr();
+  const locale = useLocale();
   const [station, setStation] = useState<Station | null>(null);
   // A shared wall tablet signs in with a code from the admin console, not a personal login.
   const [paired, setPaired] = useState<boolean | null>(null);
@@ -470,7 +470,7 @@ function Screen({ menu }: { menu: Menu }) {
       />
       <Island notice={notice} />
       {/* Header in two calm rows: who and where with the clock and tools; then five figures in glass tiles. */}
-      <section className="relative isolate pt-[max(12px,env(safe-area-inset-top))] pb-5 text-white">
+      <section className="relative isolate pt-[max(12px,env(safe-area-inset-top))] pb-8 text-white">
         <NorthSky />
         <div className="flex items-center gap-2 px-4 sm:px-6">
           <button
@@ -543,60 +543,85 @@ function Screen({ menu }: { menu: Menu }) {
             />
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-5 gap-1.5 px-4 sm:gap-2 sm:px-6">
-          {stats.map((st, i) => (
-            <button
-              key={st.label}
-              type="button"
-              onClick={i === 4 ? () => setSheet("checklist") : undefined}
-              className="min-w-0 rounded-[16px] bg-white/12 px-2.5 py-2 text-left backdrop-blur-[2px] sm:px-3.5"
-            >
-              <span className="block truncate text-[11px] font-semibold text-white/65 sm:text-[12px]">
-                {st.label}
-              </span>
-              <span
-                className={`live block truncate text-[19px] leading-tight font-bold tabular-nums sm:text-[24px] ${st.tone ?? ""}`}
-              >
-                {st.value}
-              </span>
-            </button>
-          ))}
-        </div>
       </section>
 
       {/* Above the sky's soft lower edge, so the first rows are never washed out. */}
-      <div className="relative z-10 flex flex-col gap-3 px-3 pb-10 sm:px-5 lg:flex-row lg:items-start">
-        {/* The queue, oldest first, packed into columns with no holes. */}
-        <Reveal key={station} as="main" className="min-w-0 flex-1">
-          {queue.length ? (
-            <Masonry
-              items={queue}
-              keyOf={(o) => o.id}
-              weight={(o) => ticketWeight(o, station)}
-              min={290}
-              render={(o) => (
-                <Ticket
-                  order={o}
-                  station={station}
-                  minute={minute}
-                  elapsed={
-                    <Elapsed
-                      since={o.at}
-                      tone={ageTone(
-                        Math.max(0, minute - Math.floor(secOf(o.at) / 60)),
-                      )}
-                    />
-                  }
-                  fresh={fresh === o.id}
-                  leaving={leaving.includes(o.id)}
-                  stop={stop}
-                  onLine={(l) => tapLine(o, l)}
-                  onAll={() => allReady(o)}
-                  onInfo={(l) => setInfo2(l.id)}
-                />
-              )}
+      {/* Above the sky's soft lower edge: the board, three columns. */}
+      <Reveal
+        key={station}
+        as="main"
+        className="relative z-10 px-3 pb-10 sm:px-5"
+      >
+        {/* A board bar, like the reference: the day and the shift on the left, what to watch on the right. */}
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[22px] border border-g-line bg-g-fill/60 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-[17px] leading-tight font-bold">{tr("Today")}</p>
+            <p className="text-[12.5px] text-g-muted">
+              {(() => {
+                const d = new Date(2026, 10, 14).toLocaleDateString(locale, {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                });
+                return d.charAt(0).toUpperCase() + d.slice(1);
+              })()}{" "}
+              · {tr("shift is on")}
+            </p>
+          </div>
+          <span className="hidden h-8 w-px bg-g-line sm:block" />
+          <p className="flex items-baseline gap-2">
+            <span className="live text-[26px] leading-none font-bold tabular-nums">
+              {count("new") + count("making")}
+            </span>
+            <span className="text-[13px] text-g-muted">
+              {tr("dish in work|dishes in work", {
+                n: count("new") + count("making"),
+              })}
+            </span>
+          </p>
+          <div className="ml-auto flex flex-wrap gap-1.5">
+            {stats.slice(3).map((st, i) => (
+              <button
+                key={st.label}
+                type="button"
+                onClick={i === 1 ? () => setSheet("checklist") : undefined}
+                className="flex h-9 items-center gap-1.5 rounded-full bg-g-card px-3 text-[13px] font-semibold"
+              >
+                <span className="text-g-muted">{st.label}</span>
+                <span className={`live tabular-nums ${st.tone ?? ""}`}>
+                  {st.value}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <Board
+          orders={orders.filter(
+            (o) => !served.includes(o.id) && o.lines.some(mine),
+          )}
+          station={station}
+          minute={minute}
+          fresh={fresh}
+          leaving={leaving}
+          stop={stop}
+          elapsed={(o) => (
+            <Elapsed
+              since={o.at}
+              tone={ageTone(Math.max(0, minute - Math.floor(secOf(o.at) / 60)))}
             />
-          ) : (
+          )}
+          onLine={tapLine}
+          onAll={allReady}
+          onInfo={(l) => setInfo2(l.id)}
+          onServed={(id) => (haptic("success"), setServed((s) => [...s, id]))}
+          notify={(t) =>
+            notify({
+              title: t,
+              tone: "green",
+              icon: <Check size={16} strokeWidth={2.6} />,
+            })
+          }
+          empty={
             <ArtScene
               name={info?.art ?? "kitchen"}
               layout="row"
@@ -610,18 +635,9 @@ function Screen({ menu }: { menu: Menu }) {
                 {tr("New orders appear here with a chime")}
               </p>
             </ArtScene>
-          )}
-        </Reveal>
-
-        {/* The pass: the waiter or runner takes it. */}
-        <aside className="order-first w-full shrink-0 lg:sticky lg:top-3 lg:order-none lg:w-[290px]">
-          <Pass
-            ready={ready}
-            station={station}
-            onServed={(id) => setServed((s) => [...s, id])}
-          />
-        </aside>
-      </div>
+          }
+        />
+      </Reveal>
 
       {infoLine && (
         <DishInfo

@@ -1419,6 +1419,13 @@ export const RU_OPS: Record<string, string> = {
   "Mar": "Мар",
   "Apr": "Апр",
   "May": "Май",
+  "@{h} is called to the pass": "@{h} позвали на раздачу",
+  "Call @{h}": "Позвать @{h}",
+  "Print the ticket": "Напечатать бегунок",
+  "Sent to the kitchen printer": "Отправлено на кухонный принтер",
+  "Start a dish and it moves here": "Начните блюдо — заказ переедет сюда",
+  "shift is on": "смена идёт",
+  "waiter": "официант",
 };
 export const VI_OPS: Record<string, string> = {
   "You are invited to {venue}": "Bạn được mời vào {venue}",
@@ -2433,4 +2440,11 @@ export const VI_OPS: Record<string, string> = {
   "Apr": "Th4",
   "May": "Th5",
   "yesterday": "hôm qua",
+  "@{h} is called to the pass": "Đã gọi @{h} ra quầy",
+  "Call @{h}": "Gọi @{h}",
+  "Print the ticket": "In phiếu",
+  "Sent to the kitchen printer": "Đã gửi tới máy in bếp",
+  "Start a dish and it moves here": "Bắt đầu món, đơn sẽ chuyển sang đây",
+  "shift is on": "ca đang chạy",
+  "waiter": "phục vụ",
 };
