@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Download,
   FileText,
-  Landmark,
   Plus,
   Receipt,
   Wallet,
@@ -16,7 +15,6 @@ import { useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { TEAM } from "@/lib/demo-team";
 import {
-  BALANCES,
   entries,
   extraStore,
   lineAmount,
@@ -27,7 +25,6 @@ import {
   PAYROLL,
   PNL,
   TAKINGS,
-  UPCOMING,
   type Entry,
   type PnlLine,
 } from "@/lib/demo-money";
@@ -38,6 +35,13 @@ import { Delta, ReportTable } from "@/components/system/ReportTable";
 import { compactMoney as shortMoney } from "@/components/crew/CrewApp";
 import { CountMoney } from "@/components/guest/motion";
 import { useTr } from "@/components/crew/prefs";
+import {
+  AccountsView,
+  BudgetView,
+  CloseView,
+  ExpensesView,
+  ForecastView,
+} from "./FinanceParts";
 
 /*
  * The owner's money (ADR-017, docs/07 §86). One month at a time, any month
@@ -54,7 +58,15 @@ const money = (n: number) =>
     : shortMoney(n);
 const r1000 = (n: number) => Math.round(n / 1000) * 1000;
 const full = (n: number) => `${Math.round(n).toLocaleString("en-US")} ₫`;
-type Tab = "pnl" | "cash" | "payroll" | "tax";
+type Tab =
+  | "pnl"
+  | "money"
+  | "expenses"
+  | "payroll"
+  | "budget"
+  | "forecast"
+  | "tax"
+  | "close";
 
 export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
   const tr = useTr();
@@ -275,9 +287,13 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
         {(
           [
             ["pnl", "Profit and loss"],
-            ["cash", "Money and payments"],
+            ["money", "Accounts"],
+            ["expenses", "Expenses and bills"],
             ["payroll", "Payroll"],
+            ["budget", "Budget"],
+            ["forecast", "Forecast"],
             ["tax", "Taxes"],
+            ["close", "Closing the month"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -373,72 +389,18 @@ export function FinanceAdmin({ notify }: { notify: (t: string) => void }) {
           </>
         )}
 
-        {tab === "cash" && (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <WidgetCard
-              title={tr("Money on hand")}
-              icon={<Landmark size={13} strokeWidth={2.4} />}
-              aside={
-                <span className="live text-[13px] font-bold tabular-nums">
-                  {money(BALANCES.reduce((n, b) => n + b.amount, 0))}
-                </span>
-              }
-            >
-              <div className="mt-2 grid gap-1">
-                {BALANCES.map((b) => (
-                  <div
-                    key={b.label}
-                    className="flex items-center justify-between gap-3 py-2"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-[14.5px] font-semibold">
-                        {tr(b.label)}
-                      </span>
-                      <span className="block text-[12.5px] text-g-muted">
-                        {tr(b.note)}
-                      </span>
-                    </span>
-                    <span className="live shrink-0 text-[15px] font-semibold tabular-nums">
-                      {full(b.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </WidgetCard>
-            <WidgetCard
-              title={tr("Coming up")}
-              icon={<CalendarClock size={13} strokeWidth={2.4} />}
-              aside={
-                <span className="live text-[13px] font-bold tabular-nums">
-                  −{money(UPCOMING.reduce((n, u) => n + u.amount, 0))}
-                </span>
-              }
-            >
-              <div className="mt-2 grid gap-1">
-                {UPCOMING.map((u) => (
-                  <div key={u.text} className="flex items-center gap-3 py-2">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-white text-center leading-none [[data-scheme=dark]_&]:bg-g-card">
-                      <span>
-                        <span className="block text-[15px] font-bold tabular-nums">
-                          {u.date.split(" ")[0]}
-                        </span>
-                        <span className="text-[10px] text-g-muted uppercase">
-                          {tr(u.date.split(" ")[1]!)}
-                        </span>
-                      </span>
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">
-                      {tr(u.text)}
-                    </span>
-                    <span className="live shrink-0 text-[14.5px] font-semibold tabular-nums">
-                      −{money(u.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </WidgetCard>
-          </div>
+        {tab === "money" && <AccountsView notify={notify} />}
+        {tab === "expenses" && <ExpensesView notify={notify} />}
+        {tab === "budget" && (
+          <BudgetView
+            m={m}
+            factOf={(id) =>
+              amount(PNL.flatMap((g) => g.lines).find((l) => l.id === id)!, m)
+            }
+          />
         )}
+        {tab === "forecast" && <ForecastView />}
+        {tab === "close" && <CloseView m={m} notify={notify} />}
 
         {tab === "payroll" && (
           <>
