@@ -319,24 +319,32 @@ export function RouletteSheet({
           </div>
         )}
 
-        {/* Mood: two rows that scroll sideways, so ten moods take the room of two lines. */}
+        {/* Mood: two rows, each scrolls sideways on its own. */}
         <section className="mt-9">
           <StepHead title={ui(lang, "mood")} />
-          <div className="no-scrollbar -mx-5 grid grid-flow-col grid-rows-2 justify-start gap-2 overflow-x-auto px-5 [grid-auto-columns:max-content]">
-            {moods.map((m) => {
-              const { key, icon: Icon } = MOODS[m];
-              return (
-                <ChoiceChip
-                  key={m}
-                  on={m === mood}
-                  onClick={() => setMood(m)}
-                  icon={<Icon size={16} strokeWidth={2} />}
-                >
-                  {ui(lang, key)}
-                </ChoiceChip>
-              );
-            })}
-          </div>
+          {[
+            moods.slice(0, Math.ceil(moods.length / 2)),
+            moods.slice(Math.ceil(moods.length / 2)),
+          ].map((row, r) => (
+            <div
+              key={r}
+              className={`no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 ${r ? "mt-2" : ""}`}
+            >
+              {row.map((m) => {
+                const { key, icon: Icon } = MOODS[m];
+                return (
+                  <ChoiceChip
+                    key={m}
+                    on={m === mood}
+                    onClick={() => setMood(m)}
+                    icon={<Icon size={16} strokeWidth={2} />}
+                  >
+                    {ui(lang, key)}
+                  </ChoiceChip>
+                );
+              })}
+            </div>
+          ))}
         </section>
 
         {/* Guests and budget in one compact card: guests and the table total on top, the per-guest slider, four quick levels. */}
