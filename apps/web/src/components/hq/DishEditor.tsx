@@ -17,7 +17,13 @@ import {
   X,
 } from "lucide-react";
 import { useId, useState } from "react";
-import type { Category, I18nText, MenuItem } from "@yanyin/domain";
+import type {
+  Category,
+  I18nText,
+  MenuItem,
+  ModifierGroup,
+  Station,
+} from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import { STOCK } from "@/lib/demo-stock";
 import {
@@ -28,7 +34,8 @@ import {
   techStore,
   type TechCard,
 } from "@/lib/techcards";
-import type { ItemEdit } from "@/lib/menu-edits";
+import type { ItemEdit, PriceChange } from "@/lib/menu-edits";
+import { DishSections, SectionNav, type DishExtra } from "./DishSections";
 import { Sheet } from "@/components/guest/ui";
 import { DishTile } from "@/components/guest/ui";
 import { Group, Row, Switch } from "@/components/system/Kit";
@@ -50,7 +57,7 @@ export type DishDraft = {
   photos: string[];
   categoryId: string;
   hidden: boolean;
-};
+} & DishExtra;
 const MAX_PHOTOS = 5;
 
 export function DishEditor({
@@ -63,6 +70,12 @@ export function DishEditor({
   onSave,
   onStop,
   onClose,
+  library,
+  defaultStation,
+  history,
+  onDuplicate,
+  onArchive,
+  onNewGroup,
 }: {
   /** Null when creating a dish. */
   item: MenuItem | null;
@@ -74,6 +87,12 @@ export function DishEditor({
   onSave: (d: DishDraft) => void;
   onStop: (on: boolean) => void;
   onClose: () => void;
+  library: ModifierGroup[];
+  defaultStation: Station;
+  history: PriceChange[];
+  onDuplicate: () => void;
+  onArchive: () => void;
+  onNewGroup: () => void;
 }) {
   const tr = useTr();
   const dish = useDish();
@@ -92,6 +111,27 @@ export function DishEditor({
   const [cat, setCat] = useState(categoryId);
   const [hidden, setHidden] = useState(!!edit.hidden);
   const [tech, setTech] = useState(false);
+  const [extra, setExtra] = useState<DishExtra>({
+    variants:
+      edit.variants ??
+      item?.variants.map((v) => ({
+        id: v.id,
+        name: dish(v.name),
+        price: v.price,
+      })) ??
+      [],
+    modIds: edit.modIds ?? item?.modifierGroups.map((g) => g.id) ?? [],
+    station: edit.station,
+    cookMin: edit.cookMin,
+    tags: edit.tags ?? item?.tags ?? [],
+    allergens: edit.allergens ?? [],
+    weight: edit.weight,
+    kcal: edit.kcal,
+    spicy: edit.spicy,
+    channels: edit.channels,
+    schedule: edit.schedule ?? null,
+    vat: edit.vat,
+  });
   const card = techCardFor(id, item?.name.en, techs);
   const p = Number(price.replace(/\D/g, ""));
   const cost = cardCost(card);
@@ -113,6 +153,7 @@ export function DishEditor({
       photos,
       categoryId: cat,
       hidden,
+      ...extra,
     });
 
   return (
@@ -133,7 +174,25 @@ export function DishEditor({
         </button>
       }
     >
-      <div className="grid gap-6 px-5 pt-2 pb-10 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] md:items-start">
+      <div className="sticky top-0 z-10 bg-[var(--g-bg)] px-5">
+        <SectionNav
+          items={[
+            ["d-main", tr("Main")],
+            ["d-variants", tr("Sizes")],
+            ["d-mods", tr("Modifiers")],
+            ["d-kitchen", tr("Kitchen")],
+            ["d-guest", tr("For the guest")],
+            ["d-sale", tr("Sale")],
+            ...(item
+              ? ([["d-history", tr("History")]] as [string, string][])
+              : []),
+          ]}
+        />
+      </div>
+      <div
+        id="d-main"
+        className="grid scroll-mt-20 gap-6 px-5 pt-2 pb-4 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] md:items-start"
+      >
         {/* Photos: the cover large, the rest as thumbnails; tap a thumbnail to make it the cover. */}
         <div className="grid gap-2">
           <div className="relative overflow-hidden rounded-[24px] bg-g-fill">
@@ -399,6 +458,21 @@ export function DishEditor({
             <p className="px-1 text-[12.5px] text-g-faint">{money(p)}</p>
           )}
         </div>
+      </div>
+      <div className="px-5 pb-10">
+        <DishSections
+          value={extra}
+          onChange={setExtra}
+          basePrice={p}
+          library={library}
+          defaultStation={defaultStation}
+          history={history}
+          isNew={!item}
+          archived={!!edit.archived}
+          onDuplicate={onDuplicate}
+          onArchive={onArchive}
+          onNewGroup={onNewGroup}
+        />
       </div>
       {tech && (
         <TechCardSheet

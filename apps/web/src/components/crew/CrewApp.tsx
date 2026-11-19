@@ -1287,7 +1287,7 @@ const lineId = () => `n${++lineSeq}`;
 function OrderPicker({ table, menu: seedMenu, money, onClose, onSend }: { table: FloorTable; menu: Menu; money: (n: number) => string; onClose: () => void; onSend: (lines: TicketLine[]) => void }) {
   // The waiter picks from the menu as the admin published it.
   const edits = menuEdits(seedMenu.venue.slug).use();
-  const menu = useMemo(() => applyEdits(seedMenu, edits), [seedMenu, edits]);
+  const menu = useMemo(() => applyEdits(seedMenu, edits, "waiter"), [seedMenu, edits]);
   const tr = useTr();
   const dish = useDish();
   const [q, setQ] = useState("");
