@@ -67,7 +67,7 @@ import { saveStopList, useStopList } from "@/lib/stoplist";
 import {
   CountMoney,
   Island,
-  loadIfChanged,
+  startLoading,
   Reveal,
   ToTop,
   type IslandNotice,
@@ -90,15 +90,14 @@ import {
 } from "@/components/system/Kit";
 import { RoleSwitch } from "@/components/auth/RoleSwitch";
 import { MenuAdmin } from "./MenuAdmin";
-import { FloorAdmin, OrdersAdmin, ReportsAdmin } from "./OpsAdmin";
-import {
-  ChecklistsAdmin,
-  QuestsAdmin,
-  ShiftsAdmin,
-  TasksAdmin,
-} from "./PeopleAdmin";
+import { FloorAdmin, OrdersAdmin } from "./OpsAdmin";
+import { ReportsAdmin } from "./ReportsAdmin";
+import { TasksAdmin } from "./PeopleAdmin";
 import { SettingsAdmin } from "./SettingsAdmin";
 import { FinanceAdmin } from "./FinanceAdmin";
+import { ShiftsAdmin } from "./ShiftsAdmin";
+import { ChecklistsAdmin } from "./ChecklistsAdmin";
+import { QuestsAdmin } from "./QuestsAdmin";
 import { StockAdmin } from "./StockAdmin";
 import { PersonPage } from "./Player";
 import {
@@ -119,7 +118,7 @@ import { ChecklistPage } from "@/components/crew/Checklist";
 import { SectionTitle } from "@/components/crew/CrewBoard";
 import { compactMoney, ShiftMoney } from "@/components/crew/CrewApp";
 import { YanChat } from "@/components/crew/YanChat";
-import { CrewPrefsProvider, useTr } from "@/components/crew/prefs";
+import { CrewPrefsProvider, useDish, useTr } from "@/components/crew/prefs";
 
 /*
  * yanyin.hq: the owner's and admin's console, phone first, built from the same
@@ -167,6 +166,7 @@ export function HqApp({ menu }: { menu: Menu }) {
 
 function Console({ menu }: { menu: Menu }) {
   const tr = useTr();
+  const dish = useDish();
   const scheme = useScheme();
   const [tab, setTab] = useState<Tab>("overview");
   const [sub, setSub] = useState<Section | null>(null);
@@ -236,7 +236,7 @@ function Console({ menu }: { menu: Menu }) {
   // Picking a section closes whatever page or sheet is on top, so the new section is what you see.
   const go = (t: Tab) => {
     haptic("light");
-    loadIfChanged(`hq:${t}`, "1"); // first visit to a section: its data blurs in
+    startLoading(420); // every section opens with its data blurring into focus
     setSub(null);
     setRoles(false);
     setQuick(false);
@@ -261,7 +261,7 @@ function Console({ menu }: { menu: Menu }) {
     if (desktop || id === "menu" || id === "team") go(id);
     else {
       haptic("light");
-      loadIfChanged(`hq:${id}`, "1");
+      startLoading(420);
       setSub(id);
     }
   };
@@ -315,6 +315,33 @@ function Console({ menu }: { menu: Menu }) {
   const lateN = progress.reduce((n, l) => n + l.p.late.length, 0);
   const openChecklist = (key: string) => {
     setOpenList(key);
+  };
+
+  // Today's money and the closing items, for closing the shift.
+  const shiftToday = {
+    takings,
+    bills: floor.history.length,
+    guests: floor.history.reduce((n, o) => n + o.guests, 0),
+    tips: floor.history.reduce((n, o) => n + o.tip, 0),
+    pay: (["cash", "card", "vietqr", "momo"] as const).reduce(
+      (a, m) => ({
+        ...a,
+        [m]: floor.history
+          .filter((o) => o.method === m)
+          .reduce((n, o) => n + total5(o.subtotal, o.tip), 0),
+      }),
+      { cash: 0, card: 0, vietqr: 0, momo: 0 },
+    ),
+  };
+  const closeItems = lists.flatMap((l) =>
+    l.tpl.items
+      .filter((i) => i.phase === "close")
+      .map((i) => ({ title: i.title, done: !!runs[l.key]?.marks[i.id] })),
+  );
+  const closingLists = {
+    done: closeItems.filter((i) => i.done).length,
+    total: closeItems.length,
+    left: closeItems.filter((i) => !i.done).map((i) => i.title),
   };
 
   // What needs the admin now, most urgent first: one row, one action (the waiter's ActionList).
@@ -478,13 +505,21 @@ function Console({ menu }: { menu: Menu }) {
       title: tr("Reports"),
       sub: tr("Takings, dishes, waiters, payments"),
       art: "sales",
-      body: <ReportsAdmin floor={floor} menu={menu} notify={say} />,
+      body: <ReportsAdmin menu={menu} notify={say} />,
     },
     shifts: {
       title: tr("Shifts"),
       sub: tr("Today's shift and the week's schedule"),
       art: "shifts",
-      body: <ShiftsAdmin team={team} notify={say} />,
+      body: (
+        <ShiftsAdmin
+          team={team}
+          notify={say}
+          owner={owner}
+          today={shiftToday}
+          closing={closingLists}
+        />
+      ),
     },
     news: {
       title: tr("News and tasks"),
@@ -583,6 +618,7 @@ function Console({ menu }: { menu: Menu }) {
         <ChecklistsAdmin
           lists={lists}
           runs={runs}
+          team={team}
           onOpenRun={setOpenList}
           notify={say}
         />
@@ -592,7 +628,13 @@ function Console({ menu }: { menu: Menu }) {
       title: tr("Quests"),
       sub: tr("Goals and rewards for the team"),
       art: "trophy",
-      body: <QuestsAdmin notify={say} />,
+      body: (
+        <QuestsAdmin
+          team={team}
+          dishes={items.slice(0, 12).map((i) => dish(i.name))}
+          notify={say}
+        />
+      ),
     },
     settings: {
       title: tr("Settings"),
@@ -1044,7 +1086,12 @@ function Console({ menu }: { menu: Menu }) {
           {sectionPage(sub, false)}
         </Sheet>
       )}
-      {roles && <RoleSwitch current={owner ? "owner" : "hq"} onClose={() => setRoles(false)} />}
+      {roles && (
+        <RoleSwitch
+          current={owner ? "owner" : "hq"}
+          onClose={() => setRoles(false)}
+        />
+      )}
       {quick && (
         <QuickSheet
           onClose={() => setQuick(false)}

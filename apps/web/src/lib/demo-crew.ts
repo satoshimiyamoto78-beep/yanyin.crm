@@ -1,16 +1,40 @@
-import { allItems, questProgress, type DomainEvent, type Menu, type Quest } from "@yanyin/domain";
+import {
+  allItems,
+  questProgress,
+  type DomainEvent,
+  type Menu,
+  type Quest,
+} from "@yanyin/domain";
 
 /**
  * Demo data for the quest board. In Phase 1 these come from the database and
  * quest progress is evaluated from real `domain_events` (ADR-005).
  */
-export type CrewQuest = Quest & { progress: number; state: "active" | "available" | "done" };
+export type CrewQuest = Quest & {
+  progress: number;
+  state: "active" | "available" | "done";
+};
 
 export type CrewData = {
-  staff: { id: string; name: string; role: string; venue: string; avatar: string; xp: number; streakDays: number; week: boolean[] };
+  staff: {
+    id: string;
+    name: string;
+    role: string;
+    venue: string;
+    avatar: string;
+    xp: number;
+    streakDays: number;
+    week: boolean[];
+  };
   today: { sales: number; tips: number; avgCheck: number; tables: number };
   quests: CrewQuest[];
-  boss: { title: string; progress: number; target: number; reward: string; endsIn: string };
+  boss: {
+    title: string;
+    progress: number;
+    target: number;
+    reward: string;
+    endsIn: string;
+  };
   badges: { id: string; name: string; emoji: string; earned: boolean }[];
   leaderboard: { name: string; xp: number; me?: boolean }[];
   currency: Menu["venue"]["currency"];
@@ -20,10 +44,12 @@ const ME = "staff-linh";
 
 export function demoCrew(menu: Menu): CrewData {
   const items = allItems(menu);
-  const ids = (re: RegExp) => items.filter((i) => re.test(i.name.en ?? "")).map((i) => i.id);
+  const ids = (re: RegExp) =>
+    items.filter((i) => re.test(i.name.en ?? "")).map((i) => i.id);
   const plov = ids(/plov/i);
   const shashlik = ids(/shashlik|kebab/i);
-  const dessertCat = menu.categories.find((c) => c.role === "dessert")?.id ?? "desserts";
+  const dessertCat =
+    menu.categories.find((c) => c.role === "dessert")?.id ?? "desserts";
 
   const served = (itemId: string, qty: number, staffId = ME): DomainEvent => ({
     type: "order_item.served",
@@ -34,7 +60,9 @@ export function demoCrew(menu: Menu): CrewData {
     amount: (items.find((i) => i.id === itemId)?.price ?? 0) * qty,
     at: "2026-11-08T12:00:00+07:00",
   });
-  const dessertItems = items.filter((i) => i.categoryId === dessertCat).map((i) => i.id);
+  const dessertItems = items
+    .filter((i) => i.categoryId === dessertCat)
+    .map((i) => i.id);
   const events: DomainEvent[] = [
     served(plov[0]!, 2),
     served(plov[1]!, 1),
@@ -126,10 +154,21 @@ export function demoCrew(menu: Menu): CrewData {
     },
     today: { sales: 4_820_000, tips: 210_000, avgCheck: 602_000, tables: 8 },
     quests: base.map((q) => {
-      const progress = q.state === "available" ? 0 : questProgress(q, events, ME);
-      return { ...q, progress, state: q.state === "active" && progress >= q.target ? "done" : q.state };
+      const progress =
+        q.state === "available" ? 0 : questProgress(q, events, ME);
+      return {
+        ...q,
+        progress,
+        state: q.state === "active" && progress >= q.target ? "done" : q.state,
+      };
     }),
-    boss: { title: "Team boss fight: 60M ₫ this week", progress: 41_200_000, target: 60_000_000, reward: "+300k ₫ each", endsIn: "3 days left" },
+    boss: {
+      title: "Team boss fight: 60M ₫ this week",
+      progress: 41_200_000,
+      target: 60_000_000,
+      reward: "+300k ₫ each",
+      endsIn: "3 days left",
+    },
     badges: [
       { id: "upsell", name: "Upsell King", emoji: "👑", earned: true },
       { id: "speed", name: "Speed Demon", emoji: "⚡", earned: true },

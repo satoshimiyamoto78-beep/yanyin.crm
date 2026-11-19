@@ -46,7 +46,7 @@ import {
 } from "@/lib/demo-kitchen";
 import {
   Island,
-  loadIfChanged,
+  startLoading,
   Reveal,
   type IslandNotice,
 } from "@/components/guest/motion";
@@ -374,7 +374,7 @@ function Screen({ menu }: { menu: Menu }) {
         }}
         onPick={(s) => {
           haptic("success");
-          loadIfChanged(`kds:${s}`, "1");
+          startLoading(420);
           setStation(s);
           write("yanyin:kds-station", s);
           if (picking) history.back();

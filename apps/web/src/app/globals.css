@@ -770,3 +770,18 @@ html[data-scrolling] .aurora::after,
 @media (prefers-reduced-motion: reduce) {
   .stagger > *, .animate-leave { animation: none; }
 }
+
+/* A grid without its own columns never grows wider than its box: one column
+   that may shrink (long nowrap text inside no longer pushes the page sideways).
+   In the base layer, so any grid-cols-* utility still wins. */
+@layer base {
+  :where(.grid:not(.grid-flow-col)) { grid-template-columns: minmax(0, 1fr); }
+}
+
+@keyframes ring-in { from { stroke-dashoffset: var(--ring-c); } }
+@media (prefers-reduced-motion: reduce) { .stagger > * { animation: none; } }
+
+/* A disabled main button is a calm grey pill, not a faded blue one (every app). */
+.blue-grad:disabled { background: var(--g-fill); color: var(--g-muted); opacity: 1; }
+/* The picked part of a segmented switch stands out in dark too (it is a white pill in light). */
+[data-scheme="dark"] [aria-pressed="true"].bg-white { background-color: #2c2f38; box-shadow: 0 1px 3px rgb(0 0 0 / 0.4); }

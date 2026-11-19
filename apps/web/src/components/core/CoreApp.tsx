@@ -19,7 +19,7 @@ import { createStore } from "@/lib/store";
 import {
   CountMoney,
   Island,
-  loadIfChanged,
+  startLoading,
   Reveal,
   ToTop,
   type IslandNotice,
@@ -197,7 +197,7 @@ function Core() {
   };
   const go = (s: Section) => {
     haptic("light");
-    loadIfChanged(`core:${s}`, "1"); // first visit to a section: its data blurs in
+    startLoading(420); // every section opens with its data blurring into focus
     setRoles(false);
     setVenue(null);
     setSec(s);

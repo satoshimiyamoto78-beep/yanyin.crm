@@ -2,22 +2,19 @@
 
 import {
   Banknote,
-  CalendarDays,
   Check,
   CreditCard,
-  Download,
   FileCheck2,
   Printer,
   QrCode,
   RotateCcw,
-  TrendingUp,
   Wallet,
   Users,
   Receipt,
   Lock,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { formatMoney, type Menu, type MenuItem } from "@yanyin/domain";
+import { formatMoney, type Menu } from "@yanyin/domain";
 import { haptic } from "@/lib/haptics";
 import {
   ticketTotal,
@@ -39,13 +36,9 @@ import {
   TextArea,
   Toolbar,
 } from "@/components/system/Kit";
-import {
-  BarsWidget,
-  DaysCompareWidget,
-  IconStat,
-} from "@/components/system/Widgets";
+import { IconStat } from "@/components/system/Widgets";
 import { compactMoney } from "@/components/crew/CrewApp";
-import { useDish, useLocale, useTr } from "@/components/crew/prefs";
+import { useDish, useTr } from "@/components/crew/prefs";
 
 /*
  * The admin's floor, orders and reports (docs/09 §9–11). Floor: zones and
@@ -918,235 +911,3 @@ function BillPage({
 }
 
 /* ---------------------------------------------------------------- Reports */
-
-export function ReportsAdmin({
-  floor,
-  menu,
-  notify,
-}: {
-  floor: FloorData;
-  menu: Menu;
-  notify: (t: string) => void;
-}) {
-  const tr = useTr();
-  const dish = useDish();
-  const locale = useLocale();
-  const [range, setRange] = useState<"day" | "week" | "month">("week");
-  const items = useMemo(
-    () => menu.categories.flatMap((c) => c.items).filter((i) => i.price > 0),
-    [menu],
-  );
-  // Demo numbers, steady from one render to the next.
-  const week = [38.2, 41.5, 36.9, 44.8, 52.3, 61.7, 47.1].map((m) => m * 1e6);
-  const today = new Date(2026, 10, 14);
-  const days = week.map((v, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - (6 - i));
-    return {
-      short: d.toLocaleDateString(locale, { weekday: "short" }),
-      date: String(d.getDate()),
-      value: v,
-    };
-  });
-  const sum =
-    week.reduce((a, b) => a + b, 0) *
-    (range === "month" ? 4.2 : range === "day" ? 1 / 7 : 1);
-  const bills = Math.round(
-    (range === "month" ? 1720 : range === "day" ? 58 : 410) * 1,
-  );
-  const top: [MenuItem, number][] = items
-    .slice(0, 40)
-    .filter((_, i) => i % 3 === 0)
-    .slice(0, 6)
-    .map((it, i) => [it, [64, 51, 47, 39, 33, 28][i]!]);
-  const waiters = [
-    ["linh", 18.4, 96, 4.8],
-    ["minh", 15.9, 81, 4.6],
-    ["anna", 9.1, 47, 4.9],
-  ] as const;
-  const pays = [
-    ["vietqr", 46],
-    ["card", 28],
-    ["cash", 21],
-    ["momo", 5],
-  ] as const;
-  return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex rounded-full bg-g-fill p-1">
-          {(["day", "week", "month"] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => (haptic("tick"), setRange(r))}
-              aria-pressed={range === r}
-              className={`h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${range === r ? "bg-white text-g-ink shadow-[0_1px_3px_rgba(11,11,15,0.12)]" : "text-g-muted"}`}
-            >
-              {tr(r === "day" ? "Today" : r === "week" ? "Week" : "Month")}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => (
-            haptic("success"),
-            notify(tr("Report saved: Excel for the accountant"))
-          )}
-          className="press ml-auto flex h-10 items-center gap-1.5 rounded-full bg-g-fill px-4 text-[14px] font-semibold"
-        >
-          <Download size={16} strokeWidth={2.2} className="text-g-blue" />{" "}
-          {tr("Export")}
-        </button>
-      </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <IconStat
-          art="sales"
-          title={tr("Takings")}
-          value={compactMoney(sum)}
-          sub={tr("+12% to the last one")}
-        />
-        <IconStat
-          art="check"
-          title={tr("Avg check")}
-          value={compactMoney(sum / bills)}
-          sub={tr("{n} bills", { n: bills })}
-        />
-        <IconStat
-          art="guests"
-          title={tr("Guests")}
-          value={String(Math.round(bills * 2.4))}
-          sub={tr("2.4 per table")}
-        />
-        <IconStat
-          art="tips"
-          title={tr("Tips")}
-          value={compactMoney(sum * 0.06)}
-          sub={tr("6% of takings")}
-        />
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <DaysCompareWidget
-          title={tr("Takings by day")}
-          icon={<CalendarDays size={13} strokeWidth={2.4} />}
-          days={days}
-          format={compactMoney}
-          todayNote={tr("tap a day to compare")}
-        />
-        <BarsWidget
-          title={tr("Busy hours")}
-          icon={<TrendingUp size={13} strokeWidth={2.4} />}
-          labels={[
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20",
-            "21",
-            "22",
-          ]}
-          values={[4, 9, 18, 21, 12, 7, 6, 9, 16, 24, 27, 19, 8]}
-          unit={tr("bills")}
-          initial={10}
-        />
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-[24px] bg-g-fill p-[18px]">
-          <p className="text-[13px] font-semibold text-g-ink-2">
-            {tr("Top dishes")}
-          </p>
-          <div className="mt-3 grid gap-2.5">
-            {top.map(([it, n], i) => (
-              <div key={it.id} className="flex items-center gap-3">
-                <span className="w-5 text-[14px] font-semibold text-g-faint tabular-nums">
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex justify-between gap-2 text-[14.5px]">
-                    <span className="truncate font-semibold">
-                      {dish(it.name)}
-                    </span>
-                    <span className="shrink-0 text-g-muted tabular-nums">
-                      {n}
-                    </span>
-                  </span>
-                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-g-card">
-                    <span
-                      className="block h-full rounded-full bg-g-blue"
-                      style={{ width: `${(n / 64) * 100}%` }}
-                    />
-                  </span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section className="rounded-[24px] bg-g-fill p-[18px]">
-          <p className="text-[13px] font-semibold text-g-ink-2">
-            {tr("Waiters")}
-          </p>
-          <div className="mt-2 grid gap-1">
-            {waiters.map(([h, m, b, r]) => (
-              <div
-                key={h}
-                className="flex items-center gap-3 rounded-full py-2"
-              >
-                <span className="blue-grad grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-bold uppercase">
-                  {h[0]}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-semibold text-g-blue">
-                    @{h}
-                  </span>
-                  <span className="block text-[12.5px] text-g-muted">
-                    {tr("{n} bills · rating {r}", { n: b, r })}
-                  </span>
-                </span>
-                <span className="text-[15px] font-semibold tabular-nums">
-                  {m}M
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-[13px] font-semibold text-g-ink-2">
-            {tr("How guests paid")}
-          </p>
-          <div className="mt-2 flex h-3 overflow-hidden rounded-full">
-            {pays.map(([k, p], i) => (
-              <span
-                key={k}
-                style={{
-                  width: `${p}%`,
-                  background: ["#2f5bff", "#6c96ff", "#12a150", "#ef6c1a"][i],
-                }}
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-g-muted">
-            {pays.map(([k, p], i) => (
-              <span key={k} className="flex items-center gap-1.5">
-                <span
-                  className="size-2 rounded-full"
-                  style={{
-                    background: ["#2f5bff", "#6c96ff", "#12a150", "#ef6c1a"][i],
-                  }}
-                />
-                {tr(METHOD[k].label)} {p}%
-              </span>
-            ))}
-          </div>
-        </section>
-      </div>
-      <p className="px-1 text-[12.5px] text-g-faint">
-        {tr("Closed bills today: {n}. Numbers update after every payment.", {
-          n: floor.history.length,
-        })}
-      </p>
-    </div>
-  );
-}

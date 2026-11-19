@@ -61,6 +61,10 @@ short, current rule set. When the founder changes a rule, update this file too.
 - Empty, offline and loading states are part of every screen (`EmptyState`, `OfflineBar`, `Skeleton`).
 - Phone-first apps on tablets and computers sit as one column on a soft page (`.app-column`).
 
+- Numbers people work with are tables, not only widgets: `ReportTable` (sticky first column, sortable, totals row, a row opens its breakdown) with `Delta` against the previous period. Every report has a period and a way back to earlier ones; every figure can be opened down to the operations behind it.
+- Section tabs are a segmented pill (`aria-pressed` + `bg-white`, dark handled globally); deeper report pickers are scrolling chips (`bg-g-ink` when picked).
+- A grid without its own columns is one shrinkable column (globals.css); never let nowrap text widen a page.
+
 ## 6. Motion and feel
 
 - Native-app feel: no zoom, no text selection on controls, haptics on every meaningful tap, `press` scale on buttons, 60 fps.
